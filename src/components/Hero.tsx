@@ -46,7 +46,7 @@ export function Hero() {
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
+  }, []);
 
   return (
     <section ref={heroRef} className="relative w-full min-h-screen overflow-hidden" style={{ backgroundColor: '#0A0A0A' }}>
