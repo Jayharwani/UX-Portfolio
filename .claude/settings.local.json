@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv src/assets/cd6372b91446e597d758c87ffb0d5cdebbddf1dc.png src/assets/hero-portrait.png)",
+      "Bash(mv src/assets/c281662d4e2b4beae8222141434ea462f98508f7.png src/assets/smartdrive-thumbnail.png)",
+      "Bash(mv src/assets/4aae3fdd4cf5fb45c01f1c3b22ea2c133249ddfd.png src/assets/smartdrive-bg.png)",
+      "Bash(mv src/assets/328f2f0f71c4a525aefbcb57668d2f2812214999.png src/assets/bumper-bg.png)",
+      "Bash(mv src/assets/d95438e645da1c16695f358f4c04394426b4a579.png src/assets/casestudy-hero-bg.png)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(while read:*)",
+      "Bash(do sed:*)",
+      "Bash(done)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where node:*)",
+      "Bash(where npm:*)"
+    ]
+  }
+}
