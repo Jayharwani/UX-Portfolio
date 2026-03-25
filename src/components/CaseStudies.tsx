@@ -1,99 +1,240 @@
-import { CaseStudyCard } from "./CaseStudyCard";
 import { EnhancedSmartDriveCard } from "./EnhancedSmartDriveCard";
 import { EnhancedBumperCard } from "./EnhancedBumperCard";
 import { ChronoWeaveThumbnail } from "./ChronoWeaveThumbnail";
-import { motion } from "motion/react";
-import smartDriveThumbnail from "../assets/smartdrive-thumbnail.png";
+import { motion, useScroll, useTransform } from "motion/react";
+import { useRef } from "react";
 
-const caseStudies = [
-  {
-    id: 3,
-    image: ChronoWeaveThumbnail,
-    title: "ChronoWeave",
-    description: "Multi-sensory nudges for time blindness. AI-powered app from FigBuild 2026",
-    category: "Mobile App",
-    link: "/chronoweave",
-    comingSoon: false
-  },
-  {
-    id: 1,
-    image: smartDriveThumbnail,
-    title: "SmartDrive Mode",
-    description: "An AI-driven phone feature that learns your driving habits to filter distractions and keep you focused on the road",
-    category: "Mobile Setting Feature",
-    link: "/smartdrive",
-    comingSoon: false
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1618128587777-c472aa97d836?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxqYWlwdXIlMjBwYWxhY2UlMjBnb2xkZW4lMjBzdW5zZXR8ZW58MXx8fHwxNzcwNDAxODExfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    title: "Bumper Extension",
-    description: "A browser extension that helps you resist impulse purchases by visualizing what you could do with that money instead — like saving for your dream trip to Jaipur",
-    category: "Browser Extension",
-    link: "#bumper",
-    comingSoon: true
-  }
-];
+function SectionDivider({ number }: { number: number }) {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <motion.div
+        className="flex flex-col items-center gap-4"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Connecting line */}
+        <motion.div
+          style={{
+            width: '1px',
+            height: '60px',
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent)',
+          }}
+          initial={{ scaleY: 0 }}
+          whileInView={{ scaleY: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        />
+        {/* Number badge */}
+        <motion.div
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.10)',
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.25)',
+          }}
+          initial={{ scale: 0 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.3, type: 'spring', stiffness: 200 }}
+        >
+          {String(number).padStart(2, '0')}
+        </motion.div>
+        {/* Connecting line */}
+        <motion.div
+          style={{
+            width: '1px',
+            height: '60px',
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent)',
+          }}
+          initial={{ scaleY: 0 }}
+          whileInView={{ scaleY: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+function ParallaxCard({ children, index }: { children: React.ReactNode; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+
+  const y = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [80, 0, 0, -40]);
+  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.92, 1, 1, 0.97]);
+  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.8, 1], [0, 1, 1, 0.6]);
+  const rotateX = useTransform(scrollYProgress, [0, 0.2], [4, 0]);
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{
+        y,
+        scale,
+        opacity,
+        rotateX,
+        perspective: '1200px',
+        transformOrigin: 'center bottom',
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export function CaseStudies() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+
+  // Parallax for ambient orbs
+  const orb1Y = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const orb2Y = useTransform(scrollYProgress, [0, 1], [0, -300]);
+
   return (
-    <section id="case-studies" className="relative py-32 overflow-hidden" style={{ backgroundColor: '#F2EFE9' }}>
-      {/* Refined background */}
+    <section
+      ref={sectionRef}
+      id="case-studies"
+      className="relative py-32 overflow-hidden"
+      style={{ backgroundColor: '#0A0A0A' }}
+    >
+      {/* Ambient background effects */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Subtle mesh gradient overlay */}
-        <div 
-          className="absolute inset-0 opacity-30"
+        {/* Subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `
-              radial-gradient(at 30% 20%, rgba(15, 118, 110, 0.04) 0px, transparent 50%),
-              radial-gradient(at 70% 80%, rgba(14, 165, 233, 0.04) 0px, transparent 50%)
-            `
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+            backgroundSize: '80px 80px',
+          }}
+        />
+        {/* Floating ambient orbs */}
+        <motion.div
+          className="absolute"
+          style={{
+            top: '10%',
+            left: '5%',
+            width: '500px',
+            height: '500px',
+            background: 'radial-gradient(circle, rgba(45,212,191,0.04) 0%, transparent 70%)',
+            borderRadius: '50%',
+            y: orb1Y,
+          }}
+        />
+        <motion.div
+          className="absolute"
+          style={{
+            top: '50%',
+            right: '0%',
+            width: '600px',
+            height: '600px',
+            background: 'radial-gradient(circle, rgba(167,139,250,0.03) 0%, transparent 70%)',
+            borderRadius: '50%',
+            y: orb2Y,
+          }}
+        />
+        {/* Noise texture */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
           }}
         />
       </div>
-      
+
       <div className="container mx-auto px-6 max-w-7xl relative">
-        <motion.div 
-          className="text-center mb-24 space-y-6"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-50 to-sky-50 border border-teal-200/50 rounded-lg mb-6 backdrop-blur-sm shadow-sm">
-            <span className="text-teal-700 text-sm tracking-wide font-semibold">SELECTED WORK</span>
-          </div>
-          <h2 className="text-neutral-900 text-4xl md:text-5xl font-bold tracking-tight">
+        {/* Section Header */}
+        <div className="text-center mb-24 space-y-6">
+          <motion.div
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mb-6 backdrop-blur-sm"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span
+              style={{
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.5)',
+                letterSpacing: '0.1em',
+              }}
+            >
+              SELECTED WORK
+            </span>
+          </motion.div>
+
+          <motion.h2
+            style={{
+              fontFamily: 'Syne, sans-serif',
+              fontSize: '52px',
+              fontWeight: 800,
+              letterSpacing: '-1.5px',
+              color: '#FFFFFF',
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          >
             Case Studies
-          </h2>
-          <p className="text-neutral-600 max-w-2xl mx-auto text-lg md:text-xl">
+          </motion.h2>
+
+          <motion.p
+            style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: '17px',
+              color: 'rgba(255,255,255,0.4)',
+              maxWidth: '500px',
+              margin: '0 auto',
+              lineHeight: 1.7,
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
             A curated collection of projects where design meets impact
-          </p>
-        </motion.div>
-        
-        <div className="space-y-32 relative">
-          {caseStudies.map((study, index) => (
-            <div key={study.id} className="relative">
-              {study.id === 1 ? (
-                <EnhancedSmartDriveCard />
-              ) : study.id === 2 ? (
-                <EnhancedBumperCard />
-              ) : study.id === 3 ? (
-                <ChronoWeaveThumbnail />
-              ) : (
-                <CaseStudyCard
-                  image={study.image}
-                  title={study.title}
-                  description={study.description}
-                  category={study.category}
-                  link={study.link}
-                  reverse={index % 2 !== 0}
-                  index={index}
-                  comingSoon={study.comingSoon}
-                />
-              )}
-            </div>
-          ))}
+          </motion.p>
+        </div>
+
+        {/* Cards with parallax and dividers */}
+        <div className="relative">
+          <ParallaxCard index={0}>
+            <ChronoWeaveThumbnail />
+          </ParallaxCard>
+
+          <SectionDivider number={2} />
+
+          <ParallaxCard index={1}>
+            <EnhancedSmartDriveCard />
+          </ParallaxCard>
+
+          <SectionDivider number={3} />
+
+          <ParallaxCard index={2}>
+            <EnhancedBumperCard />
+          </ParallaxCard>
         </div>
       </div>
     </section>
