@@ -203,7 +203,7 @@ export function ChronoWeaveHeroCard() {
                 fontWeight: 600,
               }}
             >
-              📳 Haptics
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }}><path d="M2 8h4l3-5 6 14 3-9h4"/></svg>Haptics
             </div>
             <div
               style={{
@@ -217,7 +217,7 @@ export function ChronoWeaveHeroCard() {
                 fontWeight: 600,
               }}
             >
-              🔊 Audio
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>Audio
             </div>
             <div
               style={{
@@ -231,7 +231,7 @@ export function ChronoWeaveHeroCard() {
                 fontWeight: 600,
               }}
             >
-              💡 Light
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Light
             </div>
           </motion.div>
 
