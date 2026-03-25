@@ -429,11 +429,11 @@ export function EnhancedSmartDriveCard() {
     >
       <Link to="/smartdrive">
         <div 
-          className="relative w-full overflow-hidden"
-          style={{ 
-            height: '820px',
-            maxHeight: '700px',
-            borderRadius: '20px'
+          className="relative w-full overflow-hidden mx-auto"
+          style={{
+            maxWidth: '1340px',
+            height: '700px',
+            borderRadius: '22px'
           }}
         >
           {/* Card flip container */}

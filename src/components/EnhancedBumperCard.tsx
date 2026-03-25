@@ -386,7 +386,7 @@ export function EnhancedBumperCard() {
         className="group"
       >
         {/* Main card with background image */}
-        <div className="relative rounded-[28px] overflow-hidden h-[650px] md:h-[700px] shadow-2xl">
+        <div className="relative rounded-[22px] overflow-hidden h-[700px] mx-auto shadow-2xl" style={{ maxWidth: '1340px' }}>
           {/* HD Background Image */}
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"

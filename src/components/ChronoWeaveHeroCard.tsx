@@ -73,7 +73,7 @@ export function ChronoWeaveHeroCard() {
         style={{
           width: '100%',
           maxWidth: '1340px',
-          height: '820px',
+          height: '700px',
           borderRadius: '22px',
           background: 'radial-gradient(ellipse at 70% 30%, #14172E 0%, #0B0D1E 50%, #08091A 100%)',
         }}
