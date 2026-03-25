@@ -69,11 +69,11 @@ export function ChronoWeaveHeroCard() {
   return (
     <Link to="/chronoweave" className="block">
       <div
-        className="relative overflow-hidden"
+        className="relative overflow-hidden mx-auto"
         style={{
-          width: '1340px',
+          width: '100%',
+          maxWidth: '1340px',
           height: '820px',
-          maxWidth: '100%',
           borderRadius: '22px',
           background: 'radial-gradient(ellipse at 70% 30%, #14172E 0%, #0B0D1E 50%, #08091A 100%)',
         }}
