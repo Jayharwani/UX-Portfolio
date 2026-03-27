@@ -889,9 +889,35 @@ export function SmartDrivePage() {
                   variants={fadeInUp}
                   className="group flex flex-col items-center"
                 >
-                  <div className="w-full max-w-[300px] sm:max-w-[340px] aspect-[9/19.5] bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl border-4 sm:border-[6px] border-slate-800 mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700 relative">
-                    <div className="absolute inset-0">
-                      <screen.component />
+                  {/* Phone frame with fixed inner dimensions scaled to fit */}
+                  <div className="w-full max-w-[280px] sm:max-w-[320px] mx-auto">
+                    <div
+                      className="relative bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] border-4 sm:border-[6px] border-slate-800 overflow-hidden shadow-2xl mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700"
+                      style={{ aspectRatio: '390 / 844' }}
+                    >
+                      {/* Fixed-size inner container scaled to fill the phone frame */}
+                      <div className="absolute inset-0 overflow-hidden">
+                        <div
+                          className="origin-top-left w-[390px] h-[844px]"
+                          style={{ transform: 'scale(var(--screen-scale))' }}
+                          ref={(el) => {
+                            if (el) {
+                              const updateScale = () => {
+                                const parent = el.parentElement;
+                                if (parent) {
+                                  const scale = parent.clientWidth / 390;
+                                  el.style.setProperty('--screen-scale', String(scale));
+                                }
+                              };
+                              updateScale();
+                              const observer = new ResizeObserver(updateScale);
+                              observer.observe(el.parentElement!);
+                            }
+                          }}
+                        >
+                          <screen.component />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <p className="text-white text-sm font-medium text-center">{screen.label}</p>
