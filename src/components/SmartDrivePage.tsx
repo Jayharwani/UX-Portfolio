@@ -173,7 +173,7 @@ export function SmartDrivePage() {
         tags={["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"]}
         phoneContent={
           <div className="w-[390px] h-[844px] origin-top-left" style={{ transform: `scale(${340 / 390})` }}>
-            <HiFiScreen1 />
+            <HiFiScreen5 />
           </div>
         }
         onExploreClick={() => {
