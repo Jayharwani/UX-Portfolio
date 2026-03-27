@@ -172,7 +172,7 @@ export function SmartDrivePage() {
         subtitle="An intelligent distraction filter that learns your driving patterns to keep you safe — without manual setup."
         tags={["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"]}
         phoneContent={
-          <div className="w-full h-full scale-[0.85] origin-top">
+          <div className="w-[390px] h-[844px] origin-top-left" style={{ transform: `scale(${340 / 390})` }}>
             <HiFiScreen1 />
           </div>
         }
