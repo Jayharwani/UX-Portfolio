@@ -47,12 +47,11 @@ export function EnhancedSmartDriveCard() {
   return (
     <Link to="/smartdrive" className="block">
       <div
-        className="relative overflow-hidden mx-auto"
+        className="relative overflow-hidden mx-auto rounded-[16px] md:rounded-[22px]"
         style={{
           width: '100%',
           maxWidth: '1340px',
-          height: '700px',
-          borderRadius: '22px',
+          minHeight: '420px',
           background: 'radial-gradient(ellipse at 70% 30%, #0D1B2A 0%, #0B1120 50%, #080E1A 100%)',
         }}
       >
@@ -72,8 +71,8 @@ export function EnhancedSmartDriveCard() {
         <motion.div
           className="absolute flex items-center gap-2"
           style={{
-            top: '36px',
-            left: '50px',
+            top: '24px',
+            left: '24px',
             padding: '6px 14px',
             borderRadius: '100px',
             backgroundColor: 'rgba(255,255,255,0.07)',
@@ -109,23 +108,18 @@ export function EnhancedSmartDriveCard() {
           </span>
         </motion.div>
 
-        {/* Bottom Left Content */}
+        {/* Content + Visual Layout */}
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+
+        {/* Left Content */}
         <div
-          className="absolute"
-          style={{
-            bottom: '64px',
-            left: '50px',
-            maxWidth: '50%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px',
-          }}
+          className="relative z-10 flex flex-col gap-3 md:gap-[18px] p-6 pt-16 md:p-12 md:pt-20 lg:p-[50px] lg:pb-16 lg:absolute lg:bottom-16 lg:left-[50px] lg:max-w-[50%]"
         >
           {/* Title */}
           <motion.h1
+            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
-              fontSize: '80px',
               fontWeight: 800,
               lineHeight: 0.93,
               letterSpacing: '-2px',
@@ -203,6 +197,7 @@ export function EnhancedSmartDriveCard() {
 
           {/* Description */}
           <motion.p
+            className="hidden sm:block"
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
@@ -221,12 +216,12 @@ export function EnhancedSmartDriveCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '14px 26px',
+              padding: '12px 22px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 700,
               width: 'fit-content',
             }}
@@ -243,12 +238,7 @@ export function EnhancedSmartDriveCard() {
 
         {/* Right Side - Floating Phone with Notification Filtering */}
         <motion.div
-          className="absolute"
-          style={{
-            top: '50%',
-            right: '120px',
-            transform: 'translateY(-50%)',
-          }}
+          className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[120px] lg:-translate-y-1/2"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{
             opacity: 1,
@@ -263,7 +253,7 @@ export function EnhancedSmartDriveCard() {
         >
           {/* Outer Glow */}
           <motion.div
-            className="absolute"
+            className="absolute hidden lg:block"
             style={{
               top: '50%',
               left: '50%',
@@ -279,11 +269,10 @@ export function EnhancedSmartDriveCard() {
 
           {/* Phone Frame */}
           <div
+            className="w-[180px] h-[340px] sm:w-[200px] sm:h-[380px] lg:w-[220px] lg:h-[420px]"
             style={{
               position: 'relative',
               zIndex: 1,
-              width: '220px',
-              height: '420px',
               borderRadius: '32px',
               background: 'rgba(10,8,26,0.92)',
               border: '1.5px solid rgba(255,255,255,0.10)',
@@ -508,6 +497,7 @@ export function EnhancedSmartDriveCard() {
             />
           </div>
         </motion.div>
+        </div>{/* end content+visual layout */}
       </div>
     </Link>
   );

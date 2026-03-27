@@ -27,12 +27,11 @@ export function EnhancedBumperCard() {
   return (
     <Link to="/bumper" className="block">
       <div
-        className="relative overflow-hidden mx-auto"
+        className="relative overflow-hidden mx-auto rounded-[16px] md:rounded-[22px]"
         style={{
           width: '100%',
           maxWidth: '1340px',
-          height: '700px',
-          borderRadius: '22px',
+          minHeight: '420px',
           background: 'radial-gradient(ellipse at 70% 30%, #1A0E2E 0%, #120B22 50%, #0A0816 100%)',
         }}
       >
@@ -52,8 +51,8 @@ export function EnhancedBumperCard() {
         <motion.div
           className="absolute flex items-center gap-2"
           style={{
-            top: '36px',
-            left: '50px',
+            top: '24px',
+            left: '24px',
             padding: '6px 14px',
             borderRadius: '100px',
             backgroundColor: 'rgba(255,255,255,0.07)',
@@ -89,23 +88,18 @@ export function EnhancedBumperCard() {
           </span>
         </motion.div>
 
-        {/* Bottom Left Content */}
+        {/* Content + Visual Layout */}
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+
+        {/* Left Content */}
         <div
-          className="absolute"
-          style={{
-            bottom: '64px',
-            left: '50px',
-            maxWidth: '50%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px',
-          }}
+          className="relative z-10 flex flex-col gap-3 md:gap-[18px] p-6 pt-16 md:p-12 md:pt-20 lg:p-[50px] lg:pb-16 lg:absolute lg:bottom-16 lg:left-[50px] lg:max-w-[50%]"
         >
           {/* Title */}
           <motion.h1
+            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
-              fontSize: '80px',
               fontWeight: 800,
               lineHeight: 0.93,
               letterSpacing: '-2px',
@@ -183,6 +177,7 @@ export function EnhancedBumperCard() {
 
           {/* Description */}
           <motion.p
+            className="hidden sm:block"
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
@@ -201,12 +196,12 @@ export function EnhancedBumperCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '14px 26px',
+              padding: '12px 22px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 700,
               width: 'fit-content',
             }}
@@ -223,12 +218,7 @@ export function EnhancedBumperCard() {
 
         {/* Right Side - Floating Browser Extension Popup */}
         <motion.div
-          className="absolute"
-          style={{
-            top: '50%',
-            right: '100px',
-            transform: 'translateY(-50%)',
-          }}
+          className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[100px] lg:-translate-y-1/2"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{
             opacity: 1,
@@ -243,7 +233,7 @@ export function EnhancedBumperCard() {
         >
           {/* Outer Glow */}
           <motion.div
-            className="absolute"
+            className="absolute hidden lg:block"
             style={{
               top: '50%',
               left: '50%',
@@ -259,10 +249,10 @@ export function EnhancedBumperCard() {
 
           {/* Extension Popup Card */}
           <div
+            className="w-[240px] sm:w-[260px] lg:w-[280px]"
             style={{
               position: 'relative',
               zIndex: 1,
-              width: '280px',
               borderRadius: '20px',
               background: 'rgba(16,12,32,0.92)',
               border: '1.5px solid rgba(255,255,255,0.10)',
@@ -447,6 +437,7 @@ export function EnhancedBumperCard() {
 
           {/* Small floating price tag */}
           <motion.div
+            className="hidden lg:flex"
             style={{
               position: 'absolute',
               top: '-20px',
@@ -472,6 +463,7 @@ export function EnhancedBumperCard() {
 
           {/* Small floating savings badge */}
           <motion.div
+            className="hidden lg:flex"
             style={{
               position: 'absolute',
               bottom: '-10px',
@@ -494,6 +486,7 @@ export function EnhancedBumperCard() {
             <svg width="10" height="10" viewBox="0 0 14 14" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '3px' }}><path d="M2 7L6 11L12 3" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>+$299 saved
           </motion.div>
         </motion.div>
+        </div>{/* end content+visual layout */}
       </div>
     </Link>
   );

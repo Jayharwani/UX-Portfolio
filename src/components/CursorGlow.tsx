@@ -20,7 +20,7 @@ export function CursorGlow() {
 
   return (
     <motion.div
-      className="pointer-events-none fixed z-[9998]"
+      className="pointer-events-none fixed z-[9998] hidden lg:block"
       style={{
         x,
         y,

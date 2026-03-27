@@ -69,12 +69,11 @@ export function ChronoWeaveHeroCard() {
   return (
     <Link to="/chronoweave" className="block">
       <div
-        className="relative overflow-hidden mx-auto"
+        className="relative overflow-hidden mx-auto rounded-[16px] md:rounded-[22px]"
         style={{
           width: '100%',
           maxWidth: '1340px',
-          height: '700px',
-          borderRadius: '22px',
+          minHeight: '420px',
           background: 'radial-gradient(ellipse at 70% 30%, #14172E 0%, #0B0D1E 50%, #08091A 100%)',
         }}
       >
@@ -94,8 +93,8 @@ export function ChronoWeaveHeroCard() {
         <motion.div
           className="absolute flex items-center gap-2"
           style={{
-            top: '36px',
-            left: '50px',
+            top: '24px',
+            left: '24px',
             padding: '6px 14px',
             borderRadius: '100px',
             backgroundColor: 'rgba(255,255,255,0.07)',
@@ -137,23 +136,18 @@ export function ChronoWeaveHeroCard() {
           </span>
         </motion.div>
 
-        {/* Bottom Left Content */}
+        {/* Content + Visual Layout */}
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+
+        {/* Left Content */}
         <div
-          className="absolute"
-          style={{
-            bottom: '64px',
-            left: '50px',
-            maxWidth: '50%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px',
-          }}
+          className="relative z-10 flex flex-col gap-3 md:gap-[18px] p-6 pt-16 md:p-12 md:pt-20 lg:p-[50px] lg:pb-16 lg:pt-auto lg:absolute lg:bottom-16 lg:left-[50px] lg:max-w-[50%]"
         >
           {/* Title */}
           <motion.h1
+            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
-              fontSize: '80px',
               fontWeight: 800,
               lineHeight: 0.93,
               letterSpacing: '-2px',
@@ -237,6 +231,7 @@ export function ChronoWeaveHeroCard() {
 
           {/* Description */}
           <motion.p
+            className="hidden sm:block"
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
@@ -255,12 +250,12 @@ export function ChronoWeaveHeroCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '14px 26px',
+              padding: '12px 22px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 700,
               width: 'fit-content',
             }}
@@ -277,12 +272,7 @@ export function ChronoWeaveHeroCard() {
 
         {/* Right Side - Floating Clock */}
         <motion.div
-          className="absolute"
-          style={{
-            top: '50%',
-            right: '120px',
-            transform: 'translateY(-50%)',
-          }}
+          className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[120px] lg:-translate-y-1/2"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ 
             opacity: 1, 
@@ -301,12 +291,12 @@ export function ChronoWeaveHeroCard() {
         >
           {/* Outer Glow */}
           <motion.div
-            className="absolute"
+            className="absolute hidden lg:block"
             style={{
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '364px', // 130% of 280px
+              width: '364px',
               height: '364px',
               background: 'radial-gradient(circle, rgba(140,100,255,0.18) 0%, rgba(45,212,191,0.06) 50%, transparent 100%)',
               borderRadius: '50%',
@@ -322,7 +312,7 @@ export function ChronoWeaveHeroCard() {
           />
 
           {/* Clock Container */}
-          <svg width="280" height="280" viewBox="0 0 280 280" style={{ position: 'relative', zIndex: 1 }}>
+          <svg className="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] lg:w-[280px] lg:h-[280px]" viewBox="0 0 280 280" style={{ position: 'relative', zIndex: 1 }}>
             {/* Clock Face */}
             <circle
               cx={clockRadius}
@@ -418,6 +408,7 @@ export function ChronoWeaveHeroCard() {
             />
           </svg>
         </motion.div>
+        </div>{/* end content+visual layout */}
       </div>
     </Link>
   );

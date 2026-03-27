@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
 import { Menu, X, ArrowDown } from "lucide-react";
 import userPhoto from "../assets/hero-portrait.png";
+import { ThemeToggle } from "./ThemeToggle";
 
 const roles = ["UX Researcher", "Product Designer", "Interaction Designer", "Design Thinker"];
 
@@ -117,11 +118,15 @@ export function Hero() {
               >
                 Resume
               </a>
+              <ThemeToggle />
             </nav>
 
-            <button className="md:hidden p-2 -mr-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+            <div className="md:hidden flex items-center gap-3">
+              <ThemeToggle />
+              <button className="p-2 -mr-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
               {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
             </button>
+            </div>
           </div>
         </motion.div>
       </header>
