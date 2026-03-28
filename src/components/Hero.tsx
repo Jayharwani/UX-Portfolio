@@ -98,21 +98,9 @@ export function Hero() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
-              {['About', 'Work', 'Contact'].map((item, i) => (
-                item === 'About' ? (
-                  <Link key={item} to="/about" className="text-[13px] font-medium uppercase tracking-[0.15em] transition-all hover:text-white" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
-                    {item}
-                  </Link>
-                ) : item === 'Work' ? (
-                  <a key={item} href="#case-studies" onClick={(e) => { e.preventDefault(); scrollToCaseStudies(); }} className="text-[13px] font-medium uppercase tracking-[0.15em] transition-all hover:text-white cursor-pointer" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
-                    {item}
-                  </a>
-                ) : (
-                  <a key={item} href="mailto:harwanijay9498@gmail.com" className="text-[13px] font-medium uppercase tracking-[0.15em] transition-all hover:text-white" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
-                    {item}
-                  </a>
-                )
-              ))}
+              <Link to="/about" className="text-[13px] font-medium uppercase tracking-[0.15em] transition-all hover:text-white" style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
+                About
+              </Link>
               <a
                 href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
                 target="_blank" rel="noopener noreferrer"
@@ -144,8 +132,6 @@ export function Hero() {
           >
             <nav className="flex flex-col gap-1 rounded-2xl p-4 shadow-2xl border border-white/10" style={{ backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(20px)', fontFamily: 'DM Sans, sans-serif' }}>
               <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">About</Link>
-              <a href="#case-studies" onClick={(e) => { e.preventDefault(); scrollToCaseStudies(); }} className="px-4 py-3 rounded-xl text-[15px] font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">Work</a>
-              <a href="mailto:harwanijay9498@gmail.com" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">Contact</a>
               <a href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="mx-4 mt-2 mb-1 text-center text-[13px] font-semibold rounded-full py-3" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
                 Resume
               </a>
