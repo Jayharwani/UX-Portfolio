@@ -1,6 +1,6 @@
 import { Footer } from "./Footer";
 import { motion, useInView } from "motion/react";
-import { ArrowLeft, ArrowUpRight, MapPin, GraduationCap, Briefcase } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, MapPin, Briefcase } from "lucide-react";
 import { useRef } from "react";
 import { Link } from "react-router";
 import userPhoto from "../assets/hero-portrait.jpeg";
@@ -9,12 +9,10 @@ export function AboutPage() {
   const heroRef = useRef(null);
   const bioRef = useRef(null);
   const experienceRef = useRef(null);
-  const educationRef = useRef(null);
 
   const heroInView = useInView(heroRef, { once: true, amount: 0.3 });
   const bioInView = useInView(bioRef, { once: true, amount: 0.2 });
   const experienceInView = useInView(experienceRef, { once: true, amount: 0.1 });
-  const educationInView = useInView(educationRef, { once: true, amount: 0.2 });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
@@ -137,7 +135,7 @@ export function AboutPage() {
                     className="text-[15px] sm:text-[16px] leading-[1.8]"
                     style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'DM Sans, sans-serif' }}
                   >
-                    Currently pursuing my Master's in HCI at UMBC, previously designing enterprise
+                    I completed my Master's in HCI at UMBC, and previously designed enterprise
                     systems at Welspun. I bring a research-first mindset to every problem — validating
                     assumptions before committing pixels.
                   </p>
@@ -149,7 +147,7 @@ export function AboutPage() {
                 {[
                   { value: "2+", label: "Years experience" },
                   { value: "10+", label: "Projects shipped" },
-                  { value: "MS", label: "HCI @ UMBC" },
+                  { value: "M.S.", label: "HCI, UMBC '26" },
                 ].map((stat, i) => (
                   <div key={i} className="py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
                     <p className="text-white text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{stat.value}</p>
@@ -306,10 +304,10 @@ export function AboutPage() {
                         {item.tags.map((tag, j) => (
                           <span
                             key={j}
-                            className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full"
+                            className="text-[11px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{
-                              color: 'rgba(255,255,255,0.25)',
-                              border: '1px solid rgba(255,255,255,0.06)',
+                              color: 'rgba(255,255,255,0.5)',
+                              border: '1px solid rgba(255,255,255,0.1)',
                               fontFamily: 'DM Sans, sans-serif',
                             }}
                           >
@@ -317,63 +315,9 @@ export function AboutPage() {
                           </span>
                         ))}
                       </div>
-                      <span className="text-white/20 text-[12px] whitespace-nowrap hidden sm:inline" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.period}</span>
+                      <span className="text-white/45 text-[13px] whitespace-nowrap hidden sm:inline" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.period}</span>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Education */}
-      <section ref={educationRef} className="py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={educationInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7 }}
-          >
-            <div className="flex items-center gap-4 mb-10">
-              <span className="text-cyan-500 font-mono text-sm">03</span>
-              <div className="w-12 h-px bg-gradient-to-r from-cyan-500/60 to-transparent" />
-              <span className="text-cyan-400/80 text-sm uppercase tracking-widest font-medium" style={{ fontFamily: 'DM Sans, sans-serif' }}>Education</span>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                {
-                  degree: "M.P.S. in Human-Centered Computing",
-                  school: "University of Maryland, Baltimore County",
-                  year: "2024 – 2026",
-                  detail: "Focus on HCI, UX Research, and AI-driven design",
-                },
-                {
-                  degree: "B.Tech in Computer Science",
-                  school: "Parul University, India",
-                  year: "2019 – 2023",
-                  detail: "Foundation in software engineering and design thinking",
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={educationInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: 0.1 + i * 0.1 }}
-                  className="rounded-xl p-6"
-                  style={{
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    backgroundColor: 'rgba(255,255,255,0.02)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <GraduationCap className="w-4 h-4 text-cyan-400/60" />
-                    <span className="text-white/20 text-[12px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.year}</span>
-                  </div>
-                  <h3 className="text-white text-[15px] font-semibold mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.degree}</h3>
-                  <p className="text-white/40 text-[13px] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.school}</p>
-                  <p className="text-white/25 text-[12px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.detail}</p>
                 </motion.div>
               ))}
             </div>
