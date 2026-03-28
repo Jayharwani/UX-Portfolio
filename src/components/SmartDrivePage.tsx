@@ -167,19 +167,220 @@ export function SmartDrivePage() {
       </motion.nav>
 
       {/* ─── Hero Section ─── */}
-      <CaseStudyHero
-        title="SmartDrive AI"
-        subtitle="An intelligent distraction filter that learns your driving patterns to keep you safe — without manual setup."
-        tags={["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"]}
-        phoneContent={
-          <div className="w-[390px] h-[844px] origin-top-left" style={{ transform: `scale(${340 / 360})` }}>
-            <HiFiScreen5 />
+      <section className="relative w-full min-h-screen flex items-center overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1e] via-[#0d1117] to-[#0a0a1e]" />
+          <motion.div
+            className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-cyan-500/8 to-transparent rounded-full blur-3xl"
+            animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-to-tl from-emerald-500/8 to-transparent rounded-full blur-3xl"
+            animate={{ opacity: [0.3, 0.5, 0.3], scale: [1.1, 1, 1.1] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 w-full max-w-[1600px] mx-auto px-6 lg:px-12 py-20">
+          <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-8 items-center">
+            {/* Left — Animated Visualization */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="relative flex justify-center items-center min-h-[400px] lg:min-h-[560px]"
+            >
+              {/* Central Shield / AI Core */}
+              <motion.div
+                className="relative z-10 w-[140px] h-[140px] lg:w-[180px] lg:h-[180px] flex items-center justify-center"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+              >
+                <div className="absolute inset-0 rounded-full border border-cyan-500/20" />
+                <div className="absolute inset-3 rounded-full border border-cyan-500/10" />
+              </motion.div>
+
+              {/* Static inner icon */}
+              <div className="absolute z-20 flex flex-col items-center gap-2">
+                <motion.div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center backdrop-blur-sm"
+                  animate={{ boxShadow: ["0 0 30px rgba(6,182,212,0.15)", "0 0 50px rgba(6,182,212,0.3)", "0 0 30px rgba(6,182,212,0.15)"] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Shield className="w-8 h-8 lg:w-10 lg:h-10 text-cyan-400" />
+                </motion.div>
+                <span className="text-[10px] lg:text-xs text-cyan-400/80 font-medium tracking-widest uppercase">AI Filter</span>
+              </div>
+
+              {/* Orbiting ring 1 */}
+              <motion.div
+                className="absolute w-[280px] h-[280px] lg:w-[360px] lg:h-[360px] rounded-full border border-dashed border-slate-700/40"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* Orbiting ring 2 */}
+              <motion.div
+                className="absolute w-[380px] h-[380px] lg:w-[480px] lg:h-[480px] rounded-full border border-slate-800/30"
+                animate={{ rotate: [360, 0] }}
+                transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* Floating notification cards — allowed (green) */}
+              {[
+                { x: -140, y: -120, lgX: -180, lgY: -150, delay: 0, icon: PhoneCall, label: "Mom calling", color: "emerald" },
+                { x: 120, y: 80, lgX: 160, lgY: 100, delay: 1.5, icon: AlertTriangle, label: "Road alert", color: "emerald" },
+                { x: -100, y: 100, lgX: -140, lgY: 130, delay: 3, icon: Car, label: "Navigation", color: "emerald" },
+              ].map((notif, i) => (
+                <motion.div
+                  key={`allowed-${i}`}
+                  className="absolute z-30"
+                  style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{
+                    opacity: [0, 1, 1, 0],
+                    scale: [0.8, 1, 1, 0.8],
+                    y: [10, 0, 0, -10],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
+                    <div className="w-6 h-6 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                      <notif.icon className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-emerald-300 font-medium">{notif.label}</p>
+                      <p className="text-[8px] text-emerald-500/60">Allowed</p>
+                    </div>
+                    <CheckCircle className="w-3 h-3 text-emerald-400 ml-1" />
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Floating notification cards — blocked (red/muted) */}
+              {[
+                { x: 130, y: -90, lgX: 170, lgY: -110, delay: 0.8, icon: MessageSquare, label: "Social media" },
+                { x: -130, y: 20, lgX: -170, lgY: 20, delay: 2.2, icon: Bell, label: "Game update" },
+                { x: 60, y: 140, lgX: 80, lgY: 170, delay: 4, icon: BellRing, label: "Promo alert" },
+              ].map((notif, i) => (
+                <motion.div
+                  key={`blocked-${i}`}
+                  className="absolute z-30"
+                  style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{
+                    opacity: [0, 0.6, 0.6, 0],
+                    scale: [0.8, 1, 1, 0.8],
+                    y: [10, 0, 0, -10],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/5 border border-red-500/15 backdrop-blur-sm opacity-60">
+                    <div className="w-6 h-6 rounded-md bg-red-500/10 flex items-center justify-center">
+                      <notif.icon className="w-3.5 h-3.5 text-red-400/60" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-red-300/60 font-medium line-through">{notif.label}</p>
+                      <p className="text-[8px] text-red-500/40">Blocked</p>
+                    </div>
+                    <XCircle className="w-3 h-3 text-red-400/50 ml-1" />
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Subtle pulse rings from center */}
+              {[0, 1.5, 3].map((delay, i) => (
+                <motion.div
+                  key={`pulse-${i}`}
+                  className="absolute w-[140px] h-[140px] lg:w-[180px] lg:h-[180px] rounded-full border border-cyan-500/20"
+                  animate={{ scale: [1, 3], opacity: [0.3, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, delay, ease: "easeOut" }}
+                />
+              ))}
+            </motion.div>
+
+            {/* Right — Content */}
+            <motion.div
+              initial={{ opacity: 0, x: 60 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+              className="space-y-8 lg:pr-8"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
+                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  SmartDrive AI
+                </h1>
+                <p className="text-xl lg:text-2xl text-slate-300 leading-relaxed">
+                  An intelligent distraction filter that learns your driving patterns to keep you safe — without manual setup.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="flex flex-wrap gap-3"
+              >
+                {["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"].map((tag, index) => (
+                  <motion.div
+                    key={tag}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
+                    className="px-5 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white text-sm font-medium hover:bg-white/15 transition-colors duration-300"
+                  >
+                    {tag}
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.6 }}
+              >
+                <motion.button
+                  onClick={() => document.getElementById('overview')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white rounded-full text-slate-900 font-semibold text-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="relative z-10">Explore Design</span>
+                  <motion.div
+                    className="relative z-10"
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.div>
+                </motion.button>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.2, duration: 0.6 }}
+                className="flex items-center gap-3 text-slate-400 text-sm"
+              >
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <div className="w-[2px] h-6 bg-gradient-to-b from-transparent via-slate-400 to-transparent rounded-full" />
+                </motion.div>
+                <span>Scroll to explore</span>
+              </motion.div>
+            </motion.div>
           </div>
-        }
-        onExploreClick={() => {
-          document.getElementById('overview')?.scrollIntoView({ behavior: 'smooth' });
-        }}
-      />
+        </div>
+      </section>
 
       {/* ─── 01. Project Overview ─── */}
       <section id="overview" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
