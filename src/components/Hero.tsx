@@ -165,28 +165,29 @@ export function Hero() {
             animate={loaded ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
+            {/* Backdrop overlay when photo is expanded */}
+            <AnimatePresence>
+              {photoOpen && (
+                <motion.div
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  onMouseEnter={() => setPhotoOpen(false)}
+                />
+              )}
+            </AnimatePresence>
+
             {/* Portrait — cinematic hover expand */}
             <div
               className="relative group cursor-pointer"
               onMouseEnter={() => setPhotoOpen(true)}
-              onMouseLeave={() => setPhotoOpen(false)}
             >
-              {/* Backdrop overlay when expanded */}
-              <AnimatePresence>
-                {photoOpen && (
-                  <motion.div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                  />
-                )}
-              </AnimatePresence>
-
               {/* Photo container */}
               <motion.div
                 className="relative z-50 overflow-hidden"
+                onMouseLeave={() => setPhotoOpen(false)}
                 animate={photoOpen ? {
                   width: 280,
                   height: 340,
