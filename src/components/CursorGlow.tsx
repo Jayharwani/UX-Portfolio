@@ -10,6 +10,9 @@ export function CursorGlow() {
   const y = useSpring(mouseY, springConfig);
 
   useEffect(() => {
+    // Skip on touch/mobile devices
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);

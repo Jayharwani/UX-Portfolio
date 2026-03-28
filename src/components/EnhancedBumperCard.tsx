@@ -1,25 +1,49 @@
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export function EnhancedBumperCard() {
   const [savingsAmount, setSavingsAmount] = useState(1247);
   const [showPopup, setShowPopup] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowPopup(true), 800);
     return () => clearTimeout(timer);
   }, []);
 
+  // IntersectionObserver-gated savings interval
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSavingsAmount((prev) => {
-        const next = prev + 49;
-        return next > 1600 ? 1200 : next;
-      });
-    }, 3500);
-    return () => clearInterval(interval);
+    const el = cardRef.current;
+    if (!el) return;
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting && !interval) {
+          interval = setInterval(() => {
+            setSavingsAmount((prev) => {
+              const next = prev + 49;
+              return next > 1600 ? 1200 : next;
+            });
+          }, 3500);
+        } else if (!entry.isIntersecting && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const savingsProgress = (savingsAmount / 1800) * 100;
@@ -27,6 +51,7 @@ export function EnhancedBumperCard() {
   return (
     <Link to="/bumper" className="block">
       <div
+        ref={cardRef}
         className="relative overflow-hidden mx-auto rounded-[16px] md:rounded-[22px]"
         style={{
           width: '100%',
@@ -63,17 +88,16 @@ export function EnhancedBumperCard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
         >
-          {/* Pulsing Dot */}
-          <motion.div
+          {/* Pulsing Dot — CSS */}
+          <div
             className="rounded-full"
             style={{
               width: '6px',
               height: '6px',
               backgroundColor: '#14B8A6',
               filter: 'drop-shadow(0 0 6px #14B8A6)',
+              animation: 'pulse-dot 2.2s ease-in-out infinite',
             }}
-            animate={{ opacity: [1, 0.2, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
           <span
             style={{
@@ -109,24 +133,23 @@ export function EnhancedBumperCard() {
             transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           >
             <span style={{ color: '#FFFFFF' }}>Bump</span>
-            <motion.span
+            <span
               style={{
                 background: 'linear-gradient(120deg, #14B8A6 0%, #818CF8 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
                 backgroundSize: '200% 200%',
+                animation: 'gradient-shift 4s ease-in-out infinite',
               }}
-              animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
               er
-            </motion.span>
+            </span>
           </motion.h1>
 
           {/* Feature Pills */}
           <motion.div
-            className="flex items-center gap-2"
+            className="flex flex-wrap items-center gap-2"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.32, ease: 'easeOut' }}
@@ -217,22 +240,12 @@ export function EnhancedBumperCard() {
         </div>
 
         {/* Right Side - Floating Browser Extension Popup */}
-        <motion.div
+        <div
           className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[100px] lg:-translate-y-1/2"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-            y: [0, -12, 0],
-          }}
-          transition={{
-            opacity: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            scale: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            y: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
-          }}
+          style={{ animation: 'float-y 6s ease-in-out infinite' }}
         >
-          {/* Outer Glow */}
-          <motion.div
+          {/* Outer Glow — CSS pulse */}
+          <div
             className="absolute hidden lg:block"
             style={{
               top: '50%',
@@ -242,9 +255,8 @@ export function EnhancedBumperCard() {
               height: '420px',
               background: 'radial-gradient(circle, rgba(20,184,166,0.12) 0%, rgba(129,140,248,0.05) 50%, transparent 100%)',
               borderRadius: '50%',
+              animation: 'pulse-dot 5s ease-in-out infinite',
             }}
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           />
 
           {/* Extension Popup Card */}
@@ -260,15 +272,14 @@ export function EnhancedBumperCard() {
               boxShadow: '0 0 60px rgba(20,184,166,0.08), 0 20px 40px rgba(0,0,0,0.4)',
             }}
           >
-            {/* Gradient top bar */}
-            <motion.div
+            {/* Gradient top bar — CSS */}
+            <div
               style={{
                 height: '3px',
                 background: 'linear-gradient(90deg, #14B8A6, #818CF8, #14B8A6)',
                 backgroundSize: '200% 100%',
+                animation: 'gradient-shift 3s linear infinite',
               }}
-              animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
             />
 
             {/* Header */}
@@ -343,13 +354,22 @@ export function EnhancedBumperCard() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <motion.div
-                    style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(251,191,36,0.12)',
+                      border: '1px solid rgba(251,191,36,0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      animation: 'pulse-scale 2s ease-in-out infinite',
+                    }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-                  </motion.div>
+                  </div>
                   <div>
                     <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', fontWeight: 600, color: '#FBBF24' }}>
                       Trip to Jaipur 2026
@@ -409,7 +429,7 @@ export function EnhancedBumperCard() {
               >
                 Buy Anyway
               </div>
-              <motion.div
+              <div
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -420,23 +440,16 @@ export function EnhancedBumperCard() {
                   fontSize: '11px',
                   fontWeight: 600,
                   color: '#FFFFFF',
+                  animation: 'pulse-glow 2.5s ease-in-out infinite',
                 }}
-                animate={{
-                  boxShadow: [
-                    '0 0 0 0 rgba(20,184,166,0)',
-                    '0 0 20px 0 rgba(20,184,166,0.2)',
-                    '0 0 0 0 rgba(20,184,166,0)',
-                  ],
-                }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               >
                 Save Instead <svg width="10" height="10" viewBox="0 0 14 14" style={{ display: 'inline', verticalAlign: '-1px', marginLeft: '2px' }}><path d="M2 7L6 11L12 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-              </motion.div>
+              </div>
             </motion.div>
           </div>
 
-          {/* Small floating price tag */}
-          <motion.div
+          {/* Small floating price tag — CSS float-y */}
+          <div
             className="hidden lg:flex"
             style={{
               position: 'absolute',
@@ -451,18 +464,14 @@ export function EnhancedBumperCard() {
               fontWeight: 700,
               color: '#FF6B6B',
               zIndex: 2,
+              animation: 'float-y 4s ease-in-out infinite',
             }}
-            animate={{
-              y: [0, -6, 0],
-              rotate: [0, 3, -3, 0],
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           >
             $299
-          </motion.div>
+          </div>
 
-          {/* Small floating savings badge */}
-          <motion.div
+          {/* Small floating savings badge — CSS float-y */}
+          <div
             className="hidden lg:flex"
             style={{
               position: 'absolute',
@@ -477,15 +486,12 @@ export function EnhancedBumperCard() {
               fontWeight: 600,
               color: '#14B8A6',
               zIndex: 2,
+              animation: 'float-y 5s ease-in-out 1s infinite',
             }}
-            animate={{
-              y: [0, -8, 0],
-            }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           >
             <svg width="10" height="10" viewBox="0 0 14 14" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '3px' }}><path d="M2 7L6 11L12 3" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>+$299 saved
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
         </div>{/* end content+visual layout */}
       </div>
     </Link>

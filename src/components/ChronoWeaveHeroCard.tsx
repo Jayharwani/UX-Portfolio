@@ -1,16 +1,40 @@
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function ChronoWeaveHeroCard() {
   const [time, setTime] = useState(new Date());
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(false);
 
+  // IntersectionObserver-gated clock interval
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
+    const el = cardRef.current;
+    if (!el) return;
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting && !interval) {
+          interval = setInterval(() => {
+            setTime(new Date());
+          }, 1000);
+        } else if (!entry.isIntersecting && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const seconds = time.getSeconds();
@@ -29,7 +53,7 @@ export function ChronoWeaveHeroCard() {
     const isMajor = i % 3 === 0; // Major ticks at 12, 3, 6, 9
     const innerRadius = isMajor ? clockRadius * 0.74 : clockRadius * 0.82;
     const outerRadius = clockRadius * 0.9;
-    
+
     return {
       x1: clockRadius + Math.cos(angle) * innerRadius,
       y1: clockRadius + Math.sin(angle) * innerRadius,
@@ -39,21 +63,21 @@ export function ChronoWeaveHeroCard() {
     };
   });
 
-  // Generate pie zones (3 zones at 120° each)
+  // Generate pie zones (3 zones at 120 each)
   const createPieZone = (startAngle: number, color: string) => {
     const endAngle = startAngle + 120;
     const innerRadius = clockRadius * 0.86;
-    
+
     const startRad = (startAngle - 90) * (Math.PI / 180);
     const endRad = (endAngle - 90) * (Math.PI / 180);
-    
+
     const x1 = clockRadius + Math.cos(startRad) * innerRadius;
     const y1 = clockRadius + Math.sin(startRad) * innerRadius;
     const x2 = clockRadius + Math.cos(endRad) * innerRadius;
     const y2 = clockRadius + Math.sin(endRad) * innerRadius;
-    
-    const largeArc = 0; // 120° is less than 180°
-    
+
+    const largeArc = 0; // 120 is less than 180
+
     return {
       d: `M ${clockRadius} ${clockRadius} L ${x1} ${y1} A ${innerRadius} ${innerRadius} 0 ${largeArc} 1 ${x2} ${y2} Z`,
       color,
@@ -61,14 +85,15 @@ export function ChronoWeaveHeroCard() {
   };
 
   const pieZones = [
-    createPieZone(0, 'rgba(45,212,191,0.16)'),    // Teal (12→4)
-    createPieZone(120, 'rgba(167,139,250,0.16)'), // Purple (4→8)
-    createPieZone(240, 'rgba(251,191,36,0.16)'),  // Amber (8→12)
+    createPieZone(0, 'rgba(45,212,191,0.16)'),    // Teal (12-4)
+    createPieZone(120, 'rgba(167,139,250,0.16)'), // Purple (4-8)
+    createPieZone(240, 'rgba(251,191,36,0.16)'),  // Amber (8-12)
   ];
 
   return (
     <Link to="/chronoweave" className="block">
       <div
+        ref={cardRef}
         className="relative overflow-hidden mx-auto rounded-[16px] md:rounded-[22px]"
         style={{
           width: '100%',
@@ -105,22 +130,15 @@ export function ChronoWeaveHeroCard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
         >
-          {/* Pulsing Dot */}
-          <motion.div
+          {/* Pulsing Dot — CSS */}
+          <div
             className="rounded-full"
             style={{
               width: '6px',
               height: '6px',
               backgroundColor: '#2DD4BF',
               filter: 'drop-shadow(0 0 6px #2DD4BF)',
-            }}
-            animate={{
-              opacity: [1, 0.2, 1],
-            }}
-            transition={{
-              duration: 2.2,
-              repeat: Infinity,
-              ease: 'easeInOut',
+              animation: 'pulse-dot 2.2s ease-in-out infinite',
             }}
           />
           <span
@@ -157,30 +175,23 @@ export function ChronoWeaveHeroCard() {
             transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           >
             <span style={{ color: '#FFFFFF' }}>Chrono</span>
-            <motion.span
+            <span
               style={{
                 background: 'linear-gradient(120deg, #C4B5FD 0%, #2DD4BF 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
                 backgroundSize: '200% 200%',
-              }}
-              animate={{
-                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
+                animation: 'gradient-shift 4s ease-in-out infinite',
               }}
             >
               Weave
-            </motion.span>
+            </span>
           </motion.h1>
 
           {/* Feature Pills */}
           <motion.div
-            className="flex items-center gap-2"
+            className="flex flex-wrap items-center gap-2"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.32, ease: 'easeOut' }}
@@ -271,26 +282,12 @@ export function ChronoWeaveHeroCard() {
         </div>
 
         {/* Right Side - Floating Clock */}
-        <motion.div
+        <div
           className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[120px] lg:-translate-y-1/2"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
-            opacity: 1, 
-            scale: 1,
-            y: [0, -12, 0],
-          }}
-          transition={{
-            opacity: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            scale: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            y: {
-              duration: 6,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            },
-          }}
+          style={{ animation: 'float-y 6s ease-in-out infinite' }}
         >
-          {/* Outer Glow */}
-          <motion.div
+          {/* Outer Glow — CSS pulse */}
+          <div
             className="absolute hidden lg:block"
             style={{
               top: '50%',
@@ -300,14 +297,7 @@ export function ChronoWeaveHeroCard() {
               height: '364px',
               background: 'radial-gradient(circle, rgba(140,100,255,0.18) 0%, rgba(45,212,191,0.06) 50%, transparent 100%)',
               borderRadius: '50%',
-            }}
-            animate={{
-              opacity: [1, 0.5, 1],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: 'easeInOut',
+              animation: 'pulse-dot 5s ease-in-out infinite',
             }}
           />
 
@@ -407,7 +397,7 @@ export function ChronoWeaveHeroCard() {
               filter="drop-shadow(0 0 14px #2DD4BF)"
             />
           </svg>
-        </motion.div>
+        </div>
         </div>{/* end content+visual layout */}
       </div>
     </Link>

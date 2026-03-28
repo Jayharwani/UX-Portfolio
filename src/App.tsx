@@ -5,23 +5,20 @@ import { BumperCasePage } from "./components/BumperCasePage";
 import { ChronoWeavePage } from "./components/ChronoWeavePage";
 import { AboutPage } from "./components/AboutPage";
 import { ScrollToTop } from "./components/ScrollToTop";
-import { ThemeProvider } from "./components/ThemeContext";
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen antialiased" style={{ backgroundColor: '#0A0A0A' }}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/smartdrive" element={<SmartDrivePage />} />
-            <Route path="/bumper" element={<BumperCasePage />} />
-            <Route path="/chronoweave" element={<ChronoWeavePage />} />
-            <Route path="/about" element={<AboutPage />} />
-          </Routes>
-        </div>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <ScrollToTop />
+      <div className="min-h-screen antialiased" style={{ backgroundColor: '#0A0A0A' }}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/smartdrive" element={<SmartDrivePage />} />
+          <Route path="/bumper" element={<BumperCasePage />} />
+          <Route path="/chronoweave" element={<ChronoWeavePage />} />
+          <Route path="/about" element={<AboutPage />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }

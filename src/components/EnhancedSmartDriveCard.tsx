@@ -43,17 +43,16 @@ export function EnhancedSmartDriveCard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
         >
-          {/* Pulsing Dot */}
-          <motion.div
+          {/* Pulsing Dot — CSS animation */}
+          <div
             className="rounded-full"
             style={{
               width: '6px',
               height: '6px',
               backgroundColor: '#00D48A',
               filter: 'drop-shadow(0 0 6px #00D48A)',
+              animation: 'pulse-dot 2.2s ease-in-out infinite',
             }}
-            animate={{ opacity: [1, 0.2, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
           <span
             style={{
@@ -89,24 +88,23 @@ export function EnhancedSmartDriveCard() {
             transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           >
             <span style={{ color: '#FFFFFF' }}>Smart</span>
-            <motion.span
+            <span
               style={{
                 background: 'linear-gradient(120deg, #00D48A 0%, #38BDF8 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
                 backgroundSize: '200% 200%',
+                animation: 'gradient-shift 4s ease-in-out infinite',
               }}
-              animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
               Drive
-            </motion.span>
+            </span>
           </motion.h1>
 
           {/* Feature Pills */}
           <motion.div
-            className="flex items-center gap-2"
+            className="flex flex-wrap items-center gap-2"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.32, ease: 'easeOut' }}
@@ -203,71 +201,69 @@ export function EnhancedSmartDriveCard() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
-          {/* Central Shield */}
-          <motion.div
+          {/* Central Shield — CSS rotation */}
+          <div
             className="relative z-10 w-[100px] h-[100px] lg:w-[130px] lg:h-[130px] flex items-center justify-center"
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            style={{ animation: 'spin-slow 60s linear infinite' }}
           >
             <div className="absolute inset-0 rounded-full border border-cyan-500/20" />
             <div className="absolute inset-2 rounded-full border border-cyan-500/10" />
-          </motion.div>
+          </div>
 
-          {/* Static inner icon */}
+          {/* Static inner icon — CSS glow pulse */}
           <div className="absolute z-20 flex flex-col items-center gap-1.5">
-            <motion.div
+            <div
               className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center backdrop-blur-sm"
-              animate={{ boxShadow: ["0 0 20px rgba(6,182,212,0.15)", "0 0 40px rgba(6,182,212,0.3)", "0 0 20px rgba(6,182,212,0.15)"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              style={{ animation: 'pulse-glow 3s ease-in-out infinite' }}
             >
               <Shield className="w-6 h-6 lg:w-7 lg:h-7 text-cyan-400" />
-            </motion.div>
+            </div>
             <span className="text-[8px] lg:text-[9px] text-cyan-400/80 font-medium tracking-widest uppercase">AI Filter</span>
           </div>
 
-          {/* Orbiting ring 1 with car */}
-          <motion.div
+          {/* Orbiting ring 1 with car — CSS rotation */}
+          <div
             className="absolute w-[200px] h-[200px] lg:w-[260px] lg:h-[260px]"
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            style={{ animation: 'spin-slow 30s linear infinite' }}
           >
             <div className="absolute inset-0 rounded-full border border-dashed border-slate-700/40" />
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <motion.div animate={{ rotate: [0, -360] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}>
+              <div style={{ animation: 'spin-slow-reverse 30s linear infinite' }}>
                 <div className="w-6 h-6 rounded-full bg-slate-900/80 border border-cyan-500/25 flex items-center justify-center backdrop-blur-sm">
                   <Car className="w-3 h-3 text-cyan-400/50" />
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Orbiting ring 2 with car */}
-          <motion.div
+          {/* Orbiting ring 2 with car — CSS rotation */}
+          <div
             className="absolute w-[280px] h-[280px] lg:w-[350px] lg:h-[350px]"
-            animate={{ rotate: [360, 0] }}
-            transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+            style={{ animation: 'spin-slow-reverse 45s linear infinite' }}
           >
             <div className="absolute inset-0 rounded-full border border-slate-800/30" />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-              <motion.div animate={{ rotate: [360, 0] }} transition={{ duration: 45, repeat: Infinity, ease: "linear" }}>
+              <div style={{ animation: 'spin-slow 45s linear infinite' }}>
                 <div className="w-5 h-5 rounded-full bg-slate-900/60 border border-slate-600/20 flex items-center justify-center backdrop-blur-sm">
                   <Car className="w-2.5 h-2.5 text-slate-500/40" />
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Floating allowed notifications */}
+          {/* Floating allowed notifications — CSS fade-float (hidden on small screens) */}
           {[
             { x: -90, y: -80, delay: 0, icon: PhoneCall, label: "Mom calling" },
             { x: 80, y: 60, delay: 1.5, icon: AlertTriangle, label: "Road alert" },
           ].map((notif, i) => (
-            <motion.div
+            <div
               key={`a-${i}`}
-              className="absolute z-30"
-              style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
-              animate={{ opacity: [0, 1, 1, 0], scale: [0.8, 1, 1, 0.8], y: [8, 0, 0, -8] }}
-              transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+              className="absolute z-30 hidden sm:block"
+              style={{
+                left: `calc(50% + ${notif.x}px)`,
+                top: `calc(50% + ${notif.y}px)`,
+                animation: `fade-float 5s ease-in-out ${notif.delay}s infinite`,
+              }}
             >
               <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
                 <div className="w-4 h-4 rounded bg-emerald-500/20 flex items-center justify-center">
@@ -276,20 +272,22 @@ export function EnhancedSmartDriveCard() {
                 <p className="text-[8px] text-emerald-300 font-medium">{notif.label}</p>
                 <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
               </div>
-            </motion.div>
+            </div>
           ))}
 
-          {/* Floating blocked notifications */}
+          {/* Floating blocked notifications — CSS fade-float-muted (hidden on small screens) */}
           {[
             { x: 90, y: -60, delay: 0.8, icon: MessageSquare, label: "Social media" },
             { x: -80, y: 50, delay: 2.5, icon: Bell, label: "Game update" },
           ].map((notif, i) => (
-            <motion.div
+            <div
               key={`b-${i}`}
-              className="absolute z-30"
-              style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
-              animate={{ opacity: [0, 0.6, 0.6, 0], scale: [0.8, 1, 1, 0.8], y: [8, 0, 0, -8] }}
-              transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+              className="absolute z-30 hidden sm:block"
+              style={{
+                left: `calc(50% + ${notif.x}px)`,
+                top: `calc(50% + ${notif.y}px)`,
+                animation: `fade-float-muted 5s ease-in-out ${notif.delay}s infinite`,
+              }}
             >
               <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-500/5 border border-red-500/15 backdrop-blur-sm opacity-60">
                 <div className="w-4 h-4 rounded bg-red-500/10 flex items-center justify-center">
@@ -298,16 +296,15 @@ export function EnhancedSmartDriveCard() {
                 <p className="text-[8px] text-red-300/60 font-medium line-through">{notif.label}</p>
                 <XCircle className="w-2.5 h-2.5 text-red-400/50" />
               </div>
-            </motion.div>
+            </div>
           ))}
 
-          {/* Pulse rings */}
+          {/* Pulse rings — CSS pulse-ring */}
           {[0, 1.5, 3].map((delay, i) => (
-            <motion.div
+            <div
               key={`p-${i}`}
               className="absolute w-[100px] h-[100px] lg:w-[130px] lg:h-[130px] rounded-full border border-cyan-500/15"
-              animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
-              transition={{ duration: 4, repeat: Infinity, delay, ease: "easeOut" }}
+              style={{ animation: `pulse-ring 4s ease-out ${delay}s infinite` }}
             />
           ))}
         </motion.div>

@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
 import { Menu, X, ArrowDown } from "lucide-react";
 import userPhoto from "../assets/hero-portrait.jpeg";
-import { ThemeToggle } from "./ThemeToggle";
 
 const roles = ["UX Researcher", "Product Designer", "Interaction Designer", "Design Thinker"];
 
@@ -12,6 +11,7 @@ export function Hero() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   // Mouse tracking for interactive gradient
@@ -29,6 +29,7 @@ export function Hero() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 100);
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
     return () => clearTimeout(timer);
   }, []);
 
@@ -40,6 +41,7 @@ export function Hero() {
   }, []);
 
   useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (!heroRef.current) return;
       const rect = heroRef.current.getBoundingClientRect();
@@ -119,11 +121,9 @@ export function Hero() {
               >
                 Resume
               </a>
-              <ThemeToggle />
             </nav>
 
             <div className="md:hidden flex items-center gap-3">
-              <ThemeToggle />
               <button className="p-2 -mr-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
               {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
             </button>
@@ -175,6 +175,7 @@ export function Hero() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
                   onMouseEnter={() => setPhotoOpen(false)}
+                  onClick={() => setPhotoOpen(false)}
                 />
               )}
             </AnimatePresence>
@@ -182,7 +183,8 @@ export function Hero() {
             {/* Portrait — cinematic hover expand */}
             <div
               className="relative group cursor-pointer"
-              onMouseEnter={() => setPhotoOpen(true)}
+              onMouseEnter={() => !isTouchDevice && setPhotoOpen(true)}
+              onClick={() => isTouchDevice && setPhotoOpen(!photoOpen)}
             >
               {/* Photo container */}
               <motion.div
@@ -268,11 +270,12 @@ export function Hero() {
                 animate={{ opacity: photoOpen ? 0 : 1, scale: photoOpen ? 0 : 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <motion.div
+                <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: '#2DD4BF' }}
-                  animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    backgroundColor: '#2DD4BF',
+                    animation: 'pulse-scale 2s ease-in-out infinite',
+                  }}
                 />
               </motion.div>
             </div>
@@ -421,27 +424,30 @@ export function Hero() {
           animate={loaded ? { opacity: 1 } : {}}
           transition={{ delay: 1.8 }}
         >
-          <motion.div
+          <div
             className="w-[1px] h-12"
-            style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)' }}
-            animate={{ scaleY: [0.5, 1, 0.5], opacity: [0.3, 0.7, 0.3] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)',
+              animation: 'scroll-bounce 2.5s ease-in-out infinite',
+            }}
           />
         </motion.div>
       </div>
 
-      {/* Ambient orbs */}
-      <motion.div
+      {/* Ambient orbs — CSS */}
+      <div
         className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)' }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          background: 'radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)',
+          animation: 'ambient-pulse 8s ease-in-out infinite',
+        }}
       />
-      <motion.div
+      <div
         className="absolute bottom-[10%] left-[5%] w-[350px] h-[350px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%)' }}
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        style={{
+          background: 'radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%)',
+          animation: 'ambient-pulse 10s ease-in-out 2s infinite',
+        }}
       />
     </section>
   );

@@ -110,7 +110,7 @@ export function CaseStudies() {
     <section
       ref={sectionRef}
       id="case-studies"
-      className="relative py-32 overflow-hidden"
+      className="relative py-16 sm:py-24 md:py-32 overflow-hidden"
       style={{ backgroundColor: '#0A0A0A' }}
     >
       {/* Ambient background effects */}
@@ -157,9 +157,9 @@ export function CaseStudies() {
         />
       </div>
 
-      <div className="container mx-auto px-6 max-w-7xl relative">
+      <div className="container mx-auto px-4 sm:px-6 max-w-7xl relative">
         {/* Section Header */}
-        <div className="text-center mb-24 space-y-6">
+        <div className="text-center mb-12 sm:mb-16 md:mb-24 space-y-4 sm:space-y-6">
           <motion.div
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mb-6 backdrop-blur-sm"
             style={{
@@ -185,9 +185,9 @@ export function CaseStudies() {
           </motion.div>
 
           <motion.h2
+            className="text-[32px] sm:text-[42px] md:text-[52px]"
             style={{
               fontFamily: 'Syne, sans-serif',
-              fontSize: '52px',
               fontWeight: 800,
               letterSpacing: '-1.5px',
               color: '#FFFFFF',
