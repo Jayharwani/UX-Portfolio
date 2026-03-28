@@ -299,7 +299,7 @@ export function Hero() {
               initial={{ y: '110%' }}
               animate={loaded ? { y: '0%' } : {}}
               transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
+              className="text-[11vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif' }}
             >
               <span
@@ -321,7 +321,7 @@ export function Hero() {
               initial={{ y: '110%' }}
               animate={loaded ? { y: '0%' } : {}}
               transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
+              className="text-[11vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif', color: '#FFFFFF' }}
             >
               Moments{' '}
@@ -334,7 +334,7 @@ export function Hero() {
               initial={{ y: '110%' }}
               animate={loaded ? { y: '0%' } : {}}
               transition={{ duration: 1, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
+              className="text-[11vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif', color: 'rgba(255,255,255,0.2)' }}
             >
               the clicks<span style={{ color: '#2DD4BF' }}>.</span>
