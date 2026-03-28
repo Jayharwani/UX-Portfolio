@@ -1,48 +1,8 @@
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { ArrowRight, Shield, PhoneCall, AlertTriangle, Car, MessageSquare, Bell, BellRing, CheckCircle, XCircle } from "lucide-react";
 import { Link } from "react-router";
-import { useState, useEffect } from "react";
-
-// SVG icon components for notifications
-const NotifIcon = ({ type }: { type: string }) => {
-  const icons: Record<string, JSX.Element> = {
-    message: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,140,150,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-    camera: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,140,150,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-    map: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00D48A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-    music: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,140,150,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
-    phone: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00D48A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
-    bell: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,140,150,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  };
-  return icons[type] || icons.bell;
-};
-
-// Notification data for the animated phone
-const notifications = [
-  { id: 1, type: 'blocked', iconType: 'message', app: 'iMessage', color: '#FF4757' },
-  { id: 2, type: 'blocked', iconType: 'camera', app: 'Instagram', color: '#FF4757' },
-  { id: 3, type: 'allowed', iconType: 'map', app: 'Maps', color: '#00D48A' },
-  { id: 4, type: 'blocked', iconType: 'music', app: 'Spotify', color: '#FF4757' },
-  { id: 5, type: 'allowed', iconType: 'phone', app: 'Mom', color: '#00D48A' },
-  { id: 6, type: 'blocked', iconType: 'bell', app: 'Twitter', color: '#FF4757' },
-];
 
 export function EnhancedSmartDriveCard() {
-  const [currentNotif, setCurrentNotif] = useState(0);
-  const [showNotif, setShowNotif] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowNotif(false);
-      setTimeout(() => {
-        setCurrentNotif((prev) => (prev + 1) % notifications.length);
-        setShowNotif(true);
-      }, 600);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, []);
-
-  const notif = notifications[currentNotif];
-  const isAllowed = notif.type === 'allowed';
 
   return (
     <Link to="/smartdrive" className="block">
@@ -236,266 +196,120 @@ export function EnhancedSmartDriveCard() {
           </motion.button>
         </div>
 
-        {/* Right Side - Floating Phone with Notification Filtering */}
+        {/* Right Side — AI Filter Orbital Animation */}
         <motion.div
-          className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[120px] lg:-translate-y-1/2"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-            y: [0, -12, 0],
-          }}
-          transition={{
-            opacity: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            scale: { duration: 0.6, delay: 0.4, ease: 'easeOut' },
-            y: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
-          }}
+          className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[80px] lg:-translate-y-1/2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
         >
-          {/* Outer Glow */}
+          {/* Central Shield */}
           <motion.div
-            className="absolute hidden lg:block"
-            style={{
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '340px',
-              height: '440px',
-              background: 'radial-gradient(circle, rgba(0,212,138,0.15) 0%, rgba(56,189,248,0.05) 50%, transparent 100%)',
-              borderRadius: '50%',
-            }}
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-          />
-
-          {/* Phone Frame */}
-          <div
-            className="w-[180px] h-[340px] sm:w-[200px] sm:h-[380px] lg:w-[220px] lg:h-[420px]"
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              borderRadius: '32px',
-              background: 'rgba(10,8,26,0.92)',
-              border: '1.5px solid rgba(255,255,255,0.10)',
-              overflow: 'hidden',
-              boxShadow: '0 0 60px rgba(0,212,138,0.08), 0 20px 40px rgba(0,0,0,0.4)',
-            }}
+            className="relative z-10 w-[100px] h-[100px] lg:w-[130px] lg:h-[130px] flex items-center justify-center"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           >
-            {/* Status Bar */}
-            <div
-              style={{
-                padding: '12px 16px 8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
+            <div className="absolute inset-0 rounded-full border border-cyan-500/20" />
+            <div className="absolute inset-2 rounded-full border border-cyan-500/10" />
+          </motion.div>
+
+          {/* Static inner icon */}
+          <div className="absolute z-20 flex flex-col items-center gap-1.5">
+            <motion.div
+              className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center backdrop-blur-sm"
+              animate={{ boxShadow: ["0 0 20px rgba(6,182,212,0.15)", "0 0 40px rgba(6,182,212,0.3)", "0 0 20px rgba(6,182,212,0.15)"] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
-              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>
-                9:41
-              </span>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <div style={{ width: '12px', height: '7px', borderRadius: '2px', border: '1px solid rgba(255,255,255,0.3)' }}>
-                  <div style={{ width: '8px', height: '5px', borderRadius: '1px', backgroundColor: '#00D48A', margin: '0.5px' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Notch */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '0',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '80px',
-                height: '24px',
-                backgroundColor: '#000',
-                borderRadius: '0 0 16px 16px',
-              }}
-            />
-
-            {/* SmartDrive Header */}
-            <div style={{ padding: '20px 16px 12px', textAlign: 'center' }}>
-              <div style={{
-                fontFamily: 'Syne, sans-serif',
-                fontSize: '16px',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                marginBottom: '4px',
-              }}>
-                SmartDrive
-              </div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 10px',
-                borderRadius: '100px',
-                backgroundColor: 'rgba(0,212,138,0.12)',
-                border: '1px solid rgba(0,212,138,0.25)',
-              }}>
-                <motion.div
-                  style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: '#00D48A',
-                  }}
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                />
-                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', fontWeight: 600, color: '#00D48A' }}>
-                  Drive Mode Active
-                </span>
-              </div>
-            </div>
-
-            {/* Notification Feed */}
-            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <AnimatePresence mode="wait">
-                {showNotif && (
-                  <motion.div
-                    key={notif.id}
-                    initial={{ x: 60, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={isAllowed ? { y: -20, opacity: 0 } : { x: -100, opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: '12px',
-                      backgroundColor: isAllowed ? 'rgba(0,212,138,0.10)' : 'rgba(255,71,87,0.08)',
-                      border: `1px solid ${isAllowed ? 'rgba(0,212,138,0.25)' : 'rgba(255,71,87,0.20)'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><NotifIcon type={notif.iconType} /></div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: isAllowed ? '#00D48A' : 'rgba(255,140,150,0.9)',
-                      }}>
-                        {notif.app}
-                      </div>
-                      <div style={{
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '9px',
-                        fontWeight: 500,
-                        color: 'rgba(255,255,255,0.4)',
-                        marginTop: '1px',
-                      }}>
-                        {isAllowed ? 'Allowed through' : 'Blocked by AI'}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        backgroundColor: isAllowed ? 'rgba(0,212,138,0.15)' : 'rgba(255,71,87,0.12)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {isAllowed ? (
-                        <svg width="10" height="10" viewBox="0 0 14 14">
-                          <path d="M2 7L6 11L12 3" stroke="#00D48A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                        </svg>
-                      ) : (
-                        <svg width="10" height="10" viewBox="0 0 14 14">
-                          <path d="M3 3L11 11M11 3L3 11" stroke="rgba(255,71,87,0.8)" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Stats Row */}
-              <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                <div style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: 800, color: '#FF4757' }}>12</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>Blocked</div>
-                </div>
-                <div style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: 800, color: '#00D48A' }}>3</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>Allowed</div>
-                </div>
-                <div style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: 800, color: '#38BDF8' }}>24m</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>Focused</div>
-                </div>
-              </div>
-
-              {/* AI Confidence Bar */}
-              <div style={{ marginTop: '4px' }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: '4px',
-                }}>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>AI Confidence</span>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '9px', color: '#00D48A', fontWeight: 600 }}>94%</span>
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: '4px',
-                  borderRadius: '2px',
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  overflow: 'hidden',
-                }}>
-                  <motion.div
-                    style={{
-                      height: '100%',
-                      borderRadius: '2px',
-                      background: 'linear-gradient(90deg, #00D48A, #38BDF8)',
-                    }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '94%' }}
-                    transition={{ duration: 1.5, delay: 0.8, ease: 'easeOut' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Home Indicator */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '8px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '100px',
-                height: '4px',
-                borderRadius: '2px',
-                backgroundColor: 'rgba(255,255,255,0.15)',
-              }}
-            />
+              <Shield className="w-6 h-6 lg:w-7 lg:h-7 text-cyan-400" />
+            </motion.div>
+            <span className="text-[8px] lg:text-[9px] text-cyan-400/80 font-medium tracking-widest uppercase">AI Filter</span>
           </div>
+
+          {/* Orbiting ring 1 with car */}
+          <motion.div
+            className="absolute w-[200px] h-[200px] lg:w-[260px] lg:h-[260px]"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="absolute inset-0 rounded-full border border-dashed border-slate-700/40" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <motion.div animate={{ rotate: [0, -360] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}>
+                <div className="w-6 h-6 rounded-full bg-slate-900/80 border border-cyan-500/25 flex items-center justify-center backdrop-blur-sm">
+                  <Car className="w-3 h-3 text-cyan-400/50" />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Orbiting ring 2 with car */}
+          <motion.div
+            className="absolute w-[280px] h-[280px] lg:w-[350px] lg:h-[350px]"
+            animate={{ rotate: [360, 0] }}
+            transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="absolute inset-0 rounded-full border border-slate-800/30" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+              <motion.div animate={{ rotate: [360, 0] }} transition={{ duration: 45, repeat: Infinity, ease: "linear" }}>
+                <div className="w-5 h-5 rounded-full bg-slate-900/60 border border-slate-600/20 flex items-center justify-center backdrop-blur-sm">
+                  <Car className="w-2.5 h-2.5 text-slate-500/40" />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Floating allowed notifications */}
+          {[
+            { x: -90, y: -80, delay: 0, icon: PhoneCall, label: "Mom calling" },
+            { x: 80, y: 60, delay: 1.5, icon: AlertTriangle, label: "Road alert" },
+          ].map((notif, i) => (
+            <motion.div
+              key={`a-${i}`}
+              className="absolute z-30"
+              style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
+              animate={{ opacity: [0, 1, 1, 0], scale: [0.8, 1, 1, 0.8], y: [8, 0, 0, -8] }}
+              transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+            >
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
+                <div className="w-4 h-4 rounded bg-emerald-500/20 flex items-center justify-center">
+                  <notif.icon className="w-2.5 h-2.5 text-emerald-400" />
+                </div>
+                <p className="text-[8px] text-emerald-300 font-medium">{notif.label}</p>
+                <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
+              </div>
+            </motion.div>
+          ))}
+
+          {/* Floating blocked notifications */}
+          {[
+            { x: 90, y: -60, delay: 0.8, icon: MessageSquare, label: "Social media" },
+            { x: -80, y: 50, delay: 2.5, icon: Bell, label: "Game update" },
+          ].map((notif, i) => (
+            <motion.div
+              key={`b-${i}`}
+              className="absolute z-30"
+              style={{ left: `calc(50% + ${notif.x}px)`, top: `calc(50% + ${notif.y}px)` }}
+              animate={{ opacity: [0, 0.6, 0.6, 0], scale: [0.8, 1, 1, 0.8], y: [8, 0, 0, -8] }}
+              transition={{ duration: 5, repeat: Infinity, delay: notif.delay, ease: "easeInOut" }}
+            >
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-500/5 border border-red-500/15 backdrop-blur-sm opacity-60">
+                <div className="w-4 h-4 rounded bg-red-500/10 flex items-center justify-center">
+                  <notif.icon className="w-2.5 h-2.5 text-red-400/60" />
+                </div>
+                <p className="text-[8px] text-red-300/60 font-medium line-through">{notif.label}</p>
+                <XCircle className="w-2.5 h-2.5 text-red-400/50" />
+              </div>
+            </motion.div>
+          ))}
+
+          {/* Pulse rings */}
+          {[0, 1.5, 3].map((delay, i) => (
+            <motion.div
+              key={`p-${i}`}
+              className="absolute w-[100px] h-[100px] lg:w-[130px] lg:h-[130px] rounded-full border border-cyan-500/15"
+              animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
+              transition={{ duration: 4, repeat: Infinity, delay, ease: "easeOut" }}
+            />
+          ))}
         </motion.div>
         </div>{/* end content+visual layout */}
       </div>
