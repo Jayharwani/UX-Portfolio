@@ -172,7 +172,7 @@ export function SmartDrivePage() {
         subtitle="An intelligent distraction filter that learns your driving patterns to keep you safe — without manual setup."
         tags={["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"]}
         phoneContent={
-          <div className="w-[390px] h-[844px] origin-top-left" style={{ transform: `scale(${340 / 390})` }}>
+          <div className="w-[390px] h-[844px] origin-top-left" style={{ transform: `scale(${340 / 360})` }}>
             <HiFiScreen5 />
           </div>
         }
@@ -892,30 +892,30 @@ export function SmartDrivePage() {
                   {/* Phone frame with fixed inner dimensions scaled to fit */}
                   <div className="w-full max-w-[280px] sm:max-w-[320px] mx-auto">
                     <div
-                      className="relative bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] border-4 sm:border-[6px] border-slate-800 overflow-hidden shadow-2xl mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700"
-                      style={{ aspectRatio: '390 / 844' }}
+                      className="relative bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-[3px] sm:p-1 border-2 sm:border-[3px] border-slate-800 overflow-hidden shadow-2xl mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700"
                     >
-                      {/* Fixed-size inner container scaled to fill the phone frame */}
-                      <div className="absolute inset-0 overflow-hidden">
-                        <div
-                          className="origin-top-left w-[390px] h-[844px]"
-                          style={{ transform: 'scale(var(--screen-scale))' }}
-                          ref={(el) => {
-                            if (el) {
-                              const updateScale = () => {
-                                const parent = el.parentElement;
-                                if (parent) {
-                                  const scale = parent.clientWidth / 390;
-                                  el.style.setProperty('--screen-scale', String(scale));
-                                }
-                              };
-                              updateScale();
-                              const observer = new ResizeObserver(updateScale);
-                              observer.observe(el.parentElement!);
-                            }
-                          }}
-                        >
-                          <screen.component />
+                      <div className="relative overflow-hidden rounded-[2.25rem] sm:rounded-[2.75rem]" style={{ aspectRatio: '390 / 844' }}>
+                        <div className="absolute inset-0 overflow-hidden">
+                          <div
+                            className="origin-top-left w-[390px] h-[844px]"
+                            style={{ transform: 'scale(var(--screen-scale))' }}
+                            ref={(el) => {
+                              if (el) {
+                                const updateScale = () => {
+                                  const parent = el.parentElement;
+                                  if (parent) {
+                                    const scale = parent.clientWidth / 360;
+                                    el.style.setProperty('--screen-scale', String(scale));
+                                  }
+                                };
+                                updateScale();
+                                const observer = new ResizeObserver(updateScale);
+                                observer.observe(el.parentElement!);
+                              }
+                            }}
+                          >
+                            <screen.component />
+                          </div>
                         </div>
                       </div>
                     </div>

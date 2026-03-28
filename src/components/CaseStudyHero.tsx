@@ -102,17 +102,17 @@ export function CaseStudyHero({
               transition={{ duration: 0.3 }}
             >
               {/* Phone Frame with Soft Shadow */}
-              <div 
-                className="relative bg-slate-900 rounded-[3.5rem] p-3 border-[3px] border-slate-800"
+              <div
+                className="relative bg-slate-900 rounded-[3rem] p-[6px] border-[3px] border-slate-800"
                 style={{
                   boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 80px rgba(6, 182, 212, 0.15)'
                 }}
               >
                 {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-slate-900 rounded-b-3xl z-20" />
-                
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-20" />
+
                 {/* Screen */}
-                <div className="relative bg-black rounded-[3rem] overflow-hidden aspect-[9/19.5] w-[340px]">
+                <div className="relative bg-black rounded-[2.75rem] overflow-hidden" style={{ aspectRatio: '390 / 844', width: '340px' }}>
                   {/* Content */}
                   <div className="w-full h-full">
                     {phoneContent}
