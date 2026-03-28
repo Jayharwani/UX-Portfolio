@@ -3,7 +3,7 @@ import { Footer } from "./Footer";
 import { motion, useInView } from "motion/react";
 import { Sparkles, ExternalLink, Code, Palette, BarChart3 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
-import userPhoto from "../assets/hero-portrait.png";
+import userPhoto from "../assets/hero-portrait.jpeg";
 
 export function AboutPage() {
   // Intersection Observer refs for performance

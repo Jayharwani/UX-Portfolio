@@ -2,7 +2,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
 import { Menu, X, ArrowDown } from "lucide-react";
-import userPhoto from "../assets/hero-portrait.png";
+import userPhoto from "../assets/hero-portrait.jpeg";
 import { ThemeToggle } from "./ThemeToggle";
 
 const roles = ["UX Researcher", "Product Designer", "Interaction Designer", "Design Thinker"];
@@ -11,6 +11,7 @@ export function Hero() {
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   // Mouse tracking for interactive gradient
@@ -164,20 +165,115 @@ export function Hero() {
             animate={loaded ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            {/* Portrait Circle */}
-            <div className="relative">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-2 ring-white/10 ring-offset-2 ring-offset-black">
-                <img src={userPhoto} alt="Jay Harwani" className="w-full h-full object-cover" style={{ objectPosition: 'center 20%' }} />
-              </div>
-              {/* Online indicator */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#0A0A0A] flex items-center justify-center">
+            {/* Portrait — cinematic hover expand */}
+            <div
+              className="relative group cursor-pointer"
+              onMouseEnter={() => setPhotoOpen(true)}
+              onMouseLeave={() => setPhotoOpen(false)}
+            >
+              {/* Backdrop overlay when expanded */}
+              <AnimatePresence>
+                {photoOpen && (
+                  <motion.div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Photo container */}
+              <motion.div
+                className="relative z-50 overflow-hidden"
+                animate={photoOpen ? {
+                  width: 280,
+                  height: 340,
+                  borderRadius: 24,
+                } : {
+                  width: 80,
+                  height: 80,
+                  borderRadius: 100,
+                }}
+                transition={{
+                  duration: 0.6,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                style={{
+                  boxShadow: photoOpen
+                    ? '0 40px 80px -20px rgba(0,0,0,0.8), 0 0 60px rgba(6,182,212,0.15)'
+                    : '0 0 0 2px rgba(255,255,255,0.1)',
+                }}
+              >
+                <motion.img
+                  src={userPhoto}
+                  alt="Jay Harwani"
+                  className="w-full h-full object-cover"
+                  animate={photoOpen ? {
+                    scale: 1,
+                    objectPosition: 'center 30%',
+                  } : {
+                    scale: 1.15,
+                    objectPosition: 'center 20%',
+                  }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                />
+
+                {/* Glare sweep on open */}
+                <AnimatePresence>
+                  {photoOpen && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none"
+                      initial={{ opacity: 0, x: '-100%' }}
+                      animate={{ opacity: 1, x: '100%' }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Bottom gradient + name on expand */}
+                <AnimatePresence>
+                  {photoOpen && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.4, delay: 0.2 }}
+                    >
+                      <p className="text-white font-semibold text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>Jay Harwani</p>
+                      <p className="text-cyan-400 text-xs">UX Designer</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Border glow on expand */}
+                <motion.div
+                  className="absolute inset-0 rounded-inherit pointer-events-none"
+                  animate={photoOpen ? {
+                    boxShadow: 'inset 0 0 0 1px rgba(6,182,212,0.3)',
+                  } : {
+                    boxShadow: 'inset 0 0 0 0px transparent',
+                  }}
+                  transition={{ duration: 0.4 }}
+                />
+              </motion.div>
+
+              {/* Online indicator — hidden when expanded */}
+              <motion.div
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#0A0A0A] flex items-center justify-center z-50"
+                animate={{ opacity: photoOpen ? 0 : 1, scale: photoOpen ? 0 : 1 }}
+                transition={{ duration: 0.3 }}
+              >
                 <motion.div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: '#2DD4BF' }}
                   animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-              </div>
+              </motion.div>
             </div>
 
             {/* Status text */}
