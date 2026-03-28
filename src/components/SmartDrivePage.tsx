@@ -215,19 +215,45 @@ export function SmartDrivePage() {
                 <span className="text-[10px] lg:text-xs text-cyan-400/80 font-medium tracking-widest uppercase">AI Filter</span>
               </div>
 
-              {/* Orbiting ring 1 */}
+              {/* Orbiting ring 1 — with car */}
               <motion.div
-                className="absolute w-[280px] h-[280px] lg:w-[360px] lg:h-[360px] rounded-full border border-dashed border-slate-700/40"
+                className="absolute w-[280px] h-[280px] lg:w-[360px] lg:h-[360px]"
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              />
+              >
+                <div className="absolute inset-0 rounded-full border border-dashed border-slate-700/40" />
+                {/* Car on ring 1 */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [0, -360] }}
+                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                  >
+                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-slate-900/80 border border-cyan-500/25 flex items-center justify-center backdrop-blur-sm">
+                      <Car className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-cyan-400/50" />
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
 
-              {/* Orbiting ring 2 */}
+              {/* Orbiting ring 2 — with car */}
               <motion.div
-                className="absolute w-[380px] h-[380px] lg:w-[480px] lg:h-[480px] rounded-full border border-slate-800/30"
+                className="absolute w-[380px] h-[380px] lg:w-[480px] lg:h-[480px]"
                 animate={{ rotate: [360, 0] }}
                 transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
-              />
+              >
+                <div className="absolute inset-0 rounded-full border border-slate-800/30" />
+                {/* Car on ring 2 */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                  <motion.div
+                    animate={{ rotate: [360, 0] }}
+                    transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+                  >
+                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-slate-900/60 border border-slate-600/20 flex items-center justify-center backdrop-blur-sm">
+                      <Car className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-slate-500/40" />
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
 
               {/* Floating notification cards — allowed (green) */}
               {[
