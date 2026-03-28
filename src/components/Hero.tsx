@@ -202,7 +202,6 @@ export function Hero() {
               className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif' }}
             >
-              <span style={{ color: '#FFFFFF' }}>I design </span>
               <span
                 style={{
                   background: 'linear-gradient(135deg, #2DD4BF 0%, #5EEAD4 40%, #A78BFA 100%)',
@@ -211,8 +210,9 @@ export function Hero() {
                   backgroundClip: 'text',
                 }}
               >
-                products
+                Designing
               </span>
+              <span style={{ color: '#FFFFFF' }}> the</span>
             </motion.h1>
           </div>
 
@@ -224,8 +224,8 @@ export function Hero() {
               className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif', color: '#FFFFFF' }}
             >
-              people{' '}
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>actually</span>
+              Moments{' '}
+              <span style={{ color: 'rgba(255,255,255,0.2)' }}>between</span>
             </motion.h1>
           </div>
 
@@ -237,7 +237,7 @@ export function Hero() {
               className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
               style={{ fontFamily: 'Syne, sans-serif', color: 'rgba(255,255,255,0.2)' }}
             >
-              love to use<span style={{ color: '#2DD4BF' }}>.</span>
+              the clicks<span style={{ color: '#2DD4BF' }}>.</span>
             </motion.h1>
           </div>
 
