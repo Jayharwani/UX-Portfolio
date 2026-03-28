@@ -894,7 +894,7 @@ export function SmartDrivePage() {
                     <div
                       className="relative bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-[3px] sm:p-1 border-2 sm:border-[3px] border-slate-800 overflow-hidden shadow-2xl mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700"
                     >
-                      <div className="relative overflow-hidden rounded-[2.25rem] sm:rounded-[2.75rem]" style={{ aspectRatio: '390 / 844' }}>
+                      <div className="relative overflow-hidden rounded-[2.25rem] sm:rounded-[2.75rem]" style={{ aspectRatio: '390 / 720' }}>
                         <div className="absolute inset-0 overflow-hidden">
                           <div
                             className="origin-top-left w-[390px] h-[844px]"
