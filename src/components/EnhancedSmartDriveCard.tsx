@@ -11,7 +11,7 @@ export function EnhancedSmartDriveCard() {
         style={{
           width: '100%',
           maxWidth: '1340px',
-          minHeight: '420px',
+          minHeight: '360px',
           background: 'radial-gradient(ellipse at 70% 30%, #0D1B2A 0%, #0B1120 50%, #080E1A 100%)',
         }}
       >
@@ -68,7 +68,7 @@ export function EnhancedSmartDriveCard() {
         </motion.div>
 
         {/* Content + Visual Layout */}
-        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[420px]">
 
         {/* Left Content */}
         <div
@@ -76,7 +76,7 @@ export function EnhancedSmartDriveCard() {
         >
           {/* Title */}
           <motion.h1
-            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
+            className="text-[32px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
               fontWeight: 800,
@@ -117,7 +117,7 @@ export function EnhancedSmartDriveCard() {
                 border: '1px solid rgba(0,212,138,0.30)',
                 color: '#00D48A',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -131,7 +131,7 @@ export function EnhancedSmartDriveCard() {
                 border: '1px solid rgba(56,189,248,0.30)',
                 color: '#38BDF8',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -145,7 +145,7 @@ export function EnhancedSmartDriveCard() {
                 border: '1px solid rgba(251,191,36,0.30)',
                 color: '#FBBF24',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -174,12 +174,12 @@ export function EnhancedSmartDriveCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '12px 22px',
+              padding: '10px 18px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               width: 'fit-content',
             }}

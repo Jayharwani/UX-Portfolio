@@ -98,7 +98,7 @@ export function ChronoWeaveHeroCard() {
         style={{
           width: '100%',
           maxWidth: '1340px',
-          minHeight: '420px',
+          minHeight: '360px',
           background: 'radial-gradient(ellipse at 70% 30%, #14172E 0%, #0B0D1E 50%, #08091A 100%)',
         }}
       >
@@ -155,7 +155,7 @@ export function ChronoWeaveHeroCard() {
         </motion.div>
 
         {/* Content + Visual Layout */}
-        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[420px]">
 
         {/* Left Content */}
         <div
@@ -163,7 +163,7 @@ export function ChronoWeaveHeroCard() {
         >
           {/* Title */}
           <motion.h1
-            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
+            className="text-[28px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
               fontWeight: 800,
@@ -204,7 +204,7 @@ export function ChronoWeaveHeroCard() {
                 border: '1px solid rgba(45,212,191,0.30)',
                 color: '#2DD4BF',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -218,7 +218,7 @@ export function ChronoWeaveHeroCard() {
                 border: '1px solid rgba(167,139,250,0.30)',
                 color: '#A78BFA',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -232,7 +232,7 @@ export function ChronoWeaveHeroCard() {
                 border: '1px solid rgba(251,191,36,0.30)',
                 color: '#FBBF24',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -261,12 +261,12 @@ export function ChronoWeaveHeroCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '12px 22px',
+              padding: '10px 18px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               width: 'fit-content',
             }}
@@ -277,7 +277,7 @@ export function ChronoWeaveHeroCard() {
             whileTap={{ scale: 0.98 }}
           >
             <span>Go to project</span>
-            <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+            <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
           </motion.button>
         </div>
 

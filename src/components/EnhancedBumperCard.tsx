@@ -56,7 +56,7 @@ export function EnhancedBumperCard() {
         style={{
           width: '100%',
           maxWidth: '1340px',
-          minHeight: '420px',
+          minHeight: '360px',
           background: 'radial-gradient(ellipse at 70% 30%, #1A0E2E 0%, #120B22 50%, #0A0816 100%)',
         }}
       >
@@ -113,7 +113,7 @@ export function EnhancedBumperCard() {
         </motion.div>
 
         {/* Content + Visual Layout */}
-        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[480px]">
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:min-h-[700px] min-h-[420px]">
 
         {/* Left Content */}
         <div
@@ -121,7 +121,7 @@ export function EnhancedBumperCard() {
         >
           {/* Title */}
           <motion.h1
-            className="text-[40px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
+            className="text-[32px] sm:text-[56px] md:text-[68px] lg:text-[80px]"
             style={{
               fontFamily: 'Syne, sans-serif',
               fontWeight: 800,
@@ -162,7 +162,7 @@ export function EnhancedBumperCard() {
                 border: '1px solid rgba(20,184,166,0.30)',
                 color: '#14B8A6',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -176,7 +176,7 @@ export function EnhancedBumperCard() {
                 border: '1px solid rgba(129,140,248,0.30)',
                 color: '#818CF8',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -190,7 +190,7 @@ export function EnhancedBumperCard() {
                 border: '1px solid rgba(251,191,36,0.30)',
                 color: '#FBBF24',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '11.5px',
+                fontSize: '10.5px',
                 fontWeight: 600,
               }}
             >
@@ -219,12 +219,12 @@ export function EnhancedBumperCard() {
           <motion.button
             className="inline-flex items-center gap-2"
             style={{
-              padding: '12px 22px',
+              padding: '10px 18px',
               borderRadius: '100px',
               backgroundColor: '#FFFFFF',
               color: '#08091A',
               fontFamily: 'DM Sans, sans-serif',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 700,
               width: 'fit-content',
             }}

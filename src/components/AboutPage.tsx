@@ -32,12 +32,12 @@ export function AboutPage() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
             <span className="text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>Back</span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <a
               href="https://www.linkedin.com/in/jay-harwani/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[13px] font-medium text-white/40 hover:text-white transition-colors"
+              className="text-[12px] sm:text-[13px] font-medium text-white/40 hover:text-white transition-colors"
               style={{ fontFamily: 'DM Sans, sans-serif' }}
             >
               LinkedIn
@@ -46,7 +46,7 @@ export function AboutPage() {
               href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] font-semibold uppercase tracking-[0.1em] px-5 py-2.5 rounded-full transition-all hover:scale-105"
+              className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.1em] px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all hover:scale-105"
               style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'DM Sans, sans-serif' }}
             >
               Resume

@@ -15,9 +15,9 @@ export function Footer() {
             className="text-center max-w-3xl px-4"
           >
             <h2
+              className="text-[22px] sm:text-[26px] md:text-[28px]"
               style={{
                 fontFamily: 'Syne, sans-serif',
-                fontSize: '28px',
                 fontWeight: 700,
                 color: 'rgba(255,255,255,0.85)',
                 lineHeight: 1.4,
