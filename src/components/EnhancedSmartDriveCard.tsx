@@ -160,7 +160,7 @@ export function EnhancedSmartDriveCard() {
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
               fontWeight: 400,
-              color: 'rgba(255,255,255,0.48)',
+              color: 'rgba(255,255,255,0.58)',
               lineHeight: 1.72,
             }}
             initial={{ opacity: 0, y: 14 }}

@@ -247,7 +247,7 @@ export function ChronoWeaveHeroCard() {
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
               fontWeight: 400,
-              color: 'rgba(255,255,255,0.48)',
+              color: 'rgba(255,255,255,0.58)',
               lineHeight: 1.72,
             }}
             initial={{ opacity: 0, y: 14 }}
@@ -284,7 +284,6 @@ export function ChronoWeaveHeroCard() {
         {/* Right Side - Floating Clock */}
         <div
           className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[120px] lg:-translate-y-1/2"
-          style={{ animation: 'float-y 6s ease-in-out infinite' }}
         >
           {/* Outer Glow — CSS pulse */}
           <div

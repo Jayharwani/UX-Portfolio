@@ -42,7 +42,7 @@ export function Footer() {
               style={{
                 border: '1px solid rgba(255,255,255,0.15)',
                 backgroundColor: 'transparent',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.7)',
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '13px',
                 fontWeight: 500,
@@ -56,7 +56,7 @@ export function Footer() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
               }}
             >
               LinkedIn
@@ -69,7 +69,7 @@ export function Footer() {
               style={{
                 border: '1px solid rgba(255,255,255,0.15)',
                 backgroundColor: 'transparent',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.7)',
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '13px',
                 fontWeight: 500,
@@ -83,7 +83,7 @@ export function Footer() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
               }}
             >
               Resume
@@ -103,7 +103,7 @@ export function Footer() {
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '13px',
-              color: 'rgba(255,255,255,0.25)',
+              color: 'rgba(255,255,255,0.4)',
             }}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}

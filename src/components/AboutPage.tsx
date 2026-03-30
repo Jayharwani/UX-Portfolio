@@ -32,13 +32,13 @@ export function AboutPage() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
             <span className="text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>Back</span>
           </Link>
-          <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href="https://www.linkedin.com/in/jay-harwani/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] sm:text-[13px] font-medium text-white/40 hover:text-white transition-colors"
-              style={{ fontFamily: 'DM Sans, sans-serif' }}
+              className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.1em] px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all hover:scale-105 text-center leading-none flex items-center justify-center"
+              style={{ color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'DM Sans, sans-serif' }}
             >
               LinkedIn
             </a>
@@ -46,7 +46,7 @@ export function AboutPage() {
               href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.1em] px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all hover:scale-105"
+              className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.1em] px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all hover:scale-105 text-center leading-none flex items-center justify-center"
               style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'DM Sans, sans-serif' }}
             >
               Resume
@@ -100,8 +100,8 @@ export function AboutPage() {
                 </div>
                 {/* Location tag */}
                 <div className="flex items-center gap-2 mt-4">
-                  <MapPin className="w-3.5 h-3.5 text-white/30" />
-                  <span className="text-[13px] text-white/30" style={{ fontFamily: 'DM Sans, sans-serif' }}>Baltimore, MD</span>
+                  <MapPin className="w-3.5 h-3.5 text-white/50" />
+                  <span className="text-[13px] text-white/50" style={{ fontFamily: 'DM Sans, sans-serif' }}>Baltimore, MD</span>
                 </div>
               </div>
             </motion.div>
@@ -119,13 +119,13 @@ export function AboutPage() {
                   style={{ fontFamily: 'Syne, sans-serif', color: '#FFFFFF' }}
                 >
                   I'm Jay — a designer<br className="hidden sm:block" />
-                  <span style={{ color: 'rgba(255,255,255,0.2)' }}>who thinks in systems.</span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>who thinks in systems.</span>
                 </h1>
 
                 <div className="space-y-4">
                   <p
                     className="text-[15px] sm:text-[16px] leading-[1.8]"
-                    style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ color: 'rgba(255,255,255,0.65)', fontFamily: 'DM Sans, sans-serif' }}
                   >
                     I design products at the intersection of behavioral science and technology.
                     My work focuses on creating interfaces that feel invisible — where the interaction
@@ -133,7 +133,7 @@ export function AboutPage() {
                   </p>
                   <p
                     className="text-[15px] sm:text-[16px] leading-[1.8]"
-                    style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ color: 'rgba(255,255,255,0.65)', fontFamily: 'DM Sans, sans-serif' }}
                   >
                     I completed my Master's in HCI at UMBC, and previously designed enterprise
                     systems at Welspun. I bring a research-first mindset to every problem — validating
@@ -151,7 +151,7 @@ export function AboutPage() {
                 ].map((stat, i) => (
                   <div key={i} className="py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
                     <p className="text-white text-xl sm:text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{stat.value}</p>
-                    <p className="text-[12px] text-white/30" style={{ fontFamily: 'DM Sans, sans-serif' }}>{stat.label}</p>
+                    <p className="text-[12px] text-white/50" style={{ fontFamily: 'DM Sans, sans-serif' }}>{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -170,8 +170,8 @@ export function AboutPage() {
                     rel={link.href.startsWith('mailto') ? undefined : 'noopener noreferrer'}
                     className="inline-flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-full transition-all hover:scale-105"
                     style={{
-                      color: 'rgba(255,255,255,0.5)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'rgba(255,255,255,0.7)',
+                      border: '1px solid rgba(255,255,255,0.15)',
                       fontFamily: 'DM Sans, sans-serif',
                     }}
                   >
@@ -226,7 +226,7 @@ export function AboutPage() {
                   }}
                 >
                   <h3 className="text-white text-[15px] font-semibold mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.title}</h3>
-                  <p className="text-white/35 text-[14px] leading-[1.7]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.description}</p>
+                  <p className="text-white/55 text-[14px] leading-[1.7]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -292,12 +292,12 @@ export function AboutPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <Briefcase className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
+                        <Briefcase className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
                         <h3 className="text-white text-[15px] sm:text-[16px] font-semibold truncate group-hover:text-cyan-400 transition-colors" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                           {item.company}
                         </h3>
                       </div>
-                      <p className="text-white/40 text-[13px] sm:text-[14px] ml-[26px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.role}</p>
+                      <p className="text-white/55 text-[13px] sm:text-[14px] ml-[26px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{item.role}</p>
                     </div>
                     <div className="flex items-center gap-3 ml-[26px] sm:ml-0">
                       <div className="flex flex-wrap gap-1.5">
@@ -306,8 +306,8 @@ export function AboutPage() {
                             key={j}
                             className="text-[11px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{
-                              color: 'rgba(255,255,255,0.5)',
-                              border: '1px solid rgba(255,255,255,0.1)',
+                              color: 'rgba(255,255,255,0.6)',
+                              border: '1px solid rgba(255,255,255,0.15)',
                               fontFamily: 'DM Sans, sans-serif',
                             }}
                           >

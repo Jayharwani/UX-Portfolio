@@ -272,7 +272,7 @@ export function Hero() {
                 Jay Harwani
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[12px] sm:text-[13px]" style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'DM Sans, sans-serif' }}>
+                <span className="text-[12px] sm:text-[13px]" style={{ color: 'rgba(255,255,255,0.55)', fontFamily: 'DM Sans, sans-serif' }}>
                   Open to opportunities
                 </span>
               </div>
@@ -311,7 +311,7 @@ export function Hero() {
               style={{ fontFamily: 'Syne, sans-serif', color: '#FFFFFF' }}
             >
               Moments{' '}
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>between</span>
+              <span style={{ color: 'rgba(255,255,255,0.35)' }}>between</span>
             </motion.h1>
           </div>
 
@@ -321,7 +321,7 @@ export function Hero() {
               animate={loaded ? { y: '0%' } : {}}
               transition={{ duration: 1, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="text-[11vw] sm:text-[10vw] md:text-[9vw] lg:text-[8vw] xl:text-[7vw] font-extrabold leading-[0.9] tracking-[-0.04em]"
-              style={{ fontFamily: 'Syne, sans-serif', color: 'rgba(255,255,255,0.2)' }}
+              style={{ fontFamily: 'Syne, sans-serif', color: 'rgba(255,255,255,0.35)' }}
             >
               the clicks<span style={{ color: '#2DD4BF' }}>.</span>
             </motion.h1>
@@ -347,7 +347,7 @@ export function Hero() {
                     exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="text-[14px] font-medium"
-                    style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'DM Sans, sans-serif' }}
                   >
                     {roles[currentRoleIndex]}
                   </motion.span>
@@ -364,8 +364,8 @@ export function Hero() {
                     transition={{ duration: 0.4, delay: 1.3 + i * 0.08 }}
                     className="text-[11px] font-medium uppercase tracking-[0.08em] px-3.5 py-1.5 rounded-full"
                     style={{
-                      color: 'rgba(255,255,255,0.4)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'rgba(255,255,255,0.55)',
+                      border: '1px solid rgba(255,255,255,0.15)',
                       fontFamily: 'DM Sans, sans-serif',
                     }}
                   >

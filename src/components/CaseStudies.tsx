@@ -40,7 +40,7 @@ function SectionDivider({ number }: { number: number }) {
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '12px',
             fontWeight: 600,
-            color: 'rgba(255,255,255,0.25)',
+            color: 'rgba(255,255,255,0.4)',
           }}
           initial={{ scale: 0 }}
           whileInView={{ scale: 1 }}
@@ -176,7 +176,7 @@ export function CaseStudies() {
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.5)',
+                color: 'rgba(255,255,255,0.6)',
                 letterSpacing: '0.1em',
               }}
             >
@@ -204,7 +204,7 @@ export function CaseStudies() {
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '17px',
-              color: 'rgba(255,255,255,0.4)',
+              color: 'rgba(255,255,255,0.55)',
               maxWidth: '500px',
               margin: '0 auto',
               lineHeight: 1.7,

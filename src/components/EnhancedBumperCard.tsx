@@ -205,7 +205,7 @@ export function EnhancedBumperCard() {
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '15.5px',
               fontWeight: 400,
-              color: 'rgba(255,255,255,0.48)',
+              color: 'rgba(255,255,255,0.58)',
               lineHeight: 1.72,
             }}
             initial={{ opacity: 0, y: 14 }}
@@ -242,7 +242,6 @@ export function EnhancedBumperCard() {
         {/* Right Side - Floating Browser Extension Popup */}
         <div
           className="relative flex items-center justify-center py-6 lg:absolute lg:py-0 lg:top-1/2 lg:right-[100px] lg:-translate-y-1/2"
-          style={{ animation: 'float-y 6s ease-in-out infinite' }}
         >
           {/* Outer Glow — CSS pulse */}
           <div
@@ -464,7 +463,6 @@ export function EnhancedBumperCard() {
               fontWeight: 700,
               color: '#FF6B6B',
               zIndex: 2,
-              animation: 'float-y 4s ease-in-out infinite',
             }}
           >
             $299
@@ -486,7 +484,6 @@ export function EnhancedBumperCard() {
               fontWeight: 600,
               color: '#14B8A6',
               zIndex: 2,
-              animation: 'float-y 5s ease-in-out 1s infinite',
             }}
           >
             <svg width="10" height="10" viewBox="0 0 14 14" style={{ display: 'inline', verticalAlign: '-1px', marginRight: '3px' }}><path d="M2 7L6 11L12 3" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>+$299 saved
