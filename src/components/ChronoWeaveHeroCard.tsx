@@ -85,7 +85,7 @@ export function ChronoWeaveHeroCard() {
   };
 
   const pieZones = [
-    createPieZone(0, 'rgba(45,212,191,0.16)'),    // Teal (12-4)
+    createPieZone(0, 'rgba(244,114,182,0.16)'),    // Pink (12-4)
     createPieZone(120, 'rgba(167,139,250,0.16)'), // Purple (4-8)
     createPieZone(240, 'rgba(251,191,36,0.16)'),  // Amber (8-12)
   ];
@@ -99,7 +99,7 @@ export function ChronoWeaveHeroCard() {
           width: '100%',
           maxWidth: '1340px',
           minHeight: '360px',
-          background: 'radial-gradient(ellipse at 70% 30%, #14172E 0%, #0B0D1E 50%, #08091A 100%)',
+          background: 'radial-gradient(ellipse at 70% 30%, #1A1025 0%, #12091E 50%, #0D0618 100%)',
         }}
       >
         {/* Clock Glow */}
@@ -110,7 +110,7 @@ export function ChronoWeaveHeroCard() {
             right: '8%',
             width: '48%',
             aspectRatio: '1',
-            background: 'radial-gradient(circle, rgba(120,80,255,0.16) 0%, rgba(40,200,180,0.07) 40%, transparent 68%)',
+            background: 'radial-gradient(circle, rgba(160,60,255,0.18) 0%, rgba(200,80,200,0.08) 40%, transparent 68%)',
           }}
         />
 
@@ -136,8 +136,8 @@ export function ChronoWeaveHeroCard() {
             style={{
               width: '6px',
               height: '6px',
-              backgroundColor: '#2DD4BF',
-              filter: 'drop-shadow(0 0 6px #2DD4BF)',
+              backgroundColor: '#C084FC',
+              filter: 'drop-shadow(0 0 6px #C084FC)',
               animation: 'pulse-dot 2.2s ease-in-out infinite',
             }}
           />
@@ -177,7 +177,7 @@ export function ChronoWeaveHeroCard() {
             <span style={{ color: '#FFFFFF' }}>Chrono</span>
             <span
               style={{
-                background: 'linear-gradient(120deg, #C4B5FD 0%, #2DD4BF 100%)',
+                background: 'linear-gradient(120deg, #C4B5FD 0%, #F472B6 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -200,9 +200,9 @@ export function ChronoWeaveHeroCard() {
               style={{
                 padding: '5px 12px',
                 borderRadius: '100px',
-                backgroundColor: 'rgba(45,212,191,0.08)',
-                border: '1px solid rgba(45,212,191,0.30)',
-                color: '#2DD4BF',
+                backgroundColor: 'rgba(244,114,182,0.08)',
+                border: '1px solid rgba(244,114,182,0.30)',
+                color: '#F472B6',
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '10.5px',
                 fontWeight: 600,
@@ -294,7 +294,7 @@ export function ChronoWeaveHeroCard() {
               transform: 'translate(-50%, -50%)',
               width: '364px',
               height: '364px',
-              background: 'radial-gradient(circle, rgba(140,100,255,0.18) 0%, rgba(45,212,191,0.06) 50%, transparent 100%)',
+              background: 'radial-gradient(circle, rgba(140,100,255,0.18) 0%, rgba(200,80,200,0.08) 50%, transparent 100%)',
               borderRadius: '50%',
               animation: 'pulse-dot 5s ease-in-out infinite',
             }}
@@ -320,10 +320,10 @@ export function ChronoWeaveHeroCard() {
             {/* Colored Rim - Conic Gradient */}
             <defs>
               <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#2DD4BF" />
+                <stop offset="0%" stopColor="#F472B6" />
                 <stop offset="33%" stopColor="#A78BFA" />
                 <stop offset="66%" stopColor="#FBBF24" />
-                <stop offset="100%" stopColor="#2DD4BF" />
+                <stop offset="100%" stopColor="#F472B6" />
               </linearGradient>
             </defs>
             <circle
@@ -379,10 +379,10 @@ export function ChronoWeaveHeroCard() {
               y1={clockRadius}
               x2={clockRadius + Math.cos((secondAngle - 90) * Math.PI / 180) * (clockRadius * 0.82)}
               y2={clockRadius + Math.sin((secondAngle - 90) * Math.PI / 180) * (clockRadius * 0.82)}
-              stroke="#2DD4BF"
+              stroke="#F472B6"
               strokeWidth="1.6"
               strokeLinecap="round"
-              filter="drop-shadow(0 0 12px #2DD4BF)"
+              filter="drop-shadow(0 0 12px #F472B6)"
             />
 
             {/* Center Cap */}
@@ -390,10 +390,10 @@ export function ChronoWeaveHeroCard() {
               cx={clockRadius}
               cy={clockRadius}
               r={clockRadius * 0.065}
-              fill="#2DD4BF"
+              fill="#C084FC"
               stroke="rgba(255,255,255,0.9)"
               strokeWidth="1.5"
-              filter="drop-shadow(0 0 14px #2DD4BF)"
+              filter="drop-shadow(0 0 14px #C084FC)"
             />
           </svg>
         </div>
