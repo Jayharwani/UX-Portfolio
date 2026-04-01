@@ -102,7 +102,7 @@ export function Hero() {
                 About
               </Link>
               <a
-                href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
+                href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
                 target="_blank" rel="noopener noreferrer"
                 className="text-[12px] font-semibold uppercase tracking-[0.1em] px-5 py-2.5 rounded-full transition-all hover:scale-105"
                 style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'DM Sans, sans-serif' }}
@@ -132,7 +132,7 @@ export function Hero() {
           >
             <nav className="flex flex-col gap-1 rounded-2xl p-4 shadow-2xl border border-white/10" style={{ backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(20px)', fontFamily: 'DM Sans, sans-serif' }}>
               <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">About</Link>
-              <a href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="mx-4 mt-2 mb-1 text-center text-[13px] font-semibold rounded-full py-3" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <a href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="mx-4 mt-2 mb-1 text-center text-[13px] font-semibold rounded-full py-3" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
                 Resume
               </a>
             </nav>

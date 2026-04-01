@@ -57,7 +57,7 @@ export function Header() {
           
           {/* Premium Resume Button */}
           <a 
-            href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing" 
+            href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing" 
             target="_blank" 
             rel="noopener noreferrer"
             className="group relative"

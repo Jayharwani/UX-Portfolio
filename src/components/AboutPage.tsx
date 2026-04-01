@@ -410,7 +410,7 @@ export function AboutPage() {
               LinkedIn
             </a>
             <a
-              href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
+              href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.1em] px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all hover:scale-105 flex items-center justify-center"
@@ -567,7 +567,7 @@ export function AboutPage() {
                   { label: "Email", href: "mailto:harwanijay9498@gmail.com", Icon: Mail },
                   {
                     label: "Resume",
-                    href: "https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing",
+                    href: "https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing",
                     Icon: FileText,
                   },
                 ].map((link, i) => (
@@ -1216,7 +1216,7 @@ export function AboutPage() {
               </a>
 
               <a
-                href="https://drive.google.com/file/d/10YSDOZ6-UznxpgavfH3EU4ukdyF5EmwE/view?usp=sharing"
+                href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group inline-flex items-center gap-2.5 text-[14px] font-semibold px-7 py-3.5 rounded-full transition-all duration-300 hover:scale-105"
