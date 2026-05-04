@@ -11,7 +11,7 @@ export function ScrollProgress() {
         scaleX,
         transformOrigin: '0%',
         height: '2px',
-        background: 'linear-gradient(90deg, #2DD4BF, #A78BFA, #FBBF24)',
+        background: 'linear-gradient(90deg, #0F766E, #14B8A6, #7C3AED)',
       }}
     />
   );

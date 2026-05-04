@@ -6,7 +6,7 @@ import { useRef } from "react";
 
 function SectionDivider({ number }: { number: number }) {
   return (
-    <div className="flex items-center justify-center py-8">
+    <div className="flex items-center justify-center py-10">
       <motion.div
         className="flex flex-col items-center gap-4"
         initial={{ opacity: 0 }}
@@ -14,33 +14,32 @@ function SectionDivider({ number }: { number: number }) {
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.8 }}
       >
-        {/* Connecting line */}
         <motion.div
           style={{
             width: '1px',
             height: '60px',
-            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent)',
+            background: 'linear-gradient(to bottom, transparent, rgba(15,23,42,0.18), transparent)',
           }}
           initial={{ scaleY: 0 }}
           whileInView={{ scaleY: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
         />
-        {/* Number badge */}
         <motion.div
           style={{
             width: '36px',
             height: '36px',
             borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.10)',
-            backgroundColor: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(15,23,42,0.1)',
+            backgroundColor: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '12px',
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.4)',
+            fontWeight: 700,
+            color: '#52525B',
+            boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
           }}
           initial={{ scale: 0 }}
           whileInView={{ scale: 1 }}
@@ -49,12 +48,11 @@ function SectionDivider({ number }: { number: number }) {
         >
           {String(number).padStart(2, '0')}
         </motion.div>
-        {/* Connecting line */}
         <motion.div
           style={{
             width: '1px',
             height: '60px',
-            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent)',
+            background: 'linear-gradient(to bottom, transparent, rgba(15,23,42,0.18), transparent)',
           }}
           initial={{ scaleY: 0 }}
           whileInView={{ scaleY: 1 }}
@@ -66,7 +64,7 @@ function SectionDivider({ number }: { number: number }) {
   );
 }
 
-function ParallaxCard({ children, index }: { children: React.ReactNode; index: number }) {
+function ParallaxCard({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -74,9 +72,9 @@ function ParallaxCard({ children, index }: { children: React.ReactNode; index: n
   });
 
   const y = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [80, 0, 0, -40]);
-  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.92, 1, 1, 0.97]);
-  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.8, 1], [0, 1, 1, 0.6]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.2], [4, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.94, 1, 1, 0.98]);
+  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0.5, 1, 1, 0.7]);
+  const rotateX = useTransform(scrollYProgress, [0, 0.2], [3, 0]);
 
   return (
     <motion.div
@@ -86,7 +84,7 @@ function ParallaxCard({ children, index }: { children: React.ReactNode; index: n
         scale,
         opacity,
         rotateX,
-        perspective: '1200px',
+        perspective: '1400px',
         transformOrigin: 'center bottom',
       }}
     >
@@ -102,69 +100,73 @@ export function CaseStudies() {
     offset: ["start end", "end start"],
   });
 
-  // Parallax for ambient orbs
   const orb1Y = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const orb2Y = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const headerY = useTransform(scrollYProgress, [0, 0.4], [40, 0]);
 
   return (
     <section
       ref={sectionRef}
       id="case-studies"
-      className="relative py-16 sm:py-24 md:py-32 overflow-hidden"
-      style={{ backgroundColor: '#0A0A0A' }}
+      className="relative py-20 sm:py-28 md:py-36 overflow-hidden"
+      style={{ backgroundColor: '#F4F3EE' }}
     >
-      {/* Ambient background effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px',
-          }}
-        />
-        {/* Floating ambient orbs */}
-        <motion.div
-          className="absolute"
-          style={{
-            top: '10%',
-            left: '5%',
-            width: '500px',
-            height: '500px',
-            background: 'radial-gradient(circle, rgba(45,212,191,0.04) 0%, transparent 70%)',
-            borderRadius: '50%',
-            y: orb1Y,
-          }}
-        />
-        <motion.div
-          className="absolute"
-          style={{
-            top: '50%',
-            right: '0%',
-            width: '600px',
-            height: '600px',
-            background: 'radial-gradient(circle, rgba(167,139,250,0.03) 0%, transparent 70%)',
-            borderRadius: '50%',
-            y: orb2Y,
-          }}
-        />
-        {/* Noise texture */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-          }}
-        />
-      </div>
+      {/* Ambient parallax orbs */}
+      <motion.div
+        className="absolute pointer-events-none"
+        style={{
+          top: '8%',
+          left: '5%',
+          width: '500px',
+          height: '500px',
+          background: 'radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 65%)',
+          y: orb1Y,
+          filter: 'blur(50px)',
+        }}
+      />
+      <motion.div
+        className="absolute pointer-events-none"
+        style={{
+          top: '50%',
+          right: '0%',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 65%)',
+          y: orb2Y,
+          filter: 'blur(50px)',
+        }}
+      />
+
+      {/* Subtle grid */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(15,23,42,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.3) 1px, transparent 1px)`,
+          backgroundSize: '96px 96px',
+        }}
+      />
+
+      {/* Soft grain */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          mixBlendMode: 'multiply',
+        }}
+      />
 
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl relative">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16 md:mb-24 space-y-4 sm:space-y-6">
+        <motion.div
+          className="text-center mb-16 sm:mb-20 md:mb-28"
+          style={{ y: headerY }}
+        >
           <motion.div
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg mb-6 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
             style={{
-              backgroundColor: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid rgba(15,23,42,0.1)',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
             }}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -172,25 +174,30 @@ export function CaseStudies() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
             <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: '#0F766E' }}
+            />
+            <span
               style={{
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.6)',
-                letterSpacing: '0.1em',
+                color: '#09090B',
+                letterSpacing: '0.12em',
               }}
             >
-              SELECTED WORK
+              02 — SELECTED WORK
             </span>
           </motion.div>
 
           <motion.h2
-            className="text-[32px] sm:text-[42px] md:text-[52px]"
+            className="text-[36px] sm:text-[52px] md:text-[68px] mb-5"
             style={{
               fontFamily: 'Syne, sans-serif',
-              fontWeight: 800,
-              letterSpacing: '-1.5px',
-              color: '#FFFFFF',
+              fontWeight: 700,
+              letterSpacing: '-0.035em',
+              color: '#09090B',
+              lineHeight: 1.0,
             }}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -204,35 +211,35 @@ export function CaseStudies() {
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '17px',
-              color: 'rgba(255,255,255,0.55)',
-              maxWidth: '500px',
+              color: '#52525B',
+              maxWidth: '560px',
               margin: '0 auto',
-              lineHeight: 1.7,
+              lineHeight: 1.65,
             }}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            A curated collection of projects where design meets impact
+            Three projects where research turned into intervention — and intervention into measurable behavior change.
           </motion.p>
-        </div>
+        </motion.div>
 
-        {/* Cards with parallax and dividers */}
+        {/* Cards with parallax — dark cards float on light gallery */}
         <div className="relative">
-          <ParallaxCard index={0}>
+          <ParallaxCard>
             <ChronoWeaveThumbnail />
           </ParallaxCard>
 
           <SectionDivider number={2} />
 
-          <ParallaxCard index={1}>
+          <ParallaxCard>
             <EnhancedSmartDriveCard />
           </ParallaxCard>
 
           <SectionDivider number={3} />
 
-          <ParallaxCard index={2}>
+          <ParallaxCard>
             <EnhancedBumperCard />
           </ParallaxCard>
         </div>

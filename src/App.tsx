@@ -10,7 +10,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen antialiased" style={{ backgroundColor: '#0A0A0A' }}>
+      <div className="min-h-screen antialiased" style={{ backgroundColor: '#FAFAF7' }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/smartdrive" element={<SmartDrivePage />} />
