@@ -1,8 +1,7 @@
 import { EnhancedSmartDriveCard } from "./EnhancedSmartDriveCard";
 import { EnhancedBumperCard } from "./EnhancedBumperCard";
 import { ChronoWeaveThumbnail } from "./ChronoWeaveThumbnail";
-import { motion, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { motion } from "motion/react";
 
 function SectionDivider({ number }: { number: number }) {
   return (
@@ -64,29 +63,14 @@ function SectionDivider({ number }: { number: number }) {
   );
 }
 
-function ParallaxCard({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-
-  const y = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [80, 0, 0, -40]);
-  const scale = useTransform(scrollYProgress, [0, 0.25, 0.75, 1], [0.94, 1, 1, 0.98]);
-  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0.5, 1, 1, 0.7]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.2], [3, 0]);
-
+/* Lightweight reveal — replaces the heavy useScroll ParallaxCard */
+function RevealCard({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      ref={ref}
-      style={{
-        y,
-        scale,
-        opacity,
-        rotateX,
-        perspective: '1400px',
-        transformOrigin: 'center bottom',
-      }}
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
@@ -94,25 +78,14 @@ function ParallaxCard({ children }: { children: React.ReactNode }) {
 }
 
 export function CaseStudies() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-
-  const orb1Y = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const orb2Y = useTransform(scrollYProgress, [0, 1], [0, -300]);
-  const headerY = useTransform(scrollYProgress, [0, 0.4], [40, 0]);
-
   return (
     <section
-      ref={sectionRef}
       id="case-studies"
       className="relative py-20 sm:py-28 md:py-36 overflow-hidden"
       style={{ backgroundColor: '#F4F3EE' }}
     >
-      {/* Ambient parallax orbs */}
-      <motion.div
+      {/* Static ambient orbs */}
+      <div
         className="absolute pointer-events-none"
         style={{
           top: '8%',
@@ -120,11 +93,10 @@ export function CaseStudies() {
           width: '500px',
           height: '500px',
           background: 'radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 65%)',
-          y: orb1Y,
           filter: 'blur(50px)',
         }}
       />
-      <motion.div
+      <div
         className="absolute pointer-events-none"
         style={{
           top: '50%',
@@ -132,7 +104,6 @@ export function CaseStudies() {
           width: '600px',
           height: '600px',
           background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 65%)',
-          y: orb2Y,
           filter: 'blur(50px)',
         }}
       />
@@ -156,11 +127,9 @@ export function CaseStudies() {
       />
 
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl relative">
+
         {/* Section Header */}
-        <motion.div
-          className="text-center mb-16 sm:mb-20 md:mb-28"
-          style={{ y: headerY }}
-        >
+        <div className="text-center mb-16 sm:mb-20 md:mb-28">
           <motion.div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
             style={{
@@ -173,10 +142,7 @@ export function CaseStudies() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: '#0F766E' }}
-            />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0F766E' }} />
             <span
               style={{
                 fontFamily: 'DM Sans, sans-serif',
@@ -223,25 +189,25 @@ export function CaseStudies() {
           >
             Three projects where research turned into intervention — and intervention into measurable behavior change.
           </motion.p>
-        </motion.div>
+        </div>
 
-        {/* Cards with parallax — dark cards float on light gallery */}
+        {/* Cards */}
         <div className="relative">
-          <ParallaxCard>
+          <RevealCard>
             <ChronoWeaveThumbnail />
-          </ParallaxCard>
+          </RevealCard>
 
           <SectionDivider number={2} />
 
-          <ParallaxCard>
+          <RevealCard>
             <EnhancedSmartDriveCard />
-          </ParallaxCard>
+          </RevealCard>
 
           <SectionDivider number={3} />
 
-          <ParallaxCard>
+          <RevealCard>
             <EnhancedBumperCard />
-          </ParallaxCard>
+          </RevealCard>
         </div>
       </div>
     </section>

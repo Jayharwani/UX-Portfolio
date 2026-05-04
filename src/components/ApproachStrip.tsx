@@ -1,5 +1,5 @@
-import { motion, useScroll, useTransform } from "motion/react";
-import { useRef, useState, useEffect } from "react";
+import { motion } from "motion/react";
+import { useState, useEffect, useRef } from "react";
 
 const manifesto = [
   {
@@ -70,17 +70,8 @@ function StatCounter({ value, inView }: { value: string; inView: boolean }) {
 }
 
 export function ApproachStrip() {
-  const sectionRef = useRef<HTMLElement>(null);
   const [statsInView, setStatsInView] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-
-  const orb1Y = useTransform(scrollYProgress, [0, 1], [-100, 100]);
-  const orb2Y = useTransform(scrollYProgress, [0, 1], [100, -100]);
 
   useEffect(() => {
     if (!statsRef.current) return;
@@ -94,12 +85,11 @@ export function ApproachStrip() {
 
   return (
     <section
-      ref={sectionRef}
       className="relative overflow-hidden"
       style={{ backgroundColor: '#FAFAF7' }}
     >
-      {/* Parallax ambient */}
-      <motion.div
+      {/* Static ambient orbs — no scroll tracking */}
+      <div
         className="absolute pointer-events-none"
         style={{
           top: '5%',
@@ -107,11 +97,10 @@ export function ApproachStrip() {
           width: '500px',
           height: '500px',
           background: 'radial-gradient(circle, rgba(15,118,110,0.06) 0%, transparent 65%)',
-          y: orb1Y,
           filter: 'blur(60px)',
         }}
       />
-      <motion.div
+      <div
         className="absolute pointer-events-none"
         style={{
           bottom: '5%',
@@ -119,7 +108,6 @@ export function ApproachStrip() {
           width: '550px',
           height: '550px',
           background: 'radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 65%)',
-          y: orb2Y,
           filter: 'blur(60px)',
         }}
       />
