@@ -210,7 +210,7 @@ export function Hero() {
                 The motion.div inside is position:absolute so it expands freely on top.
                 onHoverStart / onHoverEnd (Framer Motion) are stable through animation.
               */}
-              <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0, zIndex: 40 }}>
                 <motion.div
                   className="overflow-hidden cursor-pointer"
                   style={{
@@ -224,7 +224,7 @@ export function Hero() {
                   }}
                   animate={
                     photoOpen
-                      ? { width: 260, height: 340, borderRadius: 20 }
+                      ? { width: 240, height: 310, borderRadius: 20 }
                       : { width: 64, height: 64, borderRadius: 100 }
                   }
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
