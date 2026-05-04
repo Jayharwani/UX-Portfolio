@@ -1,4 +1,5 @@
 import { Hero } from "./Hero";
+import { ApproachStrip } from "./ApproachStrip";
 import { CaseStudies } from "./CaseStudies";
 import { Footer } from "./Footer";
 import { CursorGlow } from "./CursorGlow";
@@ -11,6 +12,7 @@ export function HomePage() {
       <ScrollProgress />
       <main>
         <Hero />
+        <ApproachStrip />
         <CaseStudies />
       </main>
       <Footer />

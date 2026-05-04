@@ -13,7 +13,10 @@
       "Bash(done)",
       "mcp__Claude_Preview__preview_start",
       "Bash(where node:*)",
-      "Bash(where npm:*)"
+      "Bash(where npm:*)",
+      "Bash(git config:*)",
+      "Bash(gh --version)",
+      "Bash(npx vite:*)"
     ]
   }
 }
