@@ -1,251 +1,73 @@
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useScroll } from "motion/react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
-import { Menu, X, ArrowDown, ArrowUpRight, Sparkles } from "lucide-react";
+import { Menu, X, ArrowDown, ArrowUpRight } from "lucide-react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
 /* ------------------------------------------------------------- */
-/*  3D Tilt Photo Card                                            */
+/*  Real-time clock — Baltimore                                   */
 /* ------------------------------------------------------------- */
-function TiltPhoto() {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [9, -9]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-9, 9]), { stiffness: 200, damping: 20 });
+function LiveClock() {
+  const [time, setTime] = useState<string>("");
 
-  const handleMove = useCallback((e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    x.set(px);
-    y.set(py);
-  }, [x, y]);
-
-  const handleLeave = useCallback(() => {
-    x.set(0);
-    y.set(0);
-  }, [x, y]);
+  useEffect(() => {
+    const update = () => {
+      const t = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        timeZone: "America/New_York",
+      });
+      setTime(t);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      style={{ perspective: 1200, transformStyle: "preserve-3d" }}
-      className="relative"
-    >
-      <motion.div
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: "preserve-3d",
-        }}
-        className="relative"
-      >
-        {/* Floating decorative chips behind photo */}
-        <motion.div
-          style={{ transform: 'translateZ(-40px)' }}
-          className="absolute -top-6 -right-8 z-0 hidden lg:block"
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div
-            className="px-3.5 py-2 rounded-full backdrop-blur-md flex items-center gap-2"
-            style={{
-              backgroundColor: 'rgba(15,118,110,0.08)',
-              border: '1px solid rgba(15,118,110,0.18)',
-              boxShadow: '0 8px 24px -8px rgba(15,118,110,0.18)',
-            }}
-          >
-            <Sparkles className="w-3.5 h-3.5" style={{ color: '#0F766E' }} strokeWidth={2.2} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: '#134E4A', fontFamily: 'DM Sans, sans-serif' }}>
-              MS HCI
-            </span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          style={{ transform: 'translateZ(-40px)' }}
-          className="absolute -bottom-4 -left-6 z-0 hidden lg:block"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        >
-          <div
-            className="px-3.5 py-2 rounded-full backdrop-blur-md flex items-center gap-2"
-            style={{
-              backgroundColor: 'rgba(167,139,250,0.10)',
-              border: '1px solid rgba(167,139,250,0.22)',
-              boxShadow: '0 8px 24px -8px rgba(167,139,250,0.20)',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#7C3AED' }} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: '#5B21B6', fontFamily: 'DM Sans, sans-serif' }}>
-              Open to work
-            </span>
-          </div>
-        </motion.div>
-
-        {/* Photo card */}
-        <div
-          className="relative overflow-hidden rounded-[28px] z-10"
-          style={{
-            transformStyle: 'preserve-3d',
-            boxShadow: '0 30px 80px -20px rgba(15,23,42,0.25), 0 0 0 1px rgba(15,23,42,0.04)',
-          }}
-        >
-          <img
-            src={userPhoto}
-            alt="Jay Harwani"
-            className="w-full h-full object-cover"
-            style={{
-              width: 360,
-              height: 460,
-              objectPosition: 'center 22%',
-            }}
-          />
-          {/* Subtle gradient overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.18) 100%)',
-            }}
-          />
-          {/* Bottom name plaque */}
-          <div
-            className="absolute bottom-4 left-4 right-4 rounded-2xl px-4 py-3 backdrop-blur-xl flex items-center justify-between"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              border: '1px solid rgba(255,255,255,0.6)',
-              boxShadow: '0 8px 24px -8px rgba(0,0,0,0.18)',
-            }}
-          >
-            <div>
-              <p className="text-[13px] font-semibold leading-tight" style={{ color: '#09090B', fontFamily: 'DM Sans, sans-serif' }}>
-                Jay Harwani
-              </p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}>
-                Product Designer
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#0F766E' }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#0F766E' }} />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#0F766E', fontFamily: 'DM Sans, sans-serif' }}>
-                Available
-              </span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+    <span style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
+      {time}
+    </span>
   );
 }
 
 /* ------------------------------------------------------------- */
-/*  Magnetic CTA Button                                           */
-/* ------------------------------------------------------------- */
-function MagneticButton({
-  children,
-  onClick,
-  href,
-  variant = 'primary',
-  external = false,
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  href?: string;
-  variant?: 'primary' | 'secondary';
-  external?: boolean;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useSpring(useMotionValue(0), { stiffness: 300, damping: 20 });
-  const y = useSpring(useMotionValue(0), { stiffness: 300, damping: 20 });
-
-  const handleMove = (e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const cx = e.clientX - rect.left - rect.width / 2;
-    const cy = e.clientY - rect.top - rect.height / 2;
-    x.set(cx * 0.18);
-    y.set(cy * 0.25);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const baseClasses = "group inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold px-7 py-4 rounded-full transition-colors";
-  const primaryStyle = {
-    backgroundColor: '#09090B',
-    color: '#FFFFFF',
-    fontFamily: 'DM Sans, sans-serif',
-    boxShadow: '0 12px 24px -10px rgba(9,9,11,0.4)',
-  };
-  const secondaryStyle = {
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    color: '#09090B',
-    border: '1px solid rgba(15,23,42,0.12)',
-    fontFamily: 'DM Sans, sans-serif',
-    backdropFilter: 'blur(12px)',
-  };
-
-  const inner = (
-    <motion.div
-      style={{ x, y }}
-      className={baseClasses}
-    >
-      {children}
-    </motion.div>
-  );
-
-  return (
-    <div
-      ref={ref}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      onClick={onClick}
-      className="cursor-pointer"
-    >
-      {href ? (
-        <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} style={variant === 'primary' ? primaryStyle : secondaryStyle} className={baseClasses}>
-          {inner}
-        </a>
-      ) : (
-        <button style={variant === 'primary' ? primaryStyle : secondaryStyle} className={baseClasses}>
-          {inner}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------- */
-/*  Marquee scroll strip — credentials                            */
+/*  Marquee strip — credentials                                   */
 /* ------------------------------------------------------------- */
 function MarqueeStrip() {
   const items = [
-    "Behavior Design", "·", "Accessibility", "·", "Human × AI",
-    "·", "Design Systems", "·", "Research-driven", "·", "Prototyping",
-    "·", "Cross-platform", "·", "Enterprise UX", "·", "Cognitive UX",
+    "Behavior Design", "★", "Accessibility", "★", "Human × AI",
+    "★", "Design Systems", "★", "Research-driven", "★", "Prototyping",
+    "★", "Cross-platform", "★", "Enterprise UX", "★", "Cognitive UX",
   ];
 
   return (
-    <div className="relative w-full overflow-hidden py-4" style={{ borderTop: '1px solid rgba(15,23,42,0.06)', borderBottom: '1px solid rgba(15,23,42,0.06)', backgroundColor: 'rgba(255,255,255,0.4)' }}>
+    <div
+      className="relative w-full overflow-hidden py-3.5"
+      style={{
+        borderTop: '1px solid rgba(15,23,42,0.08)',
+        borderBottom: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.5)',
+      }}
+    >
       <motion.div
-        className="flex items-center gap-6 whitespace-nowrap"
-        animate={{ x: [0, -1200] }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+        className="flex items-center gap-7 whitespace-nowrap"
+        animate={{ x: [0, -1400] }}
+        transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
       >
         {[...items, ...items, ...items].map((item, i) => (
           <span
             key={i}
-            className="text-[13px] font-medium uppercase tracking-[0.18em]"
-            style={{ color: item === '·' ? 'rgba(15,23,42,0.25)' : 'rgba(15,23,42,0.55)', fontFamily: 'DM Sans, sans-serif' }}
+            className={item === '★' ? "text-[10px]" : "text-[12px]"}
+            style={{
+              color: item === '★' ? '#0F766E' : 'rgba(15,23,42,0.7)',
+              fontFamily: item === '★' ? 'Playfair Display, serif' : 'DM Sans, sans-serif',
+              fontWeight: item === '★' ? 400 : 600,
+              letterSpacing: item === '★' ? '0' : '0.18em',
+              textTransform: item === '★' ? 'none' : 'uppercase',
+            }}
           >
             {item}
           </span>
@@ -256,23 +78,32 @@ function MarqueeStrip() {
 }
 
 /* ------------------------------------------------------------- */
-/*  Hero — main component                                         */
+/*  Hero — editorial composition                                  */
 /* ------------------------------------------------------------- */
 export function Hero() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Scroll-driven parallax
+  // Cursor-tracked subtle parallax on hero text (1-2px range — refined)
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+  const smoothX = useSpring(mouseX, { stiffness: 30, damping: 25 });
+  const smoothY = useSpring(mouseY, { stiffness: 30, damping: 25 });
+  const textShiftX = useTransform(smoothX, [0, 1], [-8, 8]);
+  const textShiftY = useTransform(smoothY, [0, 1], [-4, 4]);
+
+  // Scroll-driven hero fade
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const orb1Y = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const orb2Y = useTransform(scrollYProgress, [0, 1], [0, -180]);
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, 80]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.3]);
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.2]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
 
   const scrollToCaseStudies = () => {
     setMobileMenuOpen(false);
@@ -281,6 +112,7 @@ export function Hero() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoaded(true), 100);
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -289,66 +121,56 @@ export function Hero() {
     };
   }, []);
 
+  useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!heroRef.current) return;
+      const rect = heroRef.current.getBoundingClientRect();
+      mouseX.set((e.clientX - rect.left) / rect.width);
+      mouseY.set((e.clientY - rect.top) / rect.height);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const today = new Date().toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
     <section
       ref={heroRef}
       className="relative w-full min-h-screen overflow-hidden"
       style={{ backgroundColor: '#FAFAF7' }}
     >
-      {/* Layered background — paper texture + ambient orbs */}
+      {/* Soft ambient gradient washes */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(at 20% 10%, rgba(15,118,110,0.05) 0%, transparent 45%), radial-gradient(at 80% 0%, rgba(167,139,250,0.06) 0%, transparent 50%), radial-gradient(at 50% 100%, rgba(56,189,248,0.05) 0%, transparent 50%)`,
+          backgroundImage: `radial-gradient(at 15% 100%, rgba(15,118,110,0.06) 0%, transparent 50%), radial-gradient(at 90% 10%, rgba(124,58,237,0.05) 0%, transparent 45%)`,
         }}
       />
 
-      {/* Soft grain noise */}
+      {/* Paper grain */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.5]"
+        className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          opacity: 0.04,
+          opacity: 0.05,
           mixBlendMode: 'multiply',
         }}
       />
 
-      {/* Subtle editorial grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.04]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(15,23,42,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.3) 1px, transparent 1px)`,
-          backgroundSize: '96px 96px',
-        }}
-      />
+      {/* Editorial baseline grid (4 columns) */}
+      <div className="absolute inset-0 pointer-events-none hidden lg:flex justify-between max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="w-px h-full" style={{ backgroundColor: 'rgba(15,23,42,0.04)' }} />
+        ))}
+      </div>
 
-      {/* Parallax floating orbs */}
-      <motion.div
-        className="absolute pointer-events-none"
-        style={{
-          top: '8%',
-          right: '-5%',
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(circle, rgba(15,118,110,0.10) 0%, transparent 70%)',
-          y: orb1Y,
-          filter: 'blur(40px)',
-        }}
-      />
-      <motion.div
-        className="absolute pointer-events-none"
-        style={{
-          bottom: '10%',
-          left: '-8%',
-          width: '450px',
-          height: '450px',
-          background: 'radial-gradient(circle, rgba(167,139,250,0.10) 0%, transparent 70%)',
-          y: orb2Y,
-          filter: 'blur(40px)',
-        }}
-      />
-
-      {/* Navigation — refined, sticky with blur on scroll */}
+      {/* Navigation */}
       <motion.header
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
@@ -363,20 +185,27 @@ export function Hero() {
         <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 py-5 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <span
-              className="text-[15px] font-semibold transition-opacity group-hover:opacity-70"
+              className="text-[14.5px] font-semibold transition-opacity group-hover:opacity-70"
               style={{ color: '#09090B', fontFamily: 'DM Sans, sans-serif', letterSpacing: '-0.01em' }}
             >
               Jay Harwani
             </span>
             <span
-              className="hidden sm:inline-block text-[10.5px] font-semibold tracking-[0.2em] uppercase"
-              style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
+              className="hidden sm:inline-block text-[10px] font-mono tracking-[0.15em]"
+              style={{ color: '#71717A', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
             >
-              Portfolio · '26
+              ©2026 / v4.0
             </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
+            <button
+              onClick={scrollToCaseStudies}
+              className="text-[13px] font-medium px-4 py-2 rounded-full transition-all hover:bg-black/[0.04]"
+              style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
+            >
+              Work
+            </button>
             <Link
               to="/about"
               className="text-[13px] font-medium px-4 py-2 rounded-full transition-all hover:bg-black/[0.04]"
@@ -386,8 +215,7 @@ export function Hero() {
             </Link>
             <a
               href="https://www.linkedin.com/in/jay-harwani/"
-              target="_blank"
-              rel="noopener noreferrer"
+              target="_blank" rel="noopener noreferrer"
               className="text-[13px] font-medium px-4 py-2 rounded-full transition-all hover:bg-black/[0.04]"
               style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
             >
@@ -395,16 +223,11 @@ export function Hero() {
             </a>
             <a
               href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
+              target="_blank" rel="noopener noreferrer"
               className="ml-2 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] px-4 py-2 rounded-full transition-all hover:scale-[1.03]"
-              style={{
-                backgroundColor: '#09090B',
-                color: '#FFFFFF',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
+              style={{ backgroundColor: '#09090B', color: '#FFFFFF', fontFamily: 'DM Sans, sans-serif' }}
             >
-              Resume
+              CV
               <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
             </a>
           </nav>
@@ -435,16 +258,13 @@ export function Hero() {
                 fontFamily: 'DM Sans, sans-serif',
               }}
             >
+              <button onClick={() => { scrollToCaseStudies(); setMobileMenuOpen(false); }} className="px-4 py-3 rounded-xl text-[15px] font-medium hover:bg-black/[0.04] text-left" style={{ color: '#09090B' }}>
+                Work
+              </button>
               <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium hover:bg-black/[0.04]" style={{ color: '#09090B' }}>
                 About
               </Link>
-              <a
-                href="https://www.linkedin.com/in/jay-harwani/"
-                target="_blank" rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl text-[15px] font-medium hover:bg-black/[0.04]"
-                style={{ color: '#09090B' }}
-              >
+              <a href="https://www.linkedin.com/in/jay-harwani/" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium hover:bg-black/[0.04]" style={{ color: '#09090B' }}>
                 LinkedIn
               </a>
               <a
@@ -454,86 +274,166 @@ export function Hero() {
                 className="mx-2 mt-2 mb-1 text-center text-[13px] font-semibold rounded-full py-3"
                 style={{ backgroundColor: '#09090B', color: '#FFFFFF' }}
               >
-                Resume
+                Curriculum Vitae
               </a>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Hero Content */}
-      <motion.div
-        className="relative min-h-screen flex flex-col justify-center px-6 sm:px-8 lg:px-12 z-20 pt-32 pb-32"
-        style={{ y: contentY, opacity: contentOpacity }}
-      >
-        <div className="w-full max-w-7xl mx-auto">
-
-          {/* Top: Status badge */}
+      {/* Photo expand backdrop */}
+      <AnimatePresence>
+        {photoOpen && (
           <motion.div
-            className="flex items-center gap-2 mb-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={loaded ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.3 }}
-          >
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
-              style={{
-                backgroundColor: 'rgba(15,118,110,0.06)',
-                border: '1px solid rgba(15,118,110,0.18)',
-              }}
+            className="fixed inset-0 bg-black/45 backdrop-blur-sm z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onMouseEnter={() => setPhotoOpen(false)}
+            onClick={() => setPhotoOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* MAIN HERO — editorial composition */}
+      <motion.div
+        className="relative min-h-screen flex flex-col z-20 pt-28 pb-32"
+        style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
+      >
+        <div className="flex-1 max-w-7xl mx-auto w-full px-6 sm:px-8 lg:px-12 flex flex-col">
+
+          {/* TOP ROW — profile (left) + edition stamp (right) */}
+          <div className="flex items-start justify-between mb-12 sm:mb-16">
+
+            {/* TOP-LEFT: Profile chip with hover-expand photo */}
+            <motion.div
+              className="flex items-center gap-4 relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.7, delay: 0.3 }}
             >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#0F766E' }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#0F766E' }} />
-              </span>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#134E4A', fontFamily: 'DM Sans, sans-serif' }}>
-                Open to full-time roles
-              </span>
-              <span className="w-px h-3" style={{ backgroundColor: 'rgba(15,118,110,0.2)' }} />
-              <span className="text-[12px] font-medium" style={{ color: '#0F766E', fontFamily: 'DM Sans, sans-serif' }}>
-                No sponsorship required
-              </span>
-            </div>
-          </motion.div>
+              <div
+                className="relative cursor-pointer"
+                onMouseEnter={() => !isTouchDevice && setPhotoOpen(true)}
+                onClick={() => isTouchDevice && setPhotoOpen(!photoOpen)}
+              >
+                <motion.div
+                  className="relative z-50 overflow-hidden"
+                  onMouseLeave={() => setPhotoOpen(false)}
+                  animate={photoOpen ? {
+                    width: 300,
+                    height: 380,
+                    borderRadius: 20,
+                  } : {
+                    width: 64,
+                    height: 64,
+                    borderRadius: 100,
+                  }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    boxShadow: photoOpen
+                      ? '0 40px 90px -20px rgba(15,23,42,0.45), 0 0 0 1px rgba(15,23,42,0.06)'
+                      : '0 0 0 1.5px rgba(15,23,42,0.1), 0 6px 16px -6px rgba(15,23,42,0.18)',
+                  }}
+                >
+                  <motion.img
+                    src={userPhoto}
+                    alt="Jay Harwani"
+                    className="w-full h-full object-cover"
+                    animate={photoOpen ? { scale: 1, objectPosition: 'center 28%' } : { scale: 1.2, objectPosition: 'center 22%' }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                  <AnimatePresence>
+                    {photoOpen && (
+                      <motion.div
+                        className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                      >
+                        <p className="text-white font-semibold text-[14px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                          Jay Harwani — Baltimore, MD
+                        </p>
+                        <p className="text-[13px] mt-0.5" style={{ color: '#5EEAD4', fontFamily: 'Playfair Display, serif', fontStyle: 'italic' }}>
+                          Product Designer & MS HCI
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
 
-          {/* Two-column layout: text + photo */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+              {/* Name plate */}
+              <div>
+                <p
+                  className="text-[14px] font-semibold leading-tight"
+                  style={{ color: '#09090B', fontFamily: 'DM Sans, sans-serif', letterSpacing: '-0.01em' }}
+                >
+                  Jay Harwani
+                </p>
+                <p
+                  className="text-[12px] mt-0.5"
+                  style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
+                >
+                  Product Designer · <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: '#0F766E' }}>MS HCI</span>
+                </p>
+              </div>
+            </motion.div>
 
-            {/* Left: Headline + Subhead + CTAs */}
-            <div className="lg:col-span-7 order-2 lg:order-1">
-              {/* HEADLINE — word-by-word reveal */}
-              <div className="mb-10">
+            {/* TOP-RIGHT: Edition stamp */}
+            <motion.div
+              className="hidden sm:flex flex-col items-end text-right"
+              initial={{ opacity: 0, y: 20 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.7, delay: 0.4 }}
+            >
+              <span
+                className="text-[10px] uppercase tracking-[0.25em] mb-1"
+                style={{ color: '#71717A', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                Edition N°. 04
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-[0.25em]"
+                style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                Spring / 2026
+              </span>
+            </motion.div>
+          </div>
+
+          {/* CENTER: HEADLINE — fills the page, mixed type */}
+          <motion.div
+            className="flex-1 flex flex-col justify-center"
+            style={{ x: textShiftX, y: textShiftY }}
+          >
+            <div className="max-w-[1100px]">
+              {/* "Hi, I'm Jay" — small intro */}
+              <motion.p
+                className="text-[14px] mb-6 sm:mb-8 flex items-center gap-2"
+                style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={loaded ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: 0.5 }}
+              >
+                <span className="inline-block w-8 h-px" style={{ backgroundColor: '#0F766E' }} />
+                <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '15px' }}>Hi, I'm Jay</span>
+                <span style={{ color: '#A1A1AA' }}>— a designer at the intersection of:</span>
+              </motion.p>
+
+              {/* HEADLINE — 3 lines, mixed Syne + Playfair italic */}
+              <div className="mb-8 sm:mb-10">
                 <div className="overflow-hidden">
                   <motion.h1
                     initial={{ y: '110%' }}
                     animate={loaded ? { y: '0%' } : {}}
-                    transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-[13vw] sm:text-[10vw] md:text-[8.5vw] lg:text-[7.2vw] xl:text-[6.5vw] leading-[0.92] tracking-[-0.045em]"
+                    transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-[14vw] sm:text-[12vw] md:text-[10vw] lg:text-[9vw] xl:text-[8vw] leading-[0.92] tracking-[-0.045em]"
                     style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: '#09090B' }}
                   >
-                    Designing
-                  </motion.h1>
-                </div>
-
-                <div className="overflow-hidden mt-1">
-                  <motion.h1
-                    initial={{ y: '110%' }}
-                    animate={loaded ? { y: '0%' } : {}}
-                    transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-[13vw] sm:text-[10vw] md:text-[8.5vw] lg:text-[7.2vw] xl:text-[6.5vw] leading-[0.92] tracking-[-0.045em]"
-                    style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700 }}
-                  >
-                    <span style={{ color: '#52525B' }}>where </span>
-                    <span
-                      style={{
-                        background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 50%, #7C3AED 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }}
-                    >
-                      AI
-                    </span>
+                    behavior,
                   </motion.h1>
                 </div>
 
@@ -542,43 +442,66 @@ export function Hero() {
                     initial={{ y: '110%' }}
                     animate={loaded ? { y: '0%' } : {}}
                     transition={{ duration: 1, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-[13vw] sm:text-[10vw] md:text-[8.5vw] lg:text-[7.2vw] xl:text-[6.5vw] leading-[0.92] tracking-[-0.045em]"
+                    className="text-[14vw] sm:text-[12vw] md:text-[10vw] lg:text-[9vw] xl:text-[8vw] leading-[0.92] tracking-[-0.045em]"
+                    style={{
+                      fontFamily: 'Playfair Display, serif',
+                      fontStyle: 'italic',
+                      fontWeight: 500,
+                      color: '#0F766E',
+                    }}
+                  >
+                    artificial intelligence,
+                  </motion.h1>
+                </div>
+
+                <div className="overflow-hidden mt-1">
+                  <motion.h1
+                    initial={{ y: '110%' }}
+                    animate={loaded ? { y: '0%' } : {}}
+                    transition={{ duration: 1, delay: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-[14vw] sm:text-[12vw] md:text-[10vw] lg:text-[9vw] xl:text-[8vw] leading-[0.92] tracking-[-0.045em]"
                     style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: '#09090B' }}
                   >
-                    meets humans<span style={{ color: '#0F766E' }}>.</span>
+                    & accessibility<span style={{ color: '#0F766E', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 400 }}>.</span>
                   </motion.h1>
                 </div>
               </div>
 
-              {/* Subhead */}
+              {/* Standfirst — magazine subtitle */}
               <motion.p
-                className="text-[16px] sm:text-[18px] md:text-[19px] max-w-[600px] mb-10"
+                className="text-[15px] sm:text-[17px] max-w-[580px] mb-10"
                 style={{
                   color: '#52525B',
                   fontFamily: 'DM Sans, sans-serif',
-                  lineHeight: 1.55,
-                  letterSpacing: '-0.005em',
+                  lineHeight: 1.6,
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.8, delay: 1.0 }}
+                transition={{ duration: 0.8, delay: 1.15 }}
               >
-                Product designer focused on{' '}
-                <span style={{ color: '#09090B', fontWeight: 600 }}>behavior change, accessibility, and human-AI interaction</span>
-                {' '}— building interfaces that intervene at the right moment, for the people the system often forgets.
+                Building interfaces that intervene at the right moment — for the people the system often forgets. Currently designing AI &amp; robotics tools at <span style={{ color: '#09090B', fontWeight: 600 }}>UMBC CARDS Lab</span>.
               </motion.p>
 
               {/* CTAs */}
               <motion.div
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-12"
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 1.15 }}
+                transition={{ duration: 0.7, delay: 1.25 }}
               >
-                <MagneticButton onClick={scrollToCaseStudies} variant="primary">
-                  <span>View selected work</span>
+                <button
+                  onClick={scrollToCaseStudies}
+                  className="group inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold px-7 py-4 rounded-full transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: '#09090B',
+                    color: '#FFFFFF',
+                    fontFamily: 'DM Sans, sans-serif',
+                    boxShadow: '0 12px 24px -10px rgba(9,9,11,0.4)',
+                  }}
+                >
+                  <span>See selected work</span>
                   <ArrowDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" strokeWidth={2.5} />
-                </MagneticButton>
+                </button>
 
                 <Link
                   to="/about"
@@ -586,131 +509,85 @@ export function Hero() {
                   style={{
                     fontFamily: 'DM Sans, sans-serif',
                     color: '#09090B',
-                    border: '1px solid rgba(15,23,42,0.15)',
+                    border: '1px solid rgba(15,23,42,0.18)',
                     backgroundColor: 'rgba(255,255,255,0.6)',
                     backdropFilter: 'blur(12px)',
                   }}
                 >
-                  <span>About me</span>
+                  <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 500 }}>About</span>
+                  <span>me</span>
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={2.5} />
                 </Link>
               </motion.div>
+            </div>
+          </motion.div>
 
-              {/* Currently / Previously trust bar */}
-              <motion.div
-                className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pt-8"
-                style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 1.35 }}
+          {/* BOTTOM ROW — editorial credit line */}
+          <motion.div
+            className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mt-16 sm:mt-20 pt-6"
+            style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={loaded ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 1.4 }}
+          >
+            {/* Left: status */}
+            <div className="flex flex-col gap-2">
+              <span
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
               >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="text-[10.5px] font-semibold uppercase tracking-[0.2em] flex-shrink-0"
-                    style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
-                  >
-                    Currently
-                  </span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium"
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid rgba(15,23,42,0.1)',
-                        color: '#09090B',
-                        fontFamily: 'DM Sans, sans-serif',
-                        boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
-                      }}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0F766E' }} />
-                      UMBC CARDS Lab
-                    </span>
-                    <span
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-medium"
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid rgba(15,23,42,0.1)',
-                        color: '#09090B',
-                        fontFamily: 'DM Sans, sans-serif',
-                        boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
-                      }}
-                    >
-                      MS HCI · UMBC
-                    </span>
-                  </div>
-                </div>
-
-                <div className="hidden sm:block w-px h-6" style={{ backgroundColor: 'rgba(15,23,42,0.1)' }} />
-
-                <div className="flex items-center gap-3">
-                  <span
-                    className="text-[10.5px] font-semibold uppercase tracking-[0.2em] flex-shrink-0"
-                    style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
-                  >
-                    Previously
-                  </span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-medium"
-                      style={{
-                        backgroundColor: 'rgba(15,23,42,0.04)',
-                        color: '#52525B',
-                        fontFamily: 'DM Sans, sans-serif',
-                      }}
-                    >
-                      Welspun GCC
-                    </span>
-                    <span
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-medium"
-                      style={{
-                        backgroundColor: 'rgba(15,23,42,0.04)',
-                        color: '#52525B',
-                        fontFamily: 'DM Sans, sans-serif',
-                      }}
-                    >
-                      Metafic
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
+                Status / Availability
+              </span>
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#0F766E' }} />
+                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#0F766E' }} />
+                </span>
+                <span className="text-[13px] font-medium" style={{ color: '#09090B', fontFamily: 'DM Sans, sans-serif' }}>
+                  Open to full-time roles
+                </span>
+                <span className="text-[12px]" style={{ color: '#52525B', fontFamily: 'Playfair Display, serif', fontStyle: 'italic' }}>
+                  · no sponsorship needed
+                </span>
+              </div>
             </div>
 
-            {/* Right: 3D Photo */}
-            <motion.div
-              className="lg:col-span-5 order-1 lg:order-2 flex justify-center lg:justify-end"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={loaded ? { opacity: 1, scale: 1 } : {}}
-              transition={{ duration: 1, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <TiltPhoto />
-            </motion.div>
-          </div>
-        </div>
+            {/* Center: location + clock */}
+            <div className="flex flex-col gap-2 sm:items-center">
+              <span
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                Local Time / Baltimore
+              </span>
+              <span
+                className="text-[14px] font-medium"
+                style={{ color: '#09090B', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                <LiveClock /> EST
+              </span>
+            </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-3"
-          initial={{ opacity: 0 }}
-          animate={loaded ? { opacity: 1 } : {}}
-          transition={{ delay: 1.8 }}
-        >
-          <span
-            className="text-[10.5px] font-semibold uppercase tracking-[0.2em]"
-            style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
-          >
-            Scroll
-          </span>
-          <div
-            className="w-[1px] h-10"
-            style={{
-              background: 'linear-gradient(to bottom, rgba(15,23,42,0.4), transparent)',
-              animation: 'scroll-bounce 2.5s ease-in-out infinite',
-            }}
-          />
-        </motion.div>
+            {/* Right: updated stamp */}
+            <div className="flex flex-col gap-2 sm:items-end">
+              <span
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                Last Updated
+              </span>
+              <span
+                className="text-[13px] font-medium"
+                style={{ color: '#09090B', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                {today}
+              </span>
+            </div>
+          </motion.div>
+        </div>
       </motion.div>
 
-      {/* Marquee strip at bottom of hero */}
+      {/* Marquee at bottom */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
         <MarqueeStrip />
       </div>

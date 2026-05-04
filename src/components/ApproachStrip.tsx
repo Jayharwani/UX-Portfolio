@@ -1,39 +1,34 @@
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import { useRef, useState, useEffect } from "react";
-import { Brain, Accessibility, Sparkles, Workflow } from "lucide-react";
 
-const approaches = [
+const manifesto = [
   {
-    icon: Brain,
+    number: "01",
     title: "Behavior Design",
-    body: "Designing the moments where attention slips, decisions falter, and habits break — and intervening with intent.",
-    accent: "#0F766E",
-    bg: "rgba(15,118,110,0.06)",
-    border: "rgba(15,118,110,0.18)",
+    italic: "the moments where attention slips",
+    body: "I design for the small invisible decisions — distracted glances, impulse taps, broken habits — and intervene with intent.",
+    tagline: "Featured in: SmartDrive · Bumper",
   },
   {
-    icon: Accessibility,
+    number: "02",
     title: "Accessibility First",
-    body: "Building for the people the system forgets: neurodivergent users, vulnerable moments, and edge-case humans.",
-    accent: "#7C3AED",
-    bg: "rgba(124,58,237,0.06)",
-    border: "rgba(124,58,237,0.18)",
+    italic: "for the people the system forgets",
+    body: "Neurodivergent users, vulnerable moments, edge-case humans. The default user is a fiction; I design for the actual ones.",
+    tagline: "Featured in: ChronoWeave",
   },
   {
-    icon: Sparkles,
+    number: "03",
     title: "Human × AI",
-    body: "Researching how AI should disclose, defer, and adapt — so trust is earned, not assumed.",
-    accent: "#DB2777",
-    bg: "rgba(219,39,119,0.06)",
-    border: "rgba(219,39,119,0.18)",
+    italic: "trust earned, not assumed",
+    body: "Researching how AI should disclose, defer, and adapt — so the interface still feels like the user is in the driver's seat.",
+    tagline: "Currently: UMBC CARDS Lab",
   },
   {
-    icon: Workflow,
+    number: "04",
     title: "Systems Thinking",
-    body: "Designing scalable patterns and design systems that hold up across enterprise complexity.",
-    accent: "#0EA5E9",
-    bg: "rgba(14,165,233,0.06)",
-    border: "rgba(14,165,233,0.18)",
+    italic: "design that scales without flattening",
+    body: "Patterns, libraries, and tokens that hold their shape across enterprise complexity, accessibility constraints, and real handoff.",
+    tagline: "Previously: Welspun GCC",
   },
 ];
 
@@ -43,41 +38,6 @@ const stats = [
   { value: "MS", label: "HCI from UMBC" },
   { value: "12+", label: "Industries shipped" },
 ];
-
-/* 3D Tilt Card — rotates with cursor */
-function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 20 });
-
-  const handleMove = (e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    x.set(px);
-    y.set(py);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", perspective: 1200, ...style }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
 
 /* Animated counter */
 function StatCounter({ value, inView }: { value: string; inView: boolean }) {
@@ -119,7 +79,6 @@ export function ApproachStrip() {
     offset: ["start end", "end start"],
   });
 
-  const headlineY = useTransform(scrollYProgress, [0, 1], [60, -60]);
   const orb1Y = useTransform(scrollYProgress, [0, 1], [-100, 100]);
   const orb2Y = useTransform(scrollYProgress, [0, 1], [100, -100]);
 
@@ -139,7 +98,7 @@ export function ApproachStrip() {
       className="relative overflow-hidden"
       style={{ backgroundColor: '#FAFAF7' }}
     >
-      {/* Parallax ambient orbs */}
+      {/* Parallax ambient */}
       <motion.div
         className="absolute pointer-events-none"
         style={{
@@ -149,7 +108,7 @@ export function ApproachStrip() {
           height: '500px',
           background: 'radial-gradient(circle, rgba(15,118,110,0.06) 0%, transparent 65%)',
           y: orb1Y,
-          filter: 'blur(50px)',
+          filter: 'blur(60px)',
         }}
       />
       <motion.div
@@ -159,147 +118,152 @@ export function ApproachStrip() {
           right: '-10%',
           width: '550px',
           height: '550px',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 65%)',
           y: orb2Y,
-          filter: 'blur(50px)',
+          filter: 'blur(60px)',
         }}
       />
 
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(rgba(15,23,42,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.3) 1px, transparent 1px)`,
-          backgroundSize: '96px 96px',
-        }}
-      />
+      {/* Editorial column lines */}
+      <div className="absolute inset-0 pointer-events-none hidden lg:flex justify-between max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="w-px h-full" style={{ backgroundColor: 'rgba(15,23,42,0.04)' }} />
+        ))}
+      </div>
 
       <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-24 sm:py-32">
-        {/* Header */}
-        <motion.div
-          className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 sm:mb-20"
-          style={{ y: headlineY }}
-        >
-          <div className="max-w-2xl">
-            <motion.div
-              className="flex items-center gap-3 mb-5"
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <span
-                className="text-[10.5px] font-semibold uppercase tracking-[0.2em]"
-                style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
-              >
-                01 — How I work
-              </span>
-              <div className="w-12 h-px" style={{ backgroundColor: 'rgba(15,23,42,0.2)' }} />
-            </motion.div>
 
-            <motion.h2
-              className="text-[32px] sm:text-[42px] md:text-[52px] leading-[1.05] tracking-[-0.035em]"
-              style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: '#09090B' }}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, delay: 0.1 }}
+        {/* Section header — magazine style */}
+        <div className="grid grid-cols-12 gap-6 mb-20 sm:mb-28">
+          {/* Left credit column */}
+          <motion.div
+            className="col-span-12 md:col-span-3 flex flex-col gap-4"
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
+            <span
+              className="text-[10px] uppercase tracking-[0.25em]"
+              style={{ color: '#71717A', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
             >
-              Design as a tool for{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #0F766E 0%, #7C3AED 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                human attention.
-              </span>
-            </motion.h2>
-          </div>
+              Section //01
+            </span>
+            <span
+              className="text-[10px] uppercase tracking-[0.25em]"
+              style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+            >
+              How I work
+            </span>
+          </motion.div>
 
-          <motion.p
-            className="text-[15px] md:text-[16px] max-w-md"
-            style={{
-              color: '#52525B',
-              fontFamily: 'DM Sans, sans-serif',
-              lineHeight: 1.65,
-            }}
-            initial={{ opacity: 0, y: 20 }}
+          {/* Right headline */}
+          <motion.div
+            className="col-span-12 md:col-span-9"
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
           >
-            I work at the intersection of behavioral science, accessibility,
-            and emerging tech. Every project starts with one question:
-            what is the user trying to do, and what's getting in their way?
-          </motion.p>
-        </motion.div>
-
-        {/* Approach grid — 3D tilt cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
-          {approaches.map((item, i) => (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+            <h2
+              className="text-[36px] sm:text-[52px] md:text-[68px] leading-[1.0] tracking-[-0.035em]"
+              style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: '#09090B' }}
             >
-              <TiltCard
-                className="group relative p-7 rounded-[20px] cursor-pointer h-full"
+              A working{' '}
+              <span
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid rgba(15,23,42,0.08)',
-                  boxShadow: '0 1px 3px rgba(15,23,42,0.04), 0 0 0 1px rgba(15,23,42,0.02)',
+                  fontFamily: 'Playfair Display, serif',
+                  fontStyle: 'italic',
+                  fontWeight: 500,
+                  color: '#0F766E',
                 }}
               >
-                {/* Hover glow background */}
-                <div
-                  className="absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                manifesto.
+              </span>
+            </h2>
+            <p
+              className="text-[15px] md:text-[17px] mt-6 max-w-2xl"
+              style={{
+                color: '#52525B',
+                fontFamily: 'DM Sans, sans-serif',
+                lineHeight: 1.65,
+              }}
+            >
+              Four ideas I keep coming back to — across research notebooks,
+              design critiques, and 3 a.m. conversations with the people
+              I'm designing for.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Manifesto rows — editorial list */}
+        <div className="space-y-px">
+          {manifesto.map((item, i) => (
+            <motion.div
+              key={item.number}
+              className="group relative grid grid-cols-12 gap-4 sm:gap-6 py-10 sm:py-14 cursor-default"
+              style={{ borderTop: '1px solid rgba(15,23,42,0.1)' }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.7, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Hover wash */}
+              <motion.div
+                className="absolute inset-0 -mx-6 sm:-mx-8 lg:-mx-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(15,118,110,0.04) 50%, transparent 100%)',
+                }}
+              />
+
+              {/* Number — large left */}
+              <div className="col-span-3 sm:col-span-2 relative">
+                <motion.div
+                  className="text-[40px] sm:text-[64px] md:text-[80px] leading-none"
                   style={{
-                    background: `radial-gradient(circle at 50% 0%, ${item.bg} 0%, transparent 70%)`,
+                    fontFamily: 'Playfair Display, serif',
+                    fontWeight: 400,
+                    fontStyle: 'italic',
+                    color: '#0F766E',
+                    letterSpacing: '-0.02em',
                   }}
-                />
-
-                {/* Index */}
-                <span
-                  className="absolute top-7 right-7 text-[11px] font-mono"
-                  style={{ color: '#A1A1AA' }}
+                  whileHover={{ x: 6 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 >
-                  0{i + 1}
-                </span>
+                  {item.number}
+                </motion.div>
+              </div>
 
-                {/* 3D Floating icon */}
-                <div
-                  className="relative w-12 h-12 rounded-2xl flex items-center justify-center mb-7 transition-transform group-hover:scale-110 group-hover:-rotate-6"
-                  style={{
-                    backgroundColor: item.bg,
-                    border: `1px solid ${item.border}`,
-                    transform: 'translateZ(40px)',
-                    boxShadow: `0 8px 20px -8px ${item.border}`,
-                  }}
-                >
-                  <item.icon className="w-5 h-5" strokeWidth={2} style={{ color: item.accent }} />
-                </div>
-
-                {/* Title */}
+              {/* Title + body — middle */}
+              <div className="col-span-9 sm:col-span-7 relative">
                 <h3
-                  className="text-[18px] mb-3 relative"
+                  className="text-[22px] sm:text-[28px] md:text-[32px] mb-2 leading-tight"
                   style={{
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'Syne, sans-serif',
                     fontWeight: 700,
                     color: '#09090B',
-                    letterSpacing: '-0.012em',
+                    letterSpacing: '-0.02em',
                   }}
                 >
                   {item.title}
                 </h3>
 
+                {/* Italic teaser */}
+                <p
+                  className="text-[15px] sm:text-[17px] mb-4"
+                  style={{
+                    fontFamily: 'Playfair Display, serif',
+                    fontStyle: 'italic',
+                    fontWeight: 400,
+                    color: '#0F766E',
+                  }}
+                >
+                  — {item.italic}
+                </p>
+
                 {/* Body */}
                 <p
-                  className="text-[13.5px] relative"
+                  className="text-[14px] sm:text-[15.5px] max-w-[640px]"
                   style={{
                     color: '#52525B',
                     fontFamily: 'DM Sans, sans-serif',
@@ -308,53 +272,66 @@ export function ApproachStrip() {
                 >
                   {item.body}
                 </p>
+              </div>
 
-                {/* Bottom accent line */}
-                <div
-                  className="absolute left-7 right-7 bottom-7 h-px transition-all duration-500"
-                  style={{
-                    background: `linear-gradient(to right, ${item.accent}40, transparent)`,
-                    transform: 'scaleX(0.3)',
-                    transformOrigin: 'left',
-                  }}
-                />
-              </TiltCard>
+              {/* Tagline — right metadata */}
+              <div className="hidden sm:flex col-span-3 flex-col items-end justify-start text-right gap-2 relative">
+                <span
+                  className="text-[10px] uppercase tracking-[0.2em]"
+                  style={{ color: '#A1A1AA', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+                >
+                  Reference
+                </span>
+                <span
+                  className="text-[12px] font-medium"
+                  style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
+                >
+                  {item.tagline}
+                </span>
+              </div>
+
+              {/* Mobile reference */}
+              <div className="sm:hidden col-span-12 mt-3">
+                <span
+                  className="text-[11px] font-medium"
+                  style={{ color: '#71717A', fontFamily: 'DM Sans, sans-serif' }}
+                >
+                  → {item.tagline}
+                </span>
+              </div>
             </motion.div>
           ))}
+
+          {/* Closing border */}
+          <div style={{ borderTop: '1px solid rgba(15,23,42,0.1)' }} />
         </div>
 
-        {/* Stats — animated counters */}
+        {/* Stats — minimal editorial row */}
         <motion.div
           ref={statsRef}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-[20px] overflow-hidden"
-          style={{
-            backgroundColor: 'rgba(15,23,42,0.08)',
-            boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
-          }}
+          className="mt-20 sm:mt-28 grid grid-cols-2 sm:grid-cols-4 gap-y-10 gap-x-6"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.4 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
         >
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="px-6 py-8 text-center sm:text-left relative overflow-hidden group"
-              style={{ backgroundColor: '#FFFFFF' }}
+              className="flex flex-col gap-2"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.5 + i * 0.08 }}
+              transition={{ duration: 0.5, delay: 0.3 + i * 0.08 }}
             >
-              {/* Hover gradient */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{
-                  background: 'radial-gradient(circle at top, rgba(15,118,110,0.04) 0%, transparent 60%)',
-                }}
-              />
+              <span
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: '#71717A', fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
+              >
+                {String(i + 1).padStart(2, '0')} / {stat.label}
+              </span>
               <p
-                className="text-[40px] sm:text-[52px] leading-none mb-2 relative"
+                className="text-[44px] sm:text-[56px] leading-none"
                 style={{
                   fontFamily: 'Syne, sans-serif',
                   fontWeight: 700,
@@ -363,16 +340,6 @@ export function ApproachStrip() {
                 }}
               >
                 <StatCounter value={stat.value} inView={statsInView} />
-              </p>
-              <p
-                className="text-[11px] uppercase tracking-[0.18em] relative"
-                style={{
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontWeight: 600,
-                  color: '#71717A',
-                }}
-              >
-                {stat.label}
               </p>
             </motion.div>
           ))}
