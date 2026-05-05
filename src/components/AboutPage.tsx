@@ -1,15 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
   Linkedin,
   FileText,
-  Sparkles,
-  Layers,
-  Palette,
-  Code,
-  Rocket,
   Menu,
   X,
 } from "lucide-react";
@@ -17,9 +12,319 @@ import { Link } from "react-router";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
 /* ────────────────────────────────────────────────────────── */
+/*  CUSTOM SVG ICONS — brand-quality, hand-built, animated    */
+/* ────────────────────────────────────────────────────────── */
+
+/* Creativity — animated multi-layer starburst with orbiting sparkles */
+function CreativityIcon() {
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <linearGradient id="cr-grad" x1="0" y1="0" x2="100" y2="100">
+          <stop offset="0%" stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+        <radialGradient id="cr-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.5" />
+          <stop offset="70%" stopColor="#A78BFA" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Soft glow */}
+      <motion.circle
+        cx="50" cy="50" r="42"
+        fill="url(#cr-glow)"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "50px 50px" }}
+      />
+
+      {/* Outer rotating 4-pt cross */}
+      <motion.g
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+        style={{ transformOrigin: "50px 50px" }}
+      >
+        <path
+          d="M50 10 L53 47 L90 50 L53 53 L50 90 L47 53 L10 50 L47 47 Z"
+          fill="url(#cr-grad)"
+          opacity="0.55"
+        />
+      </motion.g>
+
+      {/* Inner counter-rotating 4-pt diamond */}
+      <motion.g
+        animate={{ rotate: -360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        style={{ transformOrigin: "50px 50px" }}
+      >
+        <path
+          d="M50 24 L57 50 L50 76 L43 50 Z M24 50 L50 43 L76 50 L50 57 Z"
+          fill="url(#cr-grad)"
+        />
+      </motion.g>
+
+      {/* Floating sparkle satellites */}
+      {[
+        { cx: 22, cy: 28, d: 0 },
+        { cx: 80, cy: 22, d: 0.7 },
+        { cx: 78, cy: 78, d: 1.4 },
+        { cx: 18, cy: 72, d: 2.1 },
+      ].map((s, i) => (
+        <motion.circle
+          key={i}
+          cx={s.cx} cy={s.cy} r="1.8"
+          fill="#A78BFA"
+          animate={{ opacity: [0, 1, 0], scale: [0.4, 1.4, 0.4] }}
+          transition={{ duration: 2.8, repeat: Infinity, delay: s.d, ease: "easeInOut" }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/* Figma — the actual Figma logo (5 brand-colored shapes) with staggered fade-in */
+function FigmaIcon() {
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 38 57" fill="none">
+      {/* TOP-LEFT: red */}
+      <motion.path
+        fill="#F24E1E"
+        d="M3 9.5C3 5.08172 6.58172 1.5 11 1.5H19V17.5H11C6.58172 17.5 3 13.9183 3 9.5V9.5Z"
+        initial={{ opacity: 0, x: -6 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0 }}
+      />
+      {/* TOP-RIGHT: orange */}
+      <motion.path
+        fill="#FF7262"
+        d="M19 1.5H27C31.4183 1.5 35 5.08172 35 9.5C35 13.9183 31.4183 17.5 27 17.5H19V1.5Z"
+        initial={{ opacity: 0, y: -6 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      />
+      {/* MID-RIGHT: purple */}
+      <motion.circle
+        cx="27" cy="28.5" r="8"
+        fill="#A259FF"
+        initial={{ opacity: 0, scale: 0 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.2, type: "spring", stiffness: 200 }}
+      />
+      {/* MID-LEFT: pink */}
+      <motion.path
+        fill="#FF7262"
+        d="M3 25.5C3 21.0817 6.58172 17.5 11 17.5H19V33.5H11C6.58172 33.5 3 29.9183 3 25.5V25.5Z"
+        initial={{ opacity: 0, x: -6 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+      />
+      {/* BOTTOM-LEFT: blue */}
+      <motion.path
+        fill="#1ABCFE"
+        d="M3 41.5C3 37.0817 6.58172 33.5 11 33.5H19V49.5C19 53.9183 15.4183 57.5 11 57.5C6.58172 57.5 3 53.9183 3 49.5V41.5Z"
+        initial={{ opacity: 0, y: 6 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.25 }}
+      />
+    </svg>
+  );
+}
+
+/* Stitch — Google's color threads woven, with continuous draw-in */
+function StitchIcon() {
+  const colors = ["#4285F4", "#EA4335", "#FBBC04", "#34A853"];
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <filter id="stitch-shadow" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1" />
+          <feOffset dy="0.5" />
+          <feComponentTransfer><feFuncA type="linear" slope="0.25" /></feComponentTransfer>
+          <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
+      {/* Vertical threads */}
+      {[20, 40, 60, 80].map((x, i) => (
+        <motion.line
+          key={`v-${i}`}
+          x1={x} y1="15" x2={x} y2="85"
+          stroke={colors[i]}
+          strokeWidth="5"
+          strokeLinecap="round"
+          filter="url(#stitch-shadow)"
+          initial={{ pathLength: 0, opacity: 0 }}
+          whileInView={{ pathLength: 1, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.1 + i * 0.08, ease: "easeOut" }}
+        />
+      ))}
+
+      {/* Horizontal stitches weaving through */}
+      {[28, 50, 72].map((y, i) => (
+        <motion.line
+          key={`h-${i}`}
+          x1="14" y1={y} x2="86" y2={y}
+          stroke="#09090B"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="3 6"
+          opacity="0.7"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9, delay: 0.5 + i * 0.12, ease: "easeOut" }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/* Claude Code — Anthropic's signature 8-point asterisk, slowly rotating */
+function ClaudeCodeIcon() {
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <radialGradient id="cc-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#D97757" stopOpacity="0.35" />
+          <stop offset="70%" stopColor="#D97757" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <motion.circle
+        cx="50" cy="50" r="44"
+        fill="url(#cc-glow)"
+        animate={{ scale: [1, 1.12, 1] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "50px 50px" }}
+      />
+
+      <motion.g
+        animate={{ rotate: 360 }}
+        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+        style={{ transformOrigin: "50px 50px" }}
+      >
+        {/* Anthropic-style 4-leaf signature (hand-tuned bezier petals) */}
+        <path
+          d="M50 8
+             C 52 30, 70 48, 92 50
+             C 70 52, 52 70, 50 92
+             C 48 70, 30 52, 8 50
+             C 30 48, 48 30, 50 8 Z"
+          fill="#D97757"
+        />
+        <path
+          d="M78.3 21.7
+             C 67 33, 60 40, 50 50
+             C 60 60, 67 67, 78.3 78.3
+             C 67 67, 60 60, 50 50
+             C 40 60, 33 67, 21.7 78.3
+             C 33 67, 40 60, 50 50
+             C 40 40, 33 33, 21.7 21.7
+             C 33 33, 40 40, 50 50
+             C 60 40, 67 33, 78.3 21.7 Z"
+          fill="#D97757"
+          opacity="0.7"
+        />
+      </motion.g>
+
+      {/* Center dot */}
+      <circle cx="50" cy="50" r="3" fill="#FAFAF7" />
+    </svg>
+  );
+}
+
+/* Antigravity — gradient orbs floating upward, continuous loop */
+function AntigravityIcon() {
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none">
+      <defs>
+        <linearGradient id="ag-grad" x1="0" y1="100" x2="0" y2="0">
+          <stop offset="0%" stopColor="#7C3AED" />
+          <stop offset="100%" stopColor="#4285F4" />
+        </linearGradient>
+        <linearGradient id="ag-line" x1="0" y1="0" x2="100" y2="0">
+          <stop offset="0%" stopColor="rgba(15,23,42,0)" />
+          <stop offset="50%" stopColor="rgba(15,23,42,0.25)" />
+          <stop offset="100%" stopColor="rgba(15,23,42,0)" />
+        </linearGradient>
+      </defs>
+
+      {/* Ground line */}
+      <line x1="10" y1="86" x2="90" y2="86" stroke="url(#ag-line)" strokeWidth="1" strokeDasharray="2 3" />
+
+      {/* Floating orbs going up, staggered */}
+      {[
+        { cx: 28, r: 5, dur: 2.8, delay: 0 },
+        { cx: 50, r: 7, dur: 3.2, delay: 0.7 },
+        { cx: 72, r: 5, dur: 2.6, delay: 1.4 },
+      ].map((o, i) => (
+        <g key={i}>
+          <motion.circle
+            cx={o.cx}
+            r={o.r}
+            fill="url(#ag-grad)"
+            animate={{
+              cy: [86, 14],
+              opacity: [0, 1, 1, 0],
+              scale: [0.5, 1, 1, 0.7],
+            }}
+            transition={{
+              duration: o.dur,
+              repeat: Infinity,
+              delay: o.delay,
+              times: [0, 0.2, 0.8, 1],
+              ease: "easeOut",
+            }}
+          />
+          {/* Orbital trail */}
+          <motion.line
+            x1={o.cx} x2={o.cx}
+            stroke="url(#ag-grad)"
+            strokeWidth="1"
+            strokeLinecap="round"
+            opacity="0.3"
+            animate={{
+              y1: [86, 14],
+              y2: [86, 30],
+              opacity: [0, 0.5, 0],
+            }}
+            transition={{
+              duration: o.dur,
+              repeat: Infinity,
+              delay: o.delay,
+              ease: "easeOut",
+            }}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ────────────────────────────────────────────────────────── */
 /*  TOOLS — the 5 things that turn ideas into shipped product */
 /* ────────────────────────────────────────────────────────── */
-const tools = [
+type Tool = {
+  stage: string;
+  stageNum: string;
+  name: string;
+  tagline: string;
+  desc: string;
+  color: string;
+  softColor: string;
+  gradientFrom: string;
+  gradientTo: string;
+  Icon: () => JSX.Element;
+};
+
+const tools: Tool[] = [
   {
     stage: "Idea",
     stageNum: "01",
@@ -28,7 +333,9 @@ const tools = [
     desc: "The thing that decides which tool to use, and when. Without it, the rest is just software.",
     color: "#7C3AED",
     softColor: "rgba(124,58,237,0.08)",
-    Icon: Sparkles,
+    gradientFrom: "rgba(167,139,250,0.18)",
+    gradientTo: "rgba(124,58,237,0.06)",
+    Icon: CreativityIcon,
   },
   {
     stage: "Design",
@@ -36,9 +343,11 @@ const tools = [
     name: "Figma",
     tagline: "5+ years in production",
     desc: "Design systems, components, prototyping, handoff. The deep craft layer where ideas get tangible.",
-    color: "#0F766E",
-    softColor: "rgba(15,118,110,0.08)",
-    Icon: Layers,
+    color: "#A259FF",
+    softColor: "rgba(162,89,255,0.08)",
+    gradientFrom: "rgba(255,114,98,0.15)",
+    gradientTo: "rgba(26,188,254,0.10)",
+    Icon: FigmaIcon,
   },
   {
     stage: "Design",
@@ -46,9 +355,11 @@ const tools = [
     name: "Stitch",
     tagline: "AI-native UI",
     desc: "Google's design AI — wireframe to high-fidelity mockup in minutes. Shortens the boring middle.",
-    color: "#0EA5E9",
-    softColor: "rgba(14,165,233,0.08)",
-    Icon: Palette,
+    color: "#4285F4",
+    softColor: "rgba(66,133,244,0.08)",
+    gradientFrom: "rgba(66,133,244,0.15)",
+    gradientTo: "rgba(234,67,53,0.08)",
+    Icon: StitchIcon,
   },
   {
     stage: "Code",
@@ -58,7 +369,9 @@ const tools = [
     desc: "This entire portfolio — designed, built, and shipped end-to-end with Claude Code. No middlemen.",
     color: "#D97757",
     softColor: "rgba(217,119,87,0.08)",
-    Icon: Code,
+    gradientFrom: "rgba(217,119,87,0.20)",
+    gradientTo: "rgba(217,119,87,0.04)",
+    Icon: ClaudeCodeIcon,
   },
   {
     stage: "Ship",
@@ -68,7 +381,9 @@ const tools = [
     desc: "Google's vibe-coding agent IDE. Designs, builds, and ships full applications in hours, not sprints.",
     color: "#4285F4",
     softColor: "rgba(66,133,244,0.08)",
-    Icon: Rocket,
+    gradientFrom: "rgba(124,58,237,0.18)",
+    gradientTo: "rgba(66,133,244,0.10)",
+    Icon: AntigravityIcon,
   },
 ];
 
@@ -688,18 +1003,37 @@ function StagePipeline() {
 }
 
 /* ────────────────────────────────────────────────────────── */
-/*  ToolCard                                                   */
+/*  ToolCard — 3D-tilt, animated halo, branded SVG icon        */
 /* ────────────────────────────────────────────────────────── */
 function ToolCard({
   tool,
   index,
   isLast,
 }: {
-  tool: typeof tools[number];
+  tool: Tool;
   index: number;
   isLast: boolean;
 }) {
   const { Icon } = tool;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
+  const [glow, setGlow] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    setTilt({ rx: (py - 0.5) * -8, ry: (px - 0.5) * 8 });
+    setGlow({ x: px * 100, y: py * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ rx: 0, ry: 0 });
+    setHovered(false);
+  };
 
   return (
     <motion.div
@@ -708,15 +1042,17 @@ function ToolCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.7, delay: index * 0.12, ease: [0.22, 1, 0.36, 1] }}
+      style={{ perspective: 1200 }}
     >
-      {/* Arrow connector — visible only on desktop, between cards */}
+      {/* Connector arrow between cards (desktop) */}
       {!isLast && (
         <motion.div
-          className="hidden lg:flex absolute top-1/2 -right-3 z-20 items-center justify-center w-6 h-6 rounded-full"
+          className="hidden lg:flex absolute top-1/2 -right-3 z-20 items-center justify-center w-7 h-7 rounded-full"
           style={{
             backgroundColor: "#FAFAF7",
             border: "1px solid rgba(15,23,42,0.12)",
             transform: "translateY(-50%)",
+            boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
           }}
           initial={{ opacity: 0, scale: 0 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -724,106 +1060,152 @@ function ToolCard({
           transition={{ duration: 0.4, delay: 0.3 + index * 0.12 }}
         >
           <ArrowUpRight
-            className="w-3 h-3"
+            className="w-3.5 h-3.5"
             style={{ color: "#52525B", transform: "rotate(45deg)" }}
             strokeWidth={2.5}
           />
         </motion.div>
       )}
 
+      {/* Animated outer glow — appears on hover */}
       <div
-        className="relative h-full p-6 rounded-2xl transition-all duration-500 group-hover:-translate-y-1"
+        className="absolute -inset-0.5 rounded-[20px] pointer-events-none transition-opacity duration-500"
+        style={{
+          opacity: hovered ? 1 : 0,
+          background: `linear-gradient(135deg, ${tool.color}55, transparent 60%)`,
+          filter: "blur(14px)",
+          zIndex: -1,
+        }}
+      />
+
+      {/* CARD */}
+      <div
+        ref={cardRef}
+        onMouseEnter={() => setHovered(true)}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="relative h-full overflow-hidden rounded-2xl"
         style={{
           backgroundColor: "#FFFFFF",
           border: "1px solid rgba(15,23,42,0.08)",
-          boxShadow: "0 1px 3px rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.06)",
+          boxShadow: hovered
+            ? `0 30px 60px -20px ${tool.color}40, 0 6px 18px -6px rgba(15,23,42,0.08)`
+            : "0 1px 3px rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.06)",
+          transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+          transformStyle: "preserve-3d",
+          transition: "box-shadow 0.4s ease, transform 0.25s ease-out",
         }}
       >
-        {/* Top: stage tag + number */}
-        <div className="flex items-start justify-between mb-5">
+        {/* Mouse-tracked spotlight glow inside card */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background: `radial-gradient(420px circle at ${glow.x}% ${glow.y}%, ${tool.color}14, transparent 50%)`,
+          }}
+        />
+
+        {/* ICON HERO PANEL — large gradient slab */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{
+            aspectRatio: "1.4 / 1",
+            background: `linear-gradient(135deg, ${tool.gradientFrom} 0%, ${tool.gradientTo} 100%)`,
+            borderBottom: "1px solid rgba(15,23,42,0.06)",
+          }}
+        >
+          {/* Subtle grid overlay in the icon panel */}
           <div
-            className="px-2.5 py-1 rounded-full"
+            className="absolute inset-0 opacity-[0.04]"
             style={{
-              backgroundColor: tool.softColor,
-              border: `1px solid ${tool.color}25`,
+              backgroundImage:
+                "linear-gradient(rgba(15,23,42,1) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,1) 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          />
+
+          {/* Number badge (top-left of icon panel) */}
+          <div
+            className="absolute top-3 left-3 px-2 py-1 rounded-md backdrop-blur-md"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(15,23,42,0.06)",
             }}
           >
             <span
               className="text-[9px] uppercase tracking-[0.18em] font-semibold"
-              style={{ color: tool.color, fontFamily: "DM Sans, sans-serif" }}
+              style={{ color: "#52525B", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
             >
-              {tool.stage}
+              {tool.stageNum} / {tool.stage}
             </span>
           </div>
-          <span
-            className="text-[10px] uppercase tracking-[0.15em]"
-            style={{
-              color: "#A1A1AA",
-              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            }}
+
+          {/* The animated branded icon */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center p-7"
+            style={{ transform: "translateZ(40px)" }}
+            animate={hovered ? { scale: 1.06 } : { scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 18 }}
           >
-            {tool.stageNum}
-          </span>
+            <div className="w-full h-full max-w-[88px] max-h-[88px]">
+              <Icon />
+            </div>
+          </motion.div>
         </div>
 
-        {/* Icon */}
-        <motion.div
-          className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-          style={{
-            backgroundColor: tool.softColor,
-            color: tool.color,
-          }}
-          whileHover={{ rotate: -6, scale: 1.08 }}
-          transition={{ type: "spring", stiffness: 300, damping: 18 }}
-        >
-          <Icon className="w-5 h-5" strokeWidth={2} />
-        </motion.div>
+        {/* TEXT BLOCK */}
+        <div className="relative p-5 sm:p-6" style={{ transform: "translateZ(20px)" }}>
+          {/* Tool name */}
+          <h3
+            className="text-[20px] sm:text-[22px] mb-1.5 leading-tight"
+            style={{
+              fontFamily: "Syne, sans-serif",
+              fontWeight: 700,
+              color: "#09090B",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {tool.name}
+          </h3>
 
-        {/* Tool name */}
-        <h3
-          className="text-[20px] sm:text-[22px] mb-1.5 leading-tight"
-          style={{
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            color: "#09090B",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {tool.name}
-        </h3>
+          {/* Italic tagline */}
+          <p
+            className="text-[12.5px] mb-3.5"
+            style={{
+              color: tool.color,
+              fontFamily: "Playfair Display, serif",
+              fontStyle: "italic",
+              fontWeight: 500,
+            }}
+          >
+            — {tool.tagline}
+          </p>
 
-        {/* Tagline */}
-        <p
-          className="text-[12px] mb-3"
-          style={{
-            color: tool.color,
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-            fontWeight: 500,
-          }}
-        >
-          — {tool.tagline}
-        </p>
+          {/* Description */}
+          <p
+            className="text-[13.5px]"
+            style={{
+              color: "#52525B",
+              fontFamily: "DM Sans, sans-serif",
+              lineHeight: 1.55,
+            }}
+          >
+            {tool.desc}
+          </p>
 
-        {/* Description */}
-        <p
-          className="text-[13.5px]"
-          style={{
-            color: "#52525B",
-            fontFamily: "DM Sans, sans-serif",
-            lineHeight: 1.55,
-          }}
-        >
-          {tool.desc}
-        </p>
-
-        {/* Glow on hover — accent color wash */}
-        <div
-          className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-          style={{
-            boxShadow: `0 20px 60px -16px ${tool.color}40`,
-          }}
-        />
+          {/* Bottom accent bar — animates on hover */}
+          <div
+            className="mt-5 h-px overflow-hidden rounded-full"
+            style={{ backgroundColor: "rgba(15,23,42,0.06)" }}
+          >
+            <motion.div
+              className="h-full origin-left"
+              style={{ backgroundColor: tool.color }}
+              animate={hovered ? { scaleX: 1 } : { scaleX: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
+        </div>
       </div>
     </motion.div>
   );
