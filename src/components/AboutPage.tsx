@@ -610,43 +610,6 @@ export function AboutPage() {
                   className="w-full h-full object-cover"
                   style={{ objectPosition: "center 22%" }}
                 />
-                {/* Floating credit chip on photo */}
-                <div
-                  className="absolute bottom-4 left-4 right-4 px-4 py-3 rounded-2xl flex items-center gap-3 backdrop-blur-md"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.92)",
-                    border: "1px solid rgba(255,255,255,0.6)",
-                  }}
-                >
-                  <span className="relative flex h-2 w-2 flex-shrink-0">
-                    <span
-                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                      style={{ backgroundColor: "#0F766E" }}
-                    />
-                    <span
-                      className="relative inline-flex rounded-full h-2 w-2"
-                      style={{ backgroundColor: "#0F766E" }}
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <p
-                      className="text-[12px] font-semibold leading-tight"
-                      style={{ color: "#09090B", fontFamily: "DM Sans, sans-serif" }}
-                    >
-                      Jay Harwani — Baltimore, MD
-                    </p>
-                    <p
-                      className="text-[11px] mt-0.5 leading-tight"
-                      style={{
-                        color: "#0F766E",
-                        fontFamily: "Playfair Display, serif",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      Open to full-time roles · No sponsorship
-                    </p>
-                  </div>
-                </div>
               </div>
 
               {/* Decorative tag — top right of photo */}
@@ -848,17 +811,9 @@ function ProcessSection() {
               to{" "}
               <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: "#7C3AED" }}>
                 ship
-              </span>{" "}
-              — solo.
+              </span>
+              .
             </h2>
-            <p
-              className="text-[15px] md:text-[17px] mt-6 max-w-2xl"
-              style={{ color: "#52525B", fontFamily: "DM Sans, sans-serif", lineHeight: 1.65 }}
-            >
-              Five tools, one designer-engineer. I'm not just someone who hands off mockups — I design,
-              build, and deploy. Here's the stack that gets things from a half-formed idea into a live
-              product.
-            </p>
           </motion.div>
         </div>
 
