@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router";
 import { Menu, X, ArrowDown, ArrowUpRight } from "lucide-react";
 import userPhoto from "../assets/hero-portrait.jpeg";
@@ -10,6 +10,8 @@ export function Hero() {
   const [photoOpen, setPhotoOpen] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const [avatarPos, setAvatarPos] = useState({ top: 0, left: 0 });
 
   const scrollToCaseStudies = () => {
     setMobileMenuOpen(false);
@@ -25,6 +27,15 @@ export function Hero() {
       clearTimeout(timer);
       window.removeEventListener('scroll', handleScroll);
     };
+  }, []);
+
+  /* Capture avatar screen position when opening the expanded card */
+  const openPhoto = useCallback(() => {
+    if (avatarRef.current) {
+      const rect = avatarRef.current.getBoundingClientRect();
+      setAvatarPos({ top: rect.top, left: rect.left });
+    }
+    setPhotoOpen(true);
   }, []);
 
   return (
@@ -191,6 +202,66 @@ export function Hero() {
         )}
       </AnimatePresence>
 
+      {/*
+        ── EXPANDED PHOTO CARD ──
+        Rendered as position:fixed at z-[9999] so it floats above ALL content.
+        Anchored to the avatar's screen position via avatarRef + getBoundingClientRect.
+        onMouseLeave closes it — mouse is already inside because the card spawns
+        at the cursor's position (avatar location).
+      */}
+      <AnimatePresence>
+        {photoOpen && (
+          <motion.div
+            className="fixed overflow-hidden cursor-pointer"
+            style={{
+              top: avatarPos.top,
+              left: avatarPos.left,
+              width: 240,
+              height: 310,
+              zIndex: 9999,
+              borderRadius: 20,
+              boxShadow: '0 40px 90px -20px rgba(15,23,42,0.45), 0 0 0 1px rgba(15,23,42,0.06)',
+            }}
+            initial={{ opacity: 0, scale: 0.6, borderRadius: 100 }}
+            animate={{ opacity: 1, scale: 1, borderRadius: 20 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            onMouseLeave={() => setPhotoOpen(false)}
+            onClick={() => setPhotoOpen(false)}
+          >
+            <img
+              src={userPhoto}
+              alt="Jay Harwani"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: 'center 22%' }}
+            />
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <p
+                className="text-white font-semibold text-[14px]"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+              >
+                Jay Harwani — Baltimore, MD
+              </p>
+              <p
+                className="text-[13px] mt-0.5"
+                style={{
+                  color: '#5EEAD4',
+                  fontFamily: 'Playfair Display, serif',
+                  fontStyle: 'italic',
+                }}
+              >
+                Product Designer &amp; MS HCI
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── MAIN HERO ── */}
       <div className="relative min-h-screen flex flex-col z-20 pt-28 pb-20 sm:pb-28">
         <div className="flex-1 max-w-7xl mx-auto w-full px-6 sm:px-8 lg:px-12 flex flex-col">
@@ -198,81 +269,33 @@ export function Hero() {
           {/* TOP ROW — profile chip (left) + edition stamp (right) */}
           <div className="flex items-start justify-between mb-10 sm:mb-14">
 
-            {/* Profile chip — fixed 64px layout slot, card expands as absolute overlay */}
+            {/* Profile chip */}
             <motion.div
               className="flex items-center gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={loaded ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.3 }}
             >
-              {/*
-                Wrapper is exactly 64×64 — never shifts the flex layout.
-                The motion.div inside is position:absolute so it expands freely on top.
-                onHoverStart / onHoverEnd (Framer Motion) are stable through animation.
-              */}
-              <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0, zIndex: 40 }}>
-                <motion.div
-                  className="overflow-hidden cursor-pointer"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    zIndex: 50,
-                    boxShadow: photoOpen
-                      ? '0 40px 90px -20px rgba(15,23,42,0.45), 0 0 0 1px rgba(15,23,42,0.06)'
-                      : '0 0 0 1.5px rgba(15,23,42,0.1), 0 6px 16px -6px rgba(15,23,42,0.18)',
-                  }}
-                  animate={
-                    photoOpen
-                      ? { width: 240, height: 310, borderRadius: 20 }
-                      : { width: 64, height: 64, borderRadius: 100 }
-                  }
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  onHoverStart={() => !isTouchDevice && setPhotoOpen(true)}
-                  onHoverEnd={() => !isTouchDevice && setPhotoOpen(false)}
-                  onClick={() => isTouchDevice && setPhotoOpen(prev => !prev)}
-                >
-                  <motion.img
-                    src={userPhoto}
-                    alt="Jay Harwani"
-                    className="w-full h-full object-cover"
-                    style={{ objectPosition: 'center 22%' }}
-                    animate={photoOpen ? { scale: 1 } : { scale: 1.15 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                  <AnimatePresence>
-                    {photoOpen && (
-                      <motion.div
-                        className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 8 }}
-                        transition={{ duration: 0.3, delay: 0.15 }}
-                      >
-                        <p
-                          className="text-white font-semibold text-[14px]"
-                          style={{ fontFamily: 'DM Sans, sans-serif' }}
-                        >
-                          Jay Harwani — Baltimore, MD
-                        </p>
-                        <p
-                          className="text-[13px] mt-0.5"
-                          style={{
-                            color: '#5EEAD4',
-                            fontFamily: 'Playfair Display, serif',
-                            fontStyle: 'italic',
-                          }}
-                        >
-                          Product Designer &amp; MS HCI
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
+              {/* Avatar circle — stays fixed in the layout, hover triggers the fixed overlay */}
+              <div
+                ref={avatarRef}
+                className="w-16 h-16 rounded-full overflow-hidden cursor-pointer flex-shrink-0"
+                style={{
+                  boxShadow: '0 0 0 1.5px rgba(15,23,42,0.1), 0 6px 16px -6px rgba(15,23,42,0.18)',
+                }}
+                onMouseEnter={() => !isTouchDevice && openPhoto()}
+                onClick={() => isTouchDevice && (photoOpen ? setPhotoOpen(false) : openPhoto())}
+              >
+                <img
+                  src={userPhoto}
+                  alt="Jay Harwani"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'center 22%', transform: 'scale(1.15)' }}
+                />
               </div>
 
               {/* Name plate */}
-              <div style={{ position: 'relative', zIndex: 10 }}>
+              <div>
                 <p
                   className="text-[14px] font-semibold leading-tight"
                   style={{ color: '#09090B', fontFamily: 'DM Sans, sans-serif', letterSpacing: '-0.01em' }}
