@@ -1,8 +1,9 @@
-import { motion } from "motion/react";
-import { ArrowDown, Sparkles, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown } from "lucide-react";
 
 /* ────────────────────────────────────────────────────────── */
-/*  Practice areas marquee — keep                             */
+/*  Practice areas marquee                                    */
 /* ────────────────────────────────────────────────────────── */
 const practiceAreas = [
   "Behavior design",
@@ -18,6 +19,9 @@ const practiceAreas = [
   "Prototyping in code",
 ];
 
+/* ══════════════════════════════════════════════════════════ */
+/*  ApproachStrip — Section header + Stark boot sequence      */
+/* ══════════════════════════════════════════════════════════ */
 export function ApproachStrip() {
   return (
     <section
@@ -63,8 +67,8 @@ export function ApproachStrip() {
 
       <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-24 sm:py-32">
 
-        {/* ── Header: eyebrow + short claim ── */}
-        <div className="grid grid-cols-12 gap-6 mb-16 sm:mb-20">
+        {/* ── Header ── */}
+        <div className="grid grid-cols-12 gap-6 mb-12 sm:mb-16">
           <motion.div
             className="col-span-12 md:col-span-3 flex flex-col gap-3"
             initial={{ opacity: 0, x: -20 }}
@@ -109,7 +113,7 @@ export function ApproachStrip() {
                   fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
                 }}
               >
-                Live demo, not a mockup
+                Diagnostic running
               </span>
             </div>
           </motion.div>
@@ -157,10 +161,10 @@ export function ApproachStrip() {
           </motion.div>
         </div>
 
-        {/* ── The 3D skill stack ── */}
-        <SkillStack3D />
+        {/* ── The Stark boot sequence ── */}
+        <StarkBootSequence />
 
-        {/* ── Practice marquee — kept ── */}
+        {/* ── Practice marquee ── */}
         <motion.div
           className="mt-20 sm:mt-28"
           initial={{ opacity: 0, y: 20 }}
@@ -277,662 +281,1256 @@ export function ApproachStrip() {
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  SkillStack3D                                              */
-/*  CSS 3D perspective scene with 4 floating layer cards,     */
-/*  each demonstrating a real stage of how Jay works.         */
-/*  Layers cascade from back (faded, abstract) to front       */
-/*  (sharp, shipped) — making the page itself the demo.       */
+/*  StarkBootSequence — JARVIS-style 4-phase boot sequence    */
+/*  Spark → UX → Build → Live, then settles into ambient HUD  */
 /* ══════════════════════════════════════════════════════════ */
-function SkillStack3D() {
+
+type Phase = 0 | 1 | 2 | 3 | 4 | 5; // 0 idle, 1-4 active phase, 5 ambient (Live persists)
+
+// Phase durations in ms — total ~9.5s
+const PHASE_DURATIONS: Record<number, number> = {
+  1: 2400, // Spark — arc reactor charge
+  2: 2600, // UX — scan + wireframe assemble
+  3: 2600, // Build — modules fly in + code types
+  4: 2200, // Live — HUD chrome materializes
+};
+
+function StarkBootSequence() {
+  const [phase, setPhase] = useState<Phase>(0);
+  const [replayKey, setReplayKey] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-trigger on scroll into view
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && phase === 0) {
+          setPhase(1);
+        }
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [phase, replayKey]);
+
+  // Auto-advance phases
+  useEffect(() => {
+    if (phase === 0 || phase >= 5) return;
+    const duration = PHASE_DURATIONS[phase] ?? 2000;
+    const timer = setTimeout(
+      () => setPhase((p) => (p + 1) as Phase),
+      duration
+    );
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  const handleReplay = () => {
+    setPhase(0);
+    setReplayKey((k) => k + 1);
+    setTimeout(() => setPhase(1), 80);
+  };
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+          backgroundColor: "#0A1018",
+          borderRadius: "20px",
+          border: "1px solid rgba(0, 212, 255, 0.15)",
+          boxShadow:
+            "0 40px 90px -30px rgba(8,12,20,0.5), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 60px rgba(0,212,255,0.05)",
+          height: "clamp(480px, 64vh, 640px)",
+        }}
+      >
+        {/* Workshop grid floor + vignette */}
+        <GridFloor />
+        <CornerCrosshairs />
+
+        {/* Top chrome bar */}
+        <ModuleStatusBar phase={phase} onReplay={handleReplay} />
+
+        {/* Center stage */}
+        <div className="absolute inset-0 flex items-center justify-center px-6 sm:px-12 pt-16 pb-16">
+          <AnimatePresence mode="wait">
+            {phase === 1 && <SparkPhase key={`spark-${replayKey}`} />}
+            {phase === 2 && <UXPhase key={`ux-${replayKey}`} />}
+            {phase === 3 && <BuildPhase key={`build-${replayKey}`} />}
+            {phase >= 4 && <LivePhase key={`live-${replayKey}`} />}
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom caption */}
+        <BottomCaption phase={phase} />
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────── */
+/*  Workshop background — grid + vignette                     */
+/* ────────────────────────────────────────────────────────── */
+function GridFloor() {
   return (
     <>
-      {/* ─── Desktop: full 3D perspective scene ─── */}
       <div
-        className="hidden lg:block relative w-full"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          perspective: "2000px",
-          perspectiveOrigin: "50% 45%",
+          backgroundImage: `linear-gradient(rgba(0,212,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.05) 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
         }}
-        aria-label="Animated stack of design skills from spark to shipped product"
-      >
-        <div
-          className="relative mx-auto"
-          style={{
-            transformStyle: "preserve-3d",
-            height: "clamp(480px, 58vh, 640px)",
-            maxWidth: "1080px",
-          }}
-        >
-          {/* Connecting threads (deepest layer, subtle) */}
-          <ConnectingThreads />
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 0%, rgba(10,16,24,0.7) 90%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          opacity: 0.04,
+          mixBlendMode: "screen",
+        }}
+      />
+    </>
+  );
+}
 
-          {/* L1 — Spark (Creativity), back, faded */}
-          <FloatingCard
-            x={-280}
-            y={-110}
-            z={-300}
-            rotY={18}
-            rotX={-3}
-            duration={7}
-            floatRange={8}
-            zIndex={1}
-            opacity={0.42}
-          >
-            <CreativityContent />
-          </FloatingCard>
-
-          {/* L2 — UX, middle-back */}
-          <FloatingCard
-            x={-90}
-            y={80}
-            z={-100}
-            rotY={9}
-            rotX={1}
-            duration={6}
-            floatRange={7}
-            zIndex={2}
-            opacity={0.7}
-          >
-            <UXContent />
-          </FloatingCard>
-
-          {/* L3 — Build (design ⇄ code), middle-front */}
-          <FloatingCard
-            x={110}
-            y={-60}
-            z={80}
-            rotY={-8}
-            rotX={-1.5}
-            duration={5.5}
-            floatRange={6}
-            zIndex={3}
-            opacity={0.92}
-          >
-            <BuildContent />
-          </FloatingCard>
-
-          {/* L4 — Live (Production AI), front, sharpest */}
-          <FloatingCard
-            x={290}
-            y={90}
-            z={210}
-            rotY={-17}
-            rotX={2}
-            duration={5}
-            floatRange={5}
-            zIndex={4}
-            opacity={1}
-          >
-            <AIContent />
-          </FloatingCard>
-        </div>
+/* Subtle L-shaped brackets in the four corners */
+function CornerCrosshairs() {
+  const stroke = "rgba(0, 212, 255, 0.25)";
+  return (
+    <>
+      {/* TL */}
+      <div className="absolute top-12 left-3" style={{ width: 14, height: 14 }}>
+        <div className="absolute top-0 left-0 w-3 h-px" style={{ backgroundColor: stroke }} />
+        <div className="absolute top-0 left-0 h-3 w-px" style={{ backgroundColor: stroke }} />
       </div>
-
-      {/* ─── Mobile / Tablet: flat vertical stack ─── */}
-      <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FlatLayer><CreativityContent /></FlatLayer>
-        <FlatLayer><UXContent /></FlatLayer>
-        <FlatLayer><BuildContent /></FlatLayer>
-        <FlatLayer><AIContent /></FlatLayer>
+      {/* TR */}
+      <div className="absolute top-12 right-3" style={{ width: 14, height: 14 }}>
+        <div className="absolute top-0 right-0 w-3 h-px" style={{ backgroundColor: stroke }} />
+        <div className="absolute top-0 right-0 h-3 w-px" style={{ backgroundColor: stroke }} />
+      </div>
+      {/* BL */}
+      <div className="absolute bottom-12 left-3" style={{ width: 14, height: 14 }}>
+        <div className="absolute bottom-0 left-0 w-3 h-px" style={{ backgroundColor: stroke }} />
+        <div className="absolute bottom-0 left-0 h-3 w-px" style={{ backgroundColor: stroke }} />
+      </div>
+      {/* BR */}
+      <div className="absolute bottom-12 right-3" style={{ width: 14, height: 14 }}>
+        <div className="absolute bottom-0 right-0 w-3 h-px" style={{ backgroundColor: stroke }} />
+        <div className="absolute bottom-0 right-0 h-3 w-px" style={{ backgroundColor: stroke }} />
       </div>
     </>
   );
 }
 
 /* ────────────────────────────────────────────────────────── */
-/*  FloatingCard — 3D-positioned + perpetual gentle motion    */
+/*  ModuleStatusBar — top chrome with JARVIS + module pills   */
 /* ────────────────────────────────────────────────────────── */
-function FloatingCard({
-  x,
-  y,
-  z,
-  rotY,
-  rotX,
-  duration,
-  floatRange,
-  zIndex,
-  opacity,
-  children,
+function ModuleStatusBar({
+  phase,
+  onReplay,
 }: {
-  x: number;
-  y: number;
-  z: number;
-  rotY: number;
-  rotX: number;
-  duration: number;
-  floatRange: number;
-  zIndex: number;
-  opacity: number;
-  children: React.ReactNode;
+  phase: Phase;
+  onReplay: () => void;
+}) {
+  const modules = [
+    { num: "01", name: "SPARK", at: 1 },
+    { num: "02", name: "UX", at: 2 },
+    { num: "03", name: "BUILD", at: 3 },
+    { num: "04", name: "LIVE", at: 4 },
+  ];
+
+  return (
+    <div
+      className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6 py-3"
+      style={{ borderBottom: "1px solid rgba(0, 212, 255, 0.1)" }}
+    >
+      {/* Left: JARVIS branding */}
+      <div className="flex items-center gap-2">
+        <motion.span
+          className="inline-block w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: "#00D4FF" }}
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <span
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: "9.5px",
+            color: "#00D4FF",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+          }}
+        >
+          J.A.R.V.I.S
+        </span>
+        <span
+          className="hidden sm:inline-block"
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: "9.5px",
+            color: "rgba(244,244,245,0.4)",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          // Designer Protocol
+        </span>
+      </div>
+
+      {/* Center: module status pills */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {modules.map((m) => {
+          const done = phase > m.at;
+          const active = phase === m.at;
+          const pending = phase < m.at;
+          return (
+            <div key={m.num} className="flex items-center gap-1.5">
+              <motion.span
+                className="relative flex w-1.5 h-1.5"
+                animate={active ? { scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] } : {}}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <span
+                  className="relative inline-flex rounded-full w-1.5 h-1.5"
+                  style={{
+                    backgroundColor: done
+                      ? "#10B981"
+                      : active
+                      ? "#00D4FF"
+                      : "#3F3F46",
+                  }}
+                />
+              </motion.span>
+              <span
+                style={{
+                  fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                  fontSize: "9.5px",
+                  letterSpacing: "0.18em",
+                  color: done
+                    ? "#10B981"
+                    : active
+                    ? "#00D4FF"
+                    : pending
+                    ? "#52525B"
+                    : "#71717A",
+                }}
+              >
+                {m.num}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Right: replay */}
+      <button
+        onClick={onReplay}
+        className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-colors hover:bg-cyan-500/10 active:scale-[0.97]"
+        style={{
+          border: "1px solid rgba(0, 212, 255, 0.2)",
+          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+          fontSize: "9px",
+          color: "rgba(0, 212, 255, 0.8)",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+        }}
+      >
+        ↻ Replay
+      </button>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────── */
+/*  BottomCaption                                              */
+/* ────────────────────────────────────────────────────────── */
+function BottomCaption({ phase }: { phase: Phase }) {
+  const lines: Record<
+    number,
+    { module: string; tagline: string; status: string; statusColor: string }
+  > = {
+    0: { module: "STAND BY", tagline: "diagnostic queued", status: "IDLE", statusColor: "#71717A" },
+    1: { module: "MODULE 01 : SPARK", tagline: "creativity — the conductor", status: "INITIALIZING", statusColor: "#00D4FF" },
+    2: { module: "MODULE 02 : UX", tagline: "research → wireframe", status: "INITIALIZING", statusColor: "#00D4FF" },
+    3: { module: "MODULE 03 : BUILD", tagline: "design ⇄ code", status: "INITIALIZING", statusColor: "#00D4FF" },
+    4: { module: "MODULE 04 : LIVE", tagline: "production AI", status: "INITIALIZING", statusColor: "#00D4FF" },
+    5: { module: "ALL MODULES ONLINE", tagline: "system ready", status: "READY TO SHIP", statusColor: "#10B981" },
+  };
+
+  const current = lines[phase] || lines[0];
+
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-4 px-4 sm:px-6 py-3"
+      style={{
+        borderTop: "1px solid rgba(0, 212, 255, 0.1)",
+        backgroundColor: "rgba(10, 16, 24, 0.6)",
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`caption-${phase}`}
+          className="flex items-baseline gap-3 min-w-0 flex-1"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.25 }}
+        >
+          <span
+            className="flex-shrink-0"
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "11px",
+              color: "#F4F4F5",
+              letterSpacing: "0.12em",
+            }}
+          >
+            {">"} {current.module}
+          </span>
+          <span
+            className="truncate"
+            style={{
+              fontFamily: "Playfair Display, serif",
+              fontStyle: "italic",
+              fontSize: "12.5px",
+              color: "rgba(244,244,245,0.55)",
+            }}
+          >
+            — {current.tagline}
+          </span>
+        </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={`status-${phase}`}
+          className="flex-shrink-0"
+          initial={{ opacity: 0, x: 4 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -4 }}
+          transition={{ duration: 0.25 }}
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: "11px",
+            color: current.statusColor,
+            letterSpacing: "0.18em",
+          }}
+        >
+          [{current.status}]
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  PHASE 1 — Spark (Arc Reactor)                              */
+/* ══════════════════════════════════════════════════════════ */
+function SparkPhase() {
+  return (
+    <motion.div
+      className="relative w-full h-full flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+    >
+      {/* Ripple rings */}
+      {[0, 0.3, 0.6, 0.9].map((delay) => (
+        <motion.div
+          key={delay}
+          className="absolute rounded-full"
+          style={{
+            border: "1px solid rgba(0, 212, 255, 0.6)",
+            boxShadow: "0 0 20px rgba(0, 212, 255, 0.4)",
+          }}
+          initial={{ width: 0, height: 0, opacity: 0 }}
+          animate={{
+            width: 320,
+            height: 320,
+            opacity: [0, 0.7, 0],
+          }}
+          transition={{
+            duration: 1.8,
+            delay: 0.2 + delay,
+            ease: "easeOut",
+            repeat: Infinity,
+            repeatDelay: 0.6,
+          }}
+        />
+      ))}
+
+      {/* Static outer ring */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "190px",
+          height: "190px",
+          border: "1.5px solid rgba(0, 212, 255, 0.35)",
+        }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1, rotate: 360 }}
+        transition={{
+          scale: { duration: 0.8, delay: 0.3, ease: [0.23, 1, 0.32, 1] },
+          opacity: { duration: 0.5, delay: 0.3 },
+          rotate: { duration: 22, repeat: Infinity, ease: "linear" },
+        }}
+      >
+        {/* Tick marks on the ring */}
+        {[0, 60, 120, 180, 240, 300].map((deg) => (
+          <div
+            key={deg}
+            className="absolute top-1/2 left-1/2"
+            style={{
+              width: "8px",
+              height: "1.5px",
+              backgroundColor: "rgba(0, 212, 255, 0.5)",
+              transformOrigin: "0 50%",
+              transform: `translate(95px, 0) rotate(${deg}deg)`,
+            }}
+          />
+        ))}
+      </motion.div>
+
+      {/* Mid ring */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "130px",
+          height: "130px",
+          border: "1.5px solid rgba(0, 212, 255, 0.6)",
+        }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1, rotate: -360 }}
+        transition={{
+          scale: { duration: 0.8, delay: 0.5, ease: [0.23, 1, 0.32, 1] },
+          rotate: { duration: 14, repeat: Infinity, ease: "linear" },
+        }}
+      />
+
+      {/* Glowing core */}
+      <motion.div
+        className="relative rounded-full"
+        style={{
+          width: "62px",
+          height: "62px",
+          background:
+            "radial-gradient(circle, #FFFFFF 0%, #5EEAD4 30%, #00D4FF 60%, transparent 85%)",
+          boxShadow:
+            "0 0 30px #00D4FF, 0 0 70px rgba(0, 212, 255, 0.7), 0 0 120px rgba(0, 212, 255, 0.4)",
+        }}
+        initial={{ scale: 0 }}
+        animate={{
+          scale: [0, 1.4, 1],
+        }}
+        transition={{
+          duration: 1,
+          delay: 0.1,
+          ease: [0.23, 1, 0.32, 1],
+        }}
+      >
+        {/* Inner pulse */}
+        <motion.div
+          className="absolute inset-2 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%)",
+          }}
+          animate={{ opacity: [0.6, 1, 0.6], scale: [0.9, 1.05, 0.9] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </motion.div>
+
+      {/* Title */}
+      <motion.div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 1.3, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <span
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(20px, 3vw, 28px)",
+            color: "#F4F4F5",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          SPARK
+        </span>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  PHASE 2 — UX (Scan + Wireframe Assembly)                   */
+/* ══════════════════════════════════════════════════════════ */
+function UXPhase() {
+  return (
+    <motion.div
+      className="relative w-full h-full flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.4 }}
+    >
+      {/* Scan line sweep */}
+      <motion.div
+        className="absolute top-0 bottom-0 z-10 pointer-events-none"
+        style={{
+          width: "2px",
+          background:
+            "linear-gradient(to bottom, transparent, #00D4FF 50%, transparent)",
+          boxShadow: "0 0 24px #00D4FF, 0 0 50px rgba(0,212,255,0.5)",
+        }}
+        initial={{ left: "-2%" }}
+        animate={{ left: "102%" }}
+        transition={{ duration: 1.5, ease: "linear", delay: 0.1 }}
+      />
+
+      {/* Wireframe SVG */}
+      <svg
+        viewBox="0 0 480 280"
+        className="w-[90%] max-w-[560px]"
+        style={{ filter: "drop-shadow(0 0 12px rgba(0,212,255,0.18))" }}
+      >
+        {/* Hero block */}
+        <motion.rect
+          x="40" y="30" width="400" height="60" rx="3"
+          fill="none"
+          stroke="#00D4FF"
+          strokeWidth="1.2"
+          strokeDasharray="4 4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 0.85, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.5, ease: [0.23, 1, 0.32, 1] }}
+          style={{ transformOrigin: "center", transformBox: "fill-box" }}
+        />
+        <motion.text
+          x="50" y="65"
+          fill="rgba(0, 212, 255, 0.6)"
+          fontSize="11"
+          fontFamily="ui-monospace, monospace"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.85 }}
+        >
+          hero · headline
+        </motion.text>
+
+        {/* Three cards */}
+        {[0, 1, 2].map((i) => (
+          <g key={i}>
+            <motion.rect
+              x={40 + i * 140}
+              y="120"
+              width="120"
+              height="80"
+              rx="3"
+              fill="none"
+              stroke="#00D4FF"
+              strokeWidth="1.2"
+              strokeDasharray="4 4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 0.7, scale: 1 }}
+              transition={{
+                duration: 0.5,
+                delay: 0.8 + i * 0.18,
+                ease: [0.23, 1, 0.32, 1],
+              }}
+              style={{ transformOrigin: "center", transformBox: "fill-box" }}
+            />
+            <motion.text
+              x={50 + i * 140}
+              y="160"
+              fill="rgba(0, 212, 255, 0.5)"
+              fontSize="10"
+              fontFamily="ui-monospace, monospace"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 1.1 + i * 0.18 }}
+            >
+              card.{i + 1}
+            </motion.text>
+          </g>
+        ))}
+
+        {/* Bottom CTA */}
+        <motion.rect
+          x="40" y="230" width="160" height="30" rx="3"
+          fill="rgba(0, 212, 255, 0.08)"
+          stroke="#00D4FF"
+          strokeWidth="1.2"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 1.5, ease: [0.23, 1, 0.32, 1] }}
+          style={{ transformOrigin: "center", transformBox: "fill-box" }}
+        />
+        <motion.text
+          x="120" y="250"
+          textAnchor="middle"
+          fill="#00D4FF"
+          fontSize="11"
+          fontFamily="ui-monospace, monospace"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 1.7 }}
+        >
+          → CTA
+        </motion.text>
+
+        {/* Flow arrows */}
+        <motion.line
+          x1="100" y1="200" x2="100" y2="225"
+          stroke="rgba(0, 212, 255, 0.6)"
+          strokeWidth="1.2"
+          strokeDasharray="3 3"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.4, delay: 1.55 }}
+        />
+
+        {/* Annotation: arrows showing flow research → IA */}
+        <motion.line
+          x1="105" y1="105" x2="105" y2="115"
+          stroke="rgba(0, 212, 255, 0.5)"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 0.95 }}
+        />
+        <motion.line
+          x1="245" y1="105" x2="245" y2="115"
+          stroke="rgba(0, 212, 255, 0.5)"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 1.1 }}
+        />
+        <motion.line
+          x1="385" y1="105" x2="385" y2="115"
+          stroke="rgba(0, 212, 255, 0.5)"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 1.25 }}
+        />
+      </svg>
+
+      {/* Corner annotations */}
+      <motion.div
+        className="absolute top-2 left-4 sm:left-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 1.7 }}
+      >
+        <span
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: "9.5px",
+            color: "rgba(0, 212, 255, 0.7)",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          scan: complete
+        </span>
+      </motion.div>
+
+      {/* Title */}
+      <motion.div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 1.7, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <span
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(20px, 3vw, 28px)",
+            color: "#F4F4F5",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          UX
+        </span>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  PHASE 3 — Build (Design ⇄ Code, modules fly in)            */
+/* ══════════════════════════════════════════════════════════ */
+function BuildPhase() {
+  const codeLines = [
+    { token: "const", val: "hero", color: "#7C3AED" },
+    { val: "=", color: "#52525B" },
+    { val: "(", color: "#71717A" },
+    { val: ") => ", color: "#71717A" },
+  ];
+
+  return (
+    <motion.div
+      className="relative w-full h-full flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="relative flex items-stretch gap-3 sm:gap-4 w-[90%] max-w-[600px]">
+
+        {/* LEFT — Design panel flies in from left */}
+        <motion.div
+          className="flex-1 rounded-lg overflow-hidden p-5"
+          style={{
+            backgroundColor: "rgba(0, 212, 255, 0.04)",
+            border: "1px solid rgba(0, 212, 255, 0.25)",
+            boxShadow: "0 0 30px rgba(0, 212, 255, 0.1)",
+            minHeight: "180px",
+          }}
+          initial={{ x: -240, opacity: 0, rotate: -8 }}
+          animate={{ x: 0, opacity: 1, rotate: 0 }}
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <span
+              style={{
+                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                fontSize: "9px",
+                color: "#00D4FF",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
+              design.tokens
+            </span>
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "#00D4FF" }}
+            />
+          </div>
+
+          {/* Typography sample */}
+          <div className="flex items-baseline gap-3 mb-4">
+            <motion.span
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
+              style={{
+                fontFamily: "Syne, sans-serif",
+                fontWeight: 700,
+                fontSize: "44px",
+                color: "#F4F4F5",
+                letterSpacing: "-0.03em",
+                lineHeight: 1,
+              }}
+            >
+              Aa
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.85 }}
+              style={{
+                fontFamily: "Playfair Display, serif",
+                fontStyle: "italic",
+                fontWeight: 500,
+                fontSize: "32px",
+                color: "#00D4FF",
+                lineHeight: 1,
+              }}
+            >
+              Aa
+            </motion.span>
+          </div>
+
+          {/* Color swatches */}
+          <div className="flex items-center gap-2">
+            {[
+              { color: "#00D4FF", label: "primary" },
+              { color: "#F59E0B", label: "accent" },
+              { color: "#F4F4F5", label: "fg" },
+              { color: "#27272A", label: "bg" },
+            ].map((sw, i) => (
+              <motion.div
+                key={sw.label}
+                className="w-6 h-6 rounded-full"
+                style={{
+                  backgroundColor: sw.color,
+                  border:
+                    sw.color === "#27272A"
+                      ? "1px solid rgba(0, 212, 255, 0.3)"
+                      : "none",
+                  boxShadow: `0 0 10px ${sw.color}40`,
+                }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  duration: 0.3,
+                  delay: 1 + i * 0.08,
+                  ease: [0.23, 1, 0.32, 1],
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Spacing scale */}
+          <motion.div
+            className="flex items-end gap-1 mt-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 1.4 }}
+          >
+            {[4, 8, 12, 16, 24].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  width: "8px",
+                  height: `${h}px`,
+                  backgroundColor: "rgba(0, 212, 255, 0.3)",
+                  borderTop: "1px solid rgba(0, 212, 255, 0.6)",
+                }}
+              />
+            ))}
+            <span
+              className="ml-2"
+              style={{
+                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                fontSize: "9px",
+                color: "rgba(244, 244, 245, 0.4)",
+              }}
+            >
+              4 · 8 · 12 · 16 · 24
+            </span>
+          </motion.div>
+        </motion.div>
+
+        {/* CENTER — Bridge symbol */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full"
+          style={{
+            backgroundColor: "#0A1018",
+            border: "1.5px solid #00D4FF",
+            boxShadow: "0 0 24px rgba(0,212,255,0.6)",
+          }}
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ duration: 0.5, delay: 0.95, ease: [0.23, 1, 0.32, 1] }}
+        >
+          <span
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "16px",
+              color: "#00D4FF",
+            }}
+          >
+            ⇄
+          </span>
+        </motion.div>
+
+        {/* RIGHT — Code panel flies in from right */}
+        <motion.div
+          className="flex-1 rounded-lg overflow-hidden p-5"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            border: "1px solid rgba(0, 212, 255, 0.25)",
+            boxShadow: "0 0 30px rgba(0, 212, 255, 0.1)",
+            minHeight: "180px",
+          }}
+          initial={{ x: 240, opacity: 0, rotate: 8 }}
+          animate={{ x: 0, opacity: 1, rotate: 0 }}
+          transition={{ duration: 0.7, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <span
+              style={{
+                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                fontSize: "9px",
+                color: "#00D4FF",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
+              src/hero.tsx
+            </span>
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "#10B981" }}
+            />
+          </div>
+
+          {/* Typewriter code */}
+          <div
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "11.5px",
+              lineHeight: 1.7,
+              letterSpacing: "0.02em",
+            }}
+          >
+            <CodeLine
+              delay={0.8}
+              parts={[
+                { text: "export ", color: "#7C3AED" },
+                { text: "function ", color: "#7C3AED" },
+                { text: "Hero", color: "#5EEAD4" },
+                { text: "() {", color: "#71717A" },
+              ]}
+            />
+            <CodeLine
+              delay={1.15}
+              parts={[
+                { text: "  return ", color: "#7C3AED" },
+                { text: "<", color: "#52525B" },
+                { text: "h1 ", color: "#F59E0B" },
+                { text: "italic", color: "#00D4FF" },
+                { text: ">", color: "#52525B" },
+              ]}
+            />
+            <CodeLine
+              delay={1.5}
+              parts={[
+                { text: "    Designing AI…", color: "#F4F4F5" },
+              ]}
+            />
+            <CodeLine
+              delay={1.85}
+              parts={[
+                { text: "  </", color: "#52525B" },
+                { text: "h1", color: "#F59E0B" },
+                { text: ">", color: "#52525B" },
+              ]}
+            />
+            <CodeLine
+              delay={2.1}
+              parts={[{ text: "}", color: "#71717A" }]}
+            />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Title */}
+      <motion.div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 2.1, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <span
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(20px, 3vw, 28px)",
+            color: "#F4F4F5",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          BUILD
+        </span>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function CodeLine({
+  delay,
+  parts,
+}: {
+  delay: number;
+  parts: { text: string; color: string }[];
 }) {
   return (
     <motion.div
-      className="absolute top-1/2 left-1/2"
-      style={{
-        width: "300px",
-        height: "210px",
-        marginLeft: "-150px",
-        marginTop: "-105px",
-        transform: `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotY}deg) rotateX(${rotX}deg)`,
-        transformStyle: "preserve-3d",
-        opacity,
-        zIndex,
-        willChange: "transform",
-      }}
-      animate={{
-        y: [0, -floatRange, 0],
-        rotateZ: [-0.4, 0.4, -0.4],
-      }}
-      transition={{
-        duration,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, delay, ease: [0.23, 1, 0.32, 1] }}
     >
-      {children}
+      {parts.map((p, i) => (
+        <span key={i} style={{ color: p.color }}>
+          {p.text}
+        </span>
+      ))}
     </motion.div>
   );
 }
 
-/* ────────────────────────────────────────────────────────── */
-/*  Mobile flat wrapper                                        */
-/* ────────────────────────────────────────────────────────── */
-function FlatLayer({ children }: { children: React.ReactNode }) {
+/* ══════════════════════════════════════════════════════════ */
+/*  PHASE 4 — Live (HUD activates)                             */
+/* ══════════════════════════════════════════════════════════ */
+function LivePhase() {
   return (
     <motion.div
-      style={{ width: "100%", aspectRatio: "300/210" }}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+      className="relative w-full h-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
     >
-      {children}
+      {/* Center reticle */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <ReticleSVG />
+      </motion.div>
+
+      {/* TL data: SUIT ONLINE */}
+      <HUDPanel
+        position="top-left"
+        delay={0.6}
+        label="ROBOT.UI / CARDS.LAB"
+        rows={[
+          { k: "build", v: "v4.0" },
+          { k: "uptime", v: "99.94%" },
+          { k: "lat", v: "42ms" },
+        ]}
+      />
+
+      {/* TR data: CONFIDENCE */}
+      <HUDPanel
+        position="top-right"
+        delay={0.75}
+        label="MODEL CONFIDENCE"
+        rows={[
+          { k: "score", v: "92%" },
+          { k: "trend", v: "↑ 4.1%" },
+          { k: "calib", v: "OK" },
+        ]}
+      />
+
+      {/* BL data: TELEMETRY */}
+      <HUDPanel
+        position="bottom-left"
+        delay={0.9}
+        label="TELEMETRY"
+        rows={[
+          { k: "users", v: "2,341" },
+          { k: "sessions", v: "18.2k" },
+          { k: "crash", v: "0.04%" },
+        ]}
+      />
+
+      {/* BR badge: PRODUCTION ONLINE */}
+      <motion.div
+        className="absolute bottom-6 right-4 sm:right-6"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, delay: 1.2, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style={{
+            backgroundColor: "rgba(16, 185, 129, 0.12)",
+            border: "1px solid rgba(16, 185, 129, 0.4)",
+            boxShadow: "0 0 20px rgba(16, 185, 129, 0.25)",
+          }}
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              style={{ backgroundColor: "#10B981" }}
+            />
+            <span
+              className="relative inline-flex rounded-full h-1.5 w-1.5"
+              style={{ backgroundColor: "#10B981" }}
+            />
+          </span>
+          <span
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "10px",
+              color: "#10B981",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            Production · Online
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Center title */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 mt-[110px] flex flex-col items-center gap-1"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 1.3, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <span
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(20px, 3vw, 28px)",
+            color: "#F4F4F5",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          LIVE
+        </span>
+        <span
+          style={{
+            fontFamily: "Playfair Display, serif",
+            fontStyle: "italic",
+            fontSize: "12px",
+            color: "rgba(0, 212, 255, 0.85)",
+          }}
+        >
+          shipped, not slideware
+        </span>
+      </motion.div>
     </motion.div>
   );
 }
 
-/* ────────────────────────────────────────────────────────── */
-/*  Connecting threads — subtle SVG lines between depth layers */
-/* ────────────────────────────────────────────────────────── */
-function ConnectingThreads() {
+function ReticleSVG() {
   return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      viewBox="0 0 1080 600"
-      preserveAspectRatio="none"
-      style={{ zIndex: 0, opacity: 0.18 }}
-    >
-      <defs>
-        <linearGradient id="thread" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0F766E" stopOpacity="0.1" />
-          <stop offset="50%" stopColor="#0F766E" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.5" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 240 190 Q 420 280, 540 240 T 840 360"
-        stroke="url(#thread)"
-        strokeWidth="1.2"
+    <svg width="180" height="180" viewBox="0 0 180 180">
+      {/* Outer ring with rotation */}
+      <motion.circle
+        cx="90"
+        cy="90"
+        r="78"
         fill="none"
-        strokeDasharray="2 6"
+        stroke="#00D4FF"
+        strokeWidth="0.8"
+        strokeDasharray="4 3"
+        opacity="0.5"
+        style={{ transformOrigin: "90px 90px" }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
       />
+      {/* Inner ring */}
+      <motion.circle
+        cx="90"
+        cy="90"
+        r="50"
+        fill="none"
+        stroke="#00D4FF"
+        strokeWidth="1"
+        opacity="0.7"
+        style={{ transformOrigin: "90px 90px" }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+      />
+      {/* Crosshair lines */}
+      <line x1="20" y1="90" x2="50" y2="90" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
+      <line x1="130" y1="90" x2="160" y2="90" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
+      <line x1="90" y1="20" x2="90" y2="50" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
+      <line x1="90" y1="130" x2="90" y2="160" stroke="#00D4FF" strokeWidth="1" opacity="0.7" />
+      {/* Center dot pulse */}
+      <motion.circle
+        cx="90"
+        cy="90"
+        r="4"
+        fill="#00D4FF"
+        animate={{ opacity: [0.4, 1, 0.4], r: [3, 5, 3] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Ticks at cardinal points */}
+      {[0, 90, 180, 270].map((deg) => (
+        <line
+          key={deg}
+          x1="90"
+          y1="14"
+          x2="90"
+          y2="20"
+          stroke="#00D4FF"
+          strokeWidth="1.2"
+          opacity="0.8"
+          style={{
+            transformOrigin: "90px 90px",
+            transform: `rotate(${deg}deg)`,
+          }}
+        />
+      ))}
     </svg>
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  LAYER CONTENT — each "exhibit" in the 3D scene            */
-/* ══════════════════════════════════════════════════════════ */
+function HUDPanel({
+  position,
+  delay,
+  label,
+  rows,
+}: {
+  position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  delay: number;
+  label: string;
+  rows: { k: string; v: string }[];
+}) {
+  const posClass = {
+    "top-left": "top-16 left-4 sm:left-6 items-start text-left",
+    "top-right": "top-16 right-4 sm:right-6 items-end text-right",
+    "bottom-left": "bottom-16 left-4 sm:left-6 items-start text-left",
+    "bottom-right": "bottom-16 right-4 sm:right-6 items-end text-right",
+  }[position];
 
-/* ─── L1: Creativity / Spark ─── */
-function CreativityContent() {
+  const xOffset =
+    position.includes("left") ? -16 : 16;
+
   return (
-    <div
-      className="relative w-full h-full rounded-2xl overflow-hidden p-5 flex flex-col"
-      style={{
-        backgroundColor: "rgba(253, 230, 138, 0.22)",
-        border: "1px dashed rgba(15,23,42,0.22)",
-        boxShadow: "0 20px 40px -15px rgba(15,23,42,0.12)",
-      }}
+    <motion.div
+      className={`absolute ${posClass} flex flex-col gap-1.5`}
+      initial={{ opacity: 0, x: xOffset }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.23, 1, 0.32, 1] }}
     >
-      {/* Top: spark icon + tag */}
-      <div className="flex items-start justify-between">
-        <motion.div
-          animate={{ rotate: [0, 14, -10, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Sparkles className="w-7 h-7" style={{ color: "#92400E" }} strokeWidth={1.5} />
-        </motion.div>
-        <span
-          style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "9.5px",
-            color: "#92400E",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-          }}
-        >
-          01 / Spark
-        </span>
-      </div>
-
-      {/* Mid: hand-drawn squiggle */}
-      <svg
-        className="absolute left-5 right-5"
-        style={{ top: "44%" }}
-        viewBox="0 0 260 50"
-        preserveAspectRatio="none"
+      <span
+        style={{
+          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+          fontSize: "9px",
+          color: "rgba(0, 212, 255, 0.85)",
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+        }}
       >
-        <motion.path
-          d="M 4 28 Q 40 4, 80 28 T 156 28 T 232 28"
-          stroke="rgba(15, 23, 42, 0.28)"
-          fill="none"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeDasharray="3 5"
-          initial={{ pathLength: 0 }}
-          whileInView={{ pathLength: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 2, ease: [0.23, 1, 0.32, 1] }}
-        />
-        <circle cx="232" cy="28" r="3" fill="#0F766E" />
-      </svg>
-
-      {/* Bottom-left: caption */}
-      <div className="mt-auto">
-        <p
-          className="text-[18px] leading-tight"
-          style={{
-            color: "#27272A",
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Creativity
-        </p>
-        <p
-          className="text-[11.5px] mt-0.5"
-          style={{
-            color: "#52525B",
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-          }}
-        >
-          — the conductor
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── L2: UX / Research → Wireframe ─── */
-function UXContent() {
-  return (
-    <div
-      className="relative w-full h-full rounded-2xl overflow-hidden p-5 flex flex-col"
-      style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid rgba(15,23,42,0.1)",
-        boxShadow: "0 20px 40px -15px rgba(15,23,42,0.12)",
-      }}
-    >
-      {/* Top tag */}
-      <div className="flex items-start justify-between mb-3">
-        <span
-          style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "9.5px",
-            color: "#52525B",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-          }}
-        >
-          02 / Research → Flow
-        </span>
-        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#A1A1AA" }} />
-      </div>
-
-      {/* Wireframe mini */}
-      <div className="flex-1 flex items-center justify-center my-2">
-        <svg viewBox="0 0 240 90" className="w-full">
-          {/* Three connected boxes */}
-          <motion.g
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, delay: 0.1 }}
-          >
-            <rect x="10" y="20" width="50" height="50" rx="3" fill="none" stroke="rgba(15,23,42,0.35)" strokeWidth="1.5" strokeDasharray="3 3" />
-            <text x="35" y="48" textAnchor="middle" fill="#71717A" fontSize="8" fontFamily="ui-monospace, monospace">research</text>
-
-            <rect x="95" y="20" width="50" height="50" rx="3" fill="none" stroke="rgba(15,23,42,0.45)" strokeWidth="1.5" strokeDasharray="3 3" />
-            <text x="120" y="48" textAnchor="middle" fill="#52525B" fontSize="8" fontFamily="ui-monospace, monospace">flow</text>
-
-            <rect x="180" y="20" width="50" height="50" rx="3" fill="none" stroke="rgba(15,23,42,0.6)" strokeWidth="1.5" />
-            <text x="205" y="48" textAnchor="middle" fill="#27272A" fontSize="8" fontFamily="ui-monospace, monospace">IA</text>
-
-            {/* arrows */}
-            <motion.path
-              d="M 62 45 L 92 45"
-              stroke="#0F766E"
-              strokeWidth="1.2"
-              fill="none"
-              markerEnd="url(#arrowhead)"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-            />
-            <motion.path
-              d="M 147 45 L 177 45"
-              stroke="#0F766E"
-              strokeWidth="1.2"
-              fill="none"
-              markerEnd="url(#arrowhead)"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.9 }}
-            />
-          </motion.g>
-          <defs>
-            <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
-              <polygon points="0 0, 6 3, 0 6" fill="#0F766E" />
-            </marker>
-          </defs>
-        </svg>
-      </div>
-
-      {/* Bottom caption */}
-      <div className="mt-auto">
-        <p
-          className="text-[18px] leading-tight"
-          style={{
-            color: "#09090B",
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          UX
-        </p>
-        <p
-          className="text-[11.5px] mt-0.5"
-          style={{
-            color: "#52525B",
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-          }}
-        >
-          — the unknown, mapped
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── L3: Build / Design ⇄ Code ─── */
-function BuildContent() {
-  return (
-    <div
-      className="relative w-full h-full rounded-2xl overflow-hidden flex flex-col"
-      style={{
-        border: "1px solid rgba(15,23,42,0.1)",
-        boxShadow: "0 24px 50px -18px rgba(15,23,42,0.18)",
-        backgroundColor: "#FFFFFF",
-      }}
-    >
-      {/* Top: tag bar */}
-      <div className="px-5 pt-4 flex items-start justify-between">
-        <span
-          style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "9.5px",
-            color: "#0F766E",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-          }}
-        >
-          03 / Design ⇄ Code
-        </span>
-        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#0F766E" }} />
-      </div>
-
-      {/* Split panel: design tokens + code */}
-      <div className="flex-1 flex items-stretch gap-0 px-5 py-4 min-h-0">
-        {/* Left: tokens */}
-        <div className="flex-1 flex flex-col gap-1.5 justify-center pr-3">
-          <span style={{
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            fontSize: "20px",
-            color: "#09090B",
-            letterSpacing: "-0.025em",
-            lineHeight: 1,
-          }}>
-            Aa
-          </span>
-          <span style={{
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-            fontSize: "13px",
-            color: "#0F766E",
-          }}>
-            Aa
-          </span>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#0F766E" }} />
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#7C3AED" }} />
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#09090B" }} />
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,23,42,0.18)" }} />
-          </div>
-        </div>
-
-        {/* Bridge */}
-        <div className="flex items-center justify-center px-1">
-          <ArrowRight className="w-4 h-4" style={{ color: "#52525B" }} strokeWidth={1.8} />
-        </div>
-
-        {/* Right: code snippet */}
-        <div
-          className="flex-1 rounded-md px-2.5 py-2 flex flex-col justify-center"
-          style={{
-            backgroundColor: "#0F1115",
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "9.5px",
-            lineHeight: 1.55,
-            letterSpacing: "0.01em",
-          }}
-        >
-          <span style={{ color: "#7C3AED" }}>{"<Hero"}</span>
-          <span style={{ color: "#52525B" }}>{"  title="}<span style={{ color: "#5EEAD4" }}>"AI"</span></span>
-          <span style={{ color: "#52525B" }}>{"  italic"}</span>
-          <span style={{ color: "#7C3AED" }}>{"/>"}</span>
-        </div>
-      </div>
-
-      {/* Bottom caption */}
-      <div className="px-5 pb-4">
-        <p
-          className="text-[18px] leading-tight"
-          style={{
-            color: "#09090B",
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Build
-        </p>
-        <p
-          className="text-[11.5px] mt-0.5"
-          style={{
-            color: "#52525B",
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-          }}
-        >
-          — designer-engineer
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── L4: Live / Production AI ─── */
-function AIContent() {
-  return (
-    <div
-      className="relative w-full h-full rounded-2xl overflow-hidden flex flex-col"
-      style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid rgba(15,23,42,0.1)",
-        boxShadow: "0 30px 60px -20px rgba(15,23,42,0.22), 0 0 0 1px rgba(15,118,110,0.06)",
-      }}
-    >
-      {/* Window chrome */}
-      <div
-        className="flex items-center justify-between px-3 py-2"
-        style={{ borderBottom: "1px solid rgba(15,23,42,0.06)", backgroundColor: "#FAFAF7" }}
-      >
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FF5F57" }} />
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FEBC2E" }} />
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#28C840" }} />
-        </div>
-        <span
-          style={{
-            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: "8.5px",
-            color: "#71717A",
-            letterSpacing: "0.1em",
-          }}
-        >
-          cards.lab / robot.ui
-        </span>
-      </div>
-
-      {/* AI interface mini */}
-      <div className="flex-1 px-4 py-3 flex flex-col justify-between min-h-0">
-        <div>
-          <div className="flex items-baseline justify-between mb-1.5">
-            <span
-              className="text-[10px] uppercase tracking-[0.15em]"
-              style={{
-                color: "#71717A",
-                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              }}
-            >
-              Robot confidence
-            </span>
-            <span
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 700,
-                fontSize: "16px",
-                color: "#09090B",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              92%
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div
-            className="relative w-full rounded-full overflow-hidden"
-            style={{ backgroundColor: "rgba(15,23,42,0.06)", height: "5px" }}
-          >
-            <motion.div
-              className="absolute top-0 left-0 h-full rounded-full"
-              style={{
-                background: "linear-gradient(90deg, #0F766E 0%, #14B8A6 100%)",
-              }}
-              initial={{ width: "0%" }}
-              whileInView={{ width: "92%" }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.4, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            />
-          </div>
-
-          {/* Hint */}
-          <p
-            className="mt-2.5 text-[10.5px]"
-            style={{
-              color: "#52525B",
-              fontFamily: "DM Sans, sans-serif",
-              lineHeight: 1.4,
-            }}
-          >
-            <span style={{ color: "#0F766E", textDecoration: "underline", textUnderlineOffset: "2px" }}>
-              Why this answer?
-            </span>{" "}
-            · uncertainty rising
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-1.5 w-1.5">
-              <span
-                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-                style={{ backgroundColor: "#28C840" }}
-              />
-              <span
-                className="relative inline-flex rounded-full h-1.5 w-1.5"
-                style={{ backgroundColor: "#28C840" }}
-              />
-            </span>
-            <span
-              className="text-[9.5px] uppercase tracking-[0.18em]"
-              style={{
-                color: "#134E4A",
-                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              }}
-            >
-              Live
-            </span>
-          </div>
+        {label}
+      </span>
+      {rows.map((r) => (
+        <div key={r.k} className="flex items-baseline gap-2">
           <span
             style={{
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: "8.5px",
-              color: "#A1A1AA",
+              fontSize: "9.5px",
+              color: "rgba(244, 244, 245, 0.45)",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
             }}
           >
-            04 / Production
+            {r.k}
+          </span>
+          <span
+            style={{
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: "12px",
+              color: "#F4F4F5",
+              letterSpacing: "0.05em",
+              fontVariantNumeric: "tabular-nums",
+              fontWeight: 600,
+            }}
+          >
+            {r.v}
           </span>
         </div>
-      </div>
-
-      {/* Bottom caption */}
-      <div
-        className="px-4 py-3"
-        style={{ borderTop: "1px solid rgba(15,23,42,0.06)" }}
-      >
-        <p
-          className="text-[18px] leading-tight"
-          style={{
-            color: "#09090B",
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Production AI
-        </p>
-        <p
-          className="text-[11.5px] mt-0.5"
-          style={{
-            color: "#0F766E",
-            fontFamily: "Playfair Display, serif",
-            fontStyle: "italic",
-          }}
-        >
-          — shipped, not slideware
-        </p>
-      </div>
-    </div>
+      ))}
+    </motion.div>
   );
 }
