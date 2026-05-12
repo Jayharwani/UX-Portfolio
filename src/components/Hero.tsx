@@ -337,37 +337,22 @@ export function Hero() {
           <div className="flex-1 flex flex-col justify-center">
             <div className="max-w-[1100px]">
 
-              {/* Intro line */}
-              <motion.p
-                className="text-[14px] mb-6 sm:mb-8 flex flex-wrap items-center gap-x-2 gap-y-1"
-                style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              >
-                <span className="inline-block w-8 h-px flex-shrink-0" style={{ backgroundColor: '#0F766E' }} />
-                <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '15px' }}>
-                  Hi, I'm Jay
-                </span>
-                <span style={{ color: '#A1A1AA' }}>— a designer at the intersection of:</span>
-              </motion.p>
-
-              {/* Big headline — 3 lines */}
+              {/* Big headline — 3 lines, claim-based not theme-based */}
               <div className="mb-8 sm:mb-10">
                 <div className="overflow-hidden">
                   <motion.h1
                     initial={{ y: '110%' }}
                     animate={loaded ? { y: '0%' } : {}}
-                    transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 1, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
                     className="leading-[0.92] tracking-[-0.045em]"
                     style={{
                       fontFamily: 'Syne, sans-serif',
                       fontWeight: 700,
                       color: '#09090B',
-                      fontSize: 'clamp(48px, 12vw, 130px)',
+                      fontSize: 'clamp(54px, 12vw, 140px)',
                     }}
                   >
-                    behavior,
+                    Designing AI
                   </motion.h1>
                 </div>
 
@@ -375,17 +360,17 @@ export function Hero() {
                   <motion.h1
                     initial={{ y: '110%' }}
                     animate={loaded ? { y: '0%' } : {}}
-                    transition={{ duration: 1, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 1, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
                     className="leading-[0.92] tracking-[-0.045em]"
                     style={{
                       fontFamily: 'Playfair Display, serif',
                       fontStyle: 'italic',
                       fontWeight: 500,
                       color: '#0F766E',
-                      fontSize: 'clamp(48px, 12vw, 130px)',
+                      fontSize: 'clamp(54px, 12vw, 140px)',
                     }}
                   >
-                    artificial intelligence,
+                    for the people
                   </motion.h1>
                 </div>
 
@@ -393,31 +378,37 @@ export function Hero() {
                   <motion.h1
                     initial={{ y: '110%' }}
                     animate={loaded ? { y: '0%' } : {}}
-                    transition={{ duration: 1, delay: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 1, delay: 0.85, ease: [0.16, 1, 0.3, 1] }}
                     className="leading-[0.92] tracking-[-0.045em]"
                     style={{
                       fontFamily: 'Syne, sans-serif',
                       fontWeight: 700,
                       color: '#09090B',
-                      fontSize: 'clamp(48px, 12vw, 130px)',
+                      fontSize: 'clamp(54px, 12vw, 140px)',
                     }}
                   >
-                    &amp; accessibility
+                    it{' '}
+                    <span style={{ color: '#0F766E', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 500 }}>
+                      forgets
+                    </span>
                     <span style={{ color: '#0F766E', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 400 }}>.</span>
                   </motion.h1>
                 </div>
               </div>
 
-              {/* Standfirst */}
+              {/* Standfirst — real institutions, real trajectory */}
               <motion.p
                 className="text-[15px] sm:text-[17px] max-w-[580px] mb-10"
                 style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.65 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.8, delay: 1.15 }}
+                transition={{ duration: 0.8, delay: 1.05 }}
               >
-                Building interfaces that intervene at the right moment — for the people the system often forgets. Currently designing AI &amp; robotics tools at{' '}
-                <span style={{ color: '#09090B', fontWeight: 600 }}>UMBC CARDS Lab</span>.
+                Currently at the{' '}
+                <span style={{ color: '#09090B', fontWeight: 600 }}>UMBC CARDS Lab</span>
+                {' '}— AI &amp; robotics research. Before that, 5 years at{' '}
+                <span style={{ color: '#09090B', fontWeight: 600 }}>Welspun GCC</span>
+                {' '}shipping enterprise products.
               </motion.p>
 
               {/* CTAs */}
@@ -425,7 +416,7 @@ export function Hero() {
                 className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={loaded ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 1.25 }}
+                transition={{ duration: 0.7, delay: 1.15 }}
               >
                 <button
                   onClick={scrollToCaseStudies}
