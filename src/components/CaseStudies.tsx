@@ -92,7 +92,7 @@ export function CaseStudies() {
           left: '5%',
           width: '500px',
           height: '500px',
-          background: 'radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(185,28,28,0.07) 0%, transparent 65%)',
           filter: 'blur(50px)',
         }}
       />
@@ -103,7 +103,7 @@ export function CaseStudies() {
           right: '0%',
           width: '600px',
           height: '600px',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(180,83,9,0.08) 0%, transparent 65%)',
           filter: 'blur(50px)',
         }}
       />
@@ -142,7 +142,7 @@ export function CaseStudies() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0F766E' }} />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#B91C1C' }} />
             <span
               style={{
                 fontFamily: 'DM Sans, sans-serif',

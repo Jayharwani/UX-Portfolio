@@ -42,7 +42,7 @@ export function ApproachStrip() {
           width: "500px",
           height: "500px",
           background:
-            "radial-gradient(circle, rgba(15,118,110,0.06) 0%, transparent 65%)",
+            "radial-gradient(circle, rgba(185,28,28,0.08) 0%, transparent 65%)",
           filter: "blur(60px)",
         }}
       />
@@ -54,7 +54,7 @@ export function ApproachStrip() {
           width: "550px",
           height: "550px",
           background:
-            "radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 65%)",
+            "radial-gradient(circle, rgba(180,83,9,0.08) 0%, transparent 65%)",
           filter: "blur(60px)",
         }}
       />

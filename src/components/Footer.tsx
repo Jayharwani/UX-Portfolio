@@ -16,7 +16,7 @@ export function Footer() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(at 50% 0%, rgba(15,118,110,0.06) 0%, transparent 50%)`,
+          backgroundImage: `radial-gradient(at 50% 0%, rgba(185,28,28,0.06) 0%, transparent 50%)`,
         }}
       />
 
@@ -67,7 +67,7 @@ export function Footer() {
             into{' '}
             <span
               style={{
-                background: 'linear-gradient(135deg, #0F766E 0%, #7C3AED 100%)',
+                background: 'linear-gradient(135deg, #B91C1C 0%, #B45309 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -144,15 +144,15 @@ export function Footer() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="flex items-center gap-2.5 px-4 py-2 rounded-full"
             style={{
-              backgroundColor: 'rgba(15,118,110,0.06)',
-              border: '1px solid rgba(15,118,110,0.18)',
+              backgroundColor: 'rgba(185,28,28,0.06)',
+              border: '1px solid rgba(185,28,28,0.22)',
             }}
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#0F766E' }} />
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#0F766E' }} />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#B91C1C' }} />
+              <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#B91C1C' }} />
             </span>
-            <span className="text-[12px] font-medium" style={{ color: '#134E4A', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="text-[12px] font-medium" style={{ color: '#7F1D1D', fontFamily: 'DM Sans, sans-serif' }}>
               Open to full-time roles · No sponsorship required · Baltimore, MD
             </span>
           </motion.div>

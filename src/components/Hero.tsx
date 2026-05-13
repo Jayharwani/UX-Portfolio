@@ -47,7 +47,7 @@ export function Hero() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(at 15% 100%, rgba(15,118,110,0.06) 0%, transparent 50%), radial-gradient(at 90% 10%, rgba(124,58,237,0.05) 0%, transparent 45%)`,
+          backgroundImage: `radial-gradient(at 15% 100%, rgba(185,28,28,0.07) 0%, transparent 50%), radial-gradient(at 90% 10%, rgba(180,83,9,0.06) 0%, transparent 45%)`,
         }}
       />
 
@@ -250,7 +250,7 @@ export function Hero() {
               <p
                 className="text-[13px] mt-0.5"
                 style={{
-                  color: '#5EEAD4',
+                  color: '#FCD34D',
                   fontFamily: 'Playfair Display, serif',
                   fontStyle: 'italic',
                 }}
@@ -304,7 +304,7 @@ export function Hero() {
                 </p>
                 <p className="text-[12px] mt-0.5" style={{ color: '#52525B', fontFamily: 'DM Sans, sans-serif' }}>
                   Product Designer ·{' '}
-                  <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: '#0F766E' }}>
+                  <span style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: '#B91C1C' }}>
                     MS HCI
                   </span>
                 </p>
@@ -366,7 +366,7 @@ export function Hero() {
                       fontFamily: 'Playfair Display, serif',
                       fontStyle: 'italic',
                       fontWeight: 500,
-                      color: '#0F766E',
+                      color: '#B91C1C',
                       fontSize: 'clamp(54px, 12vw, 140px)',
                     }}
                   >
@@ -388,10 +388,10 @@ export function Hero() {
                     }}
                   >
                     it{' '}
-                    <span style={{ color: '#0F766E', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 500 }}>
+                    <span style={{ color: '#B91C1C', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 500 }}>
                       forgets
                     </span>
-                    <span style={{ color: '#0F766E', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 400 }}>.</span>
+                    <span style={{ color: '#B91C1C', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 400 }}>.</span>
                   </motion.h1>
                 </div>
               </div>

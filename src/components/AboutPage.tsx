@@ -79,7 +79,7 @@ export function AboutPage() {
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(at 15% 100%, rgba(15,118,110,0.06) 0%, transparent 50%), radial-gradient(at 90% 10%, rgba(124,58,237,0.05) 0%, transparent 45%)`,
+          backgroundImage: `radial-gradient(at 15% 100%, rgba(185,28,28,0.07) 0%, transparent 50%), radial-gradient(at 90% 10%, rgba(180,83,9,0.06) 0%, transparent 45%)`,
         }}
       />
       <div
@@ -279,7 +279,7 @@ export function AboutPage() {
                     fontFamily: "Playfair Display, serif",
                     fontStyle: "italic",
                     fontWeight: 500,
-                    color: "#0F766E",
+                    color: "#B91C1C",
                   }}
                 >
                   solo.
@@ -308,8 +308,8 @@ export function AboutPage() {
               <motion.div
                 className="inline-flex items-center self-start gap-2.5 mt-7 pl-3 pr-4 py-2 rounded-full"
                 style={{
-                  backgroundColor: "rgba(15,118,110,0.07)",
-                  border: "1px solid rgba(15,118,110,0.2)",
+                  backgroundColor: "rgba(185,28,28,0.07)",
+                  border: "1px solid rgba(185,28,28,0.22)",
                 }}
                 initial={{ opacity: 0, y: 12 }}
                 animate={loaded ? { opacity: 1, y: 0 } : {}}
@@ -318,16 +318,16 @@ export function AboutPage() {
                 <span className="relative flex h-2 w-2">
                   <span
                     className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                    style={{ backgroundColor: "#0F766E" }}
+                    style={{ backgroundColor: "#B91C1C" }}
                   />
                   <span
                     className="relative inline-flex rounded-full h-2 w-2"
-                    style={{ backgroundColor: "#0F766E" }}
+                    style={{ backgroundColor: "#B91C1C" }}
                   />
                 </span>
                 <span
                   className="text-[12px] font-medium"
-                  style={{ color: "#134E4A", fontFamily: "DM Sans, sans-serif" }}
+                  style={{ color: "#7F1D1D", fontFamily: "DM Sans, sans-serif" }}
                 >
                   Open to full-time product design roles · no sponsorship needed
                 </span>
@@ -581,7 +581,7 @@ export function AboutPage() {
               >
                 The tools change.
                 <br />
-                <span style={{ color: "#0F766E" }}>Taste decides what to ship.</span>
+                <span style={{ color: "#B91C1C" }}>Taste decides what to ship.</span>
               </motion.p>
             </div>
           </div>
@@ -720,7 +720,7 @@ function ClaudeCodeProofModule({ files }: { files: string[] }) {
                   fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
                 }}
               >
-                <span style={{ color: "#0F766E" }}>→</span>
+                <span style={{ color: "#B91C1C" }}>→</span>
                 {file}
               </span>
             ))}
@@ -742,11 +742,11 @@ function ClaudeCodeProofModule({ files }: { files: string[] }) {
           <span className="relative flex h-2 w-2">
             <span
               className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ backgroundColor: "#28C840" }}
+              style={{ backgroundColor: "#FBBF24" }}
             />
             <span
               className="relative inline-flex rounded-full h-2 w-2"
-              style={{ backgroundColor: "#28C840" }}
+              style={{ backgroundColor: "#FBBF24" }}
             />
           </span>
           <span
