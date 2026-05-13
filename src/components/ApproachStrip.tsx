@@ -10,7 +10,7 @@ const SUIT_RED_DEEP = "#B91C1C";
 const SUIT_GOLD = "#FBBF24";
 const SUIT_GOLD_BRIGHT = "#FCD34D";
 const PANEL_BG = "#0A0606";
-const PHASE_DURATION = 4400; // ms per scene
+const PHASE_DURATION = 4600;
 
 const PRACTICE_AREAS = [
   "Behavior design",
@@ -57,8 +57,7 @@ export function ApproachStrip() {
           left: "-10%",
           width: 500,
           height: 500,
-          background:
-            "radial-gradient(circle, rgba(185,28,28,0.08) 0%, transparent 65%)",
+          background: "radial-gradient(circle, rgba(185,28,28,0.08) 0%, transparent 65%)",
           filter: "blur(60px)",
         }}
       />
@@ -69,32 +68,23 @@ export function ApproachStrip() {
           right: "-10%",
           width: 550,
           height: 550,
-          background:
-            "radial-gradient(circle, rgba(180,83,9,0.08) 0%, transparent 65%)",
+          background: "radial-gradient(circle, rgba(180,83,9,0.08) 0%, transparent 65%)",
           filter: "blur(60px)",
         }}
       />
 
       <div className="absolute inset-0 pointer-events-none hidden lg:flex justify-between max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="w-px h-full"
-            style={{ backgroundColor: "rgba(15,23,42,0.04)" }}
-          />
+          <div key={i} className="w-px h-full" style={{ backgroundColor: "rgba(15,23,42,0.04)" }} />
         ))}
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-24 sm:py-32">
-
         <Header />
-
         <div className="mt-12 sm:mt-16">
-          <JarvisOriginStory />
+          <WorkshopPanel />
         </div>
-
         <PracticeMarquee />
-
         <ScrollHint />
       </div>
     </section>
@@ -114,16 +104,10 @@ function Header() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
       >
-        <span
-          className="text-[10px] uppercase tracking-[0.25em]"
-          style={{ color: "#71717A", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
-        >
+        <span className="text-[10px] uppercase tracking-[0.25em]" style={{ color: "#71717A", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
           Section //01
         </span>
-        <span
-          className="text-[10px] uppercase tracking-[0.25em]"
-          style={{ color: "#A1A1AA", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
-        >
+        <span className="text-[10px] uppercase tracking-[0.25em]" style={{ color: "#A1A1AA", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
           How I built JARVIS
         </span>
       </motion.div>
@@ -174,9 +158,9 @@ function Header() {
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  JarvisOriginStory — 4-scene cartoon-3D sequence           */
+/*  WorkshopPanel — Tony's holographic workshop               */
 /* ══════════════════════════════════════════════════════════ */
-function JarvisOriginStory() {
+function WorkshopPanel() {
   const ref = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState(-1);
   const [run, setRun] = useState(0);
@@ -215,41 +199,43 @@ function JarvisOriginStory() {
         maxWidth: 980,
         backgroundColor: PANEL_BG,
         border: "1px solid rgba(220,38,38,0.25)",
-        boxShadow:
-          "0 40px 80px -30px rgba(0,0,0,0.55), inset 0 1px 0 rgba(251,191,36,0.06)",
+        boxShadow: "0 40px 80px -30px rgba(0,0,0,0.55), inset 0 1px 0 rgba(251,191,36,0.06)",
       }}
     >
       <PanelChrome phase={phase} />
 
-      {/* Stage */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ height: "clamp(360px, 50vh, 460px)" }}
+        style={{ height: "clamp(420px, 56vh, 520px)" }}
       >
         <Stars />
+        <FloorGrid />
 
+        {/* Tony — always centered, always visible */}
+        <TonySilhouette phase={phase} />
+
+        {/* Holographic objects swap per phase */}
         <AnimatePresence mode="wait">
-          {phase === 0 && <IdeaScene key={`idea-${run}`} />}
-          {phase === 1 && <DesignScene key={`design-${run}`} />}
-          {phase === 2 && <CodeScene key={`code-${run}`} />}
-          {phase === 3 && <DeployScene key={`deploy-${run}`} />}
-          {phase === 4 && <FinalState key={`final-${run}`} onReplay={replay} />}
+          {phase === 0 && <IdeaPhase key={`idea-${run}`} />}
+          {phase === 1 && <DesignPhase key={`design-${run}`} />}
+          {phase === 2 && <CodePhase key={`code-${run}`} />}
+          {phase === 3 && <DeployPhase key={`deploy-${run}`} />}
+          {phase === 4 && <OnlineState key={`online-${run}`} onReplay={replay} />}
         </AnimatePresence>
       </div>
 
-      {/* Phase caption strip */}
       <PhaseCaption current={current} phase={phase} />
     </div>
   );
 }
 
 /* ────────────────────────────────────────────────────────── */
-/*  PanelChrome — top window bar with phase pills              */
+/*  PanelChrome                                                */
 /* ────────────────────────────────────────────────────────── */
 function PanelChrome({ phase }: { phase: number }) {
   return (
     <div
-      className="flex items-center justify-between px-4 py-3 relative z-10"
+      className="flex items-center justify-between px-4 py-3 relative z-30"
       style={{
         borderBottom: "1px solid rgba(220, 38, 38, 0.15)",
         backgroundColor: "rgba(10, 6, 6, 0.6)",
@@ -271,7 +257,7 @@ function PanelChrome({ phase }: { phase: number }) {
           textTransform: "uppercase",
         }}
       >
-        Stark Industries // J.A.R.V.I.S
+        Stark Industries // Workshop
       </span>
 
       <div className="flex items-center gap-1.5">
@@ -284,7 +270,11 @@ function PanelChrome({ phase }: { phase: number }) {
               className="w-1.5 h-1.5 rounded-full"
               style={{
                 backgroundColor: done ? SUIT_GOLD : active ? SUIT_RED : "rgba(244,244,245,0.15)",
-                boxShadow: active ? `0 0 6px ${SUIT_RED}` : done ? `0 0 6px ${SUIT_GOLD}` : "none",
+                boxShadow: active
+                  ? `0 0 6px ${SUIT_RED}`
+                  : done
+                  ? `0 0 6px ${SUIT_GOLD}`
+                  : "none",
                 transition: "background-color 0.3s, box-shadow 0.3s",
               }}
             />
@@ -296,41 +286,7 @@ function PanelChrome({ phase }: { phase: number }) {
 }
 
 /* ────────────────────────────────────────────────────────── */
-/*  Stars — subtle background twinkling                       */
-/* ────────────────────────────────────────────────────────── */
-function Stars() {
-  const positions = [
-    [12, 18], [85, 25], [42, 12], [70, 75], [22, 80], [55, 30],
-    [90, 60], [8, 50], [60, 88], [35, 65], [78, 8], [48, 55],
-  ];
-  return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden>
-      {positions.map(([x, y], i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            top: `${y}%`,
-            left: `${x}%`,
-            width: 2,
-            height: 2,
-            backgroundColor: SUIT_GOLD,
-          }}
-          animate={{ opacity: [0.1, 0.7, 0.1], scale: [0.8, 1.2, 0.8] }}
-          transition={{
-            duration: 2 + (i % 4) * 0.5,
-            repeat: Infinity,
-            delay: i * 0.2,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────── */
-/*  PhaseCaption — bottom of panel                             */
+/*  PhaseCaption — bottom strip                                */
 /* ────────────────────────────────────────────────────────── */
 function PhaseCaption({ current, phase }: { current: PhaseDef | null; phase: number }) {
   return (
@@ -377,7 +333,7 @@ function PhaseCaption({ current, phase }: { current: PhaseDef | null; phase: num
 
         {phase === 4 && (
           <motion.div
-            key="final-caption"
+            key="final"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -393,7 +349,7 @@ function PhaseCaption({ current, phase }: { current: PhaseDef | null; phase: num
                 fontWeight: 600,
               }}
             >
-              {">"} ALL SYSTEMS ONLINE
+              {">"} J.A.R.V.I.S — ONLINE
             </span>
             <span
               className="hidden sm:inline-block"
@@ -424,73 +380,296 @@ function PhaseCaption({ current, phase }: { current: PhaseDef | null; phase: num
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  SCENE 1 — IDEA (Lightbulb pops up with sparkles)          */
-/* ══════════════════════════════════════════════════════════ */
-function IdeaScene() {
+/* ────────────────────────────────────────────────────────── */
+/*  Stars + Floor                                              */
+/* ────────────────────────────────────────────────────────── */
+function Stars() {
+  const positions = [
+    [12, 18], [85, 22], [42, 12], [70, 28], [22, 30],
+    [55, 16], [90, 35], [8, 40], [60, 18], [35, 38],
+    [78, 10], [48, 32],
+  ];
   return (
-    <motion.div
-      className="absolute inset-0 flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.4 }}
-    >
-      {/* Pulse rings */}
-      {[0, 0.7, 1.4].map((delay, i) => (
+    <div className="absolute inset-0 pointer-events-none z-0" aria-hidden>
+      {positions.map(([x, y], i) => (
         <motion.div
           key={i}
           className="absolute rounded-full"
-          style={{
-            border: `2px solid ${SUIT_GOLD}`,
-            opacity: 0.5,
-          }}
-          initial={{ width: 0, height: 0, opacity: 0 }}
-          animate={{ width: 300, height: 300, opacity: [0, 0.6, 0] }}
-          transition={{ duration: 2.1, delay, repeat: Infinity, ease: "easeOut" }}
+          style={{ top: `${y}%`, left: `${x}%`, width: 2, height: 2, backgroundColor: SUIT_GOLD }}
+          animate={{ opacity: [0.1, 0.7, 0.1], scale: [0.8, 1.2, 0.8] }}
+          transition={{ duration: 2 + (i % 4) * 0.5, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FloorGrid() {
+  return (
+    <svg
+      className="absolute bottom-0 left-0 right-0 pointer-events-none z-0"
+      viewBox="0 0 1000 180"
+      preserveAspectRatio="none"
+      style={{ height: "38%", opacity: 0.55 }}
+    >
+      <defs>
+        <linearGradient id="floorFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={SUIT_GOLD} stopOpacity="0.0" />
+          <stop offset="100%" stopColor={SUIT_GOLD} stopOpacity="0.6" />
+        </linearGradient>
+      </defs>
+
+      {/* Horizontal lines, denser toward bottom (closer) */}
+      {[10, 30, 55, 85, 120, 165].map((y, i) => (
+        <line
+          key={y}
+          x1="0" y1={y} x2="1000" y2={y}
+          stroke="url(#floorFade)"
+          strokeWidth={0.6 + i * 0.2}
         />
       ))}
 
-      {/* Sparkles around the bulb */}
-      {[0, 40, 90, 130, 180, 220, 270, 320].map((angle, i) => (
-        <Sparkle key={angle} angle={angle} delay={0.6 + i * 0.08} />
+      {/* Vertical lines converging to vanishing point at (500, 0) */}
+      {[-400, -200, -50, 0, 50, 200, 400].map((offset) => (
+        <line
+          key={offset}
+          x1={500 + offset} y1="180"
+          x2={500 + offset * 0.18} y2="0"
+          stroke={SUIT_GOLD}
+          strokeWidth="0.8"
+          opacity="0.22"
+        />
       ))}
+      {/* Outer wide lines */}
+      {[-900, 900].map((offset) => (
+        <line
+          key={offset}
+          x1={500 + offset} y1="180"
+          x2={500 + offset * 0.18} y2="0"
+          stroke={SUIT_GOLD}
+          strokeWidth="0.8"
+          opacity="0.18"
+        />
+      ))}
+    </svg>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  TonySilhouette — always centered                          */
+/* ══════════════════════════════════════════════════════════ */
+function TonySilhouette({ phase }: { phase: number }) {
+  /* Subtle head tilt during phase 1 (idea moment) */
+  const headTilt = phase === 0 ? [0, -4, 0, 3, 0] : 0;
+
+  return (
+    <motion.div
+      className="absolute z-10 pointer-events-none"
+      style={{
+        left: "50%",
+        bottom: "8%",
+        transform: "translateX(-50%)",
+      }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+    >
+      {/* Idle breathing */}
+      <motion.div
+        animate={{ y: [0, -2, 0] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <svg viewBox="0 0 200 240" width="160" height="192" style={{ display: "block" }}>
+          {/* Shoulders / body */}
+          <path
+            d="M30 230 Q30 165, 65 152 L135 152 Q170 165, 170 230 Z"
+            fill="#1A0A0A"
+            stroke={SUIT_RED}
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+
+          {/* Collar gap */}
+          <path
+            d="M85 152 Q100 168, 115 152"
+            fill="#0A0606"
+            stroke={SUIT_RED}
+            strokeWidth="1.2"
+            opacity="0.7"
+          />
+
+          {/* Neck */}
+          <rect x="88" y="135" width="24" height="22" fill="#1A0A0A" stroke={SUIT_RED} strokeWidth="1.4" />
+
+          {/* Head with breathing-driven tilt */}
+          <motion.g
+            animate={{ rotate: headTilt }}
+            transition={{ duration: 1.6, ease: "easeInOut" }}
+            style={{ transformOrigin: "100px 140px" }}
+          >
+            {/* Head ellipse */}
+            <ellipse
+              cx="100" cy="90"
+              rx="40" ry="50"
+              fill="#1A0A0A"
+              stroke={SUIT_RED}
+              strokeWidth="1.6"
+            />
+
+            {/* Hair (slicked back with peak) */}
+            <path
+              d="M62 70 Q70 38, 100 38 Q130 38, 138 70 Q130 50, 100 50 Q70 50, 62 70 Z"
+              fill="#0A0606"
+            />
+            {/* Hair side sweep */}
+            <path
+              d="M62 70 Q68 60, 75 72"
+              stroke="#0A0606"
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+
+            {/* Eyes — small gold glints */}
+            <circle cx="84" cy="88" r="2" fill={SUIT_GOLD_BRIGHT} />
+            <circle cx="116" cy="88" r="2" fill={SUIT_GOLD_BRIGHT} />
+
+            {/* Eyebrows */}
+            <path d="M78 80 L90 78" stroke="#0A0606" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M110 78 L122 80" stroke="#0A0606" strokeWidth="1.6" strokeLinecap="round" />
+
+            {/* Nose hint */}
+            <path d="M100 95 L96 108 L100 110" stroke="#5A1010" strokeWidth="1" fill="none" strokeLinecap="round" />
+
+            {/* Moustache */}
+            <path
+              d="M86 115 Q93 113, 100 115 Q107 113, 114 115"
+              stroke="#0A0606"
+              strokeWidth="2.4"
+              fill="none"
+              strokeLinecap="round"
+            />
+
+            {/* Goatee (signature) */}
+            <path
+              d="M88 122 L100 125 L112 122 L106 140 L100 142 L94 140 Z"
+              fill="#0A0606"
+            />
+          </motion.g>
+
+          {/* Arc reactor on chest (FOCAL POINT) */}
+          <g transform="translate(100, 196)">
+            {/* Outer glow */}
+            <motion.circle
+              r="22"
+              fill={SUIT_GOLD}
+              opacity="0.25"
+              animate={{ opacity: [0.18, 0.35, 0.18], scale: [0.92, 1.08, 0.92] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* Ring */}
+            <circle r="14" fill="none" stroke={SUIT_GOLD} strokeWidth="1.6" />
+            {/* Inner glow */}
+            <motion.circle
+              r="10"
+              fill={SUIT_GOLD_BRIGHT}
+              animate={{ opacity: [0.85, 1, 0.85], scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* White core */}
+            <circle r="5" fill="#FFFFFF" />
+            {/* Tick marks */}
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <line
+                key={deg}
+                x1="0" y1="-13" x2="0" y2="-10"
+                stroke={SUIT_GOLD_BRIGHT}
+                strokeWidth="1.3"
+                opacity="0.85"
+                style={{ transformOrigin: "center", transform: `rotate(${deg}deg)` }}
+              />
+            ))}
+          </g>
+        </svg>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  PHASE 1 — IDEA (lightbulb pops above Tony's head)         */
+/* ══════════════════════════════════════════════════════════ */
+function IdeaPhase() {
+  return (
+    <motion.div
+      className="absolute inset-0 z-20"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      {/* Pulse rings ABOVE Tony's head */}
+      <div className="absolute" style={{ left: "50%", top: "12%", transform: "translateX(-50%)" }}>
+        {[0, 0.7, 1.4].map((delay, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              border: `2px solid ${SUIT_GOLD}`,
+              opacity: 0.5,
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+            initial={{ width: 0, height: 0, opacity: 0 }}
+            animate={{ width: 200, height: 200, opacity: [0, 0.55, 0] }}
+            transition={{ duration: 2.1, delay, repeat: Infinity, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+
+      {/* Sparkles around the bulb */}
+      <div className="absolute" style={{ left: "50%", top: "20%", transform: "translate(-50%, -50%)" }}>
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+          <Sparkle key={angle} angle={angle} delay={0.5 + i * 0.08} radius={100} />
+        ))}
+      </div>
 
       {/* Lightbulb */}
       <motion.div
-        className="relative"
-        initial={{ scale: 0, y: -50, rotate: -20 }}
+        className="absolute"
+        style={{ left: "50%", top: "22%", transform: "translate(-50%, -50%)" }}
+        initial={{ scale: 0, y: -40, rotate: -25 }}
         animate={{ scale: 1, y: 0, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 220, damping: 11, delay: 0.2 }}
+        transition={{ type: "spring", stiffness: 220, damping: 11, delay: 0.15 }}
       >
         <motion.div
-          animate={{ rotate: [-2, 2, -2], y: [0, -4, 0] }}
+          animate={{ rotate: [-3, 3, -3], y: [0, -4, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
           <Bulb />
         </motion.div>
       </motion.div>
 
-      {/* "AHA!" burst text */}
+      {/* "AHA!" burst */}
       <motion.div
         className="absolute pointer-events-none"
-        style={{ top: "20%", left: "62%" }}
-        initial={{ scale: 0, rotate: -8 }}
-        animate={{ scale: [0, 1.2, 1], rotate: [-8, 12, 6] }}
+        style={{ left: "62%", top: "30%" }}
+        initial={{ scale: 0, rotate: -10 }}
+        animate={{ scale: [0, 1.25, 1], rotate: [-10, 12, 6] }}
         transition={{
-          scale: { duration: 0.6, delay: 0.7, ease: [0.23, 1, 0.32, 1] },
-          rotate: { duration: 0.6, delay: 0.7 },
+          scale: { duration: 0.6, delay: 0.8, ease: [0.23, 1, 0.32, 1] },
+          rotate: { duration: 0.6, delay: 0.8 },
         }}
       >
         <span
           style={{
             fontFamily: "Syne, sans-serif",
             fontWeight: 800,
-            fontSize: "clamp(24px, 4vw, 40px)",
+            fontSize: "clamp(20px, 3.5vw, 34px)",
             color: SUIT_GOLD_BRIGHT,
             textShadow: `0 0 12px ${SUIT_GOLD}, 0 2px 0 ${SUIT_RED_DEEP}`,
             letterSpacing: "-0.02em",
-            display: "inline-block",
           }}
         >
           AHA!
@@ -500,34 +679,19 @@ function IdeaScene() {
   );
 }
 
-function Sparkle({ angle, delay }: { angle: number; delay: number }) {
-  const radius = 130;
+function Sparkle({ angle, delay, radius }: { angle: number; delay: number; radius: number }) {
   const x = Math.cos((angle * Math.PI) / 180) * radius;
   const y = Math.sin((angle * Math.PI) / 180) * radius;
   return (
     <motion.div
       className="absolute"
-      style={{ width: 12, height: 12, top: "50%", left: "50%", marginTop: -6, marginLeft: -6 }}
+      style={{ width: 12, height: 12, left: 0, top: 0, marginLeft: -6, marginTop: -6 }}
       initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
-      animate={{
-        x: [0, x],
-        y: [0, y],
-        scale: [0, 1, 0],
-        opacity: [0, 1, 0],
-      }}
-      transition={{
-        duration: 1.6,
-        delay,
-        repeat: Infinity,
-        repeatDelay: 0.4,
-        ease: "easeOut",
-      }}
+      animate={{ x: [0, x], y: [0, y], scale: [0, 1, 0], opacity: [0, 1, 0] }}
+      transition={{ duration: 1.6, delay, repeat: Infinity, repeatDelay: 0.4, ease: "easeOut" }}
     >
       <svg viewBox="0 0 12 12" width="12" height="12">
-        <path
-          d="M6 0 L7 5 L12 6 L7 7 L6 12 L5 7 L0 6 L5 5 Z"
-          fill={SUIT_GOLD_BRIGHT}
-        />
+        <path d="M6 0 L7 5 L12 6 L7 7 L6 12 L5 7 L0 6 L5 5 Z" fill={SUIT_GOLD_BRIGHT} />
       </svg>
     </motion.div>
   );
@@ -535,43 +699,38 @@ function Sparkle({ angle, delay }: { angle: number; delay: number }) {
 
 function Bulb() {
   return (
-    <svg viewBox="0 0 160 220" width="140" height="192">
-      {/* Outer glow */}
+    <svg viewBox="0 0 140 180" width="100" height="128">
       <defs>
         <radialGradient id="bulbGlow" cx="50%" cy="40%">
           <stop offset="0%" stopColor={SUIT_GOLD_BRIGHT} stopOpacity="0.8" />
-          <stop offset="60%" stopColor={SUIT_GOLD} stopOpacity="0.3" />
+          <stop offset="65%" stopColor={SUIT_GOLD} stopOpacity="0.3" />
           <stop offset="100%" stopColor={SUIT_GOLD} stopOpacity="0" />
         </radialGradient>
       </defs>
 
-      {/* Glass bulb */}
-      <ellipse cx="80" cy="80" rx="60" ry="68" fill="url(#bulbGlow)" />
-      <ellipse cx="80" cy="80" rx="60" ry="68" fill="rgba(251, 191, 36, 0.08)" stroke={SUIT_GOLD} strokeWidth="3" />
+      <ellipse cx="70" cy="65" rx="50" ry="56" fill="url(#bulbGlow)" />
+      <ellipse cx="70" cy="65" rx="50" ry="56" fill="rgba(251,191,36,0.08)" stroke={SUIT_GOLD} strokeWidth="2.5" />
 
-      {/* Filament */}
       <motion.g
         animate={{ opacity: [0.6, 1, 0.6] }}
         transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
       >
         <path
-          d="M60 85 Q70 70, 80 85 Q90 100, 100 85"
+          d="M52 75 Q60 60, 70 75 Q80 90, 88 75"
           fill="none"
           stroke={SUIT_GOLD_BRIGHT}
-          strokeWidth="2.5"
+          strokeWidth="2"
           strokeLinecap="round"
         />
-        <line x1="60" y1="85" x2="56" y2="105" stroke={SUIT_GOLD} strokeWidth="2" />
-        <line x1="100" y1="85" x2="104" y2="105" stroke={SUIT_GOLD} strokeWidth="2" />
+        <line x1="52" y1="75" x2="48" y2="90" stroke={SUIT_GOLD} strokeWidth="1.6" />
+        <line x1="88" y1="75" x2="92" y2="90" stroke={SUIT_GOLD} strokeWidth="1.6" />
       </motion.g>
 
-      {/* "JARVIS?" label inside bulb */}
       <text
-        x="80"
-        y="60"
+        x="70" y="50"
         textAnchor="middle"
         fill={SUIT_RED}
-        fontSize="13"
+        fontSize="10"
         fontWeight="700"
         fontFamily="ui-monospace, monospace"
         letterSpacing="0.15em"
@@ -579,33 +738,32 @@ function Bulb() {
         JARVIS?
       </text>
 
-      {/* Screw threads (cartoon style) */}
-      <rect x="62" y="138" width="36" height="10" rx="2" fill="#71717A" />
-      <rect x="58" y="150" width="44" height="6" rx="2" fill="#52525B" />
-      <rect x="60" y="158" width="40" height="6" rx="2" fill="#71717A" />
-      <rect x="62" y="166" width="36" height="6" rx="2" fill="#52525B" />
-      <rect x="64" y="174" width="32" height="8" rx="2" fill="#71717A" />
-      <rect x="70" y="184" width="20" height="12" rx="2" fill="#27272A" />
-      <circle cx="80" cy="200" r="6" fill="#18181B" />
+      {/* Screw threads */}
+      <rect x="54" y="118" width="32" height="8" rx="2" fill="#71717A" />
+      <rect x="50" y="128" width="40" height="5" rx="2" fill="#52525B" />
+      <rect x="52" y="135" width="36" height="5" rx="2" fill="#71717A" />
+      <rect x="54" y="142" width="32" height="6" rx="2" fill="#52525B" />
+      <rect x="58" y="150" width="24" height="10" rx="2" fill="#27272A" />
+      <circle cx="70" cy="165" r="5" fill="#18181B" />
     </svg>
   );
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  SCENE 2 — DESIGN (Wireframe JARVIS face materializes)     */
+/*  PHASE 2 — DESIGN (wireframe JARVIS face in front of Tony) */
 /* ══════════════════════════════════════════════════════════ */
-function DesignScene() {
+function DesignPhase() {
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center"
+      className="absolute inset-0 z-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
       {/* Scan line */}
       <motion.div
-        className="absolute top-0 bottom-0 z-10 pointer-events-none"
+        className="absolute top-0 bottom-0 pointer-events-none"
         style={{
           width: 2,
           background: `linear-gradient(to bottom, transparent, ${SUIT_RED}, transparent)`,
@@ -616,10 +774,11 @@ function DesignScene() {
         transition={{ duration: 1.6, ease: "linear", delay: 0.1 }}
       />
 
-      {/* JARVIS face */}
+      {/* Hologram face — positioned above-left of Tony's head */}
       <motion.div
-        className="relative"
-        initial={{ scale: 0.7, opacity: 0, rotateY: -25 }}
+        className="absolute"
+        style={{ left: "50%", top: "32%", transform: "translate(-50%, -50%)" }}
+        initial={{ scale: 0.5, opacity: 0, rotateY: -30 }}
         animate={{ scale: 1, opacity: 1, rotateY: 0 }}
         transition={{ type: "spring", stiffness: 180, damping: 16, delay: 0.4 }}
       >
@@ -632,114 +791,87 @@ function DesignScene() {
         </motion.div>
       </motion.div>
 
-      {/* Floating UI panels */}
-      <FloatingPanel x={-180} y={-90} delay={1.0} label="frame.01" />
-      <FloatingPanel x={180}  y={-90} delay={1.15} label="frame.02" />
-      <FloatingPanel x={-180} y={90}  delay={1.3} label="frame.03" />
-      <FloatingPanel x={180}  y={90}  delay={1.45} label="frame.04" />
+      {/* Floating UI panels at corners */}
+      <FloatingPanel x="14%" y="14%" delay={1.0} label="frame.01" />
+      <FloatingPanel x="86%" y="14%" delay={1.15} label="frame.02" />
+      <FloatingPanel x="14%" y="58%" delay={1.3} label="frame.03" />
+      <FloatingPanel x="86%" y="58%" delay={1.45} label="frame.04" />
     </motion.div>
   );
 }
 
 function JarvisFace() {
   return (
-    <svg viewBox="0 0 240 280" width="220" height="256">
-      {/* Outer hexagonal head shape */}
+    <svg viewBox="0 0 200 200" width="160" height="160">
       <motion.path
-        d="M120 24 L200 70 L200 188 L160 246 L80 246 L40 188 L40 70 Z"
+        d="M100 18 L165 56 L165 144 L130 184 L70 184 L35 144 L35 56 Z"
         fill="rgba(220, 38, 38, 0.06)"
         stroke={SUIT_RED}
         strokeWidth="2.5"
         strokeLinejoin="round"
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ pathLength: { duration: 1, delay: 0.5, ease: "easeOut" }, opacity: { duration: 0.3, delay: 0.5 } }}
+        transition={{ pathLength: { duration: 1, delay: 0.4, ease: "easeOut" }, opacity: { duration: 0.3, delay: 0.4 } }}
       />
 
-      {/* Internal grid lines */}
       <motion.g
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 1.4 }}
+        transition={{ duration: 0.4, delay: 1.3 }}
       >
-        <line x1="40" y1="105" x2="200" y2="105" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
-        <line x1="40" y1="170" x2="200" y2="170" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
-        <line x1="120" y1="24" x2="120" y2="246" stroke="rgba(251, 191, 36, 0.15)" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="35" y1="80" x2="165" y2="80" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="35" y1="130" x2="165" y2="130" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
+        <line x1="100" y1="18" x2="100" y2="184" stroke="rgba(251, 191, 36, 0.15)" strokeWidth="1" strokeDasharray="3 3" />
       </motion.g>
 
-      {/* Eyes */}
       <motion.circle
-        cx="80" cy="125" r="14"
+        cx="68" cy="94" r="11"
+        fill={SUIT_GOLD}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 280, damping: 12, delay: 0.9 }}
+      />
+      <motion.circle
+        cx="132" cy="94" r="11"
         fill={SUIT_GOLD}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 280, damping: 12, delay: 1.0 }}
       />
-      <motion.circle
-        cx="160" cy="125" r="14"
-        fill={SUIT_GOLD}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 280, damping: 12, delay: 1.1 }}
-      />
 
-      {/* Pulsing inner pupils */}
       <motion.circle
-        cx="80" cy="125" r="6"
+        cx="68" cy="94" r="5"
         fill={SUIT_GOLD_BRIGHT}
         animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1.1, 0.8] }}
-        transition={{ duration: 1.6, repeat: Infinity, delay: 1.4 }}
+        transition={{ duration: 1.6, repeat: Infinity, delay: 1.3 }}
       />
       <motion.circle
-        cx="160" cy="125" r="6"
+        cx="132" cy="94" r="5"
         fill={SUIT_GOLD_BRIGHT}
         animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1.1, 0.8] }}
-        transition={{ duration: 1.6, repeat: Infinity, delay: 1.4 }}
+        transition={{ duration: 1.6, repeat: Infinity, delay: 1.3 }}
       />
 
-      {/* Mouth bars */}
       <motion.g
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 1.5 }}
+        transition={{ duration: 0.4, delay: 1.4 }}
       >
-        <rect x="70" y="190" width="100" height="6" rx="2" fill={SUIT_GOLD} opacity="0.45" />
-        <rect x="76" y="202" width="88" height="5" rx="2" fill={SUIT_GOLD} opacity="0.35" />
-        <rect x="82" y="213" width="76" height="4" rx="2" fill={SUIT_GOLD} opacity="0.25" />
+        <rect x="58" y="142" width="84" height="5" rx="2" fill={SUIT_GOLD} opacity="0.45" />
+        <rect x="64" y="152" width="72" height="4" rx="2" fill={SUIT_GOLD} opacity="0.32" />
+        <rect x="70" y="161" width="60" height="3" rx="2" fill={SUIT_GOLD} opacity="0.22" />
       </motion.g>
-
-      {/* Corner brackets */}
-      {[
-        { x1: 30, y1: 30, x2: 50, y2: 30 },
-        { x1: 30, y1: 30, x2: 30, y2: 50 },
-        { x1: 190, y1: 30, x2: 210, y2: 30 },
-        { x1: 210, y1: 30, x2: 210, y2: 50 },
-        { x1: 30, y1: 230, x2: 30, y2: 250 },
-        { x1: 30, y1: 250, x2: 50, y2: 250 },
-        { x1: 210, y1: 230, x2: 210, y2: 250 },
-        { x1: 190, y1: 250, x2: 210, y2: 250 },
-      ].map((b, i) => (
-        <motion.line
-          key={i}
-          x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2}
-          stroke={SUIT_GOLD}
-          strokeWidth="2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.7 }}
-          transition={{ duration: 0.3, delay: 1.55 + i * 0.03 }}
-        />
-      ))}
     </svg>
   );
 }
 
-function FloatingPanel({ x, y, delay, label }: { x: number; y: number; delay: number; label: string }) {
+function FloatingPanel({ x, y, delay, label }: { x: string; y: string; delay: number; label: string }) {
   return (
     <motion.div
       className="absolute"
-      style={{ left: "50%", top: "50%" }}
-      initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
-      animate={{ x, y, scale: 1, opacity: 1 }}
+      style={{ left: x, top: y }}
+      initial={{ scale: 0, opacity: 0, y: 10 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 14, delay }}
     >
       <motion.div
@@ -747,8 +879,6 @@ function FloatingPanel({ x, y, delay, label }: { x: number; y: number; delay: nu
         style={{
           backgroundColor: "rgba(220, 38, 38, 0.08)",
           border: `1px solid ${SUIT_RED}`,
-          transform: "translate(-50%, -50%)",
-          minWidth: 70,
         }}
         animate={{ y: [0, -4, 0] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay }}
@@ -770,103 +900,54 @@ function FloatingPanel({ x, y, delay, label }: { x: number; y: number; delay: nu
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  SCENE 3 — CODE (Orbiting code blocks + neural core)       */
+/*  PHASE 3 — CODE (code blocks orbit around Tony)            */
 /* ══════════════════════════════════════════════════════════ */
-function CodeScene() {
+function CodePhase() {
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center"
+      className="absolute inset-0 z-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Neural core */}
+      {/* Code blocks positioned around Tony */}
+      <OrbitBlock file="// JARVIS.tsx" x="22%" y="22%" delay={0.3} />
+      <OrbitBlock file="// brain.ts" x="78%" y="22%" delay={0.45} />
+      <OrbitBlock file="// memory.ts" x="14%" y="55%" delay={0.6} />
+      <OrbitBlock file="// protocol.js" x="86%" y="55%" delay={0.75} />
+
+      {/* Glow halo around Tony */}
       <motion.div
-        className="relative flex items-center justify-center"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.2 }}
-      >
-        {/* Outer glow */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 180,
-            height: 180,
-            background: `radial-gradient(circle, ${SUIT_RED} 0%, transparent 65%)`,
-            opacity: 0.4,
-          }}
-          animate={{ scale: [0.95, 1.08, 0.95], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        />
+        className="absolute pointer-events-none"
+        style={{
+          left: "50%",
+          bottom: "12%",
+          width: 200,
+          height: 200,
+          marginLeft: -100,
+          background: `radial-gradient(circle, ${SUIT_RED} 0%, transparent 60%)`,
+          opacity: 0.25,
+          borderRadius: "50%",
+        }}
+        animate={{ opacity: [0.18, 0.32, 0.18], scale: [0.95, 1.08, 0.95] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+      />
 
-        {/* Rotating outer ring */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 130, height: 130,
-            border: `2px dashed ${SUIT_GOLD}`,
-            opacity: 0.65,
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
-        />
-
-        {/* Core */}
-        <motion.div
-          className="relative rounded-full flex items-center justify-center"
-          style={{
-            width: 80,
-            height: 80,
-            background: `radial-gradient(circle, ${SUIT_GOLD_BRIGHT} 0%, ${SUIT_GOLD} 50%, ${SUIT_RED} 100%)`,
-            boxShadow: `0 0 30px ${SUIT_GOLD}`,
-          }}
-          animate={{ scale: [1, 1.07, 1] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <span
-            style={{
-              fontFamily: "Syne, sans-serif",
-              fontWeight: 800,
-              fontSize: 14,
-              color: "#0A0606",
-              letterSpacing: "0.05em",
-            }}
-          >
-            AI
-          </span>
-        </motion.div>
-      </motion.div>
-
-      {/* Orbiting code blocks */}
-      {[
-        { file: "JARVIS.tsx", angle: 0,   delay: 0.5 },
-        { file: "brain.ts",   angle: 90,  delay: 0.65 },
-        { file: "memory.ts",  angle: 180, delay: 0.8 },
-        { file: "protocol.js", angle: 270, delay: 0.95 },
-      ].map((b) => (
-        <OrbitBlock key={b.file} {...b} />
-      ))}
-
-      {/* Stream lines */}
+      {/* Background code stream */}
       <CodeStream />
     </motion.div>
   );
 }
 
-function OrbitBlock({ file, angle, delay }: { file: string; angle: number; delay: number }) {
-  const radius = 170;
-  const x = Math.cos((angle * Math.PI) / 180) * radius;
-  const y = Math.sin((angle * Math.PI) / 180) * radius;
-
+function OrbitBlock({ file, x, y, delay }: { file: string; x: string; y: string; delay: number }) {
   return (
     <motion.div
       className="absolute"
-      style={{ top: "50%", left: "50%" }}
-      initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
-      animate={{ x, y, scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 200, damping: 16, delay }}
+      style={{ left: x, top: y }}
+      initial={{ scale: 0, opacity: 0, rotate: -8 }}
+      animate={{ scale: 1, opacity: 1, rotate: 0 }}
+      transition={{ type: "spring", stiffness: 200, damping: 14, delay }}
     >
       <motion.div
         className="rounded-md px-3 py-1.5"
@@ -874,11 +955,10 @@ function OrbitBlock({ file, angle, delay }: { file: string; angle: number; delay
           backgroundColor: PANEL_BG,
           border: `1px solid ${SUIT_GOLD}`,
           boxShadow: `0 0 12px rgba(251, 191, 36, 0.3)`,
-          transform: "translate(-50%, -50%)",
           whiteSpace: "nowrap",
         }}
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 2 + (angle / 90) * 0.4, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 2.2 + delay, repeat: Infinity, ease: "easeInOut" }}
       >
         <span
           style={{
@@ -903,17 +983,17 @@ function CodeStream() {
     "}",
   ];
   return (
-    <div className="absolute bottom-4 left-4 right-4 pointer-events-none flex flex-col gap-1">
+    <div className="absolute bottom-3 left-3 pointer-events-none flex flex-col gap-0.5">
       {lines.map((line, i) => (
         <motion.span
           key={i}
           initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 0.5, x: 0 }}
-          transition={{ duration: 0.4, delay: 1.5 + i * 0.18 }}
+          animate={{ opacity: 0.4, x: 0 }}
+          transition={{ duration: 0.4, delay: 1.2 + i * 0.15 }}
           style={{
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 10,
-            color: "rgba(244, 244, 245, 0.4)",
+            fontSize: 9.5,
+            color: "rgba(244, 244, 245, 0.35)",
           }}
         >
           {line}
@@ -924,12 +1004,12 @@ function CodeStream() {
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  SCENE 4 — DEPLOY (Helmet drops, HUD activates)            */
+/*  PHASE 4 — DEPLOY (helmet drops, HUD activates)            */
 /* ══════════════════════════════════════════════════════════ */
-function DeployScene() {
+function DeployPhase() {
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center"
+      className="absolute inset-0 z-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -941,8 +1021,8 @@ function DeployScene() {
         style={{
           top: 0,
           left: "50%",
-          width: 160,
-          height: "100%",
+          width: 140,
+          height: "75%",
           background: `linear-gradient(to bottom, ${SUIT_GOLD}, transparent)`,
           opacity: 0.18,
           transform: "translateX(-50%)",
@@ -952,27 +1032,33 @@ function DeployScene() {
         transition={{ duration: 0.8, delay: 0.1 }}
       />
 
-      {/* Helmet drops in */}
+      {/* Helmet — drops from above, lands just above Tony's chest area */}
       <motion.div
-        className="relative"
-        initial={{ y: -240, rotate: -6, opacity: 0 }}
+        className="absolute"
+        style={{ left: "50%", top: "30%", transform: "translate(-50%, -50%)" }}
+        initial={{ y: -200, rotate: -6, opacity: 0 }}
         animate={{ y: 0, rotate: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 160, damping: 12, delay: 0.3 }}
       >
         <motion.div
-          animate={{ y: [0, -6, 0], rotate: [-1, 1, -1] }}
+          animate={{ y: [0, -4, 0], rotate: [-1, 1, -1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
           <Helmet />
         </motion.div>
       </motion.div>
 
-      {/* Impact ripple */}
+      {/* Impact ripple around helmet landing */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
-        style={{ border: `2px solid ${SUIT_GOLD}` }}
+        style={{
+          left: "50%",
+          top: "30%",
+          transform: "translate(-50%, -50%)",
+          border: `2px solid ${SUIT_GOLD}`,
+        }}
         initial={{ width: 0, height: 0, opacity: 0 }}
-        animate={{ width: 320, height: 320, opacity: [0, 0.7, 0] }}
+        animate={{ width: 260, height: 260, opacity: [0, 0.65, 0] }}
         transition={{ duration: 1.2, delay: 1.0, ease: "easeOut" }}
       />
 
@@ -982,9 +1068,10 @@ function DeployScene() {
       <HUDBracket pos="bl" delay={1.6} />
       <HUDBracket pos="br" delay={1.7} />
 
-      {/* "JARVIS ONLINE" text */}
+      {/* JARVIS · ONLINE pill */}
       <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2"
+        className="absolute bottom-6 left-1/2"
+        style={{ transform: "translateX(-50%)" }}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 1.8 }}
@@ -1013,7 +1100,7 @@ function DeployScene() {
               textTransform: "uppercase",
             }}
           >
-            JARVIS · Online
+            J.A.R.V.I.S · Online
           </span>
         </div>
       </motion.div>
@@ -1023,62 +1110,49 @@ function DeployScene() {
 
 function Helmet() {
   return (
-    <svg viewBox="0 0 240 280" width="200" height="234">
-      {/* Helmet shell */}
+    <svg viewBox="0 0 200 232" width="140" height="162">
       <path
-        d="M120 22 Q170 22, 182 56 Q192 88, 188 118 L186 152 Q180 192, 162 220 Q148 240, 120 248 Q92 240, 78 220 Q60 192, 54 152 L52 118 Q48 88, 58 56 Q70 22, 120 22 Z"
+        d="M100 16 Q142 16, 152 46 Q162 74, 158 100 L156 128 Q150 162, 134 188 Q120 206, 100 214 Q80 206, 66 188 Q50 162, 44 128 L42 100 Q40 74, 50 46 Q60 16, 100 16 Z"
         fill={SUIT_RED}
         stroke={SUIT_GOLD}
-        strokeWidth="3"
+        strokeWidth="2.4"
         strokeLinejoin="round"
       />
-
-      {/* Center face plate seam */}
-      <line x1="120" y1="60" x2="120" y2="240" stroke={SUIT_GOLD} strokeWidth="1" opacity="0.4" />
-
-      {/* Brow */}
-      <path d="M68 110 Q120 100, 172 110" fill="none" stroke={SUIT_GOLD} strokeWidth="1.2" opacity="0.55" />
-
-      {/* Eye slits */}
+      <line x1="100" y1="50" x2="100" y2="206" stroke={SUIT_GOLD} strokeWidth="0.8" opacity="0.4" />
+      <path d="M58 92 Q100 84, 142 92" fill="none" stroke={SUIT_GOLD} strokeWidth="1" opacity="0.5" />
       <motion.path
-        d="M72 130 L108 130 L100 148 L72 148 Z"
+        d="M62 112 L92 112 L86 128 L62 128 Z"
         fill={SUIT_GOLD_BRIGHT}
-        animate={{ opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 1.4, repeat: Infinity, delay: 0.8 }}
+        animate={{ opacity: [0.75, 1, 0.75] }}
+        transition={{ duration: 1.5, repeat: Infinity, delay: 0.8 }}
       />
       <motion.path
-        d="M132 130 L168 130 L168 148 L140 148 Z"
+        d="M108 112 L138 112 L138 128 L116 128 Z"
         fill={SUIT_GOLD_BRIGHT}
-        animate={{ opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 1.4, repeat: Infinity, delay: 0.8 }}
+        animate={{ opacity: [0.75, 1, 0.75] }}
+        transition={{ duration: 1.5, repeat: Infinity, delay: 0.8 }}
       />
-
-      {/* Cheek plates */}
-      <path d="M58 156 Q75 168, 82 184" fill="none" stroke={SUIT_GOLD} strokeWidth="1" opacity="0.4" />
-      <path d="M182 156 Q165 168, 158 184" fill="none" stroke={SUIT_GOLD} strokeWidth="1" opacity="0.4" />
-
-      {/* Mouth vents */}
-      <line x1="86" y1="200" x2="154" y2="200" stroke={SUIT_GOLD} strokeWidth="2" />
-      <line x1="90" y1="206" x2="150" y2="206" stroke={SUIT_GOLD} strokeWidth="1.4" opacity="0.75" />
-      <line x1="94" y1="212" x2="146" y2="212" stroke={SUIT_GOLD} strokeWidth="1" opacity="0.5" />
+      <line x1="72" y1="168" x2="128" y2="168" stroke={SUIT_GOLD} strokeWidth="1.8" />
+      <line x1="76" y1="174" x2="124" y2="174" stroke={SUIT_GOLD} strokeWidth="1.2" opacity="0.7" />
+      <line x1="80" y1="180" x2="120" y2="180" stroke={SUIT_GOLD} strokeWidth="0.8" opacity="0.5" />
     </svg>
   );
 }
 
 function HUDBracket({ pos, delay }: { pos: "tl" | "tr" | "bl" | "br"; delay: number }) {
-  const map: Record<string, { top?: string; bottom?: string; left?: string; right?: string }> = {
-    tl: { top: "16px", left: "16px" },
-    tr: { top: "16px", right: "16px" },
-    bl: { bottom: "60px", left: "16px" },
-    br: { bottom: "60px", right: "16px" },
-  };
   const flipH = pos.endsWith("r");
   const flipV = pos.startsWith("b");
-
   return (
     <motion.div
       className="absolute pointer-events-none"
-      style={{ ...map[pos], width: 26, height: 26 }}
+      style={{
+        top: flipV ? "auto" : 16,
+        bottom: flipV ? 70 : "auto",
+        left: flipH ? "auto" : 16,
+        right: flipH ? 16 : "auto",
+        width: 26,
+        height: 26,
+      }}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3, delay, ease: [0.23, 1, 0.32, 1] }}
@@ -1108,29 +1182,36 @@ function HUDBracket({ pos, delay }: { pos: "tl" | "tr" | "bl" | "br"; delay: num
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/*  FinalState — replay UI                                    */
+/*  OnlineState — final state with replay button              */
 /* ══════════════════════════════════════════════════════════ */
-function FinalState({ onReplay }: { onReplay: () => void }) {
+function OnlineState({ onReplay }: { onReplay: () => void }) {
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center gap-6"
+      className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Big core badge */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundColor: "rgba(10, 6, 6, 0.55)",
+          backdropFilter: "blur(2px)",
+        }}
+      />
+
       <motion.div
         className="relative flex items-center justify-center"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.2 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.3 }}
       >
         <motion.div
           className="absolute rounded-full"
           style={{
-            width: 200,
-            height: 200,
+            width: 180,
+            height: 180,
             border: `2px solid ${SUIT_GOLD}`,
             opacity: 0.4,
           }}
@@ -1140,8 +1221,8 @@ function FinalState({ onReplay }: { onReplay: () => void }) {
         <motion.div
           className="absolute rounded-full"
           style={{
-            width: 140,
-            height: 140,
+            width: 130,
+            height: 130,
             border: `1.5px dashed ${SUIT_GOLD}`,
             opacity: 0.5,
           }}
@@ -1152,14 +1233,14 @@ function FinalState({ onReplay }: { onReplay: () => void }) {
           className="relative w-24 h-24 rounded-full flex items-center justify-center"
           style={{
             background: `radial-gradient(circle, ${SUIT_GOLD_BRIGHT} 0%, ${SUIT_GOLD} 50%, ${SUIT_RED} 100%)`,
-            boxShadow: `0 0 40px ${SUIT_GOLD}, inset 0 0 16px rgba(255,255,255,0.25)`,
+            boxShadow: `0 0 36px ${SUIT_GOLD}, inset 0 0 16px rgba(255,255,255,0.25)`,
           }}
         >
           <span
             style={{
               fontFamily: "Syne, sans-serif",
               fontWeight: 800,
-              fontSize: 16,
+              fontSize: 15,
               color: "#0A0606",
               letterSpacing: "0.08em",
             }}
@@ -1169,13 +1250,12 @@ function FinalState({ onReplay }: { onReplay: () => void }) {
         </div>
       </motion.div>
 
-      {/* Replay button */}
       <motion.button
         onClick={onReplay}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.7 }}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all hover:bg-yellow-500/10 active:scale-[0.96]"
+        transition={{ duration: 0.5, delay: 0.8 }}
+        className="relative inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all hover:bg-yellow-500/10 active:scale-[0.96]"
         style={{
           border: `1.5px solid ${SUIT_GOLD}`,
           color: SUIT_GOLD,
@@ -1209,16 +1289,10 @@ function PracticeMarquee() {
         className="flex items-baseline justify-between mb-5 pb-3"
         style={{ borderBottom: "1px solid rgba(15,23,42,0.1)" }}
       >
-        <span
-          className="text-[10px] uppercase tracking-[0.22em]"
-          style={{ color: "#71717A", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
-        >
+        <span className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "#71717A", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
           Practice areas
         </span>
-        <span
-          className="text-[10px] uppercase tracking-[0.22em]"
-          style={{ color: "#A1A1AA", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
-        >
+        <span className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "#A1A1AA", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
           {String(PRACTICE_AREAS.length).padStart(2, "0")} domains
         </span>
       </div>
