@@ -204,14 +204,14 @@ function SuitAssemblyTimeline() {
   });
 
   return (
-    <div ref={ref} style={{ height: "320vh" }} className="relative">
-      <div className="sticky top-0 h-screen flex items-center justify-center px-4 sm:px-6 lg:px-10 py-6 sm:py-10">
+    <div ref={ref} style={{ height: "280vh" }} className="relative">
+      <div className="sticky top-0 h-screen flex items-center justify-center px-4 sm:px-6 lg:px-10 py-10 sm:py-14 lg:py-16">
         <div
           className="relative w-full mx-auto overflow-hidden rounded-2xl"
           style={{
-            maxWidth: "1180px",
+            maxWidth: "1100px",
             height: "100%",
-            maxHeight: "720px",
+            maxHeight: "560px",
             backgroundColor: PANEL_BG,
             border: `1px solid rgba(220,38,38,0.25)`,
             boxShadow: `0 40px 90px -30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(251,191,36,0.06), 0 0 60px rgba(220,38,38,0.08)`,
@@ -462,12 +462,13 @@ function ScrubBar({ progress }: { progress: MotionValue<number> }) {
 }
 
 function Tick({ pos, progress }: { pos: number; progress: MotionValue<number> }) {
-  const reached = useTransform(progress, [pos - 0.01, pos], [0, 1]);
-  const scale = useTransform(reached, [0, 1], [0.9, 1.2]);
-  const glow = useTransform(
-    reached,
-    [0, 1],
-    [`0 0 0 rgba(251,191,36,0)`, `0 0 8px ${SUIT_GOLD}`]
+  /* Animate scale + backgroundColor only (avoid box-shadow interpolation
+     which crashes on mismatched units like "0" vs "8px"). */
+  const scale = useTransform(progress, [pos - 0.01, pos], [0.95, 1.25]);
+  const bg = useTransform(
+    progress,
+    [pos - 0.01, pos],
+    [PANEL_BG, SUIT_GOLD_BRIGHT]
   );
   return (
     <motion.div
@@ -478,10 +479,9 @@ function Tick({ pos, progress }: { pos: number; progress: MotionValue<number> })
         height: 8,
         marginLeft: -4,
         marginTop: -4,
-        backgroundColor: PANEL_BG,
+        backgroundColor: bg,
         border: `1.5px solid ${SUIT_GOLD}`,
         scale,
-        boxShadow: glow,
       }}
     />
   );
