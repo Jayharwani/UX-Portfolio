@@ -117,9 +117,11 @@ export function IronManAssistant() {
         <div
           className="flex justify-end"
           style={{
-            width: "min(280px, calc(100vw - 130px))",
+            /* Leave clearance for the helmet (~80–120px) + gap on the right.
+               Narrower on phones, wider on desktop. */
+            width: "min(260px, calc(100vw - 110px))",
             alignSelf: "flex-end",
-            marginBottom: 26,
+            marginBottom: 22,
           }}
         >
           <AnimatePresence mode="wait">
@@ -186,14 +188,11 @@ export function IronManAssistant() {
                       onError={() => setImgFailed(true)}
                       style={{
                         display: "block",
-                        width: 116,
+                        /* Responsive size: ~74px on phones, scales up to
+                           116px on desktop via clamp(min, fluid, max). */
+                        width: "clamp(74px, 9vw, 116px)",
                         height: "auto",
-                        /* clipPath crops the black picture-frame around the
-                           artwork.  Numbers tuned to the image you saved
-                           (~9% black border on each side). */
                         clipPath: "inset(8% 8% 6% 8%)",
-                        /* SVG filter knocks out the pinkish/white card
-                           backdrop inside the frame. */
                         filter: "url(#ima-white-knockout)",
                         pointerEvents: "none",
                       }}
