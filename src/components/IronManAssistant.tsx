@@ -24,7 +24,7 @@ const BUBBLE_REPEAT_INTERVAL = 30000;
 /* Path is resolved from the /public folder. Drop your image there as
    `iron-man.png` (recommended: a transparent PNG, but a white background
    also works — the SVG filter below removes pure-white pixels). */
-const IRON_MAN_IMG = "/iron-man.png";
+const IRON_MAN_IMG = "/iron-man.jpg";
 
 /* ══════════════════════════════════════════════════════════ */
 /*  IronManAssistant                                          */
