@@ -103,7 +103,7 @@ export function IronManAssistant() {
                 1   0   0   0   0
                 0   1   0   0   0
                 0   0   1   0   0
-               -2.5 -2.5 -2.5 0  6.8"
+               -3.2 -3.2 -3.2 0  8.4"
             />
           </filter>
         </defs>
@@ -186,8 +186,14 @@ export function IronManAssistant() {
                       onError={() => setImgFailed(true)}
                       style={{
                         display: "block",
-                        width: 96,
+                        width: 116,
                         height: "auto",
+                        /* clipPath crops the black picture-frame around the
+                           artwork.  Numbers tuned to the image you saved
+                           (~9% black border on each side). */
+                        clipPath: "inset(8% 8% 6% 8%)",
+                        /* SVG filter knocks out the pinkish/white card
+                           backdrop inside the frame. */
                         filter: "url(#ima-white-knockout)",
                         pointerEvents: "none",
                       }}
