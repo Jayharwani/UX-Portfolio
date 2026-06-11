@@ -15,7 +15,7 @@ export function HeadroomCard() {
       ([entry]) => {
         if (entry.isIntersecting && !startedRef.current) {
           startedRef.current = true;
-          const target = 885;
+          const target = 1730;
           const duration = 1400;
           let start: number | null = null;
           const step = (t: number) => {
@@ -221,19 +221,18 @@ export function HeadroomCard() {
                     </span>
                   </div>
                   <span className="mt-1.5 text-[11px]" style={{ color: "#0A7A52", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
-                    ≈ $59/day · 15 days
+                    ≈ $87/day · 20 days
                   </span>
                   <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "#E6F5EE" }}>
-                    <div className="h-full rounded-full" style={{ width: "62%", backgroundColor: "#0E9E6B" }} />
+                    <div className="h-full rounded-full" style={{ width: "69%", backgroundColor: "#0E9E6B" }} />
                   </div>
 
                   <span className="mt-5 text-[9px] uppercase tracking-[0.14em]" style={{ color: "#97A09B", fontFamily: "ui-monospace, monospace" }}>
                     What's coming
                   </span>
                   {[
-                    { label: "Rent", val: "$210" },
-                    { label: "Phone bill", val: "$65" },
-                    { label: "Subscriptions", val: "$40" },
+                    { label: "Rent", val: "$650" },
+                    { label: "Wifi", val: "$120" },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center justify-between py-2" style={{ borderBottom: "1px solid #E7EBE8" }}>
                       <span className="text-[11px] font-semibold" style={{ color: "#10160F", fontFamily: "DM Sans, sans-serif" }}>{row.label}</span>

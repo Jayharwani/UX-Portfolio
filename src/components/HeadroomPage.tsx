@@ -23,15 +23,15 @@ const C = {
 const EASE = [0.16, 1, 0.3, 1] as const;
 const LIVE_URL = "https://headroom-opal.vercel.app/";
 
-/* Screenshot paths — drop real PNGs in /public/headroom/ to auto-swap */
+/* Screenshot paths — real PNGs in /public/headroom/ */
 const SHOT = {
   todayHealthy: "/headroom/today-healthy.png",
-  todayTight: "/headroom/today-tight.png",
   plan: "/headroom/plan.png",
   menu: "/headroom/menu.png",
-  insights: "/headroom/insights.png",
   add: "/headroom/add-sheet.png",
-  splash: "/headroom/splash.png",
+  onboardClarity: "/headroom/onboard-clarity.png",
+  onboardConfidence: "/headroom/onboard-confidence.png",
+  onboardAlerts: "/headroom/onboard-alerts.png",
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -63,6 +63,7 @@ export function HeadroomPage() {
       <main>
         <Hero />
         <SplashMoment />
+        <OnboardingFlow />
         <ProblemSection />
         <WedgeSection />
         <DesignedSection />
@@ -480,7 +481,7 @@ function HeroPhone() {
 
 /* Recreated 'Today' screen used as hero fallback until real PNG is dropped */
 function SafeToSpendMock({ inView }: { inView: boolean }) {
-  const count = useCountUp(885, inView, 1.4);
+  const count = useCountUp(1730, inView, 1.4);
   return (
     <div className="absolute inset-0 flex flex-col" style={{ backgroundColor: C.surface }}>
       {/* status bar */}
@@ -503,12 +504,12 @@ function SafeToSpendMock({ inView }: { inView: boolean }) {
           </span>
         </div>
         <span className="mt-2 text-[13px]" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
-          ≈ $59/day · 15 days to payday
+          ≈ $87/day · 20 days to payday
         </span>
 
         {/* progress */}
         <div className="mt-6 h-2 rounded-full overflow-hidden" style={{ backgroundColor: C.accentSoft }}>
-          <motion.div className="h-full rounded-full" style={{ backgroundColor: C.accent }} initial={{ width: 0 }} animate={inView ? { width: "62%" } : {}} transition={{ duration: 1.4, delay: 0.3, ease: EASE }} />
+          <motion.div className="h-full rounded-full" style={{ backgroundColor: C.accent }} initial={{ width: 0 }} animate={inView ? { width: "69%" } : {}} transition={{ duration: 1.4, delay: 0.3, ease: EASE }} />
         </div>
 
         {/* what's coming */}
@@ -517,9 +518,8 @@ function SafeToSpendMock({ inView }: { inView: boolean }) {
             What's coming
           </span>
           {[
-            { label: "Rent", val: "$210", days: "in 4 days" },
-            { label: "Phone bill", val: "$65", days: "in 9 days" },
-            { label: "Subscriptions", val: "$40", days: "in 12 days" },
+            { label: "Rent", val: "$650", days: "Jun 28" },
+            { label: "Wifi", val: "$120", days: "Jun 28" },
           ].map((row) => (
             <div key={row.label} className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${C.hairline}` }}>
               <div className="flex flex-col">
@@ -658,7 +658,7 @@ function SplashMoment() {
                 <span className="text-[11px] font-semibold" style={{ color: C.accent, fontFamily: "DM Sans, sans-serif" }}>
                   ↑ headroom
                 </span>
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: "#FFFFFF", letterSpacing: "-0.03em" }}>$885</span>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: "#FFFFFF", letterSpacing: "-0.03em" }}>$1,730</span>
               </div>
             </motion.div>
 
@@ -713,6 +713,48 @@ function Coin({ kind }: { kind: string }) {
 }
 
 /* ══════════════════════════════════════════════════════════ */
+/*  ONBOARDING FLOW — the promise in three taps               */
+/* ══════════════════════════════════════════════════════════ */
+function OnboardingFlow() {
+  const screens = [
+    { src: SHOT.onboardClarity, label: "Clarity", caption: "See what's actually yours", alt: "Onboarding — Clarity: see what's actually yours" },
+    { src: SHOT.onboardConfidence, label: "Confidence", caption: "Never get caught short", alt: "Onboarding — Confidence: never get caught short" },
+    { src: SHOT.onboardAlerts, label: "Heads-up", caption: "Only pinged before you dip", alt: "Onboarding — notifications: a heads-up before you dip" },
+  ];
+  return (
+    <section className="relative py-20 sm:py-28" style={{ backgroundColor: C.bg }}>
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal>
+          <div className="flex items-center gap-3 mb-8">
+            <span className="w-10 h-px" style={{ backgroundColor: C.hairline }} />
+            <span className="text-[11px] uppercase tracking-[0.22em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+              The first 30 seconds
+            </span>
+          </div>
+        </Reveal>
+        <Reveal delay={0.06}>
+          <Display size="clamp(26px, 3.6vw, 44px)" className="max-w-[20ch]">
+            Onboarding states the promise — <span style={{ color: C.accent }}>in three taps.</span>
+          </Display>
+        </Reveal>
+
+        <div className="mt-12 flex flex-wrap items-start justify-center gap-7 sm:gap-10">
+          {screens.map((s, i) => (
+            <div key={s.label} className="flex flex-col items-center gap-3">
+              <Phone src={s.src} alt={s.alt} label={s.label} tilt={i === 0 ? -2 : i === 2 ? 2 : 0} width={206} />
+              <div className="text-center">
+                <span className="text-[14px] font-semibold block" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{s.label}</span>
+                <span className="text-[11.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{s.caption}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════ */
 /*  §1 — PROBLEM                                              */
 /* ══════════════════════════════════════════════════════════ */
 function ProblemSection() {
@@ -751,8 +793,8 @@ function EquationDiagram() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const rows = [
-    { label: "Balance", val: "$1,200", color: C.ink, sub: "what the bank shows" },
-    { label: "− Bills coming", val: "$315", color: C.clay, sub: "before next payday" },
+    { label: "Balance", val: "$2,500", color: C.ink, sub: "what the bank shows" },
+    { label: "− Bills coming", val: "$770", color: C.clay, sub: "before next payday" },
   ];
   return (
     <div ref={ref} className="rounded-3xl p-7 sm:p-9" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
@@ -784,9 +826,9 @@ function EquationDiagram() {
           <span className="text-[12px] uppercase tracking-[0.14em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
             Safe to spend
           </span>
-          <span className="text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>≈ $59/day · 15 days</span>
+          <span className="text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>≈ $87/day · 20 days</span>
         </div>
-        <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 40, color: C.accent, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>$885</span>
+        <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 40, color: C.accent, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>$1,730</span>
       </motion.div>
     </div>
   );
@@ -889,16 +931,18 @@ function DesignedSection() {
       </Reveal>
 
       {/* Phone tour */}
-      <div className="mt-14 flex flex-wrap items-start justify-center gap-8 sm:gap-10">
+      <div className="mt-14 flex flex-wrap items-start justify-center gap-7 sm:gap-9">
         {[
-          { src: SHOT.todayHealthy, label: "Today", alt: "Today — the safe-to-spend number and what's coming", tilt: -2 },
-          { src: SHOT.plan, label: "Plan", alt: "Plan — edit your money, no graphs", tilt: 0 },
-          { src: SHOT.menu, label: "Menu", alt: "Menu — spending patterns and your data", tilt: 2 },
+          { src: SHOT.todayHealthy, label: "Today", caption: "the number + what's coming", alt: "Today — the safe-to-spend number and what's coming", tilt: -2 },
+          { src: SHOT.plan, label: "Plan", caption: "edit your money, no graphs", alt: "Plan — edit your money, no graphs", tilt: 0 },
+          { src: SHOT.menu, label: "Menu", caption: "patterns, alerts, your data", alt: "Menu — spending patterns and your data", tilt: 0 },
+          { src: SHOT.add, label: "Add", caption: "log a spend in seconds", alt: "Add sheet — log a spend, bill, or income", tilt: 2 },
         ].map((p) => (
-          <div key={p.label} className="flex flex-col items-center gap-4">
-            <Phone src={p.src} alt={p.alt} label={p.label} tilt={p.tilt} width={236} />
+          <div key={p.label} className="flex flex-col items-center gap-3">
+            <Phone src={p.src} alt={p.alt} label={p.label} tilt={p.tilt} width={210} />
             <div className="text-center">
-              <span className="text-[14px] font-semibold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{p.label}</span>
+              <span className="text-[14px] font-semibold block" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{p.label}</span>
+              <span className="text-[11.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{p.caption}</span>
             </div>
           </div>
         ))}
@@ -1240,7 +1284,7 @@ function SystemSection() {
           <div className="rounded-2xl p-6 h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
             <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>Type</span>
             <div className="mt-3">
-              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 46, color: C.ink, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>$885</span>
+              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 46, color: C.ink, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>$1,730</span>
             </div>
             <p className="mt-3 text-[13px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>
               System / SF Pro. The safe-to-spend number is the hero — big, tabular, unmistakable. A clear hierarchy under it.
@@ -1313,7 +1357,7 @@ function LeftOutSection() {
 /*  VOICE (sharpener)                                         */
 /* ══════════════════════════════════════════════════════════ */
 const VOICE = [
-  { state: "Healthy", line: "You've got $885 to spend before payday.", color: C.accent },
+  { state: "Healthy", line: "You've got $1,730 to spend before payday.", color: C.accent },
   { state: "Tight", line: "Getting tight — about $85 until payday. Easy does it.", color: C.amber },
   { state: "Over", line: "Heads up — you'll be about $40 short. Want to adjust?", color: C.clay },
   { state: "Payday", line: "New cycle — here's your room.", color: C.accentDeep },
