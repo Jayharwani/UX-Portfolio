@@ -1,3 +1,4 @@
+import { HeadroomCard } from "./HeadroomCard";
 import { EnhancedSmartDriveCard } from "./EnhancedSmartDriveCard";
 import { EnhancedBumperCard } from "./EnhancedBumperCard";
 import { ChronoWeaveThumbnail } from "./ChronoWeaveThumbnail";
@@ -187,23 +188,29 @@ export function CaseStudies() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            Three projects where research turned into intervention — and intervention into measurable behavior change.
+            Four projects where research turned into intervention — and intervention into shipped, working product.
           </motion.p>
         </div>
 
         {/* Cards */}
         <div className="relative">
           <RevealCard>
-            <ChronoWeaveThumbnail />
+            <HeadroomCard />
           </RevealCard>
 
           <SectionDivider number={2} />
 
           <RevealCard>
-            <EnhancedSmartDriveCard />
+            <ChronoWeaveThumbnail />
           </RevealCard>
 
           <SectionDivider number={3} />
+
+          <RevealCard>
+            <EnhancedSmartDriveCard />
+          </RevealCard>
+
+          <SectionDivider number={4} />
 
           <RevealCard>
             <EnhancedBumperCard />

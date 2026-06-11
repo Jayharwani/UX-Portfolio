@@ -3,6 +3,7 @@ import { HomePage } from "./components/HomePage";
 import { SmartDrivePage } from "./components/SmartDrivePage";
 import { BumperCasePage } from "./components/BumperCasePage";
 import { ChronoWeavePage } from "./components/ChronoWeavePage";
+import { HeadroomPage } from "./components/HeadroomPage";
 import { AboutPage } from "./components/AboutPage";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { IronManAssistant } from "./components/IronManAssistant";
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/smartdrive" element={<SmartDrivePage />} />
           <Route path="/bumper" element={<BumperCasePage />} />
           <Route path="/chronoweave" element={<ChronoWeavePage />} />
+          <Route path="/headroom" element={<HeadroomPage />} />
           <Route path="/about" element={<AboutPage />} />
         </Routes>
         <IronManAssistant />
