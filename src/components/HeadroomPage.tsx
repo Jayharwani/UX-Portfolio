@@ -62,6 +62,7 @@ export function HeadroomPage() {
 
       <main>
         <Hero />
+        <SplashMoment />
         <ProblemSection />
         <WedgeSection />
         <DesignedSection />
@@ -561,6 +562,154 @@ function useCountUp(target: number, active: boolean, duration = 1.4) {
     return () => cancelAnimationFrame(raf);
   }, [active, target, duration, reduce]);
   return val.toLocaleString();
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  SPLASH MOMENT — the thesis, in one motion                 */
+/*  Coins drain toward "empty"; a glowing emerald line        */
+/*  catches what's safe, leaving headroom above zero.         */
+/* ══════════════════════════════════════════════════════════ */
+function SplashMoment() {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  // Stage geometry (viewBox-free, px within a fixed-height stage)
+  const STAGE_H = 300;
+  const LINE_Y = 150; // emerald "headroom" catch line
+  const EMPTY_Y = 262; // $0 baseline
+
+  // Coins: spread across x, each loops fall → caught → fade
+  const coins = [
+    { x: "12%", delay: 0.0, kind: "gold" },
+    { x: "26%", delay: 0.55, kind: "emerald" },
+    { x: "40%", delay: 1.1, kind: "gold" },
+    { x: "54%", delay: 0.3, kind: "gold" },
+    { x: "68%", delay: 0.85, kind: "emerald" },
+    { x: "82%", delay: 1.4, kind: "gold" },
+    { x: "19%", delay: 1.7, kind: "emerald" },
+    { x: "61%", delay: 2.0, kind: "gold" },
+  ];
+
+  return (
+    <section ref={ref} className="relative py-20 sm:py-28 overflow-hidden" style={{ backgroundColor: C.ink }}>
+      {/* ambient emerald glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ backgroundImage: `radial-gradient(at 70% 60%, rgba(14,158,107,0.18) 0%, transparent 55%)` }}
+      />
+
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        {/* Caption */}
+        <div className="lg:col-span-5">
+          <Reveal>
+            <span className="text-[11px] uppercase tracking-[0.22em]" style={{ color: C.accent, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
+              The thesis, in one motion
+            </span>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <p className="mt-5" style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(22px, 3vw, 36px)", lineHeight: 1.25, letterSpacing: "-0.025em", color: "#FFFFFF", maxWidth: "20ch" }}>
+              Money drains before payday. Headroom catches what's{" "}
+              <span style={{ color: C.accent }}>safe</span> — above empty.
+            </p>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p className="mt-4 text-[14.5px]" style={{ color: "rgba(255,255,255,0.55)", fontFamily: "DM Sans, sans-serif", lineHeight: 1.6, maxWidth: "44ch" }}>
+              The gap between the line and zero is the only number that matters.
+            </p>
+          </Reveal>
+        </div>
+
+        {/* Animation stage */}
+        <div className="lg:col-span-7">
+          <div
+            className="relative w-full rounded-3xl overflow-hidden"
+            style={{ height: STAGE_H, backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            {/* empty baseline */}
+            <div className="absolute left-0 right-0 flex items-center gap-3 px-5" style={{ top: EMPTY_Y }}>
+              <div className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.18)", borderTop: "1px dashed rgba(255,255,255,0.25)" }} />
+              <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+                $0 · empty
+              </span>
+            </div>
+
+            {/* headroom catch line */}
+            <motion.div
+              className="absolute left-0 right-0"
+              style={{ top: LINE_Y }}
+              initial={reduce ? { opacity: 1 } : { opacity: 0, scaleX: 0 }}
+              animate={inView ? { opacity: 1, scaleX: 1 } : {}}
+              transition={{ duration: 0.9, ease: EASE }}
+            >
+              <div className="relative h-[3px] mx-5" style={{ backgroundColor: C.accent, boxShadow: `0 0 16px ${C.accent}, 0 0 40px rgba(14,158,107,0.5)`, borderRadius: 3 }}>
+                {/* shimmer */}
+                {!reduce && (
+                  <motion.div
+                    className="absolute top-0 h-full w-16 rounded-full"
+                    style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)" }}
+                    animate={{ x: ["-64px", "640px"] }}
+                    transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.8 }}
+                  />
+                )}
+              </div>
+              {/* headroom label + gap bracket */}
+              <div className="absolute right-5 flex flex-col items-end" style={{ top: 10 }}>
+                <span className="text-[11px] font-semibold" style={{ color: C.accent, fontFamily: "DM Sans, sans-serif" }}>
+                  ↑ headroom
+                </span>
+                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: "#FFFFFF", letterSpacing: "-0.03em" }}>$885</span>
+              </div>
+            </motion.div>
+
+            {/* coins */}
+            {coins.map((coin, i) => (
+              <motion.div
+                key={i}
+                className="absolute"
+                style={{ left: coin.x, top: 0 }}
+                initial={{ y: -30, opacity: 0 }}
+                animate={
+                  reduce
+                    ? { y: LINE_Y - 20, opacity: 1 }
+                    : inView
+                    ? { y: [-30, LINE_Y - 14, LINE_Y - 20, LINE_Y - 20], opacity: [0, 1, 1, 0] }
+                    : {}
+                }
+                transition={
+                  reduce
+                    ? { duration: 0 }
+                    : { duration: 3.4, times: [0, 0.5, 0.62, 1], repeat: Infinity, delay: coin.delay, ease: "easeIn" }
+                }
+              >
+                <Coin kind={coin.kind} />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Coin({ kind }: { kind: string }) {
+  const gold = kind === "gold";
+  return (
+    <div
+      className="rounded-full flex items-center justify-center"
+      style={{
+        width: 26,
+        height: 26,
+        background: gold
+          ? "radial-gradient(circle at 35% 30%, #FDE68A, #FBBF24 60%, #D97706)"
+          : "radial-gradient(circle at 35% 30%, #6EE7B7, #0E9E6B 60%, #0A7A52)",
+        boxShadow: gold ? "0 4px 12px rgba(251,191,36,0.4)" : "0 4px 12px rgba(14,158,107,0.4)",
+        border: gold ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.3)",
+      }}
+    >
+      <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 12, color: gold ? "#92400E" : "#053D2A" }}>$</span>
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════ */
