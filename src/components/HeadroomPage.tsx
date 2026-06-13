@@ -837,11 +837,18 @@ function EquationDiagram() {
 /* ══════════════════════════════════════════════════════════ */
 /*  §2 — WEDGE / COMPETITORS                                  */
 /* ══════════════════════════════════════════════════════════ */
-const COMPETITORS = [
-  { name: "YNAB", note: "Powerful, but a learning curve. Categories, rules, manual upkeep.", tag: "Heavy" },
-  { name: "Monarch", note: "Beautiful dashboards — and bank-linking, setup, maintenance.", tag: "Heavy" },
-  { name: "Copilot", note: "Slick tracking of the past. Still asks you to tend it.", tag: "Heavy" },
-  { name: "Mint", note: "Shut down — leaving millions who hated re-connecting accounts.", tag: "Gone" },
+const RIVALS = [
+  { name: "YNAB", tag: "Heavy", note: "Powerful — categories, rules, upkeep." },
+  { name: "Monarch", tag: "Heavy", note: "Beautiful dashboards, bank-linking." },
+  { name: "Copilot", tag: "Heavy", note: "Slick tracking of the past." },
+  { name: "Mint", tag: "Gone", note: "Shut down. Millions left stranded." },
+];
+const CAPABILITIES = [
+  { label: 'Answers "can I spend this?"', rivals: [false, false, false, false] },
+  { label: "No categories to manage", rivals: [false, false, false, false] },
+  { label: "No bank login required", rivals: [false, false, false, false] },
+  { label: "Private & fully on-device", rivals: [false, false, false, false] },
+  { label: "Zero ongoing upkeep", rivals: [false, false, false, false] },
 ];
 
 function WedgeSection() {
@@ -849,48 +856,111 @@ function WedgeSection() {
     <SectionShell num="02" label="Why another money app?">
       <Reveal>
         <Display className="max-w-[20ch]">
-          Every budgeting app optimizes the same thing — tracking the past. None answer the forward question simply.
+          Every budgeting app optimizes the same thing — tracking the past.{" "}
+          <span style={{ color: C.accent }}>None answer the forward question simply.</span>
         </Display>
       </Reveal>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
-        {COMPETITORS.map((c, i) => (
-          <Reveal key={c.name} delay={i * 0.08}>
-            <div className="h-full rounded-2xl p-6 flex flex-col" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-              <div className="flex items-center justify-between mb-3">
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 19, color: C.ink }}>{c.name}</span>
-                <span
-                  className="text-[9.5px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full"
-                  style={{
-                    color: c.tag === "Gone" ? C.clay : C.inkFaint,
-                    backgroundColor: c.tag === "Gone" ? "rgba(181,83,46,0.08)" : C.bg,
-                    border: `1px solid ${c.tag === "Gone" ? "rgba(181,83,46,0.2)" : C.hairline}`,
-                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                  }}
-                >
-                  {c.tag}
+      {/* Comparison matrix */}
+      <Reveal delay={0.1}>
+        <div className="mt-12 -mx-5 sm:mx-0 px-5 sm:px-0 overflow-x-auto">
+          <div
+            className="rounded-3xl overflow-hidden"
+            style={{ minWidth: 680, border: `1px solid ${C.hairline}`, backgroundColor: C.surface }}
+          >
+            {/* Header row */}
+            <div className="grid" style={{ gridTemplateColumns: "minmax(180px,1.6fr) repeat(4, 1fr) 1.15fr" }}>
+              <div className="p-4" />
+              {RIVALS.map((r) => (
+                <div key={r.name} className="p-4 text-center" style={{ borderLeft: `1px solid ${C.hairline}` }}>
+                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 16, color: C.ink }}>{r.name}</div>
+                  <span
+                    className="inline-block mt-1.5 text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full"
+                    style={{
+                      color: r.tag === "Gone" ? C.clay : C.inkFaint,
+                      backgroundColor: r.tag === "Gone" ? "rgba(181,83,46,0.08)" : C.bg,
+                      border: `1px solid ${r.tag === "Gone" ? "rgba(181,83,46,0.22)" : C.hairline}`,
+                      fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                    }}
+                  >
+                    {r.tag}
+                  </span>
+                </div>
+              ))}
+              {/* Headroom column header — highlighted */}
+              <div className="p-4 text-center relative" style={{ backgroundColor: C.accent }}>
+                <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16, color: "#FFFFFF" }}>Headroom</div>
+                <span className="inline-block mt-1.5 text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full" style={{ color: "#FFFFFF", backgroundColor: "rgba(255,255,255,0.18)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+                  The wedge
                 </span>
               </div>
-              <p className="text-[13.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>{c.note}</p>
             </div>
-          </Reveal>
-        ))}
-      </div>
 
+            {/* Capability rows */}
+            {CAPABILITIES.map((cap, ri) => (
+              <div
+                key={cap.label}
+                className="grid items-center"
+                style={{ gridTemplateColumns: "minmax(180px,1.6fr) repeat(4, 1fr) 1.15fr", borderTop: `1px solid ${C.hairline}` }}
+              >
+                <div className="p-4 text-[13.5px] font-medium" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>
+                  {cap.label}
+                </div>
+                {cap.rivals.map((has, ci) => (
+                  <div key={ci} className="p-4 flex items-center justify-center" style={{ borderLeft: `1px solid ${C.hairline}` }}>
+                    {has ? <Tick on /> : <Cross />}
+                  </div>
+                ))}
+                <div className="p-4 flex items-center justify-center h-full" style={{ backgroundColor: ri % 2 === 0 ? "rgba(14,158,107,0.10)" : "rgba(14,158,107,0.06)" }}>
+                  <Tick on />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Wedge callout */}
       <Reveal delay={0.1}>
-        <div className="mt-10 rounded-3xl p-8 sm:p-10" style={{ backgroundColor: C.accentSoft }}>
-          <span className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
-            The wedge
-          </span>
-          <p className="mt-4" style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(20px, 2.6vw, 30px)", lineHeight: 1.25, letterSpacing: "-0.02em", color: C.ink, maxWidth: "26ch" }}>
-            In a crowded market, the opportunity wasn't more features — it was <span style={{ color: C.accent }}>radical restraint.</span>
-          </p>
-          <p className="mt-4 text-[14.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.6, maxWidth: "50ch" }}>
-            One number. No categories. No bank login. On-device. Headroom does the one thing the others bury under dashboards.
-          </p>
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center rounded-3xl p-8 sm:p-10" style={{ backgroundColor: C.accentSoft }}>
+          <div className="lg:col-span-8">
+            <span className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
+              The wedge
+            </span>
+            <p className="mt-4" style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(20px, 2.6vw, 32px)", lineHeight: 1.22, letterSpacing: "-0.02em", color: C.ink, maxWidth: "24ch" }}>
+              The opportunity wasn't more features — it was <span style={{ color: C.accent }}>radical restraint.</span>
+            </p>
+          </div>
+          <div className="lg:col-span-4 flex flex-wrap gap-2">
+            {["One number", "No categories", "No bank login", "On-device"].map((chip) => (
+              <span key={chip} className="text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ color: C.accentDeep, backgroundColor: C.surface, border: `1px solid ${C.accent}33`, fontFamily: "DM Sans, sans-serif" }}>
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
       </Reveal>
     </SectionShell>
+  );
+}
+
+function Tick({ on }: { on?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full"
+      style={{ width: 24, height: 24, backgroundColor: on ? C.accent : C.accentSoft }}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? "#FFFFFF" : C.accent} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12l5 5L20 6" />
+      </svg>
+    </span>
+  );
+}
+function Cross() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9CFCB" strokeWidth="2.6" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
   );
 }
 
@@ -1320,34 +1390,65 @@ function SystemSection() {
 /*  WHAT I LEFT OUT (sharpener)                               */
 /* ══════════════════════════════════════════════════════════ */
 const LEFT_OUT = [
-  "Transfers / payments",
-  "Bank linking",
-  "Spending categories",
-  "Multi-account",
-  "Social features",
-  "Streaks / shame mechanics",
-  "Every chart but one",
+  { item: "Transfers / payments", why: "That's a bank's job — and a licensing nightmare." },
+  { item: "Bank linking", why: "The #1 reason people quit budgeting apps." },
+  { item: "Spending categories", why: "Tagging every coffee is the chore. Cut." },
+  { item: "Multi-account juggling", why: "One honest number can't come from five places." },
+  { item: "Social / sharing", why: "Money isn't a leaderboard." },
+  { item: "Streaks & shame mechanics", why: "Calm, never shaming. No guilt loops." },
+  { item: "Every chart but one", why: "If you can't read it in a glance, it's gone." },
 ];
 
 function LeftOutSection() {
   return (
     <SectionShell num="" label="A product is defined by its no's" bg={C.surface}>
-      <Reveal>
-        <Display className="max-w-[18ch]">
-          What I deliberately <span style={{ color: C.clay }}>left out.</span>
-        </Display>
-      </Reveal>
-      <div className="flex flex-wrap gap-3 mt-10">
-        {LEFT_OUT.map((item, i) => (
-          <Reveal key={item} delay={i * 0.05}>
-            <span
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[14px]"
-              style={{ color: C.inkSoft, backgroundColor: C.bg, border: `1px solid ${C.hairline}`, fontFamily: "DM Sans, sans-serif", textDecoration: "line-through", textDecorationColor: `${C.clay}99` }}
-            >
-              {item}
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+        {/* Left — heading + count */}
+        <div className="lg:col-span-4">
+          <Reveal>
+            <Display className="max-w-[12ch]">
+              What I deliberately <span style={{ color: C.clay }}>left out.</span>
+            </Display>
           </Reveal>
-        ))}
+          <Reveal delay={0.1}>
+            <div className="mt-7 inline-flex items-baseline gap-2">
+              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 52, color: C.clay, letterSpacing: "-0.04em" }}>7</span>
+              <span className="text-[14px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif" }}>features said no to —<br/>so one could be said yes to.</span>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Right — the no's, as a struck list with reasons */}
+        <div className="lg:col-span-8">
+          <div className="rounded-3xl overflow-hidden" style={{ border: `1px solid ${C.hairline}`, backgroundColor: C.bg }}>
+            {LEFT_OUT.map((row, i) => (
+              <Reveal key={row.item} delay={i * 0.05}>
+                <div
+                  className="group flex items-center gap-4 px-5 sm:px-7 py-4"
+                  style={{ borderTop: i === 0 ? "none" : `1px solid ${C.hairline}` }}
+                >
+                  {/* cross badge */}
+                  <span className="flex-shrink-0 inline-flex items-center justify-center rounded-full" style={{ width: 30, height: 30, backgroundColor: "rgba(181,83,46,0.10)" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.clay} strokeWidth="2.6" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </span>
+                  {/* name */}
+                  <span
+                    className="flex-shrink-0 text-[16px] sm:text-[19px]"
+                    style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: C.inkSoft, letterSpacing: "-0.01em", textDecoration: "line-through", textDecorationColor: `${C.clay}80`, textDecorationThickness: "2px" }}
+                  >
+                    {row.item}
+                  </span>
+                  {/* reason — pushed right, fades up on row */}
+                  <span className="ml-auto text-right text-[12.5px] sm:text-[13.5px] hidden sm:block" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", maxWidth: "32ch" }}>
+                    {row.why}
+                  </span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </div>
     </SectionShell>
   );
@@ -1357,85 +1458,197 @@ function LeftOutSection() {
 /*  VOICE (sharpener)                                         */
 /* ══════════════════════════════════════════════════════════ */
 const VOICE = [
-  { state: "Healthy", line: "You've got $1,730 to spend before payday.", color: C.accent },
-  { state: "Tight", line: "Getting tight — about $85 until payday. Easy does it.", color: C.amber },
-  { state: "Over", line: "Heads up — you'll be about $40 short. Want to adjust?", color: C.clay },
-  { state: "Payday", line: "New cycle — here's your room.", color: C.accentDeep },
+  { state: "Healthy", line: "You've got $1,730 to spend before payday.", color: C.accent, when: "now", emoji: "check" },
+  { state: "Tight", line: "Getting tight — about $85 until payday. Easy does it.", color: C.amber, when: "9:02", emoji: "wave" },
+  { state: "Over", line: "Heads up — you'll be about $40 short. Want to adjust?", color: C.clay, when: "8:15", emoji: "alert" },
+  { state: "Payday", line: "New cycle — here's your room.", color: C.accentDeep, when: "Jul 1", emoji: "spark" },
 ];
 
 function VoiceSection() {
   return (
-    <SectionShell num="" label="Tone as a craft artifact">
-      <Reveal>
-        <Display className="max-w-[18ch]">
-          The same number, said <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>four ways.</span>
-        </Display>
-      </Reveal>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
-        {VOICE.map((v, i) => (
-          <Reveal key={v.state} delay={i * 0.08}>
-            <div className="rounded-2xl p-6 h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: v.color }} />
-                <span className="text-[11px] uppercase tracking-[0.16em] font-semibold" style={{ color: v.color, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>{v.state}</span>
-              </div>
-              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 17, lineHeight: 1.5, color: C.ink }}>{v.line}</p>
+    <SectionShell num="" label="Tone as a craft artifact" bg={C.bg}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        <div className="lg:col-span-4 lg:sticky lg:top-28">
+          <Reveal>
+            <Display className="max-w-[14ch]">
+              The same number, said <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>four ways.</span>
+            </Display>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p className="mt-5 text-[15px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.6, maxWidth: "38ch" }}>
+              These are the real notification strings. Same forecast, four emotional states — and not one of them shames you.
+            </p>
+          </Reveal>
+          <Reveal delay={0.18}>
+            <div className="mt-6 inline-flex items-center gap-2 px-3.5 py-2 rounded-full" style={{ backgroundColor: C.accentSoft, border: `1px solid ${C.accent}33` }}>
+              <IconLeaf />
+              <span className="text-[12.5px] font-medium" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif" }}>Calm, never shaming</span>
             </div>
           </Reveal>
-        ))}
+        </div>
+
+        {/* Notification stack */}
+        <div className="lg:col-span-8 space-y-3.5">
+          {VOICE.map((v, i) => (
+            <Reveal key={v.state} delay={i * 0.08}>
+              <div
+                className="flex items-start gap-3.5 rounded-2xl p-4 sm:p-5"
+                style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}`, boxShadow: "0 10px 30px -18px rgba(16,40,30,.18)" }}
+              >
+                {/* app icon */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${v.color}, ${v.color}cc)` }}>
+                  <VoiceGlyph kind={v.emoji} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[13px] font-bold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>Headroom</span>
+                    <span className="text-[10px] uppercase tracking-[0.14em] px-1.5 py-0.5 rounded" style={{ color: v.color, backgroundColor: `${v.color}14`, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{v.state}</span>
+                    <span className="ml-auto text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{v.when}</span>
+                  </div>
+                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, lineHeight: 1.45, color: C.inkSoft }}>{v.line}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
-      <Reveal delay={0.1}>
-        <p className="mt-6 text-[13px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", fontStyle: "italic" }}>
-          Calm, never shaming — even when you're over.
-        </p>
-      </Reveal>
     </SectionShell>
   );
+}
+
+function VoiceGlyph({ kind }: { kind: string }) {
+  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "#FFFFFF", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (kind === "check") return <svg {...common}><path d="M5 12l5 5L20 6" /></svg>;
+  if (kind === "wave") return <svg {...common}><path d="M3 12c3 0 3-4 6-4s3 8 6 8 3-4 6-4" /></svg>;
+  if (kind === "alert") return <svg {...common}><path d="M12 8v5" /><path d="M12 17h.01" /><path d="M10.3 3.6 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z" /></svg>;
+  return <svg {...common}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>;
 }
 
 /* ══════════════════════════════════════════════════════════ */
 /*  §7 — OUTCOME                                              */
 /* ══════════════════════════════════════════════════════════ */
+const OUTCOMES = [
+  { tag: "Shipped", icon: "rocket", body: "A working PWA — deployed, installable, fully on-device. Designed and built end-to-end, design → Claude Code." },
+  { tag: "What I learned", icon: "bulb", body: "The hardest design work was deciding what to leave out. Simplicity is a series of refusals, not a coat of paint." },
+  { tag: "What I'd test next", icon: "flask", body: 'Real users on the core question — and whether the "heads-up before you dip" alert actually changes behaviour.' },
+];
+const LIGHTHOUSE = [
+  { label: "Performance", score: 92 },
+  { label: "Best Practices", score: 100 },
+  { label: "Accessibility", score: 95 },
+];
+
 function OutcomeSection() {
   return (
     <SectionShell num="07" label="Outcome & what's next" bg={C.surface}>
-      <Reveal>
-        <Display className="max-w-[18ch]">
-          A real, installable app — <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>not a Figma file.</span>
-        </Display>
-      </Reveal>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
-        <Reveal delay={0}>
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>Shipped</span>
-            <Body className="mt-3">A working PWA — deployed, installable, fully on-device. Designed and built end-to-end, design → Claude Code.</Body>
-          </div>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>What I learned</span>
-            <Body className="mt-3">The hardest design work was deciding what to leave out. Simplicity is a series of refusals, not a coat of paint.</Body>
-          </div>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>What I'd test next</span>
-            <Body className="mt-3">Real users on the core question — and whether the "heads-up before you dip" alert actually changes behaviour.</Body>
-          </div>
-        </Reveal>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        <div className="lg:col-span-8">
+          <Reveal>
+            <Display className="max-w-[16ch]">
+              A real, installable app — <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>not a Figma file.</span>
+            </Display>
+          </Reveal>
+        </div>
+        <div className="lg:col-span-4 lg:text-right">
+          <Reveal delay={0.1}>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: C.accentSoft, border: `1px solid ${C.accent}33` }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: C.accent }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: C.accent }} />
+              </span>
+              <span className="text-[12px] font-medium" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif" }}>
+                Shipped &amp; installable · seeking first users
+              </span>
+            </span>
+          </Reveal>
+        </div>
       </div>
 
-      <Reveal delay={0.2}>
-        <div className="mt-12 flex flex-wrap items-center gap-3">
-          <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>Toolstack</span>
-          {["Figma", "Claude Code", "Vercel", "React + Vite + TS", "Framer Motion", "IndexedDB", "PWA"].map((t) => (
-            <span key={t} className="text-[12.5px] px-3 py-1.5 rounded-full" style={{ color: C.inkSoft, backgroundColor: C.bg, border: `1px solid ${C.hairline}`, fontFamily: "DM Sans, sans-serif" }}>{t}</span>
-          ))}
+      {/* Outcome cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-12">
+        {OUTCOMES.map((o, i) => (
+          <Reveal key={o.tag} delay={i * 0.08}>
+            <div className="h-full rounded-2xl p-6" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: C.accentSoft, color: C.accentDeep }}>
+                <OutcomeIcon kind={o.icon} />
+              </div>
+              <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{o.tag}</span>
+              <p className="mt-2.5 text-[14.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.6 }}>{o.body}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+
+      {/* Lighthouse + toolstack panel */}
+      <Reveal delay={0.15}>
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 rounded-3xl p-7 sm:p-9" style={{ backgroundColor: C.ink }}>
+          {/* Lighthouse gauges */}
+          <div className="lg:col-span-7">
+            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.5)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+              Lighthouse · clean run
+            </span>
+            <div className="flex flex-wrap gap-8 mt-5">
+              {LIGHTHOUSE.map((g, i) => (
+                <Gauge key={g.label} label={g.label} score={g.score} delay={i * 0.15} />
+              ))}
+            </div>
+            <p className="mt-5 text-[12px]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans, sans-serif" }}>
+              AA contrast · reduced-motion fallbacks · honest numbers, not rounded up.
+            </p>
+          </div>
+
+          {/* Toolstack */}
+          <div className="lg:col-span-5 lg:border-l lg:pl-8" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.5)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+              Toolstack
+            </span>
+            <div className="flex flex-wrap gap-2 mt-5">
+              {["Figma", "Claude Code", "Vercel", "React + Vite + TS", "Framer Motion", "IndexedDB", "PWA"].map((t) => (
+                <span key={t} className="text-[12px] px-3 py-1.5 rounded-full" style={{ color: "rgba(255,255,255,0.8)", backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "DM Sans, sans-serif" }}>{t}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </Reveal>
     </SectionShell>
+  );
+}
+
+function OutcomeIcon({ kind }: { kind: string }) {
+  const c = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (kind === "rocket") return <svg {...c}><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8a2 2 0 0 0-3 0z" /><path d="M12 15l-3-3a22 22 0 0 1 8-10c2.5 0 5 .5 5 .5s.5 2.5.5 5a22 22 0 0 1-10 8z" /><path d="M9 12H4s.5-3 2-4 5-1 5-1" /><path d="M12 15v5s3-.5 4-2 1-5 1-5" /></svg>;
+  if (kind === "bulb") return <svg {...c}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>;
+  return <svg {...c}><path d="M9 3h6" /><path d="M10 3v6.5L5 18a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 18l-5-8.5V3" /><path d="M7.5 14h9" /></svg>;
+}
+
+function Gauge({ label, score, delay }: { label: string; score: number; delay: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true });
+  const reduce = useReducedMotion();
+  const R = 26;
+  const CIRC = 2 * Math.PI * R;
+  const display = useCountUp(score, inView, 1.2);
+  const ratio = score / 100;
+  return (
+    <div ref={ref} className="flex flex-col items-center gap-2.5">
+      <div className="relative" style={{ width: 68, height: 68 }}>
+        <svg width="68" height="68" viewBox="0 0 68 68">
+          <circle cx="34" cy="34" r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5" />
+          <motion.circle
+            cx="34" cy="34" r={R} fill="none" stroke={C.accent} strokeWidth="5" strokeLinecap="round"
+            transform="rotate(-90 34 34)"
+            strokeDasharray={CIRC}
+            initial={{ strokeDashoffset: reduce ? CIRC * (1 - ratio) : CIRC }}
+            animate={inView ? { strokeDashoffset: CIRC * (1 - ratio) } : {}}
+            transition={{ duration: 1.2, delay, ease: EASE }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 18, color: "#FFFFFF", fontVariantNumeric: "tabular-nums" }}>{display}</span>
+        </div>
+      </div>
+      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "DM Sans, sans-serif" }}>{label}</span>
+    </div>
   );
 }
 

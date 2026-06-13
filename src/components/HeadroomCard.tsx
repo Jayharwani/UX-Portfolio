@@ -214,10 +214,10 @@ export function HeadroomCard() {
                   <span className="text-[10px] uppercase tracking-[0.16em]" style={{ color: "#97A09B", fontFamily: "ui-monospace, monospace" }}>
                     Safe to spend
                   </span>
-                  <div className="flex items-start mt-1">
-                    <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 18, color: "#10160F", marginTop: 6 }}>$</span>
-                    <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 52, lineHeight: 1, color: "#10160F", letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>
-                      {count}
+                  <div className="flex items-start mt-1" style={{ whiteSpace: "nowrap" }}>
+                    <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 16, color: "#10160F", marginTop: 4 }}>$</span>
+                    <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 40, lineHeight: 1, color: "#10160F", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>
+                      {count.toLocaleString()}
                     </span>
                   </div>
                   <span className="mt-1.5 text-[11px]" style={{ color: "#0A7A52", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
