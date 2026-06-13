@@ -844,11 +844,11 @@ const RIVALS = [
   { name: "Mint", tag: "Gone", note: "Shut down. Millions left stranded." },
 ];
 const CAPABILITIES = [
-  { label: 'Answers "can I spend this?"', rivals: [false, false, false, false] },
-  { label: "No categories to manage", rivals: [false, false, false, false] },
-  { label: "No bank login required", rivals: [false, false, false, false] },
-  { label: "Private & fully on-device", rivals: [false, false, false, false] },
-  { label: "Zero ongoing upkeep", rivals: [false, false, false, false] },
+  { label: "Leads with one forward “safe to spend” number", rivals: [false, false, false, false] },
+  { label: "Works with no spending categories", rivals: [false, false, false, false] },
+  { label: "No bank-account linking required", rivals: [false, false, false, false] },
+  { label: "Data stays fully on-device", rivals: [false, false, false, false] },
+  { label: "No setup or learning curve", rivals: [false, false, false, false] },
 ];
 
 function WedgeSection() {
@@ -918,6 +918,12 @@ function WedgeSection() {
             ))}
           </div>
         </div>
+      </Reveal>
+
+      <Reveal delay={0.05}>
+        <p className="mt-4 text-[12.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", lineHeight: 1.55, maxWidth: "70ch" }}>
+          These aren't quality scores — they're positioning. YNAB, Monarch and Copilot are excellent, powerful tools; every ✓ above is something Headroom deliberately removed or refused, not a feature the others failed to build.
+        </p>
       </Reveal>
 
       {/* Wedge callout */}
@@ -1424,26 +1430,27 @@ function LeftOutSection() {
             {LEFT_OUT.map((row, i) => (
               <Reveal key={row.item} delay={i * 0.05}>
                 <div
-                  className="group flex items-center gap-4 px-5 sm:px-7 py-4"
+                  className="group flex items-start gap-4 px-5 sm:px-7 py-4"
                   style={{ borderTop: i === 0 ? "none" : `1px solid ${C.hairline}` }}
                 >
                   {/* cross badge */}
-                  <span className="flex-shrink-0 inline-flex items-center justify-center rounded-full" style={{ width: 30, height: 30, backgroundColor: "rgba(181,83,46,0.10)" }}>
+                  <span className="flex-shrink-0 inline-flex items-center justify-center rounded-full mt-0.5" style={{ width: 30, height: 30, backgroundColor: "rgba(181,83,46,0.10)" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.clay} strokeWidth="2.6" strokeLinecap="round">
                       <path d="M6 6l12 12M18 6L6 18" />
                     </svg>
                   </span>
-                  {/* name */}
-                  <span
-                    className="flex-shrink-0 text-[16px] sm:text-[19px]"
-                    style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: C.inkSoft, letterSpacing: "-0.01em", textDecoration: "line-through", textDecorationColor: `${C.clay}80`, textDecorationThickness: "2px" }}
-                  >
-                    {row.item}
-                  </span>
-                  {/* reason — pushed right, fades up on row */}
-                  <span className="ml-auto text-right text-[12.5px] sm:text-[13.5px] hidden sm:block" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", maxWidth: "32ch" }}>
-                    {row.why}
-                  </span>
+                  {/* name + reason — stack on mobile, row on desktop */}
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                    <span
+                      className="text-[16px] sm:text-[19px]"
+                      style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: C.inkSoft, letterSpacing: "-0.01em", textDecoration: "line-through", textDecorationColor: `${C.clay}80`, textDecorationThickness: "2px" }}
+                    >
+                      {row.item}
+                    </span>
+                    <span className="sm:ml-auto sm:text-right text-[13px] sm:text-[13.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", maxWidth: "34ch" }}>
+                      {row.why}
+                    </span>
+                  </div>
                 </div>
               </Reveal>
             ))}

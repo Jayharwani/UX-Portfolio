@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
@@ -35,6 +35,7 @@ export function IronManAssistant() {
   const [factIndex, setFactIndex] = useState(0);
   const [imgFailed, setImgFailed] = useState(false);
   const dismissedRef = useRef(false);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const t = setTimeout(() => setHelmetVisible(true), HELMET_APPEAR_DELAY);
@@ -164,18 +165,16 @@ export function IronManAssistant() {
                 style={{ transformStyle: "preserve-3d" }}
               >
                 <motion.div
-                  animate={{
-                    rotateY: [-12, 12, -12],
-                    rotateX: [-4, 4, -4],
-                    y: [0, -5, 0],
-                  }}
-                  transition={{
-                    rotateY: { duration: 5.2, repeat: Infinity, ease: "easeInOut" },
-                    rotateX: { duration: 4.4, repeat: Infinity, ease: "easeInOut" },
-                    y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                  }}
+                  animate={reduce ? undefined : { y: [0, -5, 0], rotate: [-2, 2, -2] }}
+                  transition={
+                    reduce
+                      ? undefined
+                      : {
+                          y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                          rotate: { duration: 5.2, repeat: Infinity, ease: "easeInOut" },
+                        }
+                  }
                   style={{
-                    transformStyle: "preserve-3d",
                     filter:
                       "drop-shadow(0 10px 18px rgba(220, 38, 38, 0.45)) drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
                     willChange: "transform",
@@ -203,13 +202,15 @@ export function IronManAssistant() {
                   )}
                 </motion.div>
 
-                {/* Idle pulse ring */}
-                <motion.div
-                  className="absolute inset-0 rounded-full pointer-events-none"
-                  style={{ border: "1.5px solid rgba(251, 191, 36, 0.4)" }}
-                  animate={{ scale: [1, 1.18, 1], opacity: [0, 0.5, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
-                />
+                {/* Idle pulse ring — skipped under reduced motion */}
+                {!reduce && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full pointer-events-none"
+                    style={{ border: "1.5px solid rgba(251, 191, 36, 0.4)" }}
+                    animate={{ scale: [1, 1.18, 1], opacity: [0, 0.5, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
+                  />
+                )}
               </motion.button>
             )}
           </AnimatePresence>
@@ -223,11 +224,12 @@ export function IronManAssistant() {
 /*  SpeechBubble                                               */
 /* ────────────────────────────────────────────────────────── */
 function SpeechBubble({ fact, onDismiss }: { fact: string; onDismiss: () => void }) {
+  const reduce = useReducedMotion();
   return (
     <div className="relative w-full">
       <motion.div
-        animate={{ rotate: [-0.5, 0.5, -0.5], y: [0, -2, 0] }}
-        transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+        animate={reduce ? undefined : { rotate: [-0.5, 0.5, -0.5], y: [0, -2, 0] }}
+        transition={reduce ? undefined : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
         className="relative"
       >
         <div
