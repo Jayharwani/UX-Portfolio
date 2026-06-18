@@ -234,11 +234,16 @@ function PhoneShell({ children, heightClass = "h-[560px]" }: { children: ReactNo
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, []);
   return (
-    <div className={`relative mx-auto ${heightClass}`} style={{ aspectRatio: "390 / 844", borderRadius: 42, padding: 6, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 80px -24px rgba(0,0,0,0.55)" }}>
-      <div ref={wrapRef} className="relative w-full h-full overflow-hidden" style={{ borderRadius: 37, background: T.paper }}>
+    <div className="relative mx-auto inline-block" style={{ borderRadius: 42, padding: 6, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 80px -24px rgba(0,0,0,0.55)" }}>
+      {/* aspectRatio on the SCREEN (exactly 390:844) so the scaled layer fills it perfectly */}
+      <div ref={wrapRef} className={`relative overflow-hidden ${heightClass}`} style={{ aspectRatio: "390 / 844", borderRadius: 37, background: T.paper }}>
         <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})` }}>
           <div className="absolute left-1/2 -translate-x-1/2 z-40 rounded-full" style={{ top: 13, width: 112, height: 31, background: "#05070B" }} />
           {children}

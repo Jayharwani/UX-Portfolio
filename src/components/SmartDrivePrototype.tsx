@@ -983,10 +983,12 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
     const t = window.setTimeout(update, 280);
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    window.addEventListener("resize", update);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t);
       ro.disconnect();
+      window.removeEventListener("resize", update);
     };
   }, [mounted]);
 
@@ -1104,7 +1106,7 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
       <div className="absolute inset-0" onClick={onClose} style={{ background: "rgba(8,10,16,0.82)", backdropFilter: "blur(14px)" }} />
 
       {/* chrome top */}
-      <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.05 }} className="relative z-10 w-full max-w-5xl px-5 sm:px-8 pt-5 sm:pt-7 flex items-center justify-between">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="relative z-10 w-full max-w-5xl px-5 sm:px-8 pt-5 sm:pt-7 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <span style={{ width: 34, height: 34, borderRadius: 10, background: C.tw500, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Car size={19} color="#fff" strokeWidth={2} />
@@ -1122,13 +1124,15 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
       {/* device */}
       <div className="relative z-10 flex-1 w-full flex items-center justify-center px-4 min-h-0 py-3">
         <motion.div
-          initial={{ scale: 0.92, opacity: 0, y: 14 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{ ...SPRING.soft, delay: 0.05 }}
           className="relative"
-          style={{ height: "min(74vh, 680px)", aspectRatio: "390 / 844", borderRadius: 46, padding: 7, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 90px -20px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)" }}
+          style={{ flexShrink: 0, height: "100%", maxHeight: 660, borderRadius: 46, padding: 7, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 90px -20px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)" }}
         >
-          <div ref={screenWrapRef} className="relative w-full h-full overflow-hidden" style={{ borderRadius: 40, background: C.canvas }}>
+          {/* Device fills the available flex height (capped), so it never overflows the chrome on short
+              viewports. aspectRatio on the SCREEN (exactly 390:844) → scaled layer fills it, no clipping/gaps. */}
+          <div ref={screenWrapRef} className="relative overflow-hidden" style={{ height: "100%", aspectRatio: "390 / 844", borderRadius: 40, background: C.canvas }}>
             {/* logical 390×844 layer, scaled to fill the screen so content matches a real phone */}
             <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})` }}>
             <div className="absolute left-1/2 -translate-x-1/2 z-40 rounded-full" style={{ top: 13, width: 112, height: 31, background: "#05070B" }} />
@@ -1188,7 +1192,7 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
       </div>
 
       {/* chrome bottom */}
-      <motion.div initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="relative z-10 w-full max-w-md px-5 pb-6 sm:pb-8">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="relative z-10 w-full max-w-md px-5 pb-6 sm:pb-8">
         <p style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)", textAlign: "center", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Preview state</p>
         <div className="flex items-center gap-1.5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: 4 }}>
           {SCENARIOS.map((s) => {
