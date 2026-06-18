@@ -1,1461 +1,746 @@
-import { ArrowLeft, Smartphone, Brain, Shield, Bell, Clock, Users, Target, Zap, ExternalLink, Check, X, AlertCircle, Search, Lightbulb, Sparkles, Activity, Gauge, UserCircle, FileText, Calendar, Monitor, BarChart3, Bot, Settings, BellRing, XCircle, Scale, CheckCircle, TrendingUp, ChevronLeft, ChevronRight, PhoneCall, Car, AlertTriangle, Eye, Layers, ArrowRight, ChevronDown, Accessibility, Globe, Cpu, MessageSquare, PenTool, Repeat, GitBranch, TestTube, CircleDot } from "lucide-react";
+import { motion, useInView, useReducedMotion } from "motion/react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Link } from "react-router";
-import { motion, AnimatePresence, useInView, useScroll, useTransform } from "motion/react";
-import { useState, useRef, useEffect } from "react";
-import { CaseStudyHero } from "./CaseStudyHero";
-// Low-fidelity wireframes
-import { WireframeScreen1 } from "./wireframes/WireframeScreen1";
-import { WireframeScreen2 } from "./wireframes/WireframeScreen2";
-import { WireframeScreen3 } from "./wireframes/WireframeScreen3";
-import { WireframeScreen4 } from "./wireframes/WireframeScreen4";
-import { WireframeScreen5 } from "./wireframes/WireframeScreen5";
-import { WireframeScreen6 } from "./wireframes/WireframeScreen6";
-// High-fidelity screens
-import HiFiScreen1 from "../imports/2-119-38";
-import HiFiScreen2 from "../imports/5-119-110";
-import HiFiScreen3 from "../imports/13-119-398";
-import HiFiScreen4 from "../imports/11-119-1314";
-import HiFiScreen5 from "../imports/10-119-1463";
-import HiFiScreen6 from "../imports/3-119-980";
-import HiFiScreenHowItWorks from "../imports/3-119-1686";
-import { MobileMockup } from "./MobileMockup";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { AnimatedHiFiScreen } from "./AnimatedHiFiScreen";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Play,
+  Sparkles,
+  Eye,
+  PhoneCall,
+  SlidersHorizontal,
+  Mail,
+  Linkedin,
+  Globe,
+  ChevronDown,
+} from "lucide-react";
+import {
+  SmartDrivePrototype,
+  Hub,
+  ThroughScreen,
+  LearningScreen,
+  DrivingOverlay,
+} from "./SmartDrivePrototype";
 
-// ─── Animation Variants ───
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
-  }
+/* ──────────────────────────────────────────────────────────────────────────
+   SmartDrive AI — case study (editorial single page)
+   Built to the case-study spec. Voice kept exactly as written.
+   Palette grounded in the app's own world: ink + twilight.
+   ────────────────────────────────────────────────────────────────────────── */
+
+const T = {
+  ink: "#0E1422",
+  paper: "#F6F7F9",
+  text: "#15171E",
+  onInk: "#EDEFF5",
+  muted: "#5B6170",
+  mutedInk: "#8A92A6",
+  twilight: "#4B57EE",
+  signal: "#12B981",
+  noise: "#F0544F",
+  hairline: "#E4E6EB",
+  hairlineInk: "#232A3A",
 };
+const DISPLAY = "'Bricolage Grotesque', sans-serif";
+const BODY = "Inter, system-ui, sans-serif";
+const MONO = "'JetBrains Mono', ui-monospace, monospace";
+const EASE = [0.16, 1, 0.3, 1] as const;
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
-
-// ─── Section Label Component ───
-function SectionLabel({ number, label }: { number: string; label: string }) {
+/* ── scroll reveal ───────────────────────────────────────────────────────── */
+function Reveal({ children, delay = 0, className, style }: { children: ReactNode; delay?: number; className?: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-12% 0px" });
+  const reduce = useReducedMotion();
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <div className="flex items-center gap-3">
-        <span className="text-cyan-500 font-mono text-sm">{number}</span>
-        <div className="w-12 h-px bg-gradient-to-r from-cyan-500/60 to-transparent" />
-      </div>
-      <span className="text-cyan-400/80 text-sm uppercase tracking-widest font-medium">{label}</span>
-    </div>
+    <motion.div
+      ref={ref}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : undefined}
+      transition={{ duration: 0.6, ease: EASE, delay }}
+      className={className}
+      style={style}
+    >
+      {children}
+    </motion.div>
   );
 }
 
-// ─── Animated Counter ───
-function AnimatedCounter({ target, duration = 2, suffix = "" }: { target: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+function Eyebrow({ children, onInk }: { children: ReactNode; onInk?: boolean }) {
+  return (
+    <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: onInk ? T.mutedInk : T.muted }}>
+      {children}
+    </span>
+  );
+}
 
+function CountUp({ to, suffix = "", duration = 1.4 }: { to: number; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const reduce = useReducedMotion();
+  const [v, setV] = useState(0);
   useEffect(() => {
-    if (!isInView) return;
-    let startTime: number | null = null;
-    const animate = (currentTime: number) => {
-      if (startTime === null) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / (duration * 1000), 1);
-      setCount(Math.floor(progress * target));
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [isInView, target, duration]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
-}
-
-// ─── Process Step Connector ───
-function StepConnector() {
-  return (
-    <div className="hidden md:flex items-center justify-center">
-      <motion.div
-        className="w-8 h-px bg-gradient-to-r from-cyan-500/40 to-cyan-500/10"
-        initial={{ scaleX: 0 }}
-        whileInView={{ scaleX: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      />
-      <ChevronRight className="w-4 h-4 text-cyan-500/40 -ml-1" />
-    </div>
-  );
-}
-
-export function SmartDrivePage() {
-  const [currentStage, setCurrentStage] = useState(0);
-  const [activeWireframe, setActiveWireframe] = useState(0);
-  const heroRef = useRef(null);
-
-  const stages = [
-    {
-      stage: "Stage 1",
-      title: "Onboarding & Setup",
-      icon: Smartphone,
-      items: ["Welcome Screen", "Permissions Access", "Vehicle Selection", "Agreement & Start"],
-      output: "AI Setup Initiated",
-      rationale: "Progressive disclosure reduces cognitive load — users grant permissions only when they understand why."
-    },
-    {
-      stage: "Stage 2",
-      title: "Behavior Analysis",
-      icon: Brain,
-      items: ["Analysis Started", "Progress Indicator", "Educational Tips", "48-Hour Window"],
-      output: "Dashboard Access Enabled",
-      rationale: "Transparency during AI learning builds trust. Users see what data is collected and why."
-    },
-    {
-      stage: "Stage 3",
-      title: "Drive Analysis Dashboard",
-      icon: TrendingUp,
-      items: ["Driving Time & Pickups", "Speed-Based Chart", "App Breakdown", "Risk Distribution"],
-      output: "View Full Report",
-      rationale: "Data visualization helps users self-reflect on habits, increasing motivation to change behavior."
-    },
-    {
-      stage: "Stage 4",
-      title: "AI Sensitivity Recommendation",
-      icon: Target,
-      items: ["Suggested Mode", "Brief Reasoning", "Levels Preview", "Apply Settings"],
-      output: "Personalized Mode Activated",
-      rationale: "AI recommends but doesn't dictate — user agency is preserved through clear opt-in/override controls."
-    },
-    {
-      stage: "Stage 5",
-      title: "Active Protection",
-      icon: Shield,
-      items: ["Protection Active", "Weekly Report", "Achievements", "Control Buttons"],
-      output: "Continuous Learning Loop",
-      rationale: "Gamification through achievements sustains long-term engagement without feeling manipulative."
+    if (!inView) return;
+    if (reduce) {
+      setV(to);
+      return;
     }
-  ];
-
-  const handlePrevStage = () => setCurrentStage((prev) => (prev > 0 ? prev - 1 : stages.length - 1));
-  const handleNextStage = () => setCurrentStage((prev) => (prev < stages.length - 1 ? prev + 1 : 0));
-
+    let raf = 0;
+    let start: number | null = null;
+    const tick = (t: number) => {
+      if (start === null) start = t;
+      const p = Math.min((t - start) / (duration * 1000), 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      setV(Math.round(e * to));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, to, reduce, duration]);
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
-      {/* ─── Fixed Navigation ─── */}
-      <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="fixed top-0 left-0 right-0 z-50"
-        style={{ backgroundColor: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex items-center justify-between">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-all duration-300 group"
-          >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-            <span className="text-sm sm:text-base">Back to Portfolio</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 hidden sm:inline">Case Study</span>
-            <span className="text-xs text-cyan-400 font-mono">01</span>
-          </div>
-        </div>
-      </motion.nav>
+    <span ref={ref}>
+      {v.toLocaleString()}
+      {suffix}
+    </span>
+  );
+}
 
-      {/* ─── Hero Section ─── */}
-      <section className="relative w-full min-h-[100dvh] flex items-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1e] via-[#0d1117] to-[#0a0a1e]" />
-          <div
-            className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-cyan-500/8 to-transparent rounded-full blur-3xl"
-            style={{ animation: 'ambient-pulse 8s ease-in-out infinite' }}
-          />
-          <div
-            className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-to-tl from-emerald-500/8 to-transparent rounded-full blur-3xl"
-            style={{ animation: 'ambient-pulse 8s ease-in-out 2s infinite' }}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pt-24 pb-12 sm:py-20">
-          <div className="grid lg:grid-cols-[55%_45%] gap-8 lg:gap-8 items-center">
-            {/* Left — Animated Visualization */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex justify-center items-center min-h-[280px] sm:min-h-[400px] lg:min-h-[560px]"
-            >
-              {/* Central Shield / AI Core — CSS rotation */}
-              <div
-                className="relative z-10 w-[140px] h-[140px] lg:w-[180px] lg:h-[180px] flex items-center justify-center"
-                style={{ animation: 'spin-slow 60s linear infinite' }}
-              >
-                <div className="absolute inset-0 rounded-full border border-cyan-500/20" />
-                <div className="absolute inset-3 rounded-full border border-cyan-500/10" />
-              </div>
-
-              {/* Static inner icon — CSS glow pulse */}
-              <div className="absolute z-20 flex flex-col items-center gap-2">
-                <div
-                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center backdrop-blur-sm"
-                  style={{ animation: 'pulse-glow 3s ease-in-out infinite' }}
-                >
-                  <Shield className="w-8 h-8 lg:w-10 lg:h-10 text-cyan-400" />
-                </div>
-                <span className="text-[10px] lg:text-xs text-cyan-400/80 font-medium tracking-widest uppercase">AI Filter</span>
-              </div>
-
-              {/* Orbiting ring 1 — CSS rotation */}
-              <div
-                className="absolute w-[280px] h-[280px] lg:w-[360px] lg:h-[360px]"
-                style={{ animation: 'spin-slow 30s linear infinite' }}
-              >
-                <div className="absolute inset-0 rounded-full border border-dashed border-slate-700/40" />
-                {/* Car on ring 1 */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <div style={{ animation: 'spin-slow-reverse 30s linear infinite' }}>
-                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-slate-900/80 border border-cyan-500/25 flex items-center justify-center backdrop-blur-sm">
-                      <Car className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-cyan-400/50" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Orbiting ring 2 — CSS rotation */}
-              <div
-                className="absolute w-[380px] h-[380px] lg:w-[480px] lg:h-[480px]"
-                style={{ animation: 'spin-slow-reverse 45s linear infinite' }}
-              >
-                <div className="absolute inset-0 rounded-full border border-slate-800/30" />
-                {/* Car on ring 2 */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-                  <div style={{ animation: 'spin-slow 45s linear infinite' }}>
-                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-slate-900/60 border border-slate-600/20 flex items-center justify-center backdrop-blur-sm">
-                      <Car className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-slate-500/40" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating notification cards — allowed (green) — CSS fade-float */}
-              {[
-                { x: -140, y: -120, lgX: -180, lgY: -150, delay: 0, icon: PhoneCall, label: "Mom calling", color: "emerald" },
-                { x: 120, y: 80, lgX: 160, lgY: 100, delay: 1.5, icon: AlertTriangle, label: "Road alert", color: "emerald" },
-                { x: -100, y: 100, lgX: -140, lgY: 130, delay: 3, icon: Car, label: "Navigation", color: "emerald" },
-              ].map((notif, i) => (
-                <div
-                  key={`allowed-${i}`}
-                  className="absolute z-30 hidden sm:block"
-                  style={{
-                    left: `calc(50% + ${notif.x}px)`,
-                    top: `calc(50% + ${notif.y}px)`,
-                    animation: `fade-float 5s ease-in-out ${notif.delay}s infinite`,
-                  }}
-                >
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-sm">
-                    <div className="w-6 h-6 rounded-md bg-emerald-500/20 flex items-center justify-center">
-                      <notif.icon className="w-3.5 h-3.5 text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-emerald-300 font-medium">{notif.label}</p>
-                      <p className="text-[8px] text-emerald-500/60">Allowed</p>
-                    </div>
-                    <CheckCircle className="w-3 h-3 text-emerald-400 ml-1" />
-                  </div>
-                </div>
-              ))}
-
-              {/* Floating notification cards — blocked (red/muted) — CSS fade-float-muted */}
-              {[
-                { x: 130, y: -90, lgX: 170, lgY: -110, delay: 0.8, icon: MessageSquare, label: "Social media" },
-                { x: -130, y: 20, lgX: -170, lgY: 20, delay: 2.2, icon: Bell, label: "Game update" },
-                { x: 60, y: 140, lgX: 80, lgY: 170, delay: 4, icon: BellRing, label: "Promo alert" },
-              ].map((notif, i) => (
-                <div
-                  key={`blocked-${i}`}
-                  className="absolute z-30 hidden sm:block"
-                  style={{
-                    left: `calc(50% + ${notif.x}px)`,
-                    top: `calc(50% + ${notif.y}px)`,
-                    animation: `fade-float-muted 5s ease-in-out ${notif.delay}s infinite`,
-                  }}
-                >
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/5 border border-red-500/15 backdrop-blur-sm opacity-60">
-                    <div className="w-6 h-6 rounded-md bg-red-500/10 flex items-center justify-center">
-                      <notif.icon className="w-3.5 h-3.5 text-red-400/60" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-red-300/60 font-medium line-through">{notif.label}</p>
-                      <p className="text-[8px] text-red-500/40">Blocked</p>
-                    </div>
-                    <XCircle className="w-3 h-3 text-red-400/50 ml-1" />
-                  </div>
-                </div>
-              ))}
-
-              {/* Subtle pulse rings from center — CSS */}
-              {[0, 1.5, 3].map((delay, i) => (
-                <div
-                  key={`pulse-${i}`}
-                  className="absolute w-[140px] h-[140px] lg:w-[180px] lg:h-[180px] rounded-full border border-cyan-500/20"
-                  style={{ animation: `pulse-ring 4s ease-out ${delay}s infinite` }}
-                />
-              ))}
-            </motion.div>
-
-            {/* Right — Content */}
-            <motion.div
-              initial={{ opacity: 0, x: 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-              className="space-y-8 lg:pr-8"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-              >
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
-                  SmartDrive AI
-                </h1>
-                <p className="text-base sm:text-lg lg:text-2xl text-slate-300 leading-relaxed">
-                  An intelligent distraction filter that learns your driving patterns to keep you safe — without manual setup.
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="flex flex-wrap gap-3"
-              >
-                {["UX Design", "AI/ML Product", "3 Weeks", "Mobile App"].map((tag, index) => (
-                  <motion.div
-                    key={tag}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
-                    className="px-5 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white text-sm font-medium hover:bg-white/15 transition-colors duration-300"
-                  >
-                    {tag}
-                  </motion.div>
-                ))}
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.6 }}
-              >
-                <motion.button
-                  onClick={() => document.getElementById('overview')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white rounded-full text-slate-900 font-semibold text-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span className="relative z-10">Explore Design</span>
-                  <motion.div
-                    className="relative z-10"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.div>
-                </motion.button>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2, duration: 0.6 }}
-                className="flex items-center gap-3 text-slate-400 text-sm"
-              >
-                <motion.div
-                  animate={{ y: [0, 8, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <div className="w-[2px] h-6 bg-gradient-to-b from-transparent via-slate-400 to-transparent rounded-full" />
-                </motion.div>
-                <span>Scroll to explore</span>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 01. Project Overview ─── */}
-      <section id="overview" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <SectionLabel number="01" label="Project Overview" />
-
-            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-              Designing an AI-powered<br className="hidden sm:block" /> driving safety companion
-            </motion.h2>
-
-            <motion.p variants={fadeInUp} className="text-slate-400 text-lg sm:text-xl leading-relaxed max-w-3xl mb-12">
-              SmartDrive uses behavioral AI to automatically manage notifications while driving — learning individual
-              patterns to filter distractions without blocking critical alerts.
-            </motion.p>
-
-            {/* Project Meta */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { label: "My Role", value: "Lead UX Designer", detail: "End-to-end design" },
-                { label: "Timeline", value: "3 Weeks", detail: "Concept to prototype" },
-                { label: "Platform", value: "iOS & Android", detail: "Cross-platform" },
-                { label: "Type", value: "Concept Project", detail: "Self-initiated" }
-              ].map((item, i) => (
-                <div key={i} className="rounded-xl p-4 sm:p-5 border border-white/[0.06] bg-white/[0.02]">
-                  <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">{item.label}</p>
-                  <p className="text-white text-sm sm:text-base font-medium">{item.value}</p>
-                  <p className="text-slate-600 text-xs mt-1">{item.detail}</p>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── Design Process Timeline ─── */}
-      <section className="py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeInUp} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
-              <h3 className="text-white text-lg font-semibold mb-6">Design Process</h3>
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-0">
-                {[
-                  { icon: Search, label: "Research", days: "Days 1-4" },
-                  { icon: Lightbulb, label: "Define", days: "Days 5-7" },
-                  { icon: PenTool, label: "Ideate", days: "Days 8-12" },
-                  { icon: Layers, label: "Prototype", days: "Days 13-17" },
-                  { icon: TestTube, label: "Test", days: "Days 18-21" },
-                ].map((step, i) => (
-                  <div key={i} className="flex md:flex-col items-center gap-3 md:gap-2 flex-1 w-full md:w-auto">
-                    <div className="flex items-center gap-3 md:flex-col md:gap-2 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                        <step.icon className="w-5 h-5 text-cyan-400" />
-                      </div>
-                      <div className="md:text-center">
-                        <p className="text-white text-sm font-medium">{step.label}</p>
-                        <p className="text-slate-500 text-xs">{step.days}</p>
-                      </div>
-                    </div>
-                    {i < 4 && (
-                      <div className="hidden md:block w-full h-px bg-gradient-to-r from-cyan-500/20 to-transparent mt-2" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 02. The Challenge ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="02" label="The Challenge" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Existing solutions fail because they<br className="hidden sm:block" /> treat all drivers the same
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                Despite "Do Not Disturb" features in every phone, distracted driving remains the #1 cause of accidents
-                for drivers aged 18-35. Current tools are binary — block everything or allow everything — ignoring that
-                context matters.
-              </motion.p>
-            </div>
-
-            {/* Problem Stats */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { value: 73, suffix: "%", label: "of drivers use their phone while driving", source: "NHTSA 2023" },
-                { value: 42, suffix: "%", label: "forget to activate driving mode manually", source: "AAA Foundation" },
-                { value: 3, suffix: "x", label: "more likely to crash with phone distraction", source: "IIHS Study" }
-              ].map((stat, i) => (
-                <div key={i} className="rounded-xl p-6 border border-red-500/10 bg-red-500/[0.03]">
-                  <div className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                    <AnimatedCounter target={stat.value} suffix={stat.suffix} />
-                  </div>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-2">{stat.label}</p>
-                  <p className="text-slate-600 text-xs">{stat.source}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* How Might We */}
-            <motion.div variants={fadeInUp} className="rounded-2xl border border-cyan-500/10 bg-cyan-500/[0.03] p-6 sm:p-8">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Lightbulb className="w-5 h-5 text-cyan-400" />
-                </div>
-                <div>
-                  <p className="text-cyan-400 text-sm font-medium mb-2 uppercase tracking-wider">How Might We</p>
-                  <p className="text-white text-lg sm:text-xl leading-relaxed">
-                    Design a notification system that adapts to individual driving behaviors — blocking distractions
-                    while preserving access to genuinely urgent communications?
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 03. Research & Discovery ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="03" label="Research & Discovery" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Understanding real driver behavior
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                I conducted user interviews, analyzed competitor products, and studied driving behavior research to identify
-                the core pain points and opportunities.
-              </motion.p>
-            </div>
-
-            {/* Research Methods */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: Users, title: "User Interviews", detail: "24 participants, ages 22-45, all regular commuters" },
-                { icon: Search, title: "Competitive Audit", detail: "Analyzed 8 existing apps including Apple Focus, Android Auto" },
-                { icon: BarChart3, title: "Behavioral Analysis", detail: "Studied phone usage patterns during 100+ driving sessions" }
-              ].map((method, i) => (
-                <div key={i} className="rounded-xl p-5 sm:p-6 border border-white/[0.06] bg-white/[0.02]">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-4">
-                    <method.icon className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <h4 className="text-white font-medium mb-2">{method.title}</h4>
-                  <p className="text-slate-500 text-sm leading-relaxed">{method.detail}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* Key Research Insights */}
-            <motion.div variants={fadeInUp}>
-              <h3 className="text-white text-xl font-semibold mb-6">Key Research Insights</h3>
-              <div className="space-y-4">
-                {[
-                  {
-                    insight: "Users want smart filtering, not total blocking",
-                    detail: "83% of participants said they ignore DND because they're afraid of missing emergencies. They need a system that understands priority.",
-                    tag: "User Need"
-                  },
-                  {
-                    insight: "Manual activation is the biggest failure point",
-                    detail: "Only 18% of users consistently remember to enable driving mode. The solution must be automatic and context-aware.",
-                    tag: "Behavior Pattern"
-                  },
-                  {
-                    insight: "Trust in AI requires transparency",
-                    detail: "Users are willing to delegate notification decisions to AI — but only if they can see why a decision was made and override it easily.",
-                    tag: "Trust Model"
-                  },
-                  {
-                    insight: "Post-drive summaries reduce anxiety",
-                    detail: "Showing what was blocked and why after each drive reduced notification anxiety by 67% in our prototype tests.",
-                    tag: "Opportunity"
-                  }
-                ].map((item, i) => (
-                  <div key={i} className="rounded-xl p-5 sm:p-6 border border-white/[0.06] bg-white/[0.02] hover:border-cyan-500/10 transition-colors duration-300">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                      <span className="inline-flex self-start px-2.5 py-1 rounded-md text-xs font-medium bg-cyan-500/10 text-cyan-400 whitespace-nowrap">
-                        {item.tag}
-                      </span>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium mb-1">{item.insight}</h4>
-                        <p className="text-slate-500 text-sm leading-relaxed">{item.detail}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Competitor Analysis */}
-            <motion.div variants={fadeInUp} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
-              <h3 className="text-white text-xl font-semibold mb-6">Competitive Landscape</h3>
-              <p className="text-slate-400 text-sm mb-6">I mapped existing solutions against the features users actually need.</p>
-
-              {/* Comparison Table */}
-              <div className="overflow-x-auto -mx-2 px-2">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      <th className="text-left text-slate-500 font-medium pb-3 pr-4">Feature</th>
-                      <th className="text-center text-slate-500 font-medium pb-3 px-2 whitespace-nowrap">Android Auto</th>
-                      <th className="text-center text-slate-500 font-medium pb-3 px-2 whitespace-nowrap">Apple Focus</th>
-                      <th className="text-center text-slate-500 font-medium pb-3 px-2 whitespace-nowrap">3rd Party</th>
-                      <th className="text-center text-cyan-400 font-medium pb-3 px-2">SmartDrive</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-400">
-                    {[
-                      { feature: "AI Learning", vals: [false, false, false, true] },
-                      { feature: "Auto-Activation", vals: [false, false, false, true] },
-                      { feature: "Smart Filtering", vals: [false, false, true, true] },
-                      { feature: "Cross-Platform", vals: [true, false, true, true] },
-                      { feature: "Behavior Analytics", vals: [false, false, false, true] },
-                    ].map((row, i) => (
-                      <tr key={i} className="border-b border-white/[0.03]">
-                        <td className="py-3 pr-4 text-slate-300">{row.feature}</td>
-                        {row.vals.map((v, j) => (
-                          <td key={j} className="py-3 px-2 text-center">
-                            {v ? (
-                              <Check className={`w-4 h-4 mx-auto ${j === 3 ? 'text-cyan-400' : 'text-slate-500'}`} />
-                            ) : (
-                              <X className="w-4 h-4 mx-auto text-slate-700" />
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-white/[0.04]">
-                <div className="flex items-start gap-3">
-                  <Zap className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-slate-400 text-sm">
-                    <span className="text-white font-medium">Gap identified:</span> No existing solution combines AI-powered behavioral learning
-                    with automatic activation. SmartDrive fills this gap.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 04. Design Principles ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="04" label="Design Principles" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Guiding decisions with clear principles
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                Every design decision maps back to these three principles, derived from research insights.
-              </motion.p>
-            </div>
-
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                {
-                  icon: Eye,
-                  title: "Transparent AI",
-                  description: "Users always see what the AI decided and why. No black-box decisions — every filtered notification includes reasoning.",
-                  example: "e.g., \"Blocked Instagram — you usually ignore these while driving\""
-                },
-                {
-                  icon: Shield,
-                  title: "Safety Without Sacrifice",
-                  description: "Protect drivers from distractions while ensuring truly urgent messages always get through.",
-                  example: "e.g., Emergency contacts always bypass filters"
-                },
-                {
-                  icon: Repeat,
-                  title: "Continuous Adaptation",
-                  description: "The system learns from every override and correction, getting smarter with each drive.",
-                  example: "e.g., If you always allow Slack from your boss, it learns that"
-                }
-              ].map((principle, i) => (
-                <div key={i} className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02] flex flex-col">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-4">
-                    <principle.icon className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <h4 className="text-white font-semibold mb-3">{principle.title}</h4>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-4 flex-1">{principle.description}</p>
-                  <p className="text-slate-600 text-xs italic">{principle.example}</p>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 05. Information Architecture ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="05" label="Information Architecture" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Mapping the user journey
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                The core flow takes users from zero configuration to fully personalized protection in 5 stages.
-                Each stage was designed to build trust incrementally.
-              </motion.p>
-            </div>
-
-            {/* Swipable Stage Cards */}
-            <div className="relative">
-              <button
-                onClick={handlePrevStage}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 lg:-translate-x-10 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] flex items-center justify-center transition-all duration-300"
-                aria-label="Previous stage"
-              >
-                <ChevronLeft className="w-5 h-5 text-slate-400" />
-              </button>
-
-              <button
-                onClick={handleNextStage}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 lg:translate-x-10 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] flex items-center justify-center transition-all duration-300"
-                aria-label="Next stage"
-              >
-                <ChevronRight className="w-5 h-5 text-slate-400" />
-              </button>
-
-              <div className="relative overflow-hidden min-h-[320px] sm:min-h-[280px] flex items-center">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={currentStage}
-                    initial={{ opacity: 0, x: 80 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -80 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragEnd={(e, { offset }) => {
-                      if (offset.x > 50) handlePrevStage();
-                      else if (offset.x < -50) handleNextStage();
-                    }}
-                    className="w-full cursor-grab active:cursor-grabbing"
-                  >
-                    <div className="rounded-2xl p-6 sm:p-8 border border-white/[0.06] bg-white/[0.02]">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                          {(() => {
-                            const StageIcon = stages[currentStage].icon;
-                            return <StageIcon className="w-5 h-5 text-cyan-400" />;
-                          })()}
-                        </div>
-                        <div>
-                          <div className="text-xs text-cyan-400 font-mono">{stages[currentStage].stage}</div>
-                          <div className="text-white font-semibold">{stages[currentStage].title}</div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        {stages[currentStage].items.map((feature, i) => (
-                          <div key={i} className="flex items-center gap-2 text-slate-400">
-                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
-                            <span className="text-sm">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Design Rationale - This is what Google recruiters want to see */}
-                      <div className="pt-5 border-t border-white/[0.04]">
-                        <p className="text-xs text-cyan-400/60 uppercase tracking-wider mb-2">Design Rationale</p>
-                        <p className="text-slate-400 text-sm leading-relaxed italic">
-                          "{stages[currentStage].rationale}"
-                        </p>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-2 text-sm">
-                        <span className="text-slate-500">Output:</span>
-                        <span className="text-cyan-400">{stages[currentStage].output}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Stage Indicators */}
-              <div className="flex justify-center gap-2 mt-6">
-                {stages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentStage(index)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      index === currentStage
-                        ? "w-8 bg-cyan-400"
-                        : "w-1.5 bg-white/10 hover:bg-white/20"
-                    }`}
-                    aria-label={`Go to stage ${index + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 06. Wireframes & Iteration ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div className="max-w-5xl">
-              <SectionLabel number="06" label="Wireframes & Iteration" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                From rough concepts to refined flows
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                I started with low-fidelity wireframes to test information hierarchy and flow before investing
-                in visual design. Each iteration was informed by user feedback.
-              </motion.p>
-            </div>
-
-            {/* Wireframes Grid */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-              {[
-                { component: WireframeScreen1, label: "Welcome & Setup", annotation: "Progressive onboarding — only ask for permissions when contextually relevant" },
-                { component: WireframeScreen2, label: "Enable SmartDrive", annotation: "Clear value proposition before asking for commitment" },
-                { component: WireframeScreen3, label: "Behavior Analysis", annotation: "Transparency: explain what data is collected and why" },
-                { component: WireframeScreen4, label: "Analysis In Progress", annotation: "48-hour learning period with educational content to build trust" },
-                { component: WireframeScreen5, label: "Drive Dashboard", annotation: "Data visualization helps users understand their own behavior" },
-                { component: WireframeScreen6, label: "Summary & Active", annotation: "Clear confirmation that protection is active with easy override" }
-              ].map((wireframe, index) => (
-                <motion.div
-                  key={index}
-                  variants={fadeInUp}
-                  className="group"
-                >
-                  <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3 sm:p-4 hover:border-cyan-500/10 transition-all duration-300">
-                    <div className="aspect-[9/16] bg-white rounded-lg overflow-hidden mb-3 flex items-center justify-center border border-slate-200">
-                      <wireframe.component />
-                    </div>
-                    <p className="text-white text-xs sm:text-sm font-medium mb-1">{wireframe.label}</p>
-                    <p className="text-slate-600 text-xs leading-relaxed hidden sm:block">{wireframe.annotation}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Iteration Callout */}
-            <motion.div variants={fadeInUp} className="max-w-5xl rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 sm:p-6">
-              <div className="flex items-start gap-4">
-                <GitBranch className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-white font-medium mb-2">Key Iteration: Onboarding Simplification</h4>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    Initially had 7 onboarding screens. After testing with 8 users, I found a 40% drop-off at screen 4.
-                    Consolidated to 4 screens using progressive disclosure — permissions are requested in-context
-                    (e.g., location access when explaining auto-detection). Drop-off reduced to 12%.
-                  </p>
-                  <div className="flex flex-wrap gap-4 mt-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-red-400 text-sm line-through">7 screens</span>
-                      <ArrowRight className="w-3 h-3 text-slate-600" />
-                      <span className="text-cyan-400 text-sm font-medium">4 screens</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-red-400 text-sm line-through">40% drop-off</span>
-                      <ArrowRight className="w-3 h-3 text-slate-600" />
-                      <span className="text-cyan-400 text-sm font-medium">12% drop-off</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 07. Design System ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="07" label="Design System" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Building for consistency and scale
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                I established a design system early to ensure visual consistency across 20+ screens and enable faster iteration.
-              </motion.p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Color Palette */}
-              <motion.div variants={fadeInUp} className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02]">
-                <h3 className="text-white font-semibold mb-2">Color Palette</h3>
-                <p className="text-slate-500 text-xs mb-5">Blue conveys trust and safety — critical for an AI-powered driving app.</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { name: "Primary", color: "#2B7FFF" },
-                    { name: "Accent", color: "#51A2FF" },
-                    { name: "Success", color: "#00D492" },
-                    { name: "Warning", color: "#FE9A00" },
-                    { name: "Purple", color: "#C27AFF" },
-                    { name: "Deep Blue", color: "#155DFC" }
-                  ].map((c, i) => (
-                    <div key={i}>
-                      <div className="w-full h-12 rounded-lg mb-2" style={{ backgroundColor: c.color }} />
-                      <p className="text-slate-400 text-xs">{c.name}</p>
-                      <p className="text-slate-600 text-[10px] font-mono">{c.color}</p>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Typography & Components */}
-              <motion.div variants={fadeInUp} className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02]">
-                <h3 className="text-white font-semibold mb-2">Typography & Components</h3>
-                <p className="text-slate-500 text-xs mb-5">Poppins — friendly yet professional. Large touch targets (44px min) for driving safety.</p>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-slate-500 text-xs mb-2">Font</p>
-                    <p className="text-white text-2xl" style={{ fontFamily: 'Poppins, sans-serif' }}>Poppins</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500 text-xs mb-2">Border Radius</p>
-                    <div className="flex gap-2">
-                      <span className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-slate-400">12px Cards</span>
-                      <span className="px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-full text-xs text-slate-400">Full Buttons</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-slate-500 text-xs mb-2">Accessibility</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-cyan-400" />
-                        <span className="text-slate-400 text-xs">WCAG 2.1 AA contrast ratios</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-cyan-400" />
-                        <span className="text-slate-400 text-xs">44px minimum touch targets</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-cyan-400" />
-                        <span className="text-slate-400 text-xs">Screen reader compatible labels</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 08. AI Workflow & Solution ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="08" label="Solution Deep-Dive" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                How the AI-powered system works
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                The core innovation: a 4-step adaptive pipeline that learns from each user's unique driving + notification behavior.
-              </motion.p>
-            </div>
-
-            {/* AI Pipeline */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: BarChart3, title: "Analyze", desc: "Tracks phone pickups, notification interactions, driving speed", detail: "48-hour learning window" },
-                { icon: Brain, title: "Learn", desc: "AI identifies patterns in user behavior", detail: "On-device ML model" },
-                { icon: Settings, title: "Adapt", desc: "Adjusts filtering based on corrections and feedback", detail: "Gets smarter every drive" },
-                { icon: BellRing, title: "Filter", desc: "Blocks or allows notifications dynamically", detail: "Context-aware decisions" }
-              ].map((step, i) => (
-                <div key={i} className="rounded-xl p-5 border border-white/[0.06] bg-white/[0.02] relative">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-3">
-                    <step.icon className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <span className="text-cyan-400/40 font-mono text-xs">0{i + 1}</span>
-                  <h4 className="text-white font-medium mt-1 mb-2">{step.title}</h4>
-                  <p className="text-slate-500 text-xs leading-relaxed mb-2">{step.desc}</p>
-                  <p className="text-slate-600 text-[10px] uppercase tracking-wider">{step.detail}</p>
-                  {i < 3 && (
-                    <div className="hidden md:block absolute top-1/2 -right-2.5 text-slate-700">
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </motion.div>
-
-            {/* Adaptive Sensitivity Levels */}
-            <motion.div variants={fadeInUp}>
-              <h3 className="text-white text-xl font-semibold mb-2">Adaptive Sensitivity Levels</h3>
-              <p className="text-slate-500 text-sm mb-6">The AI recommends a level based on behavior, but users always have the final say.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { level: "Strict", icon: XCircle, who: "Heavy phone users", rule: "Blocks all except emergency contacts", color: "red" },
-                  { level: "Moderate", icon: Scale, who: "Average phone usage", rule: "Smart filtering with vibration for urgent", color: "amber" },
-                  { level: "Lenient", icon: CheckCircle, who: "Minimal phone interaction", rule: "Most notifications allowed with reminders", color: "green" }
-                ].map((s, i) => (
-                  <div key={i} className="rounded-xl p-5 border border-white/[0.06] bg-white/[0.02]">
-                    <div className="flex items-center gap-3 mb-3">
-                      <s.icon className="w-5 h-5 text-cyan-400" />
-                      <h4 className="text-white font-medium">{s.level}</h4>
-                    </div>
-                    <p className="text-slate-400 text-sm mb-2">For: {s.who}</p>
-                    <p className="text-slate-600 text-xs">{s.rule}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 09. Final Designs ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div className="max-w-5xl">
-              <SectionLabel number="09" label="Final Designs" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                High-fidelity screens
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                The final designs balance visual polish with functional clarity — every screen was validated against our
-                design principles and tested with real users.
-              </motion.p>
-            </div>
-
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {[
-                { component: HiFiScreen1, label: "AI-Powered Focus Mode", annotation: "Primary dashboard showing active protection status" },
-                { component: HiFiScreen2, label: "Analysis In Progress", annotation: "48-hour learning period with progress transparency" },
-                { component: HiFiScreen3, label: "Weekly Progress Report", annotation: "Data visualization for self-reflection" },
-                { component: HiFiScreen4, label: "7-Day Report Dashboard", annotation: "Detailed analytics with actionable insights" },
-                { component: HiFiScreen5, label: "AI Learning Process", annotation: "Transparent AI decision explanation" },
-                { component: HiFiScreen6, label: "Onboarding Flow", annotation: "Progressive disclosure approach" }
-              ].map((screen, index) => (
-                <motion.div
-                  key={index}
-                  variants={fadeInUp}
-                  className="group flex flex-col items-center"
-                >
-                  {/* Phone frame with fixed inner dimensions scaled to fit */}
-                  <div className="w-full max-w-[280px] sm:max-w-[320px] mx-auto">
-                    <div
-                      className="relative bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-[3px] sm:p-1 border-2 sm:border-[3px] border-slate-800 overflow-hidden shadow-2xl mb-4 transition-all duration-300 group-hover:shadow-cyan-500/10 group-hover:border-slate-700"
-                    >
-                      <div className="relative overflow-hidden rounded-[2.25rem] sm:rounded-[2.75rem]" style={{ aspectRatio: '390 / 720' }}>
-                        <div className="absolute inset-0 overflow-hidden">
-                          <div
-                            className="origin-top-left w-[390px] h-[844px]"
-                            style={{ transform: 'scale(var(--screen-scale))' }}
-                            ref={(el) => {
-                              if (el) {
-                                const updateScale = () => {
-                                  const parent = el.parentElement;
-                                  if (parent) {
-                                    const scale = parent.clientWidth / 360;
-                                    el.style.setProperty('--screen-scale', String(scale));
-                                  }
-                                };
-                                updateScale();
-                                const observer = new ResizeObserver(updateScale);
-                                observer.observe(el.parentElement!);
-                              }
-                            }}
-                          >
-                            <screen.component />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-white text-sm font-medium text-center">{screen.label}</p>
-                  <p className="text-slate-600 text-xs text-center mt-1">{screen.annotation}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 10. Usability Testing & Results ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="10" label="Testing & Validation" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Validating with real users
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-lg leading-relaxed max-w-3xl">
-                I conducted two rounds of usability testing — once with wireframes and once with the hi-fi prototype — to
-                validate key design decisions.
-              </motion.p>
-            </div>
-
-            {/* Testing Methodology */}
-            <motion.div variants={fadeInUp} className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02]">
-              <h3 className="text-white font-semibold mb-4">Testing Methodology</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: "Participants", value: "12 per round", detail: "Ages 22-45, daily commuters" },
-                  { label: "Method", value: "Moderated Testing", detail: "Think-aloud protocol via Zoom" },
-                  { label: "Tasks", value: "5 Core Tasks", detail: "Setup, dashboard review, override, report" }
-                ].map((m, i) => (
-                  <div key={i} className="text-center p-4 rounded-lg bg-white/[0.02]">
-                    <p className="text-2xl font-bold text-white mb-1">{m.value}</p>
-                    <p className="text-slate-400 text-sm">{m.label}</p>
-                    <p className="text-slate-600 text-xs mt-1">{m.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Test Results */}
-            <motion.div variants={fadeInUp}>
-              <h3 className="text-white font-semibold mb-6">Key Findings & Iterations</h3>
-              <div className="space-y-4">
-                {[
-                  {
-                    finding: "Users didn't understand AI learning timeline",
-                    severity: "High",
-                    iteration: "Added a clear \"48-hour learning\" progress bar with educational tooltips explaining each phase",
-                    metric: "Comprehension improved from 45% to 92%"
-                  },
-                  {
-                    finding: "Override button was hard to find during drives",
-                    severity: "Critical",
-                    iteration: "Moved override to a persistent floating button with haptic feedback — accessible without looking at screen",
-                    metric: "Task completion time reduced from 8.2s to 1.4s"
-                  },
-                  {
-                    finding: "Post-drive summary felt overwhelming",
-                    severity: "Medium",
-                    iteration: "Redesigned summary with progressive disclosure — show 3 key stats first, details on tap",
-                    metric: "Time spent reviewing increased by 3.2x"
-                  },
-                  {
-                    finding: "Users wanted to know WHY a notification was blocked",
-                    severity: "High",
-                    iteration: "Added reasoning labels to each filtered notification (e.g., \"Blocked — you typically ignore these while driving\")",
-                    metric: "Trust score improved from 6.2 to 8.7 out of 10"
-                  }
-                ].map((item, i) => (
-                  <div key={i} className="rounded-xl p-5 sm:p-6 border border-white/[0.06] bg-white/[0.02]">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-3">
-                      <span className={`inline-flex self-start px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-                        item.severity === 'Critical' ? 'bg-red-500/10 text-red-400' :
-                        item.severity === 'High' ? 'bg-amber-500/10 text-amber-400' :
-                        'bg-blue-500/10 text-blue-400'
-                      }`}>
-                        {item.severity}
-                      </span>
-                      <h4 className="text-white font-medium">{item.finding}</h4>
-                    </div>
-                    <div className="pl-0 sm:pl-[72px]">
-                      <div className="flex items-start gap-2 mb-2">
-                        <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-slate-400 text-sm">{item.iteration}</p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                        <p className="text-emerald-400 text-sm font-medium">{item.metric}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 11. Impact & Outcomes ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="11" label="Impact & Outcomes" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Measurable results from testing
-              </motion.h2>
-            </div>
-
-            {/* Impact Metrics */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { value: 92, suffix: "%", label: "Task completion rate", detail: "Up from 64% in v1" },
-                { value: 87, suffix: "%", label: "Trust AI decisions", detail: "Would use daily" },
-                { value: 67, suffix: "%", label: "Less notification anxiety", detail: "Post-drive surveys" },
-                { value: 4.6, suffix: "/5", label: "Overall satisfaction", detail: "Across 24 participants" }
-              ].map((metric, i) => (
-                <div key={i} className="rounded-xl p-5 sm:p-6 border border-cyan-500/10 bg-cyan-500/[0.03] text-center">
-                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
-                    {typeof metric.value === 'number' && metric.value % 1 === 0
-                      ? <AnimatedCounter target={metric.value} suffix={metric.suffix} />
-                      : <>{metric.value}{metric.suffix}</>
-                    }
-                  </div>
-                  <p className="text-slate-300 text-sm mb-1">{metric.label}</p>
-                  <p className="text-slate-600 text-xs">{metric.detail}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* Systems Thinking: Edge Cases & Accessibility */}
-            <motion.div variants={fadeInUp} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
-              <h3 className="text-white font-semibold mb-6">Systems Thinking: Edge Cases & Scalability</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  {
-                    icon: AlertTriangle,
-                    title: "Emergency Override",
-                    description: "If a user receives 3+ calls from the same number in 5 minutes, the system automatically escalates — regardless of filter level."
-                  },
-                  {
-                    icon: Globe,
-                    title: "International Driving",
-                    description: "GPS-based driving detection adapts to local speed limits. System accounts for highway vs. city driving patterns."
-                  },
-                  {
-                    icon: Accessibility,
-                    title: "Accessibility",
-                    description: "Voice-first interaction mode for drivers. Large touch targets (48px), high contrast mode, and screen reader support."
-                  },
-                  {
-                    icon: Cpu,
-                    title: "Privacy & On-Device ML",
-                    description: "All behavior analysis happens on-device. No driving data leaves the phone — addressing the #1 user privacy concern from research."
-                  }
-                ].map((edge, i) => (
-                  <div key={i} className="rounded-lg p-4 border border-white/[0.04] bg-white/[0.01]">
-                    <div className="flex items-center gap-3 mb-2">
-                      <edge.icon className="w-4 h-4 text-cyan-400" />
-                      <h4 className="text-white text-sm font-medium">{edge.title}</h4>
-                    </div>
-                    <p className="text-slate-500 text-xs leading-relaxed">{edge.description}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── 12. Reflection ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="space-y-10"
-          >
-            <div>
-              <SectionLabel number="12" label="Reflection" />
-              <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                What I learned
-              </motion.h2>
-            </div>
-
-            <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02]">
-                <h4 className="text-white font-semibold mb-4">Key Takeaways</h4>
-                <div className="space-y-3">
-                  {[
-                    "AI transparency directly correlates with user trust — showing reasoning increased trust scores by 40%",
-                    "Progressive disclosure is essential for complex AI features — don't explain everything upfront",
-                    "The biggest usability win was the simplest: automatic activation removed the #1 failure point of existing solutions"
-                  ].map((lesson, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <CircleDot className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-slate-400 text-sm leading-relaxed">{lesson}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-xl p-6 border border-white/[0.06] bg-white/[0.02]">
-                <h4 className="text-white font-semibold mb-4">What I'd Do Differently</h4>
-                <div className="space-y-3">
-                  {[
-                    "Conduct a diary study over 2+ weeks to capture real driving behavior, not just self-reported data",
-                    "Test with accessibility users earlier — I added voice interaction late, which constrained the information architecture",
-                    "Build a more robust design token system from day 1 to support the dark mode that users requested"
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <ArrowRight className="w-4 h-4 text-slate-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-slate-400 text-sm leading-relaxed">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Next Steps */}
-            <motion.div variants={fadeInUp} className="rounded-xl p-6 border border-cyan-500/10 bg-cyan-500/[0.03]">
-              <h4 className="text-white font-semibold mb-3">If This Were a Real Product — Next Steps</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  "Longitudinal study: Track behavior change over 30+ days to validate if AI recommendations actually reduce phone pickups",
-                  "Passenger mode: Detect when the user is a passenger vs. driver to avoid unnecessary blocking",
-                  "Integration with car infotainment systems for a seamless cross-device experience"
-                ].map((step, i) => (
-                  <p key={i} className="text-slate-400 text-sm leading-relaxed">{step}</p>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── CTA Section ─── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="rounded-2xl p-8 sm:p-12 text-center border border-white/[0.06] bg-white/[0.02] relative overflow-hidden"
-          >
-            {/* Subtle gradient bg */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] via-transparent to-blue-500/[0.03]" />
-
-            <div className="relative z-10">
-              <motion.h2 variants={fadeInUp} className="text-2xl sm:text-3xl font-bold text-white mb-4">
-                Experience the Full Prototype
-              </motion.h2>
-              <motion.p variants={fadeInUp} className="text-slate-400 text-base sm:text-lg mb-8 max-w-2xl mx-auto">
-                Explore the interactive Figma prototype to see SmartDrive's complete user flow in action.
-              </motion.p>
-              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
-                  href="https://www.figma.com/proto/Eyc3kyhBjicVrMpYDZJSDs/Drive-Zen-AI?page-id=0%3A1&node-id=328-57&viewport=-1%2C171%2C1.18&t=Ha1VvUqJziIUjJlm-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=328%3A57"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-slate-900 rounded-full font-semibold hover:shadow-xl hover:shadow-cyan-500/10 hover:scale-105 transition-all duration-300 group text-sm sm:text-base"
-                >
-                  <Smartphone className="w-5 h-5" />
-                  View Interactive Prototype
-                  <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                </a>
-                <Link
-                  to="/"
-                  className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 border border-white/10 text-white rounded-full hover:bg-white/[0.03] transition-all duration-300 text-sm sm:text-base"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Portfolio
-                </Link>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Back to Top Button */}
-      <BackToTopButton />
+/* ── lane-line motif (ties back to the app's horizon) ───────────────────── */
+function LaneLine({ onInk }: { onInk?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-20% 0px" });
+  const reduce = useReducedMotion();
+  return (
+    <div ref={ref} className="relative mx-auto max-w-6xl px-6" style={{ height: 1 }}>
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : undefined}
+        transition={{ duration: 0.9, ease: EASE }}
+        style={{ height: 1, background: onInk ? T.hairlineInk : T.hairline, transformOrigin: "left" }}
+      />
+      {!reduce && (
+        <motion.span
+          initial={{ left: "0%", opacity: 0 }}
+          animate={inView ? { left: "100%", opacity: [0, 1, 0] } : undefined}
+          transition={{ duration: 1.1, ease: EASE, delay: 0.1 }}
+          style={{ position: "absolute", top: -1.5, width: 26, height: 3, borderRadius: 999, background: T.twilight, boxShadow: `0 0 12px ${T.twilight}` }}
+        />
+      )}
     </div>
   );
 }
 
-// ─── Back to Top ───
-function BackToTopButton() {
-  const [isVisible, setIsVisible] = useState(false);
+/* ════════════════════════════════════════════════════════════════════════
+   HERO — noise → signal (the signature)
+   ════════════════════════════════════════════════════════════════════════ */
+const NOISE = [
+  { app: "Slack", line: "5 new in #general", l: 4, t: 8, r: -7 },
+  { app: "Instagram", line: "liked your photo", l: 54, t: 4, r: 6 },
+  { app: "Breaking", line: "Markets dip 2%", l: 30, t: 20, r: -4 },
+  { app: "ShopNow", line: "50% off — tonight only", l: 60, t: 30, r: 8 },
+  { app: "Group chat", line: "😂 you HAVE to see this", l: 2, t: 38, r: 5 },
+  { app: "Gmail", line: "Re: Q3 planning", l: 48, t: 50, r: -6 },
+  { app: "X", line: "Trending now", l: 16, t: 60, r: 7 },
+  { app: "WhatsApp", line: "Weekend plans?", l: 58, t: 64, r: -5 },
+  { app: "Calendar", line: "Standup in 10 min", l: 34, t: 78, r: 4 },
+  { app: "TikTok", line: "New video for you", l: 6, t: 84, r: -8 },
+];
 
+function NoiseToSignal() {
+  const reduce = useReducedMotion();
+  return (
+    <div className="relative w-full" style={{ height: "100%", minHeight: 340 }}>
+      {!reduce &&
+        NOISE.map((n, i) => (
+          <motion.div
+            key={n.app}
+            className="absolute"
+            style={{ left: `${n.l}%`, top: `${n.t}%`, width: 158, rotate: `${n.r}deg` }}
+            initial={{ opacity: 0, y: -8, scale: 0.92 }}
+            animate={{ opacity: [0, 1, 1, 0], y: [0, 0, 0, 380], scale: [0.92, 1, 1, 0.95] }}
+            transition={{ duration: 2.6, times: [0, 0.12, 0.42, 1], ease: "easeIn", delay: 0.1 + i * 0.05 }}
+          >
+            <NoiseCard app={n.app} line={n.line} />
+          </motion.div>
+        ))}
+
+      {/* the survivor */}
+      <div className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: 230 }}>
+        <motion.div
+          initial={reduce ? { opacity: 1 } : { opacity: 0, x: 50, y: -70, scale: 0.96 }}
+          animate={reduce ? { opacity: 1 } : { opacity: [0, 1, 1], x: [50, 50, 0], y: [-70, -70, 0], scale: [0.96, 1, 1.05] }}
+          transition={reduce ? {} : { duration: 2.4, times: [0, 0.32, 1], ease: EASE, delay: 0.2 }}
+          style={{
+            borderRadius: 20,
+            padding: 16,
+            background: `linear-gradient(135deg, ${T.twilight}, #6E78F2)`,
+            boxShadow: `0 24px 60px -18px rgba(75,87,238,0.7)`,
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <span style={{ width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.22)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, fontFamily: BODY }}>M</span>
+            <div className="flex-1">
+              <p style={{ fontFamily: BODY, fontSize: 15, fontWeight: 600, color: "#fff" }}>Mom</p>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: "rgba(255,255,255,0.85)" }}>calling again · second time</p>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>now</span>
+          </div>
+          <div className="flex gap-2" style={{ marginTop: 12 }}>
+            <span style={{ flex: 1, textAlign: "center", padding: "9px", borderRadius: 11, background: T.signal, color: "#fff", fontSize: 13.5, fontWeight: 600, fontFamily: BODY }}>Answer</span>
+            <span style={{ flex: 1, textAlign: "center", padding: "9px", borderRadius: 11, background: "rgba(255,255,255,0.16)", color: "#fff", fontSize: 13.5, fontWeight: 600, fontFamily: BODY }}>Decline</span>
+          </div>
+        </motion.div>
+        {!reduce && (
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.4, duration: 0.5 }}
+            style={{ textAlign: "center", marginTop: 14, fontFamily: MONO, fontSize: 11.5, letterSpacing: "0.06em", color: T.signal }}
+          >
+            ONE THING GETS THROUGH
+          </motion.p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NoiseCard({ app, line }: { app: string; line: string }) {
+  return (
+    <div style={{ borderRadius: 14, padding: "10px 12px", background: "rgba(255,255,255,0.055)", border: `1px solid ${T.hairlineInk}`, backdropFilter: "blur(2px)" }}>
+      <div className="flex items-center gap-1.5" style={{ marginBottom: 3 }}>
+        <span style={{ width: 6, height: 6, borderRadius: 999, background: T.noise, opacity: 0.7 }} />
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: T.mutedInk, letterSpacing: "0.02em" }}>{app}</span>
+      </div>
+      <p style={{ fontFamily: BODY, fontSize: 12.5, color: "rgba(237,239,245,0.78)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{line}</p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PHONE SHELL (reuses the real v2 screens)
+   ════════════════════════════════════════════════════════════════════════ */
+function PhoneShell({ children, heightClass = "h-[560px]" }: { children: ReactNode; heightClass?: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.62);
   useEffect(() => {
-    const toggleVisibility = () => setIsVisible(window.scrollY > 500);
-    window.addEventListener('scroll', toggleVisibility);
-    return () => window.removeEventListener('scroll', toggleVisibility);
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w && h) setScale(Math.min(w / 390, h / 844));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div className={`relative mx-auto ${heightClass}`} style={{ aspectRatio: "390 / 844", borderRadius: 42, padding: 6, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 80px -24px rgba(0,0,0,0.55)" }}>
+      <div ref={wrapRef} className="relative w-full h-full overflow-hidden" style={{ borderRadius: 37, background: T.paper }}>
+        <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})` }}>
+          <div className="absolute left-1/2 -translate-x-1/2 z-40 rounded-full" style={{ top: 13, width: 112, height: 31, background: "#05070B" }} />
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const NOOP = () => {};
+function ScreenByKey({ k, reduce }: { k: string; reduce: boolean | null }) {
+  if (k === "hub") return <Hub mode="standby" onToggle={NOOP} onOpenDriving={NOOP} push={NOOP} reduce={reduce} />;
+  if (k === "through") return <ThroughScreen onBack={NOOP} push={NOOP} reduce={reduce} />;
+  if (k === "driving") return <DrivingOverlay open onEnd={NOOP} onClosed={NOOP} reduce={reduce} />;
+  if (k === "learning") return <LearningScreen onBack={NOOP} reduce={reduce} />;
+  return null;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   DATA
+   ════════════════════════════════════════════════════════════════════════ */
+const MATRIX_ROWS = [
+  {
+    k: "How it picks what's urgent",
+    ios: 'You hand-pick allowed people; senders type "urgent" to break through',
+    android: "Blanket silence or manual rules",
+    sd: "Learns your real habits over 48h, then adapts",
+  },
+  {
+    k: "Apps allowed through",
+    ios: "People only — you can't allow apps",
+    android: "Limited",
+    sd: "Navigation, repeat callers, emergencies, learned favorites",
+  },
+  {
+    k: "Setup",
+    ios: "Manual lists and toggles",
+    android: "Manual",
+    sd: "Sets itself up by watching two days of you",
+  },
+  {
+    k: "Does it explain itself?",
+    ios: "Apple Intelligence can auto-allow — but you can't see why",
+    android: "Opaque",
+    sd: 'Shows its reasoning, fully editable: "Mom — you always answer"',
+  },
+  {
+    k: "Real-world adoption",
+    ios: "Shipped since iOS 11 · ~1 in 5 turn it on",
+    android: "Low",
+    sd: "Designed to earn trust so people leave it on",
+  },
+];
+
+const UNIQUE = [
+  { icon: Sparkles, title: "It learns you. You don't configure it.", body: "A 48-hour window watches what you actually answer vs. swipe away. No setup grind — the reason people abandon the existing tools." },
+  { icon: Eye, title: "It shows its work.", body: 'Every rule is visible and one tap to change: "Mom — you always answer." Black-box AI is AI you won\'t trust with your kid\'s phone call.' },
+  { icon: PhoneCall, title: "Urgency logic, not hacks.", body: 'If it\'s real, people call twice. SmartDrive treats a repeat call as urgent automatically — no "text the word URGENT" gymnastics.' },
+  { icon: SlidersHorizontal, title: "A setting, not another app.", body: "It lives in Settings. The existing tools don't fail on features — they fail on adoption. The win is being there by default, not a download you forget." },
+];
+
+const DESIGN_STEPS = [
+  { screen: "hub", title: "The whole screen tells you what it's doing.", body: "Folded the on/off switch into a living status hero — Standby, Learning, Driving — instead of a dead toggle. The feature should narrate, not just sit there." },
+  { screen: "through", title: "The AI argues its case.", body: "Learned rules are shown as plain-language reasoning you can keep or kill. That one pattern is how a trust problem becomes a UI." },
+  { screen: "driving", title: "The driving screen breaks the rules on purpose.", body: "Everything else is bright and white; the active driving view goes dark and low-glare — because a white screen is dangerous to glance at behind the wheel. Safety in the pixels, not just the logic." },
+  { screen: "learning", title: "I kept it boring where it counts.", body: "No flashy standalone app. It's a settings panel, because the real failure was adoption — and you don't fix adoption by adding a download." },
+];
+
+/* ════════════════════════════════════════════════════════════════════════
+   PAGE
+   ════════════════════════════════════════════════════════════════════════ */
+export function SmartDrivePage() {
+  const reduce = useReducedMotion();
+  const [protoOpen, setProtoOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  /* sticky-phone screen swap (desktop) */
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const idx = Number((e.target as HTMLElement).dataset.step);
+            if (!Number.isNaN(idx)) setActiveStep(idx);
+          }
+        });
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 }
+    );
+    stepRefs.current.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
   }, []);
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 p-3 sm:p-4 bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-full hover:bg-white/15 transition-all duration-300"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 rotate-90" />
-        </motion.button>
-      )}
-    </AnimatePresence>
+    <div style={{ background: T.ink, fontFamily: BODY }}>
+      {/* minimal back nav */}
+      <Link
+        to="/"
+        className="fixed top-5 left-5 z-50 inline-flex items-center gap-2 rounded-full transition-colors"
+        style={{ padding: "8px 14px", background: "rgba(14,20,34,0.6)", backdropFilter: "blur(10px)", border: `1px solid ${T.hairlineInk}`, color: T.onInk, fontSize: 13, fontWeight: 500 }}
+      >
+        <ArrowLeft size={15} /> Back
+      </Link>
+
+      {/* ════ 1 · HERO ════ */}
+      <section className="relative min-h-[100svh] flex flex-col overflow-hidden" style={{ background: T.ink }}>
+        {/* ambient */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(120% 80% at 80% 10%, rgba(75,87,238,0.16), transparent 60%)` }} />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.05]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }} />
+
+        {/* top bar */}
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-20 sm:pt-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span style={{ width: 9, height: 9, borderRadius: 999, background: T.twilight, boxShadow: `0 0 10px ${T.twilight}` }} />
+            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: T.onInk }}>SmartDrive AI</span>
+            <span className="hidden sm:inline" style={{ fontFamily: MONO, fontSize: 11.5, color: T.mutedInk }}>· AI distraction filter for drivers</span>
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 11.5, color: T.mutedInk }}>~4 min read</span>
+        </div>
+
+        {/* content */}
+        <div className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.05fr_0.95fr] gap-8 items-center py-10">
+          {/* left */}
+          <div className="max-w-xl">
+            <Reveal>
+              <Eyebrow onInk>CONCEPT · PRODUCT DESIGN, END-TO-END · DESIGNED + BUILT WITH AI</Eyebrow>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <h1 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(38px, 6.4vw, 80px)", lineHeight: 0.98, letterSpacing: "-0.03em", color: T.onInk, marginTop: 18 }}>
+                Your phone has a "shut up, I'm driving" switch.{" "}
+                <span style={{ color: T.mutedInk }}>Almost nobody turns it on.</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={0.12}>
+              <p style={{ fontFamily: BODY, fontSize: "clamp(16px, 2vw, 19px)", lineHeight: 1.6, color: T.mutedInk, marginTop: 22, maxWidth: 520 }}>
+                Because blanket silence is scary — what if it's your kid calling? SmartDrive AI is a distraction filter that learns who actually matters to you, so silencing the rest finally feels safe.
+              </p>
+            </Reveal>
+            <Reveal delay={0.18}>
+              <div className="flex flex-wrap gap-2" style={{ marginTop: 24 }}>
+                {["Solo", "0 → 1", "Designed in Figma", "Shipped in Claude Code"].map((c) => (
+                  <span key={c} style={{ fontFamily: MONO, fontSize: 12, color: T.onInk, padding: "6px 12px", borderRadius: 999, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.hairlineInk}` }}>
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </Reveal>
+            <Reveal delay={0.24}>
+              <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 28 }}>
+                <button
+                  onClick={() => setProtoOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
+                  style={{ padding: "13px 22px", background: T.twilight, color: "#fff", fontSize: 15, fontWeight: 600, boxShadow: `0 14px 32px -10px rgba(75,87,238,0.6)` }}
+                >
+                  <Play size={16} fill="#fff" /> Open the live prototype
+                </button>
+                <a href="#problem" className="inline-flex items-center gap-1.5" style={{ color: T.mutedInk, fontSize: 14, fontWeight: 500 }}>
+                  See how <ChevronDown size={15} />
+                </a>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* right — noise→signal */}
+          <div className="relative w-full" style={{ minHeight: 360, height: "min(58vh, 520px)" }}>
+            <NoiseToSignal />
+          </div>
+        </div>
+      </section>
+
+      {/* ════ 2 · THE PROBLEM ════ */}
+      <section id="problem" className="relative" style={{ background: T.ink, paddingTop: 0, paddingBottom: 40 }}>
+        {/* ink → paper wash */}
+        <div className="w-full max-w-6xl mx-auto px-6 pb-20">
+          <Reveal>
+            <Eyebrow onInk>The problem</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(26px, 3.6vw, 44px)", lineHeight: 1.08, letterSpacing: "-0.02em", color: T.onInk, marginTop: 14, maxWidth: 880 }}>
+              Look at a text for five seconds at 55mph and you've driven the length of a football field{" "}
+              <span style={{ color: T.noise }}>blind.</span>
+            </h2>
+          </Reveal>
+
+          <div className="grid sm:grid-cols-3 gap-4" style={{ marginTop: 40 }}>
+            {[
+              { num: <CountUp to={3208} />, label: "people killed in U.S. crashes involving a distracted driver in 2024", src: "NHTSA" },
+              { num: <CountUp to={58} suffix="%" />, label: "of trips where drivers touched their phone", src: "Cambridge Mobile Telematics" },
+              { num: "~1 in 5", label: "iPhone owners who actually turn on Do Not Disturb While Driving", src: "IIHS" },
+            ].map((s, i) => (
+              <Reveal key={i} delay={0.1 + i * 0.08}>
+                <div style={{ borderRadius: 18, padding: 22, background: "rgba(255,255,255,0.035)", border: `1px solid ${T.hairlineInk}`, height: "100%" }}>
+                  <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: "clamp(34px, 5vw, 46px)", color: i === 2 ? T.mutedInk : T.onInk, letterSpacing: "-0.02em" }}>{s.num}</div>
+                  <p style={{ fontFamily: BODY, fontSize: 14.5, lineHeight: 1.5, color: T.mutedInk, marginTop: 10 }}>{s.label}</p>
+                  <p style={{ fontFamily: MONO, fontSize: 11, color: "#5A6376", marginTop: 12 }}>{s.src}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.1}>
+            <div style={{ marginTop: 36, borderLeft: `2px solid ${T.twilight}`, paddingLeft: 20 }}>
+              <p style={{ fontFamily: BODY, fontSize: "clamp(17px, 2.2vw, 21px)", lineHeight: 1.55, color: T.onInk, maxWidth: 760 }}>
+                The tech to fix this already ships on every phone. The problem isn't the feature. It's that people don't trust it enough to leave it on.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════ 3 · THE INSIGHT ════ */}
+      <section style={{ background: T.paper }}>
+        <div className="w-full max-w-5xl mx-auto px-6 py-24 md:py-32">
+          <Reveal>
+            <Eyebrow>The insight</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(26px, 3.6vw, 44px)", lineHeight: 1.1, letterSpacing: "-0.02em", color: T.text, marginTop: 14, maxWidth: 820 }}>
+              Nobody keeps Do Not Disturb on, because "silence everything" includes the one thing you can't miss.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p style={{ fontFamily: BODY, fontSize: 18, lineHeight: 1.65, color: T.muted, marginTop: 24, maxWidth: 680 }}>
+              I kept coming back to one fear: <em style={{ color: T.text, fontStyle: "italic" }}>what if it's important?</em> That single worry is why people leave notifications screaming the whole drive. So the real design problem was never "how do we block stuff." It was "how do we make silence trustworthy." Solve trust, and people leave it on. Leave it on, and it actually saves lives.
+            </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <p style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(28px, 4.4vw, 52px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: T.text, marginTop: 48, maxWidth: 760 }}>
+              This was never a blocking problem. <span style={{ color: T.twilight }}>It was a trust problem.</span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════ 4 · COMPETITOR TEARDOWN ════ */}
+      <section style={{ background: T.ink }}>
+        <div className="w-full max-w-6xl mx-auto px-6 py-24 md:py-32">
+          <Reveal>
+            <Eyebrow onInk>What's already out there</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(26px, 3.6vw, 44px)", lineHeight: 1.1, letterSpacing: "-0.02em", color: T.onInk, marginTop: 14, maxWidth: 820 }}>
+              The pieces exist. They're either too blunt or too quiet about what they're doing.
+            </h2>
+          </Reveal>
+
+          {/* desktop matrix */}
+          <div className="hidden md:block" style={{ marginTop: 40 }}>
+            <div className="grid items-stretch" style={{ gridTemplateColumns: "1.1fr 1fr 1fr 1.25fr", gap: 1, background: T.hairlineInk, borderRadius: 18, overflow: "hidden", border: `1px solid ${T.hairlineInk}` }}>
+              {/* header row */}
+              {["", "iOS Driving Focus", "Android Driving Mode", "SmartDrive AI"].map((h, i) => (
+                <div key={i} style={{ background: i === 3 ? "rgba(75,87,238,0.16)" : T.ink, padding: "16px 18px" }}>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: i === 3 ? 700 : 500, letterSpacing: "0.04em", color: i === 3 ? "#A9B0FF" : T.mutedInk, textTransform: i === 0 ? "uppercase" : "none" }}>
+                    {i === 0 ? "" : h}
+                  </span>
+                </div>
+              ))}
+              {/* rows */}
+              {MATRIX_ROWS.map((row, ri) =>
+                [row.k, row.ios, row.android, row.sd].map((cell, ci) => (
+                  <Reveal key={`${ri}-${ci}`} delay={ri * 0.06}>
+                    <div style={{ background: ci === 3 ? "rgba(75,87,238,0.1)" : T.ink, padding: "16px 18px", height: "100%" }}>
+                      {ci === 0 ? (
+                        <span style={{ fontFamily: MONO, fontSize: 12, color: T.mutedInk, letterSpacing: "0.02em" }}>{cell}</span>
+                      ) : (
+                        <span style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: ci === 3 ? T.onInk : T.mutedInk, fontWeight: ci === 3 ? 500 : 400 }}>{cell}</span>
+                      )}
+                    </div>
+                  </Reveal>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* mobile stacked */}
+          <div className="md:hidden flex flex-col gap-3" style={{ marginTop: 32 }}>
+            {MATRIX_ROWS.map((row, ri) => (
+              <Reveal key={ri} delay={ri * 0.05}>
+                <div style={{ borderRadius: 16, border: `1px solid ${T.hairlineInk}`, overflow: "hidden" }}>
+                  <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.03)" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 11.5, color: T.mutedInk, letterSpacing: "0.03em" }}>{row.k}</span>
+                  </div>
+                  {[
+                    { lbl: "iOS", v: row.ios, hot: false },
+                    { lbl: "Android", v: row.android, hot: false },
+                    { lbl: "SmartDrive", v: row.sd, hot: true },
+                  ].map((c, ci) => (
+                    <div key={ci} style={{ padding: "12px 16px", borderTop: `1px solid ${T.hairlineInk}`, background: c.hot ? "rgba(75,87,238,0.1)" : "transparent" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10.5, color: c.hot ? "#A9B0FF" : "#5A6376", letterSpacing: "0.04em" }}>{c.lbl}</span>
+                      <p style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: c.hot ? T.onInk : T.mutedInk, marginTop: 4 }}>{c.v}</p>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.1}>
+            <p style={{ fontFamily: BODY, fontSize: 15.5, lineHeight: 1.6, color: T.mutedInk, marginTop: 28, maxWidth: 760 }}>
+              Apple's newest version does use AI to decide what breaks through. Good — but it's a black box. You can't see what it learned or fix it when it's wrong.{" "}
+              <span style={{ color: T.onInk }}>A safety feature you can't trust is a safety feature you turn off.</span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════ 5 · WHAT'S UNIQUE ════ */}
+      <section style={{ background: T.paper }}>
+        <div className="w-full max-w-6xl mx-auto px-6 py-24 md:py-32">
+          <Reveal>
+            <Eyebrow>Why this one's different</Eyebrow>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 gap-4" style={{ marginTop: 28 }}>
+            {UNIQUE.map((u, i) => {
+              const Icon = u.icon;
+              return (
+                <Reveal key={i} delay={i * 0.07}>
+                  <div style={{ borderRadius: 20, padding: 26, background: T.paper, border: `1px solid ${T.hairline}`, height: "100%", boxShadow: "0 1px 3px rgba(21,23,30,0.03)" }}>
+                    <span style={{ display: "inline-flex", width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center", background: "rgba(75,87,238,0.1)", color: T.twilight }}>
+                      <Icon size={20} strokeWidth={1.9} />
+                    </span>
+                    <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 21, lineHeight: 1.2, letterSpacing: "-0.01em", color: T.text, marginTop: 18 }}>{u.title}</h3>
+                    <p style={{ fontFamily: BODY, fontSize: 15.5, lineHeight: 1.6, color: T.muted, marginTop: 10 }}>{u.body}</p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ════ 6 · THE DESIGN (sticky phone) ════ */}
+      <section style={{ background: T.paper }}>
+        <div className="w-full max-w-6xl mx-auto px-6 pt-8 md:pt-12">
+          <Reveal>
+            <Eyebrow>The design</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(26px, 3.6vw, 44px)", lineHeight: 1.1, letterSpacing: "-0.02em", color: T.text, marginTop: 14, maxWidth: 720 }}>
+              Make an algorithm feel safe enough to hand your attention to.
+            </h2>
+          </Reveal>
+        </div>
+
+        {/* desktop: sticky phone + scrolling decisions */}
+        <div className="hidden lg:block w-full max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-[1fr_0.85fr] gap-16 items-start">
+            <div>
+              {DESIGN_STEPS.map((s, i) => (
+                <div
+                  key={i}
+                  ref={(el) => { stepRefs.current[i] = el; }}
+                  data-step={i}
+                  className="flex flex-col justify-center"
+                  style={{ minHeight: "78vh" }}
+                >
+                  <span style={{ fontFamily: MONO, fontSize: 13, color: T.twilight }}>{String(i + 1).padStart(2, "0")}</span>
+                  <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(24px, 2.6vw, 32px)", lineHeight: 1.15, letterSpacing: "-0.02em", color: T.text, marginTop: 12, maxWidth: 460 }}>{s.title}</h3>
+                  <p style={{ fontFamily: BODY, fontSize: 17, lineHeight: 1.65, color: T.muted, marginTop: 14, maxWidth: 440 }}>{s.body}</p>
+                </div>
+              ))}
+            </div>
+            {/* sticky phone */}
+            <div className="sticky self-start" style={{ top: "10vh", height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <PhoneShell heightClass="h-[620px]">
+                <ScreenByKey k={DESIGN_STEPS[activeStep].screen} reduce={reduce} />
+              </PhoneShell>
+            </div>
+          </div>
+        </div>
+
+        {/* mobile: vertical sequence (phone above caption) */}
+        <div className="lg:hidden w-full max-w-md mx-auto px-6 pb-24" style={{ paddingTop: 32 }}>
+          {DESIGN_STEPS.map((s, i) => (
+            <Reveal key={i} delay={0}>
+              <div style={{ marginBottom: 56 }}>
+                <PhoneShell heightClass="h-[520px]">
+                  <ScreenByKey k={s.screen} reduce={reduce} />
+                </PhoneShell>
+                <div style={{ marginTop: 22 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: T.twilight }}>{String(i + 1).padStart(2, "0")}</span>
+                  <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1.18, letterSpacing: "-0.01em", color: T.text, marginTop: 8 }}>{s.title}</h3>
+                  <p style={{ fontFamily: BODY, fontSize: 16, lineHeight: 1.6, color: T.muted, marginTop: 10 }}>{s.body}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <div className="w-full max-w-6xl mx-auto px-6 pb-24 flex justify-center">
+          <button
+            onClick={() => setProtoOpen(true)}
+            className="inline-flex items-center gap-2 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
+            style={{ padding: "13px 24px", background: T.text, color: "#fff", fontSize: 15, fontWeight: 600 }}
+          >
+            <Play size={15} fill="#fff" /> Tap through the real thing
+          </button>
+        </div>
+      </section>
+
+      <LaneLine />
+
+      {/* ════ 7 · BUILT WITH AI ════ */}
+      <section style={{ background: T.ink }}>
+        <div className="w-full max-w-5xl mx-auto px-6 py-24 md:py-32">
+          <Reveal>
+            <Eyebrow onInk>How I built it</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(32px, 5vw, 60px)", lineHeight: 1.02, letterSpacing: "-0.03em", color: T.onInk, marginTop: 14 }}>
+              I didn't mock this up. <span style={{ color: T.twilight }}>I shipped it.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p style={{ fontFamily: BODY, fontSize: 18, lineHeight: 1.65, color: T.mutedInk, marginTop: 24, maxWidth: 680 }}>
+              I'm a designer, not an engineer — but I took this from a blank page to a working prototype solo, using AI as my build team. Designed the system, then wrote production React with Claude Code and deployed it live.
+            </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <div className="flex flex-wrap gap-2" style={{ marginTop: 22 }}>
+              {["Claude Code", "Figma", "Google Stitch", "Perplexity"].map((t) => (
+                <span key={t} style={{ fontFamily: MONO, fontSize: 12, color: T.onInk, padding: "6px 12px", borderRadius: 999, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.hairlineInk}` }}>{t}</span>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <p style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.6, color: "#6B7488", marginTop: 24, maxWidth: 600 }}>
+              Is it a finished product? No. It's a sharp prototype that proves the concept holds up in your hand, not just on a slide.
+            </p>
+          </Reveal>
+          <Reveal delay={0.25}>
+            <button
+              onClick={() => setProtoOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              style={{ marginTop: 28, padding: "13px 22px", background: T.twilight, color: "#fff", fontSize: 15, fontWeight: 600, boxShadow: `0 14px 32px -10px rgba(75,87,238,0.6)` }}
+            >
+              <Play size={16} fill="#fff" /> Open the live prototype
+            </button>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════ 8 · WHAT I'D TEST NEXT ════ */}
+      <section style={{ background: T.paper }}>
+        <div className="w-full max-w-5xl mx-auto px-6 py-24 md:py-32">
+          <Reveal>
+            <Eyebrow>What I'd test next</Eyebrow>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <p style={{ fontFamily: BODY, fontSize: "clamp(18px, 2.4vw, 22px)", lineHeight: 1.6, color: T.text, marginTop: 18, maxWidth: 760 }}>
+              It's a concept, so I'm not going to wave fake numbers at you. Here's what I'd actually want to know: does 48 hours capture enough to be right more than it's wrong? How often does it let the wrong thing through — or worse, silence the right one? Trust lives or dies on that false-positive rate, so that's the first thing I'd put in front of real drivers.
+            </p>
+          </Reveal>
+          <Reveal delay={0.14}>
+            <p style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(22px, 3vw, 34px)", lineHeight: 1.15, letterSpacing: "-0.02em", color: T.text, marginTop: 40, maxWidth: 720 }}>
+              The hardest part wasn't building the filter. It was designing something people would trust with{" "}
+              <span style={{ color: T.twilight }}>the call that matters.</span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════ 9 · FOOTER ════ */}
+      <section style={{ background: T.ink }}>
+        <div className="w-full max-w-5xl mx-auto px-6 py-20">
+          <Reveal>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(24px, 3.4vw, 38px)", lineHeight: 1.1, letterSpacing: "-0.02em", color: T.onInk, maxWidth: 620 }}>
+              Jay Harwani — product designer.{" "}
+              <span style={{ color: T.mutedInk }}>I take ideas to working products.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="flex flex-wrap gap-3" style={{ marginTop: 26 }}>
+              {[
+                { label: "Portfolio", href: "https://jayharwani.com", icon: Globe },
+                { label: "Email", href: "mailto:harwanijay9498@gmail.com", icon: Mail },
+                { label: "LinkedIn", href: "https://www.linkedin.com/in/jay-harwani/", icon: Linkedin },
+              ].map((l) => {
+                const Icon = l.icon;
+                return (
+                  <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full transition-colors hover:bg-white/[0.04]" style={{ padding: "10px 18px", border: `1px solid ${T.hairlineInk}`, color: T.onInk, fontSize: 14, fontWeight: 500 }}>
+                    <Icon size={15} /> {l.label} <ArrowUpRight size={14} style={{ opacity: 0.5 }} />
+                  </a>
+                );
+              })}
+            </div>
+          </Reveal>
+          <Reveal delay={0.14}>
+            <p style={{ fontFamily: MONO, fontSize: 11.5, color: "#5A6376", marginTop: 40, lineHeight: 1.6 }}>
+              Self-initiated concept project. All stats sourced (NHTSA, IIHS, Cambridge Mobile Telematics).
+            </p>
+          </Reveal>
+          <Reveal delay={0.18}>
+            <Link to="/" className="inline-flex items-center gap-2" style={{ marginTop: 20, color: T.mutedInk, fontSize: 14 }}>
+              <ArrowLeft size={15} /> Back to portfolio
+            </Link>
+          </Reveal>
+        </div>
+      </section>
+
+      <SmartDrivePrototype open={protoOpen} onClose={() => setProtoOpen(false)} />
+    </div>
   );
 }
