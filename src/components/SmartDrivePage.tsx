@@ -220,16 +220,16 @@ function NoiseCard({ app, line }: { app: string; line: string }) {
 /* ════════════════════════════════════════════════════════════════════════
    PHONE SHELL (reuses the real v2 screens)
    ════════════════════════════════════════════════════════════════════════ */
-function PhoneShell({ children, heightClass = "h-[560px]" }: { children: ReactNode; heightClass?: string }) {
+function PhoneShell({ children, heightPx = 560 }: { children: ReactNode; heightPx?: number }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.62);
+  const widthPx = Math.round((heightPx * 390) / 844);
+  const [scale, setScale] = useState(widthPx / 390);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const update = () => {
       const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (w && h) setScale(Math.min(w / 390, h / 844));
+      if (w) setScale(w / 390); // explicit width → reliable, fills exactly
     };
     update();
     const ro = new ResizeObserver(update);
@@ -242,8 +242,8 @@ function PhoneShell({ children, heightClass = "h-[560px]" }: { children: ReactNo
   }, []);
   return (
     <div className="relative mx-auto inline-block" style={{ borderRadius: 42, padding: 6, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 80px -24px rgba(0,0,0,0.55)" }}>
-      {/* aspectRatio on the SCREEN (exactly 390:844) so the scaled layer fills it perfectly */}
-      <div ref={wrapRef} className={`relative overflow-hidden ${heightClass}`} style={{ aspectRatio: "390 / 844", borderRadius: 37, background: T.paper }}>
+      {/* explicit pixel width + height (no aspect-ratio/flex ambiguity) so the scaled layer always fits */}
+      <div ref={wrapRef} className="relative overflow-hidden" style={{ width: widthPx, height: heightPx, borderRadius: 37, background: T.paper }}>
         <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})` }}>
           <div className="absolute left-1/2 -translate-x-1/2 z-40 rounded-full" style={{ top: 13, width: 112, height: 31, background: "#05070B" }} />
           {children}
@@ -609,7 +609,7 @@ export function SmartDrivePage() {
             </div>
             {/* sticky phone */}
             <div className="sticky self-start" style={{ top: "10vh", height: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <PhoneShell heightClass="h-[620px]">
+              <PhoneShell heightPx={620}>
                 <ScreenByKey k={DESIGN_STEPS[activeStep].screen} reduce={reduce} />
               </PhoneShell>
             </div>
@@ -621,7 +621,7 @@ export function SmartDrivePage() {
           {DESIGN_STEPS.map((s, i) => (
             <Reveal key={i} delay={0}>
               <div style={{ marginBottom: 56 }}>
-                <PhoneShell heightClass="h-[520px]">
+                <PhoneShell heightPx={520}>
                   <ScreenByKey k={s.screen} reduce={reduce} />
                 </PhoneShell>
                 <div style={{ marginTop: 22 }}>

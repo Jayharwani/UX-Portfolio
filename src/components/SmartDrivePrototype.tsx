@@ -940,6 +940,7 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
   const [playing, setPlaying] = useState(false);
   const screenWrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.78);
+  const [measured, setMeasured] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -975,12 +976,14 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
     if (!el) return;
     const update = () => {
       const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (w && h) setScale(Math.min(w / 390, h / 844));
+      if (w) {
+        setScale(w / 390); // screen has explicit width → reliable; fills the screen exactly, no clipping
+        setMeasured(true);
+      }
     };
     update();
     const raf = requestAnimationFrame(update);
-    const t = window.setTimeout(update, 280);
+    const t = window.setTimeout(update, 120);
     const ro = new ResizeObserver(update);
     ro.observe(el);
     window.addEventListener("resize", update);
@@ -1128,13 +1131,17 @@ export function SmartDrivePrototype({ open, onClose }: { open: boolean; onClose:
           animate={{ scale: 1, opacity: 1 }}
           transition={{ ...SPRING.soft, delay: 0.05 }}
           className="relative"
-          style={{ flexShrink: 0, height: "100%", maxHeight: 660, borderRadius: 46, padding: 7, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 90px -20px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)" }}
+          style={{ flexShrink: 0, borderRadius: 46, padding: 7, background: "linear-gradient(160deg, #2A2E38, #0B0D12)", boxShadow: "0 40px 90px -20px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)" }}
         >
-          {/* Device fills the available flex height (capped), so it never overflows the chrome on short
-              viewports. aspectRatio on the SCREEN (exactly 390:844) → scaled layer fills it, no clipping/gaps. */}
-          <div ref={screenWrapRef} className="relative overflow-hidden" style={{ height: "100%", aspectRatio: "390 / 844", borderRadius: 40, background: C.canvas }}>
+          {/* Explicit pixel width AND height (no flex-fill, no aspect-ratio) so clientWidth is dead-reliable
+              and the scale never stays at its default → no clipping. The calc keeps device + chrome in any viewport. */}
+          <div
+            ref={screenWrapRef}
+            className="relative overflow-hidden"
+            style={{ height: "min(640px, calc(100dvh - 280px))", width: "calc(min(640px, calc(100dvh - 280px)) * 390 / 844)", borderRadius: 40, background: C.canvas }}
+          >
             {/* logical 390×844 layer, scaled to fill the screen so content matches a real phone */}
-            <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})` }}>
+            <div style={{ position: "absolute", top: 0, left: 0, width: 390, height: 844, transformOrigin: "top left", transform: `scale(${scale})`, visibility: measured ? "visible" : "hidden" }}>
             <div className="absolute left-1/2 -translate-x-1/2 z-40 rounded-full" style={{ top: 13, width: 112, height: 31, background: "#05070B" }} />
 
             <Hub mode={mode} onToggle={handleToggle} onOpenDriving={openDriving} push={push} reduce={reduce} />
