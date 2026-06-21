@@ -20,7 +20,7 @@ const buildArtifacts = [
   "src/components/CaseStudies.tsx",
   "src/components/AboutPage.tsx",
   "src/components/ApproachStrip.tsx",
-  "src/components/EnhancedSmartDriveCard.tsx",
+  "src/components/HeadroomCard.tsx",
   "src/components/ChronoWeaveThumbnail.tsx",
   "src/components/Footer.tsx",
   "src/components/HomePage.tsx",

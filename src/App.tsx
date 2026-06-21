@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { HomePage } from "./components/HomePage";
-import { SmartDrivePage } from "./components/SmartDrivePage";
 import { BumperCasePage } from "./components/BumperCasePage";
 import { ChronoWeavePage } from "./components/ChronoWeavePage";
 import { HeadroomPage } from "./components/HeadroomPage";
@@ -15,7 +14,6 @@ export default function App() {
       <div className="min-h-screen antialiased" style={{ backgroundColor: '#FAFAF7' }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/smartdrive" element={<SmartDrivePage />} />
           <Route path="/bumper" element={<BumperCasePage />} />
           <Route path="/chronoweave" element={<ChronoWeavePage />} />
           <Route path="/headroom" element={<HeadroomPage />} />
