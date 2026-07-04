@@ -18,7 +18,7 @@ import userPhoto from "../assets/hero-portrait.jpeg";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
-const SkylineBackdrop = lazy(() => import("./home/SkylineBackdrop"));
+const UXMotionBackdrop = lazy(() => import("./home/UXMotionBackdrop"));
 
 /* ──────────────────────────────────────────────────────────────────────────
    Homepage. Cool slate, techy, calm, rich. Motion is the personality.
@@ -1142,22 +1142,13 @@ function About() {
 function Contact() {
   const reduce = useReducedMotion();
   const [copied, setCopied] = useState(false);
-  const [showSky, setShowSky] = useState(false);
-  const [videoOk, setVideoOk] = useState(true);
-  const [wide, setWide] = useState(false);
+  const [showBg, setShowBg] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { once: true, margin: "20% 0px" });
 
   useEffect(() => {
-    if (inView) setShowSky(true);
+    if (inView) setShowBg(true);
   }, [inView]);
-  useEffect(() => {
-    setWide(window.matchMedia("(min-width: 768px)").matches);
-  }, []);
-
-  /* real skyline video on desktop; code-built skyline for mobile data,
-     reduced motion, or if the file fails to load */
-  const useVideo = wide && !reduce && videoOk;
 
   const copyEmail = async () => {
     let ok = false;
@@ -1199,34 +1190,17 @@ function Contact() {
       className="relative overflow-hidden"
       style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
     >
-      {/* real Manhattan night skyline, cool-graded and dimmed under the content */}
+      {/* quiet micro-interaction ballet behind the content */}
       <div className="absolute inset-0" aria-hidden="true">
-        {showSky &&
-          (useVideo ? (
-            <video
-              className="absolute inset-0 w-full h-full"
-              style={{ objectFit: "cover", filter: "brightness(0.52) saturate(0.72) contrast(1.06)" }}
-              src="/nyc-skyline.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              onError={() => setVideoOk(false)}
-            />
-          ) : (
-            <Suspense fallback={null}>
-              <SkylineBackdrop />
-            </Suspense>
-          ))}
-        {/* cool tint so the footage sits in the slate palette */}
-        {useVideo && showSky && (
-          <div className="absolute inset-0" style={{ background: "rgba(13,18,32,0.32)", mixBlendMode: "multiply" }} />
+        {showBg && (
+          <Suspense fallback={null}>
+            <UXMotionBackdrop />
+          </Suspense>
         )}
-        {/* dim + readability wash */}
+        {/* readability wash over the left, where the content sits */}
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, rgba(13,18,32,0.9) 0%, rgba(13,18,32,0.52) 45%, rgba(13,18,32,0.14) 100%)" }}
+          style={{ background: "linear-gradient(100deg, rgba(13,18,32,0.85) 0%, rgba(13,18,32,0.45) 46%, rgba(13,18,32,0) 78%)" }}
         />
       </div>
 
@@ -1324,15 +1298,15 @@ function Contact() {
           </div>
         </Reveal>
 
-        {/* skyline caption */}
+        {/* backdrop caption */}
         <div className="absolute" style={{ right: 24, bottom: 18 }}>
           <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.12em", color: V.text3 }}>
             <motion.span
-              style={{ width: 5, height: 5, borderRadius: 999, background: "#F0544F" }}
-              animate={reduce ? {} : { opacity: [0.9, 0.2, 0.9] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              style={{ width: 5, height: 5, borderRadius: 999, background: V.accent }}
+              animate={reduce ? {} : { opacity: [0.9, 0.25, 0.9] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             />
-            NEW YORK CITY · LIVE
+            MICRO-INTERACTIONS · LIVE
           </span>
         </div>
       </div>
