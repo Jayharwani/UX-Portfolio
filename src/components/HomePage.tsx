@@ -326,31 +326,6 @@ function Hero() {
             <MagneticButton onClick={() => scrollToId("work")}>
               See the work <ArrowRight size={16} weight="bold" />
             </MagneticButton>
-
-            {/* status chip */}
-            <span
-              className="inline-flex items-center gap-2"
-              style={{
-                fontFamily: V.mono,
-                fontSize: 12,
-                color: V.text2,
-                padding: "9px 14px",
-                borderRadius: 999,
-                border: `1px solid ${V.border}`,
-                background: V.surface,
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 999,
-                  background: V.accent,
-                  boxShadow: "0 0 8px rgba(91,140,255,0.8)",
-                }}
-              />
-              Open to product design roles. NYC. July 2026.
-            </span>
           </motion.div>
         </div>
       </div>
@@ -1017,7 +992,7 @@ function FlyerTrigger() {
           onClick={() => setOpen(true)}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          aria-label="Open the hidden mini game"
+          aria-label="Open the Iron Man mini game"
           className="relative flex items-center justify-center"
           animate={reduce ? {} : { y: [0, -3, 0] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
@@ -1033,13 +1008,21 @@ function FlyerTrigger() {
             boxShadow: "0 12px 30px -10px rgba(0,0,0,0.55)",
           }}
         >
-          {/* original stylized flyer mark: slate helmet, gold visor, core */}
-          <svg width="26" height="30" viewBox="0 0 26 30" fill="none" aria-hidden="true">
-            <rect x="5" y="1.5" width="16" height="13" rx="5" fill="#2E3950" stroke="#3D4A66" strokeWidth="1" />
-            <rect x="8" y="6.5" width="10" height="2.6" rx="1.3" fill="#D9A441" />
-            <rect x="6.5" y="16" width="13" height="12" rx="4.5" fill="#232C3D" stroke="#2E3950" strokeWidth="1" />
-            <circle cx="13" cy="21" r="2.6" fill="#D9A441" />
-            <circle cx="13" cy="21" r="4.4" fill="rgba(217,164,65,0.25)" />
+          {/* Iron Man helmet */}
+          <svg width="26" height="28" viewBox="0 0 24 26" fill="none" aria-hidden="true">
+            <path
+              d="M12 1C6.6 1 3.8 4.6 3.8 9.4c0 3.3.7 6.1 1.6 8.5l1.4 3.6c.5 1.4 1.5 2.4 2.8 2.8 1.5.5 3.3.5 4.8 0 1.3-.4 2.3-1.4 2.8-2.8l1.4-3.6c.9-2.4 1.6-5.2 1.6-8.5C20.2 4.6 17.4 1 12 1z"
+              fill="#C13530"
+              stroke="#8E2723"
+              strokeWidth="1"
+            />
+            <path
+              d="M12 6c-3 0-4.7 1.5-4.7 4.2 0 2.3.5 4.5 1.2 6.4.6 1.6 1.9 2.5 3.5 2.5s2.9-.9 3.5-2.5c.7-1.9 1.2-4.1 1.2-6.4C16.7 7.5 15 6 12 6z"
+              fill="#E3A857"
+            />
+            <rect x="7.9" y="11.2" width="3" height="1.8" rx="0.9" fill="#F4FAFF" />
+            <rect x="13.1" y="11.2" width="3" height="1.8" rx="0.9" fill="#F4FAFF" />
+            <rect x="10.6" y="16.4" width="2.8" height="1" rx="0.5" fill="#8E2723" />
           </svg>
         </motion.button>
       </div>
