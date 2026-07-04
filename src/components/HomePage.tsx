@@ -1,6 +1,7 @@
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { motion, useInView, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
 import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link } from "react-router";
+import Lenis from "lenis";
 import {
   PenNib,
   Flask,
@@ -53,17 +54,27 @@ const LINKS = {
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span
-      style={{
-        fontFamily: V.mono,
-        fontSize: 12,
-        fontWeight: 500,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        color: V.text3,
-      }}
-    >
-      {children}
+    <span className="inline-flex items-center gap-3">
+      <motion.span
+        aria-hidden="true"
+        style={{ width: 22, height: 2, background: "var(--accent)", transformOrigin: "left", borderRadius: 2 }}
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, margin: "-10% 0px" }}
+        transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
+      />
+      <span
+        style={{
+          fontFamily: V.mono,
+          fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: V.text3,
+        }}
+      >
+        {children}
+      </span>
     </span>
   );
 }
@@ -133,9 +144,55 @@ function MagneticButton({ children, onClick }: { children: ReactNode; onClick: (
   );
 }
 
+/* one Lenis instance for the page; anchors route through it so easing matches */
+let lenisRef: Lenis | null = null;
+
 const scrollToId = (id: string) => {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (lenisRef) lenisRef.scrollTo(el, { offset: -64, duration: 1.15 });
+  else el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
+
+/* buttery wheel scrolling, desktop only, killed under reduced motion */
+function useSmoothScroll() {
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (reduce || !window.matchMedia("(pointer: fine)").matches) return;
+    const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 });
+    lenisRef = lenis;
+    let raf = 0;
+    const loop = (t: number) => {
+      lenis.raf(t);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      lenis.destroy();
+      lenisRef = null;
+    };
+  }, [reduce]);
+}
+
+/* accent hairline that fills with scroll progress */
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="fixed top-0 left-0 right-0 z-[60]"
+      style={{
+        height: 2,
+        transformOrigin: "left",
+        scaleX,
+        background: "linear-gradient(90deg, rgba(91,140,255,0.9), rgba(91,140,255,0.4))",
+        boxShadow: "0 0 10px rgba(91,140,255,0.5)",
+      }}
+    />
+  );
+}
 
 /* ── nav ─────────────────────────────────────────────────────────────────── */
 function Nav() {
@@ -216,6 +273,12 @@ function Hero() {
   const reduce = useReducedMotion();
   const [showPlay, setShowPlay] = useState(false);
 
+  /* gentle exit parallax: text drifts up faster than the page, playground lags */
+  const { scrollY } = useScroll();
+  const textY = useTransform(scrollY, [0, 640], [0, -84]);
+  const playY = useTransform(scrollY, [0, 640], [0, -30]);
+  const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
+
   useEffect(() => {
     // load the physics chunk after first paint, desktop only
     if (window.matchMedia("(min-width: 768px)").matches) {
@@ -258,7 +321,10 @@ function Hero() {
       />
 
       {/* icon playground signature, right side (desktop: physics, drag + collide) */}
-      <div className="absolute hidden md:block" style={{ top: 76, bottom: 0, right: 0, width: "46%" }}>
+      <motion.div
+        className="absolute hidden md:block"
+        style={reduce ? { top: 76, bottom: 0, right: 0, width: "46%" } : { top: 76, bottom: 0, right: 0, width: "46%", y: playY, opacity: heroFade }}
+      >
         <motion.div
           className="w-full h-full"
           initial={{ opacity: 0 }}
@@ -271,11 +337,11 @@ function Hero() {
             </Suspense>
           )}
         </motion.div>
-      </div>
+      </motion.div>
 
       {/* mobile keeps the clean text hero; the playground is a desktop signature */}
 
-      <div className="relative z-10 w-full mx-auto max-w-6xl px-6 pt-28 pb-16">
+      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 pt-28 pb-16" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         <div className="max-w-[640px]">
           {/* H1 with per-line clip reveal */}
           <h1
@@ -331,7 +397,7 @@ function Hero() {
             </MagneticButton>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -620,6 +686,7 @@ const PROJECTS: Project[] = [
 ];
 
 function WorkCard({ project, featured = false }: { project: Project; featured?: boolean }) {
+  const reduce = useReducedMotion();
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { margin: "-35% 0px -35% 0px" });
@@ -629,6 +696,10 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
   }, []);
   const active = hovered || (coarse && inView);
   const { Preview } = project;
+
+  /* the card art drifts gently against the scroll (px only, overscanned so no edges show) */
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const artY = useTransform(scrollYProgress, [0, 1], [20, -20]);
 
   return (
     <Link to={project.to} className="block h-full" style={{ textDecoration: "none" }}>
@@ -648,8 +719,10 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
         }}
       >
         {/* art */}
-        <div className={featured ? "lg:order-2 lg:w-[55%]" : ""} style={{ minHeight: featured ? 360 : 300 }}>
-          <Preview active={active} />
+        <div className={`relative overflow-hidden ${featured ? "lg:order-2 lg:w-[55%]" : ""}`} style={{ minHeight: featured ? 360 : 300 }}>
+          <motion.div className="absolute left-0 right-0" style={reduce ? { top: 0, bottom: 0 } : { top: -24, bottom: -24, y: artY }}>
+            <Preview active={active} />
+          </motion.div>
         </div>
 
         {/* text */}
@@ -780,14 +853,18 @@ function HowIWork() {
         <Reveal delay={0.12}>
           <div style={{ border: `1px solid ${V.border}`, borderRadius: 12, background: V.surface, overflow: "hidden" }}>
             {tools.map((t, i) => (
-              <div
+              <motion.div
                 key={t.name}
                 className="flex items-baseline justify-between gap-4"
                 style={{ padding: "18px 22px", borderBottom: i === tools.length - 1 ? "none" : `1px solid ${V.border}` }}
+                initial={{ opacity: 0, x: -14 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-10% 0px" }}
+                transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
               >
                 <span style={{ fontFamily: V.mono, fontSize: 13.5, fontWeight: 500, color: V.text }}>{t.name}</span>
                 <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text3, textAlign: "right" }}>{t.role}</span>
-              </div>
+              </motion.div>
             ))}
             <div
               className="flex items-baseline justify-between gap-4"
@@ -1062,12 +1139,21 @@ function Contact() {
   const reduce = useReducedMotion();
   const [copied, setCopied] = useState(false);
   const [showSky, setShowSky] = useState(false);
+  const [videoOk, setVideoOk] = useState(true);
+  const [wide, setWide] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { once: true, margin: "20% 0px" });
 
   useEffect(() => {
     if (inView) setShowSky(true);
   }, [inView]);
+  useEffect(() => {
+    setWide(window.matchMedia("(min-width: 768px)").matches);
+  }, []);
+
+  /* real skyline video on desktop; code-built skyline for mobile data,
+     reduced motion, or if the file fails to load */
+  const useVideo = wide && !reduce && videoOk;
 
   const copyEmail = async () => {
     let ok = false;
@@ -1109,17 +1195,34 @@ function Contact() {
       className="relative overflow-hidden"
       style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
     >
-      {/* live Manhattan skyline, dimmed under the content */}
+      {/* real Manhattan night skyline, cool-graded and dimmed under the content */}
       <div className="absolute inset-0" aria-hidden="true">
-        {showSky && (
-          <Suspense fallback={null}>
-            <SkylineBackdrop />
-          </Suspense>
+        {showSky &&
+          (useVideo ? (
+            <video
+              className="absolute inset-0 w-full h-full"
+              style={{ objectFit: "cover", filter: "brightness(0.52) saturate(0.72) contrast(1.06)" }}
+              src="/nyc-skyline.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              onError={() => setVideoOk(false)}
+            />
+          ) : (
+            <Suspense fallback={null}>
+              <SkylineBackdrop />
+            </Suspense>
+          ))}
+        {/* cool tint so the footage sits in the slate palette */}
+        {useVideo && showSky && (
+          <div className="absolute inset-0" style={{ background: "rgba(13,18,32,0.32)", mixBlendMode: "multiply" }} />
         )}
         {/* dim + readability wash */}
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, rgba(13,18,32,0.88) 0%, rgba(13,18,32,0.55) 42%, rgba(13,18,32,0.18) 100%)" }}
+          style={{ background: "linear-gradient(180deg, rgba(13,18,32,0.9) 0%, rgba(13,18,32,0.52) 45%, rgba(13,18,32,0.14) 100%)" }}
         />
       </div>
 
@@ -1266,8 +1369,10 @@ function FlyerTrigger() {
   useEffect(() => {
     if (open) {
       setMounted(true);
+      lenisRef?.stop();
       return;
     }
+    lenisRef?.start();
     if (!mounted) return;
     const t = setTimeout(() => setMounted(false), 200);
     return () => clearTimeout(t);
@@ -1349,8 +1454,10 @@ function FlyerTrigger() {
 
 /* ── page ────────────────────────────────────────────────────────────────── */
 export function HomePage() {
+  useSmoothScroll();
   return (
     <div style={{ background: V.bg, minHeight: "100vh" }}>
+      <ScrollProgress />
       {/* grain overlay, whole page */}
       <div
         className="fixed inset-0 pointer-events-none z-[5]"
