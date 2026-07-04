@@ -10,11 +10,14 @@ import {
   EnvelopeSimple,
   LinkedinLogo,
   FileText,
+  CopySimple,
+  Check,
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
+const SkylineBackdrop = lazy(() => import("./home/SkylineBackdrop"));
 
 /* ──────────────────────────────────────────────────────────────────────────
    Homepage. Cool slate, techy, calm, rich. Motion is the personality.
@@ -803,36 +806,214 @@ function HowIWork() {
 }
 
 /* ── about ───────────────────────────────────────────────────────────────── */
-function About() {
+
+/* accent wipe behind a key phrase, sweeps in on scroll */
+function Highlight({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-20% 0px" });
   return (
-    <section id="about" style={{ background: V.bg, scrollMarginTop: 70 }}>
-      <div className="mx-auto max-w-6xl px-6 py-24 md:py-32 grid md:grid-cols-[0.9fr_1.1fr] gap-12 md:gap-16 items-center">
+    <span ref={ref} style={{ position: "relative", whiteSpace: "nowrap" }}>
+      <motion.span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: -3,
+          right: -3,
+          top: "8%",
+          bottom: "2%",
+          background: "linear-gradient(90deg, rgba(91,140,255,0.22), rgba(91,140,255,0.1))",
+          borderRadius: 4,
+          transformOrigin: "left",
+          zIndex: 0,
+        }}
+        initial={{ scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : undefined}
+        transition={{ duration: 0.7, ease: EASE, delay }}
+      />
+      <span style={{ position: "relative", zIndex: 1 }}>{children}</span>
+    </span>
+  );
+}
+
+/* HUD corner brackets that draw in around the photo */
+function Corners({ show }: { show: boolean }) {
+  const pos: React.CSSProperties[] = [
+    { top: -7, left: -7, borderTop: "2px solid var(--accent)", borderLeft: "2px solid var(--accent)" },
+    { top: -7, right: -7, borderTop: "2px solid var(--accent)", borderRight: "2px solid var(--accent)" },
+    { bottom: -7, left: -7, borderBottom: "2px solid var(--accent)", borderLeft: "2px solid var(--accent)" },
+    { bottom: -7, right: -7, borderBottom: "2px solid var(--accent)", borderRight: "2px solid var(--accent)" },
+  ];
+  return (
+    <>
+      {pos.map((p, i) => (
+        <motion.span
+          key={i}
+          aria-hidden="true"
+          style={{ position: "absolute", width: 24, height: 24, ...p }}
+          initial={{ opacity: 0, scale: 0.4 }}
+          animate={show ? { opacity: 1, scale: 1 } : undefined}
+          transition={{ duration: 0.45, ease: EASE, delay: 0.25 + i * 0.08 }}
+        />
+      ))}
+    </>
+  );
+}
+
+function About() {
+  const reduce = useReducedMotion();
+  const frameRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(frameRef, { once: true, margin: "-15% 0px" });
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const chips = [
+    { label: "UMBC CARDS LAB", style: { top: 18, right: -14 }, bob: 5.2 },
+    { label: "MS · HUMAN-CENTERED COMPUTING", style: { top: "44%", left: -22 }, bob: 6.4 },
+    { label: "PREV · WELSPUN", style: { bottom: 74, right: -18 }, bob: 5.8 },
+  ];
+
+  return (
+    <section id="about" className="relative overflow-hidden" style={{ background: V.bg, scrollMarginTop: 70 }}>
+      {/* ambient drifting glows */}
+      {!reduce && (
+        <>
+          <motion.div
+            aria-hidden="true"
+            className="absolute pointer-events-none"
+            style={{ top: "-20%", left: "-12%", width: 620, height: 620, background: "radial-gradient(circle, rgba(91,140,255,0.07) 0%, transparent 62%)" }}
+            animate={{ x: [0, 60, 0], y: [0, 30, 0] }}
+            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            aria-hidden="true"
+            className="absolute pointer-events-none"
+            style={{ bottom: "-24%", right: "-10%", width: 560, height: 560, background: "radial-gradient(circle, rgba(91,140,255,0.055) 0%, transparent 60%)" }}
+            animate={{ x: [0, -50, 0], y: [0, -26, 0] }}
+            transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </>
+      )}
+      {/* faint blueprint grid */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "linear-gradient(rgba(91,140,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(91,140,255,0.05) 1px, transparent 1px)",
+          backgroundSize: "72px 72px",
+          maskImage: "radial-gradient(75% 70% at 40% 50%, black, transparent)",
+          WebkitMaskImage: "radial-gradient(75% 70% at 40% 50%, black, transparent)",
+        }}
+      />
+
+      <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32 grid md:grid-cols-[0.9fr_1.1fr] gap-14 md:gap-16 items-center">
+        {/* photo: tilt, glow, HUD corners, floating chips */}
         <Reveal>
-          <div
-            className="relative mx-auto md:mx-0"
-            style={{ maxWidth: 380, borderRadius: 12, overflow: "hidden", border: `1px solid ${V.border}` }}
-          >
-            <img
-              src={userPhoto}
-              alt="Jay Harwani"
-              className="block w-full"
-              style={{ filter: "grayscale(1) contrast(1.06) brightness(0.88)", display: "block" }}
+          <div className="relative mx-auto md:mx-0" style={{ maxWidth: 380, perspective: 900 }}>
+            {/* glow behind */}
+            <motion.div
+              aria-hidden="true"
+              className="absolute pointer-events-none"
+              style={{ inset: -34, background: "radial-gradient(60% 60% at 50% 50%, rgba(91,140,255,0.16), transparent 70%)", filter: "blur(6px)" }}
+              animate={reduce ? {} : { opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
             />
-            {/* cool tint */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: "linear-gradient(180deg, rgba(91,140,255,0.10), rgba(10,14,22,0.28))", mixBlendMode: "multiply" }}
-            />
-            <div
-              className="absolute left-0 right-0 bottom-0 flex items-center justify-between"
-              style={{ padding: "10px 14px", background: "rgba(10,14,22,0.72)", backdropFilter: "blur(8px)", borderTop: `1px solid ${V.border}` }}
+
+            <motion.div
+              ref={frameRef}
+              className="relative"
+              style={{ borderRadius: 12, transformStyle: "preserve-3d" }}
+              animate={{ rotateX: tilt.x, rotateY: tilt.y }}
+              transition={{ type: "spring", stiffness: 120, damping: 18 }}
+              onMouseMove={(e) => {
+                if (reduce || !frameRef.current) return;
+                const r = frameRef.current.getBoundingClientRect();
+                setTilt({
+                  x: ((e.clientY - r.top - r.height / 2) / r.height) * -7,
+                  y: ((e.clientX - r.left - r.width / 2) / r.width) * 9,
+                });
+              }}
+              onMouseLeave={() => setTilt({ x: 0, y: 0 })}
             >
-              <span style={{ fontFamily: V.mono, fontSize: 11, color: V.text2, letterSpacing: "0.08em" }}>JAY HARWANI</span>
-              <span style={{ fontFamily: V.mono, fontSize: 11, color: V.text3 }}>PRODUCT DESIGNER</span>
-            </div>
+              <Corners show={inView} />
+              <div className="relative group" style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${V.border}` }}>
+                <img
+                  src={userPhoto}
+                  alt="Jay Harwani"
+                  className="block w-full"
+                  style={{ filter: "grayscale(1) contrast(1.06) brightness(0.88)", display: "block", transition: "filter 0.45s, transform 0.6s" }}
+                  onMouseEnter={(e) => {
+                    if (!reduce) (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0.55) contrast(1.05) brightness(0.94)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.filter = "grayscale(1) contrast(1.06) brightness(0.88)";
+                  }}
+                />
+                {/* cool tint */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(91,140,255,0.10), rgba(10,14,22,0.28))", mixBlendMode: "multiply" }} />
+                {/* scanline sweep on reveal */}
+                {!reduce && (
+                  <motion.div
+                    aria-hidden="true"
+                    className="absolute left-0 right-0 pointer-events-none"
+                    style={{ height: 90, background: "linear-gradient(180deg, transparent, rgba(91,140,255,0.16), transparent)" }}
+                    initial={{ top: "-24%" }}
+                    animate={inView ? { top: "120%" } : undefined}
+                    transition={{ duration: 1.4, ease: EASE, delay: 0.4 }}
+                  />
+                )}
+                <div
+                  className="absolute left-0 right-0 bottom-0 flex items-center justify-between"
+                  style={{ padding: "10px 14px", background: "rgba(10,14,22,0.72)", backdropFilter: "blur(8px)", borderTop: `1px solid ${V.border}` }}
+                >
+                  <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 11, color: V.text2, letterSpacing: "0.08em" }}>
+                    <motion.span
+                      style={{ width: 5, height: 5, borderRadius: 999, background: V.accent, boxShadow: "0 0 7px rgba(91,140,255,0.9)" }}
+                      animate={reduce ? {} : { opacity: [1, 0.35, 1] }}
+                      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    JAY HARWANI
+                  </span>
+                  <span style={{ fontFamily: V.mono, fontSize: 11, color: V.text3 }}>PRODUCT DESIGNER</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* floating mono chips */}
+            {chips.map((c, i) => (
+              <motion.span
+                key={c.label}
+                className="absolute hidden sm:inline-flex"
+                style={{
+                  ...(c.style as React.CSSProperties),
+                  fontFamily: V.mono,
+                  fontSize: 10,
+                  letterSpacing: "0.08em",
+                  color: V.text2,
+                  background: "rgba(22,29,46,0.9)",
+                  border: `1px solid ${V.borderStrong}`,
+                  borderRadius: 999,
+                  padding: "6px 11px",
+                  backdropFilter: "blur(6px)",
+                  boxShadow: "0 10px 26px -10px rgba(0,0,0,0.6)",
+                  whiteSpace: "nowrap",
+                  zIndex: 2,
+                }}
+                initial={{ opacity: 0, y: 14 }}
+                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.55, ease: EASE, delay: 0.5 + i * 0.12 }}
+              >
+                <motion.span
+                  className="inline-block"
+                  animate={reduce ? {} : { y: [0, -4, 0] }}
+                  transition={{ duration: c.bob, repeat: Infinity, ease: "easeInOut", delay: i * 0.7 }}
+                >
+                  {c.label}
+                </motion.span>
+              </motion.span>
+            ))}
           </div>
         </Reveal>
 
+        {/* copy with accent wipes */}
         <div>
           <Reveal>
             <Eyebrow>About</Eyebrow>
@@ -841,21 +1022,33 @@ function About() {
             <p
               style={{
                 fontFamily: V.body,
-                fontSize: "clamp(1.1rem, 2vw, 1.3rem)",
-                lineHeight: 1.65,
+                fontSize: "clamp(1.15rem, 2vw, 1.35rem)",
+                lineHeight: 1.7,
                 color: V.text,
                 marginTop: 18,
-                maxWidth: 520,
+                maxWidth: 540,
               }}
             >
-              I'm a product designer. I design and build AI products end to end. Right now I'm doing AI and robotics
-              research at the UMBC CARDS Lab and finishing an MS in Human-Centered Computing. Before that I shipped
-              enterprise products at Welspun.
+              I'm a product designer. I design and build <Highlight delay={0.3}>AI products end to end</Highlight>. Right
+              now I'm doing AI and robotics research at the <Highlight delay={0.5}>UMBC CARDS Lab</Highlight> and
+              finishing an MS in Human-Centered Computing. Before that I shipped enterprise products at{" "}
+              <Highlight delay={0.7}>Welspun</Highlight>.
             </p>
           </Reveal>
           <Reveal delay={0.12}>
-            <p style={{ fontFamily: V.body, fontSize: 16.5, lineHeight: 1.65, color: V.text2, marginTop: 16, maxWidth: 520 }}>
-              I like tight scope, real constraints, and getting the thing live.
+            <p
+              style={{
+                fontFamily: V.display,
+                fontSize: "clamp(1.25rem, 2.4vw, 1.7rem)",
+                fontWeight: 500,
+                lineHeight: 1.35,
+                color: V.text2,
+                marginTop: 26,
+                maxWidth: 520,
+              }}
+            >
+              I like tight scope, real constraints, and{" "}
+              <em style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>getting the thing live.</em>
             </p>
           </Reveal>
         </div>
@@ -866,59 +1059,175 @@ function About() {
 
 /* ── contact ─────────────────────────────────────────────────────────────── */
 function Contact() {
+  const reduce = useReducedMotion();
+  const [copied, setCopied] = useState(false);
+  const [showSky, setShowSky] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const inView = useInView(sectionRef, { once: true, margin: "20% 0px" });
+
+  useEffect(() => {
+    if (inView) setShowSky(true);
+  }, [inView]);
+
+  const copyEmail = async () => {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(LINKS.email);
+      ok = true;
+    } catch {
+      // legacy fallback
+      const ta = document.createElement("textarea");
+      ta.value = LINKS.email;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+    }
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }
+  };
+
+  const words: ReactNode[] = [
+    "Say",
+    <em key="hi" style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400 }}>
+      hi.
+    </em>,
+  ];
+
   return (
-    <section id="contact" style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}>
-      <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+    <section
+      id="contact"
+      ref={sectionRef}
+      className="relative overflow-hidden"
+      style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
+    >
+      {/* live Manhattan skyline, dimmed under the content */}
+      <div className="absolute inset-0" aria-hidden="true">
+        {showSky && (
+          <Suspense fallback={null}>
+            <SkylineBackdrop />
+          </Suspense>
+        )}
+        {/* dim + readability wash */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, rgba(13,18,32,0.88) 0%, rgba(13,18,32,0.55) 42%, rgba(13,18,32,0.18) 100%)" }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-24 md:pt-32" style={{ paddingBottom: "clamp(150px, 26vh, 260px)" }}>
         <Reveal>
           <Eyebrow>Contact</Eyebrow>
         </Reveal>
-        <Reveal delay={0.06}>
-          <h2
-            style={{
-              fontFamily: V.display,
-              fontSize: "clamp(2.4rem, 6vw, 4.4rem)",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              color: V.text,
-              marginTop: 18,
-            }}
-          >
-            Say <em style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400 }}>hi.</em>
-          </h2>
+
+        {/* big greeting with per-word clip reveal */}
+        <h2
+          style={{
+            fontFamily: V.display,
+            fontSize: "clamp(3rem, 8.5vw, 6.4rem)",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.04,
+            color: V.text,
+            marginTop: 18,
+            display: "flex",
+            gap: "0.28em",
+            flexWrap: "wrap",
+          }}
+        >
+          {words.map((w, i) => (
+            <span key={i} className="inline-block overflow-hidden" style={{ paddingBottom: "0.08em" }}>
+              <motion.span
+                className="inline-block"
+                initial={reduce ? { opacity: 0 } : { y: "112%" }}
+                whileInView={reduce ? { opacity: 1 } : { y: 0 }}
+                viewport={{ once: true, margin: "-15% 0px" }}
+                transition={{ duration: 0.75, ease: EASE, delay: 0.1 + i * 0.1 }}
+              >
+                {w}
+              </motion.span>
+            </span>
+          ))}
+        </h2>
+
+        <Reveal delay={0.1}>
+          <p style={{ fontFamily: V.body, fontSize: 16.5, lineHeight: 1.6, color: V.text2, marginTop: 14, maxWidth: 440 }}>
+            One email. I reply fast, and the work speaks for itself.
+          </p>
         </Reveal>
-        <Reveal delay={0.12}>
-          <div className="flex flex-wrap items-center gap-5" style={{ marginTop: 26 }}>
-            <a
-              href={`mailto:${LINKS.email}`}
+
+        <Reveal delay={0.16}>
+          <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 30 }}>
+            <MagneticButton onClick={() => (window.location.href = `mailto:${LINKS.email}`)}>
+              <EnvelopeSimple size={17} weight="bold" /> Email me
+            </MagneticButton>
+
+            {/* click-to-copy email pill */}
+            <button
+              onClick={copyEmail}
               className="inline-flex items-center gap-2.5"
               style={{
-                padding: "14px 24px",
+                fontFamily: V.mono,
+                fontSize: 13.5,
+                color: copied ? "#7EE2B0" : V.text2,
+                padding: "13px 18px",
                 borderRadius: 8,
-                background: V.accent,
-                color: "#0A0E16",
-                fontFamily: V.body,
-                fontSize: 15,
-                fontWeight: 600,
-                boxShadow: "0 8px 30px -8px rgba(91,140,255,0.45)",
-                textDecoration: "none",
+                background: "rgba(17,23,37,0.8)",
+                border: `1px solid ${copied ? "rgba(126,226,176,0.45)" : V.borderStrong}`,
+                backdropFilter: "blur(8px)",
+                cursor: "pointer",
+                transition: "color 0.2s, border-color 0.2s",
               }}
+              aria-label="Copy email address"
             >
-              <EnvelopeSimple size={17} weight="bold" /> Email me
-            </a>
-            <a href={`mailto:${LINKS.email}`} className="link-draw" style={{ fontFamily: V.mono, fontSize: 14.5, color: V.text2 }}>
               {LINKS.email}
-            </a>
+              {copied ? <Check size={15} weight="bold" color="#7EE2B0" /> : <CopySimple size={15} color="#6A7488" />}
+              <span style={{ fontSize: 11, color: copied ? "#7EE2B0" : V.text3, minWidth: 42, textAlign: "left" }}>
+                {copied ? "copied" : "copy"}
+              </span>
+            </button>
+
             <a
               href={LINKS.linkedin}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 link-draw"
-              style={{ fontFamily: V.body, fontSize: 14.5, fontWeight: 500, color: V.text2 }}
+              className="inline-flex items-center gap-2"
+              style={{
+                fontFamily: V.body,
+                fontSize: 14.5,
+                fontWeight: 500,
+                color: V.text2,
+                padding: "13px 18px",
+                borderRadius: 8,
+                background: "rgba(17,23,37,0.8)",
+                border: `1px solid ${V.borderStrong}`,
+                backdropFilter: "blur(8px)",
+              }}
             >
               <LinkedinLogo size={16} weight="duotone" color="#5B8CFF" /> LinkedIn
             </a>
           </div>
         </Reveal>
+
+        {/* skyline caption */}
+        <div className="absolute" style={{ right: 24, bottom: 18 }}>
+          <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.12em", color: V.text3 }}>
+            <motion.span
+              style={{ width: 5, height: 5, borderRadius: 999, background: "#F0544F" }}
+              animate={reduce ? {} : { opacity: [0.9, 0.2, 0.9] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            />
+            NEW YORK CITY · LIVE
+          </span>
+        </div>
       </div>
     </section>
   );
