@@ -16,14 +16,14 @@ import userPhoto from "../assets/hero-portrait.jpeg";
 /*  Authentic > generic.                                      */
 /* ────────────────────────────────────────────────────────── */
 const buildArtifacts = [
-  "src/components/Hero.tsx",
-  "src/components/CaseStudies.tsx",
-  "src/components/AboutPage.tsx",
-  "src/components/ApproachStrip.tsx",
-  "src/components/HeadroomCard.tsx",
-  "src/components/ChronoWeaveThumbnail.tsx",
-  "src/components/Footer.tsx",
   "src/components/HomePage.tsx",
+  "src/components/home/Hero3D.tsx",
+  "src/components/home/FlyerGame.tsx",
+  "src/components/AboutPage.tsx",
+  "src/components/HeadroomPage.tsx",
+  "src/components/ChronoWeavePage.tsx",
+  "src/components/BumperCasePage.tsx",
+  "src/components/Footer.tsx",
   "src/index.css",
   "vite.config.ts",
   "package.json",

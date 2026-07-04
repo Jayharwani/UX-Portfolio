@@ -5,7 +5,6 @@ import { ChronoWeavePage } from "./components/ChronoWeavePage";
 import { HeadroomPage } from "./components/HeadroomPage";
 import { AboutPage } from "./components/AboutPage";
 import { ScrollToTop } from "./components/ScrollToTop";
-import { IronManAssistant } from "./components/IronManAssistant";
 
 export default function App() {
   return (
@@ -19,7 +18,6 @@ export default function App() {
           <Route path="/headroom" element={<HeadroomPage />} />
           <Route path="/about" element={<AboutPage />} />
         </Routes>
-        <IronManAssistant />
       </div>
     </Router>
   );
