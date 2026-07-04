@@ -150,16 +150,20 @@ let lenisRef: Lenis | null = null;
 const scrollToId = (id: string) => {
   const el = document.getElementById(id);
   if (!el) return;
-  if (lenisRef) lenisRef.scrollTo(el, { offset: -64, duration: 1.15 });
+  if (lenisRef) lenisRef.scrollTo(el, { offset: -64, duration: 0.9 });
   else el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
-/* buttery wheel scrolling, desktop only, killed under reduced motion */
+/* light, flicky wheel scrolling: instant response, short ease-out tail */
 function useSmoothScroll() {
   const reduce = useReducedMotion();
   useEffect(() => {
     if (reduce || !window.matchMedia("(pointer: fine)").matches) return;
-    const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 });
+    const lenis = new Lenis({
+      duration: 0.72,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      wheelMultiplier: 1.18,
+    });
     lenisRef = lenis;
     let raf = 0;
     const loop = (t: number) => {
