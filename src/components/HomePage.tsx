@@ -13,7 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
-const Hero3D = lazy(() => import("./home/Hero3D"));
+const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -211,12 +211,12 @@ function Nav() {
 /* ── hero ────────────────────────────────────────────────────────────────── */
 function Hero() {
   const reduce = useReducedMotion();
-  const [show3D, setShow3D] = useState(false);
+  const [showPlay, setShowPlay] = useState(false);
 
   useEffect(() => {
-    // load the 3D chunk after first paint, desktop only
+    // load the physics chunk after first paint, desktop only
     if (window.matchMedia("(min-width: 768px)").matches) {
-      const t = setTimeout(() => setShow3D(true), 250);
+      const t = setTimeout(() => setShowPlay(true), 250);
       return () => clearTimeout(t);
     }
   }, []);
@@ -254,37 +254,23 @@ function Hero() {
         }}
       />
 
-      {/* 3D signature, right side */}
-      <div className="absolute inset-y-0 right-0 hidden md:block" style={{ width: "52%" }} aria-hidden="true">
+      {/* icon playground signature, right side (desktop: physics, drag + collide) */}
+      <div className="absolute hidden md:block" style={{ top: 76, bottom: 0, right: 0, width: "46%" }}>
         <motion.div
           className="w-full h-full"
           initial={{ opacity: 0 }}
-          animate={{ opacity: show3D ? 1 : 0 }}
-          transition={{ duration: 1.4, ease: "easeOut", delay: 0.3 }}
+          animate={{ opacity: showPlay ? 1 : 0 }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
         >
-          {show3D && (
+          {showPlay && (
             <Suspense fallback={null}>
-              <Hero3D frozen={!!reduce} />
+              <IconPlayground interactive={!reduce} />
             </Suspense>
           )}
         </motion.div>
       </div>
 
-      {/* mobile: static orb, no 3D payload */}
-      <div
-        className="absolute md:hidden pointer-events-none"
-        aria-hidden="true"
-        style={{
-          top: "8%",
-          right: "-22%",
-          width: 300,
-          height: 300,
-          borderRadius: "50%",
-          background: "radial-gradient(circle at 34% 30%, #2E3950 0%, #161D2E 46%, #0D1220 78%)",
-          boxShadow: "inset -18px -14px 50px rgba(0,0,0,0.5), -14px 10px 60px rgba(91,140,255,0.12)",
-          opacity: 0.85,
-        }}
-      />
+      {/* mobile keeps the clean text hero; the playground is a desktop signature */}
 
       <div className="relative z-10 w-full mx-auto max-w-6xl px-6 pt-28 pb-16">
         <div className="max-w-[640px]">
