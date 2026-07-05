@@ -13,6 +13,8 @@ import {
   FileText,
   CopySimple,
   Check,
+  List,
+  X,
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
@@ -201,11 +203,17 @@ function ScrollProgress() {
 /* ── nav ─────────────────────────────────────────────────────────────────── */
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const go = (id: string) => {
+    setMenuOpen(false);
+    scrollToId(id);
+  };
 
   const navLink: React.CSSProperties = {
     fontFamily: V.body,
@@ -239,13 +247,13 @@ function Nav() {
           </span>
         </div>
         <nav className="flex items-center gap-1">
-          <button className="hidden md:block" style={navLink} onClick={() => scrollToId("work")}>
+          <button className="hidden md:block" style={navLink} onClick={() => go("work")}>
             Work
           </button>
-          <button className="hidden md:block" style={navLink} onClick={() => scrollToId("about")}>
+          <button className="hidden md:block" style={navLink} onClick={() => go("about")}>
             About
           </button>
-          <button className="hidden md:block" style={navLink} onClick={() => scrollToId("contact")}>
+          <button className="hidden md:block" style={navLink} onClick={() => go("contact")}>
             Contact
           </button>
           <a
@@ -266,8 +274,60 @@ function Nav() {
           >
             CV <ArrowUpRight size={14} weight="bold" />
           </a>
+          {/* mobile menu toggle */}
+          <button
+            className="md:hidden ml-1 flex items-center justify-center"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            style={{ width: 38, height: 38, borderRadius: 8, background: "none", border: `1px solid ${menuOpen ? "var(--border-strong)" : "transparent"}`, color: V.text, cursor: "pointer" }}
+          >
+            {menuOpen ? <X size={19} /> : <List size={19} />}
+          </button>
         </nav>
       </div>
+
+      {/* mobile menu panel */}
+      {menuOpen && (
+        <motion.nav
+          className="md:hidden mx-4 mb-3"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: EASE }}
+          style={{
+            background: "rgba(17,23,37,0.96)",
+            backdropFilter: "blur(14px)",
+            border: `1px solid ${V.border}`,
+            borderRadius: 12,
+            overflow: "hidden",
+          }}
+        >
+          {[
+            { label: "Work", id: "work" },
+            { label: "About", id: "about" },
+            { label: "Contact", id: "contact" },
+          ].map((item, i) => (
+            <button
+              key={item.id}
+              onClick={() => go(item.id)}
+              className="block w-full text-left"
+              style={{
+                fontFamily: V.body,
+                fontSize: 15,
+                fontWeight: 500,
+                color: V.text,
+                padding: "14px 18px",
+                background: "none",
+                border: "none",
+                borderTop: i === 0 ? "none" : `1px solid ${V.border}`,
+                cursor: "pointer",
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </motion.nav>
+      )}
     </motion.header>
   );
 }
@@ -1257,21 +1317,22 @@ function Contact() {
               className="inline-flex items-center gap-2.5"
               style={{
                 fontFamily: V.mono,
-                fontSize: 13.5,
+                fontSize: "clamp(11px, 3.3vw, 13.5px)",
                 color: copied ? "#7EE2B0" : V.text2,
-                padding: "13px 18px",
+                padding: "13px 16px",
                 borderRadius: 8,
                 background: "rgba(17,23,37,0.8)",
                 border: `1px solid ${copied ? "rgba(126,226,176,0.45)" : V.borderStrong}`,
                 backdropFilter: "blur(8px)",
                 cursor: "pointer",
                 transition: "color 0.2s, border-color 0.2s",
+                maxWidth: "100%",
               }}
               aria-label="Copy email address"
             >
-              {LINKS.email}
-              {copied ? <Check size={15} weight="bold" color="#7EE2B0" /> : <CopySimple size={15} color="#6A7488" />}
-              <span style={{ fontSize: 11, color: copied ? "#7EE2B0" : V.text3, minWidth: 42, textAlign: "left" }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{LINKS.email}</span>
+              {copied ? <Check size={15} weight="bold" color="#7EE2B0" style={{ flexShrink: 0 }} /> : <CopySimple size={15} color="#6A7488" style={{ flexShrink: 0 }} />}
+              <span style={{ fontSize: 11, color: copied ? "#7EE2B0" : V.text3, minWidth: 42, textAlign: "left", flexShrink: 0 }}>
                 {copied ? "copied" : "copy"}
               </span>
             </button>

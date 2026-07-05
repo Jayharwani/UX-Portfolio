@@ -1,7 +1,6 @@
 @custom-variant dark (&:is(.dark *));
 
-/* Import distinctive, non-generic fonts */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+/* Fonts load once via <link> in index.html — no blocking @import here */
 
 html {
   scroll-behavior: smooth;
@@ -72,8 +71,8 @@ html {
   --gradient-accent: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
   --gradient-neutral: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   
-  /* Typography Variables */
-  --font-display: 'Outfit', system-ui, sans-serif;
+  /* Typography Variables (overridden by index.css tokens on the homepage) */
+  --font-display: 'Syne', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
   
   /* Professional Shadows */

@@ -212,9 +212,11 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
         if (e.body) Sleeping.set(e.body, false);
       });
 
-      // rAF render loop, paused when offscreen
+      // rAF render loop; physics only steps while the hero is on screen
+      // (plain rect check — IntersectionObserver misreports in some
+      // embedded/emulated viewports and would freeze the scene)
       let raf = 0;
-      let running = true;
+      let alive = true;
       const sync = () => {
         for (let i = 0; i < bodies.length; i++) {
           const el = tileRefs.current[i];
@@ -224,27 +226,16 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
         }
       };
       const loop = () => {
-        if (!running) return;
-        Engine.update(engine, 1000 / 60);
-        sync();
+        if (!alive) return;
+        const r = container.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight || 900;
+        if (r.bottom > 0 && r.top < vh) {
+          Engine.update(engine, 1000 / 60);
+          sync();
+        }
         raf = requestAnimationFrame(loop);
       };
       raf = requestAnimationFrame(loop);
-
-      const io = new IntersectionObserver(
-        ([entry]) => {
-          const shouldRun = entry.isIntersecting;
-          if (shouldRun && !running) {
-            running = true;
-            raf = requestAnimationFrame(loop);
-          } else if (!shouldRun && running) {
-            running = false;
-            cancelAnimationFrame(raf);
-          }
-        },
-        { threshold: 0 }
-      );
-      io.observe(container);
 
       // keep walls honest if the hero resizes
       const ro = new ResizeObserver(() => {
@@ -258,9 +249,8 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
       ro.observe(container);
 
       cleanup = () => {
-        running = false;
+        alive = false;
         cancelAnimationFrame(raf);
-        io.disconnect();
         ro.disconnect();
         Composite.clear(engine.world, false);
         Engine.clear(engine);
