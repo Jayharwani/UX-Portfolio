@@ -15,6 +15,11 @@ import {
   Check,
   List,
   X,
+  HandGrabbing,
+  TerminalWindow,
+  Cursor as CursorIcon,
+  MagicWand,
+  FigmaLogo,
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 
@@ -336,6 +341,7 @@ function Nav() {
 function Hero() {
   const reduce = useReducedMotion();
   const [showPlay, setShowPlay] = useState(false);
+  const [hintGone, setHintGone] = useState(false);
 
   /* gentle exit parallax: text drifts up faster than the page, playground lags */
   const { scrollY } = useScroll();
@@ -388,6 +394,7 @@ function Hero() {
       <motion.div
         className="absolute hidden md:block"
         style={reduce ? { top: 76, bottom: 0, right: 0, width: "46%" } : { top: 76, bottom: 0, right: 0, width: "46%", y: playY, opacity: heroFade }}
+        onPointerDownCapture={() => setHintGone(true)}
       >
         <motion.div
           className="w-full h-full"
@@ -400,6 +407,35 @@ function Hero() {
               <IconPlayground interactive={!reduce} />
             </Suspense>
           )}
+        </motion.div>
+
+        {/* how-to hint: appears after the blocks settle, leaves on first grab */}
+        <motion.div
+          className="absolute flex items-center gap-2"
+          style={{
+            right: 28,
+            bottom: 26,
+            padding: "8px 14px",
+            borderRadius: 999,
+            background: "rgba(22,29,46,0.85)",
+            border: `1px solid ${V.borderStrong}`,
+            backdropFilter: "blur(8px)",
+            pointerEvents: "none",
+          }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: hintGone ? 0 : 1, y: hintGone ? 6 : 0 }}
+          transition={{ duration: 0.5, ease: EASE, delay: hintGone ? 0 : 2.4 }}
+        >
+          <motion.span
+            animate={reduce ? {} : { x: [0, 5, 0], rotate: [0, -8, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            style={{ display: "inline-flex" }}
+          >
+            <HandGrabbing size={16} weight="duotone" color="#5B8CFF" />
+          </motion.span>
+          <span style={{ fontFamily: V.mono, fontSize: 11, letterSpacing: "0.08em", color: V.text2 }}>
+            Drag the blocks. Give them a toss.
+          </span>
         </motion.div>
       </motion.div>
 
@@ -871,13 +907,192 @@ function SelectedWork() {
 }
 
 /* ── how I work ──────────────────────────────────────────────────────────── */
-function HowIWork() {
+/* the toolchain terminal: 3D pointer tilt, shine sweep, live rows, typing prompt */
+function ToolchainCard() {
+  const reduce = useReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50, on: false });
+  const [hoverRow, setHoverRow] = useState(-1);
+  const [typed, setTyped] = useState("");
+
   const tools = [
-    { name: "Claude Code", role: "Ships production React from my terminal" },
-    { name: "Cursor", role: "Pairing editor for fast iteration" },
-    { name: "v0", role: "First-pass UI generation" },
-    { name: "Figma Make", role: "Design exploration and systems" },
+    { icon: TerminalWindow, name: "Claude Code", role: "Ships production React from my terminal" },
+    { icon: CursorIcon, name: "Cursor", role: "Pairing editor for fast iteration" },
+    { icon: MagicWand, name: "v0", role: "First-pass UI generation" },
+    { icon: FigmaLogo, name: "Figma Make", role: "Design exploration and systems" },
   ];
+
+  /* typing loop on the prompt line */
+  useEffect(() => {
+    const lines = ["design in figma", "ship with claude code", "deploy. live by friday."];
+    if (reduce) {
+      setTyped(lines[2]);
+      return;
+    }
+    let li = 0;
+    let ci = 0;
+    let deleting = false;
+    let t: number;
+    const step = () => {
+      const line = lines[li];
+      if (!deleting) {
+        ci++;
+        setTyped(line.slice(0, ci));
+        if (ci === line.length) {
+          deleting = true;
+          t = window.setTimeout(step, 2200);
+          return;
+        }
+        t = window.setTimeout(step, 55 + Math.random() * 60);
+      } else {
+        ci--;
+        setTyped(line.slice(0, ci));
+        if (ci === 0) {
+          deleting = false;
+          li = (li + 1) % lines.length;
+        }
+        t = window.setTimeout(step, 26);
+      }
+    };
+    t = window.setTimeout(step, 1200);
+    return () => clearTimeout(t);
+  }, [reduce]);
+
+  return (
+    <div style={{ perspective: 1100 }}>
+      <motion.div
+        ref={cardRef}
+        animate={{ rotateX: tilt.x, rotateY: tilt.y }}
+        transition={{ type: "spring", stiffness: 120, damping: 18 }}
+        onMouseMove={(e) => {
+          if (reduce || !cardRef.current) return;
+          const r = cardRef.current.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          setTilt({ x: (py - 0.5) * -7, y: (px - 0.5) * 9 });
+          setShine({ x: px * 100, y: py * 100, on: true });
+        }}
+        onMouseLeave={() => {
+          setTilt({ x: 0, y: 0 });
+          setShine((s) => ({ ...s, on: false }));
+          setHoverRow(-1);
+        }}
+        className="relative"
+        style={{
+          border: `1px solid ${V.borderStrong}`,
+          borderRadius: 14,
+          background: V.surface,
+          overflow: "hidden",
+          transformStyle: "preserve-3d",
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* pointer shine sweep */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(340px circle at ${shine.x}% ${shine.y}%, rgba(91,140,255,0.09), transparent 65%)`,
+            opacity: shine.on ? 1 : 0,
+            transition: "opacity 0.35s",
+            zIndex: 1,
+          }}
+        />
+
+        {/* terminal chrome */}
+        <div
+          className="relative flex items-center gap-2"
+          style={{ padding: "12px 16px", borderBottom: `1px solid ${V.border}`, background: V.surface2, zIndex: 2 }}
+        >
+          {["#2E3950", "#2E3950", "#5B8CFF"].map((c, i) => (
+            <span key={i} style={{ width: 9, height: 9, borderRadius: 999, background: c, opacity: i === 2 ? 0.8 : 1 }} />
+          ))}
+          <span style={{ fontFamily: V.mono, fontSize: 11, letterSpacing: "0.08em", color: V.text3, marginLeft: 8 }}>
+            jay@portfolio — toolchain
+          </span>
+        </div>
+
+        {/* tool rows */}
+        <div className="relative" style={{ zIndex: 2 }}>
+          {tools.map((t, i) => {
+            const Icon = t.icon;
+            const hot = hoverRow === i;
+            return (
+              <motion.div
+                key={t.name}
+                className="relative flex items-center gap-3"
+                onMouseEnter={() => setHoverRow(i)}
+                initial={{ opacity: 0, x: -14 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-10% 0px" }}
+                transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
+                style={{
+                  padding: "16px 20px",
+                  borderBottom: `1px solid ${V.border}`,
+                  background: hot ? "rgba(91,140,255,0.05)" : "transparent",
+                  transition: "background 0.2s",
+                  cursor: "default",
+                }}
+              >
+                {/* accent rail on hover */}
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 bottom-0"
+                  style={{ width: 2, background: V.accent, transformOrigin: "top" }}
+                  animate={{ scaleY: hot ? 1 : 0 }}
+                  transition={{ duration: 0.25, ease: EASE }}
+                />
+                <motion.span animate={{ x: hot ? 3 : 0 }} transition={{ duration: 0.2 }} style={{ display: "inline-flex" }}>
+                  <Icon size={19} weight="duotone" color={hot ? "#5B8CFF" : "#6A7488"} style={{ transition: "color 0.2s" }} />
+                </motion.span>
+                <motion.span
+                  animate={{ x: hot ? 3 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ fontFamily: V.mono, fontSize: 13.5, fontWeight: 500, color: hot ? V.text : V.text2, transition: "color 0.2s", whiteSpace: "nowrap" }}
+                >
+                  {t.name}
+                </motion.span>
+                <span
+                  className="ml-auto"
+                  style={{ fontFamily: V.body, fontSize: 13, color: hot ? V.text2 : V.text3, textAlign: "right", transition: "color 0.2s" }}
+                >
+                  {t.role}
+                </span>
+              </motion.div>
+            );
+          })}
+
+          {/* research row, always lit */}
+          <div
+            className="flex items-center gap-3"
+            style={{ padding: "16px 20px", borderBottom: `1px solid ${V.border}`, background: V.accentSoft }}
+          >
+            <Flask size={19} weight="duotone" color="#5B8CFF" />
+            <span style={{ fontFamily: V.mono, fontSize: 13.5, fontWeight: 500, color: V.accent, whiteSpace: "nowrap" }}>Research</span>
+            <span className="ml-auto" style={{ fontFamily: V.body, fontSize: 13, color: V.text2, textAlign: "right" }}>
+              UMBC CARDS Lab. Human-centered computing.
+            </span>
+          </div>
+
+          {/* live prompt */}
+          <div className="flex items-center gap-2" style={{ padding: "14px 20px", background: V.surface2 }}>
+            <span style={{ fontFamily: V.mono, fontSize: 13, color: V.accent }}>$</span>
+            <span style={{ fontFamily: V.mono, fontSize: 13, color: V.text2, minHeight: 18 }}>{typed}</span>
+            <motion.span
+              aria-hidden="true"
+              style={{ width: 7, height: 15, background: V.accent, display: "inline-block" }}
+              animate={reduce ? {} : { opacity: [1, 0, 1] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+            />
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function HowIWork() {
   return (
     <section style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, borderBottom: `1px solid ${V.border}` }}>
       <div className="mx-auto max-w-6xl px-6 py-24 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20">
@@ -914,32 +1129,8 @@ function HowIWork() {
           </Reveal>
         </div>
 
-        <Reveal delay={0.12}>
-          <div style={{ border: `1px solid ${V.border}`, borderRadius: 12, background: V.surface, overflow: "hidden" }}>
-            {tools.map((t, i) => (
-              <motion.div
-                key={t.name}
-                className="flex items-baseline justify-between gap-4"
-                style={{ padding: "18px 22px", borderBottom: i === tools.length - 1 ? "none" : `1px solid ${V.border}` }}
-                initial={{ opacity: 0, x: -14 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-10% 0px" }}
-                transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
-              >
-                <span style={{ fontFamily: V.mono, fontSize: 13.5, fontWeight: 500, color: V.text }}>{t.name}</span>
-                <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text3, textAlign: "right" }}>{t.role}</span>
-              </motion.div>
-            ))}
-            <div
-              className="flex items-baseline justify-between gap-4"
-              style={{ padding: "18px 22px", borderTop: `1px solid ${V.borderStrong}`, background: V.accentSoft }}
-            >
-              <span style={{ fontFamily: V.mono, fontSize: 13.5, fontWeight: 500, color: V.accent }}>Research</span>
-              <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text2, textAlign: "right" }}>
-                UMBC CARDS Lab. Human-centered computing.
-              </span>
-            </div>
-          </div>
+        <Reveal delay={0.12} className="min-w-0">
+          <ToolchainCard />
         </Reveal>
       </div>
     </section>
