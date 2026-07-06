@@ -8,11 +8,7 @@ import {
   Code,
   ArrowRight,
   ArrowUpRight,
-  EnvelopeSimple,
-  LinkedinLogo,
   FileText,
-  CopySimple,
-  Check,
   List,
   X,
   HandGrabbing,
@@ -22,10 +18,10 @@ import {
   FigmaLogo,
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
+import { ContactSection } from "./home/ContactLab";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
-const UXMotionBackdrop = lazy(() => import("./home/UXMotionBackdrop"));
 
 /* ──────────────────────────────────────────────────────────────────────────
    Homepage. Cool slate, techy, calm, rich. Motion is the personality.
@@ -1389,183 +1385,6 @@ function About() {
   );
 }
 
-/* ── contact ─────────────────────────────────────────────────────────────── */
-function Contact() {
-  const reduce = useReducedMotion();
-  const [copied, setCopied] = useState(false);
-  const [showBg, setShowBg] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { once: true, margin: "20% 0px" });
-
-  useEffect(() => {
-    if (inView) setShowBg(true);
-  }, [inView]);
-
-  const copyEmail = async () => {
-    let ok = false;
-    try {
-      await navigator.clipboard.writeText(LINKS.email);
-      ok = true;
-    } catch {
-      // legacy fallback
-      const ta = document.createElement("textarea");
-      ta.value = LINKS.email;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        ok = document.execCommand("copy");
-      } catch {
-        ok = false;
-      }
-      document.body.removeChild(ta);
-    }
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    }
-  };
-
-  const words: ReactNode[] = [
-    "Say",
-    <em key="hi" style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400 }}>
-      hi.
-    </em>,
-  ];
-
-  return (
-    <section
-      id="contact"
-      ref={sectionRef}
-      className="relative overflow-hidden"
-      style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
-    >
-      {/* quiet micro-interaction ballet behind the content */}
-      <div className="absolute inset-0" aria-hidden="true">
-        {showBg && (
-          <Suspense fallback={null}>
-            <UXMotionBackdrop />
-          </Suspense>
-        )}
-        {/* readability wash over the left, where the content sits */}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(100deg, rgba(13,18,32,0.85) 0%, rgba(13,18,32,0.45) 46%, rgba(13,18,32,0) 78%)" }}
-        />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-24 md:pt-32" style={{ paddingBottom: "clamp(150px, 26vh, 260px)" }}>
-        <Reveal>
-          <Eyebrow>Contact</Eyebrow>
-        </Reveal>
-
-        {/* big greeting with per-word clip reveal */}
-        <h2
-          style={{
-            fontFamily: V.display,
-            fontSize: "clamp(3rem, 8.5vw, 6.4rem)",
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-            lineHeight: 1.04,
-            color: V.text,
-            marginTop: 18,
-            display: "flex",
-            gap: "0.28em",
-            flexWrap: "wrap",
-          }}
-        >
-          {words.map((w, i) => (
-            <span key={i} className="inline-block overflow-hidden" style={{ paddingBottom: "0.08em" }}>
-              <motion.span
-                className="inline-block"
-                initial={reduce ? { opacity: 0 } : { y: "112%" }}
-                whileInView={reduce ? { opacity: 1 } : { y: 0 }}
-                viewport={{ once: true, margin: "-15% 0px" }}
-                transition={{ duration: 0.75, ease: EASE, delay: 0.1 + i * 0.1 }}
-              >
-                {w}
-              </motion.span>
-            </span>
-          ))}
-        </h2>
-
-        <Reveal delay={0.1}>
-          <p style={{ fontFamily: V.body, fontSize: 16.5, lineHeight: 1.6, color: V.text2, marginTop: 14, maxWidth: 440 }}>
-            One email. I reply fast, and the work speaks for itself.
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.16}>
-          <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 30 }}>
-            <MagneticButton onClick={() => (window.location.href = `mailto:${LINKS.email}`)}>
-              <EnvelopeSimple size={17} weight="bold" /> Email me
-            </MagneticButton>
-
-            {/* click-to-copy email pill */}
-            <button
-              onClick={copyEmail}
-              className="inline-flex items-center gap-2.5"
-              style={{
-                fontFamily: V.mono,
-                fontSize: "clamp(11px, 3.3vw, 13.5px)",
-                color: copied ? "#7EE2B0" : V.text2,
-                padding: "13px 16px",
-                borderRadius: 8,
-                background: "rgba(17,23,37,0.8)",
-                border: `1px solid ${copied ? "rgba(126,226,176,0.45)" : V.borderStrong}`,
-                backdropFilter: "blur(8px)",
-                cursor: "pointer",
-                transition: "color 0.2s, border-color 0.2s",
-                maxWidth: "100%",
-              }}
-              aria-label="Copy email address"
-            >
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{LINKS.email}</span>
-              {copied ? <Check size={15} weight="bold" color="#7EE2B0" style={{ flexShrink: 0 }} /> : <CopySimple size={15} color="#6A7488" style={{ flexShrink: 0 }} />}
-              <span style={{ fontSize: 11, color: copied ? "#7EE2B0" : V.text3, minWidth: 42, textAlign: "left", flexShrink: 0 }}>
-                {copied ? "copied" : "copy"}
-              </span>
-            </button>
-
-            <a
-              href={LINKS.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
-              style={{
-                fontFamily: V.body,
-                fontSize: 14.5,
-                fontWeight: 500,
-                color: V.text2,
-                padding: "13px 18px",
-                borderRadius: 8,
-                background: "rgba(17,23,37,0.8)",
-                border: `1px solid ${V.borderStrong}`,
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <LinkedinLogo size={16} weight="duotone" color="#5B8CFF" /> LinkedIn
-            </a>
-          </div>
-        </Reveal>
-
-        {/* backdrop caption */}
-        <div className="absolute" style={{ right: 24, bottom: 18 }}>
-          <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.12em", color: V.text3 }}>
-            <motion.span
-              style={{ width: 5, height: 5, borderRadius: 999, background: V.accent }}
-              animate={reduce ? {} : { opacity: [0.9, 0.25, 0.9] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            />
-            MICRO-INTERACTIONS · LIVE
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ── footer ──────────────────────────────────────────────────────────────── */
 function SiteFooter() {
   return (
@@ -1704,7 +1523,7 @@ export function HomePage() {
         <SelectedWork />
         <HowIWork />
         <About />
-        <Contact />
+        <ContactSection />
       </main>
       <SiteFooter />
       <FlyerTrigger />
