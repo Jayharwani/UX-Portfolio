@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
+import { useDiorama, Ambience } from "./home/motionKit";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
@@ -240,7 +241,7 @@ function Nav() {
         transition: "background 0.3s, border-color 0.3s",
       }}
     >
-      <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-4 flex items-center justify-between">
         <div className="flex items-baseline gap-3">
           <span style={{ fontFamily: V.display, fontSize: 16, fontWeight: 600, color: V.text }}>Jay Harwani</span>
           <span className="hidden sm:inline" style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, letterSpacing: "0.08em" }}>
@@ -437,7 +438,7 @@ function Hero() {
 
       {/* mobile keeps the clean text hero; the playground is a desktop signature */}
 
-      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 pt-28 pb-16" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
+      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-16" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         <div className="max-w-[640px]">
           {/* H1 with per-line clip reveal */}
           <h1
@@ -507,7 +508,7 @@ function WhatIDo() {
   ];
   return (
     <section style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, borderBottom: `1px solid ${V.border}` }}>
-      <div className="mx-auto max-w-6xl px-6 py-14 flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-14 flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
         <Reveal style={{ flex: 1 }}>
           <p
             style={{
@@ -880,7 +881,7 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
 function SelectedWork() {
   return (
     <section id="work" style={{ background: V.bg, scrollMarginTop: 70 }}>
-      <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-24 md:py-32">
         <Reveal>
           <Eyebrow>Selected work</Eyebrow>
         </Reveal>
@@ -1089,9 +1090,21 @@ function ToolchainCard() {
 }
 
 function HowIWork() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const d = useDiorama(sectionRef, { maxX: 3.5, maxY: 5 });
   return (
-    <section style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, borderBottom: `1px solid ${V.border}` }}>
-      <div className="mx-auto max-w-6xl px-6 py-24 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20">
+    <section
+      ref={sectionRef}
+      className="relative overflow-hidden"
+      style={{ background: V.bg2, borderTop: `1px solid ${V.border}`, borderBottom: `1px solid ${V.border}`, perspective: 1200 }}
+    >
+      {/* shared cursor-lit dot grid (matches Contact) */}
+      <Ambience d={d} />
+
+      <motion.div
+        className="relative mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-24 md:py-28 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center"
+        style={{ rotateX: d.tiltOn ? d.srx : 0, rotateY: d.tiltOn ? d.sry : 0, transformStyle: "preserve-3d" }}
+      >
         <div>
           <Reveal>
             <Eyebrow>How I work</Eyebrow>
@@ -1128,7 +1141,7 @@ function HowIWork() {
         <Reveal delay={0.12} className="min-w-0">
           <ToolchainCard />
         </Reveal>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -1189,6 +1202,8 @@ function Corners({ show }: { show: boolean }) {
 
 function About() {
   const reduce = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+  const d = useDiorama(sectionRef, { maxX: 3.5, maxY: 4.5 });
   const frameRef = useRef<HTMLDivElement>(null);
   const inView = useInView(frameRef, { once: true, margin: "-15% 0px" });
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -1200,39 +1215,14 @@ function About() {
   ];
 
   return (
-    <section id="about" className="relative overflow-hidden" style={{ background: V.bg, scrollMarginTop: 70 }}>
-      {/* ambient drifting glows */}
-      {!reduce && (
-        <>
-          <motion.div
-            aria-hidden="true"
-            className="absolute pointer-events-none"
-            style={{ top: "-20%", left: "-12%", width: 620, height: 620, background: "radial-gradient(circle, rgba(91,140,255,0.07) 0%, transparent 62%)" }}
-            animate={{ x: [0, 60, 0], y: [0, 30, 0] }}
-            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            aria-hidden="true"
-            className="absolute pointer-events-none"
-            style={{ bottom: "-24%", right: "-10%", width: 560, height: 560, background: "radial-gradient(circle, rgba(91,140,255,0.055) 0%, transparent 60%)" }}
-            animate={{ x: [0, -50, 0], y: [0, -26, 0] }}
-            transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </>
-      )}
-      {/* faint blueprint grid */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "linear-gradient(rgba(91,140,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(91,140,255,0.05) 1px, transparent 1px)",
-          backgroundSize: "72px 72px",
-          maskImage: "radial-gradient(75% 70% at 40% 50%, black, transparent)",
-          WebkitMaskImage: "radial-gradient(75% 70% at 40% 50%, black, transparent)",
-        }}
-      />
+    <section id="about" ref={sectionRef} className="relative overflow-hidden" style={{ background: V.bg, scrollMarginTop: 70, perspective: 1200 }}>
+      {/* shared cursor-lit dot grid (matches Contact) */}
+      <Ambience d={d} />
 
-      <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32 grid md:grid-cols-[0.9fr_1.1fr] gap-14 md:gap-16 items-center">
+      <motion.div
+        className="relative mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-24 md:py-32 grid md:grid-cols-[0.9fr_1.1fr] gap-14 md:gap-16 items-center"
+        style={{ rotateX: d.tiltOn ? d.srx : 0, rotateY: d.tiltOn ? d.sry : 0, transformStyle: "preserve-3d" }}
+      >
         {/* photo: tilt, glow, HUD corners, floating chips */}
         <Reveal>
           <div className="relative mx-auto md:mx-0" style={{ maxWidth: 380, perspective: 900 }}>
@@ -1380,7 +1370,7 @@ function About() {
             </p>
           </Reveal>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -1389,7 +1379,7 @@ function About() {
 function SiteFooter() {
   return (
     <footer style={{ background: V.bg, borderTop: `1px solid ${V.border}` }}>
-      <div className="mx-auto max-w-6xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text3 }}>Jay Harwani</span>
         <div className="flex items-center gap-5">
           <a href={LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="link-draw" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3 }}>

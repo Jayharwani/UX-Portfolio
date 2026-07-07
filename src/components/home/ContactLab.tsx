@@ -603,7 +603,7 @@ export function ContactSection() {
 
       {/* ── tilting diorama ── */}
       <motion.div
-        className="relative z-10 mx-auto max-w-6xl px-6 pt-24 md:pt-32"
+        className="relative z-10 mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 md:pt-32"
         style={{
           paddingBottom: "clamp(110px, 18vh, 190px)",
           rotateX: tiltOn ? srx : 0,

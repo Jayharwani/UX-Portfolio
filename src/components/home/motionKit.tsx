@@ -1,0 +1,172 @@
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useMotionTemplate,
+  useReducedMotion,
+  type MotionValue,
+} from "motion/react";
+import { useState, useEffect, useRef, type RefObject } from "react";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Motion kit: the shared physics for the homepage's interactive sections.
+   One source of truth so Contact, About, and How-I-Work feel identical:
+   - spring tokens
+   - useDiorama: cursor spotlight + shallow 3D section tilt (rAF-throttled)
+   - <Ambience>: dot grid lit by the spotlight, with static fallbacks
+   ────────────────────────────────────────────────────────────────────────── */
+
+export const SPRING = {
+  snappy: { type: "spring" as const, stiffness: 260, damping: 20, mass: 0.6 },
+  magnetic: { type: "spring" as const, stiffness: 150, damping: 15, mass: 0.5 },
+  tilt: { type: "spring" as const, stiffness: 120, damping: 18 },
+  overshoot: { type: "spring" as const, stiffness: 400, damping: 22 },
+};
+export const EXPO = [0.16, 1, 0.3, 1] as const;
+
+export function useMediaFlags() {
+  const reduce = !!useReducedMotion();
+  const [fine, setFine] = useState(false);
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    setFine(window.matchMedia("(pointer: fine)").matches);
+    setWide(window.matchMedia("(min-width: 1024px)").matches);
+  }, []);
+  return { reduce, fine, wide };
+}
+
+export interface Diorama {
+  interactive: boolean;
+  tiltOn: boolean;
+  ambientOn: boolean;
+  srx: MotionValue<number>;
+  sry: MotionValue<number>;
+  spotlight: MotionValue<string>;
+  dotMask: MotionValue<string>;
+  reduce: boolean;
+  fine: boolean;
+}
+
+/* cursor spotlight + shallow tilt for a section. `tilt`/`ambient` let a
+   caller (the Lab toggle) switch high-motion behavior on and off. */
+export function useDiorama(
+  ref: RefObject<HTMLElement>,
+  { tilt = true, ambient = true, maxX = 4.5, maxY = 5.5 }: { tilt?: boolean; ambient?: boolean; maxX?: number; maxY?: number } = {}
+): Diorama {
+  const { reduce, fine, wide } = useMediaFlags();
+  const interactive = fine && !reduce;
+  const tiltOn = interactive && wide && tilt;
+  const ambientOn = interactive && ambient;
+
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const srx = useSpring(rx, SPRING.tilt);
+  const sry = useSpring(ry, SPRING.tilt);
+
+  const mx = useMotionValue(-400);
+  const my = useMotionValue(-400);
+  const smx = useSpring(mx, SPRING.magnetic);
+  const smy = useSpring(my, SPRING.magnetic);
+  const spotlight = useMotionTemplate`radial-gradient(320px circle at ${smx}px ${smy}px, rgba(91,140,255,0.13), transparent 70%)`;
+  const dotMask = useMotionTemplate`radial-gradient(260px circle at ${smx}px ${smy}px, black, transparent 75%)`;
+  const lastMove = useRef(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !interactive) return;
+    let raf = 0;
+    let px = 0;
+    let py = 0;
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const r = el.getBoundingClientRect();
+      const lx = px - r.left;
+      const ly = py - r.top;
+      mx.set(lx);
+      my.set(ly);
+      if (tiltOn) {
+        const nx = (lx / r.width - 0.5) * 2;
+        const ny = (ly / r.height - 0.5) * 2;
+        ry.set(Math.max(-maxY, Math.min(maxY, nx * maxY)));
+        rx.set(Math.max(-maxX, Math.min(maxX, ny * -maxX)));
+      } else {
+        rx.set(0);
+        ry.set(0);
+      }
+      lastMove.current = performance.now();
+    };
+    const onMove = (e: PointerEvent) => {
+      px = e.clientX;
+      py = e.clientY;
+      if (!queued) {
+        queued = true;
+        raf = requestAnimationFrame(update);
+      }
+    };
+    const onLeave = () => {
+      rx.set(0);
+      ry.set(0);
+    };
+    el.addEventListener("pointermove", onMove, { passive: true });
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      cancelAnimationFrame(raf);
+    };
+  }, [ref, interactive, tiltOn, maxX, maxY, mx, my, rx, ry]);
+
+  /* idle drift: after 4s without movement, the spotlight wanders */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !ambientOn) return;
+    let raf = 0;
+    const drift = (t: number) => {
+      if (performance.now() - lastMove.current > 4000) {
+        const r = el.getBoundingClientRect();
+        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.28);
+        my.set(r.height / 2 + Math.cos(t / 3100) * r.height * 0.22);
+      }
+      raf = requestAnimationFrame(drift);
+    };
+    raf = requestAnimationFrame(drift);
+    return () => cancelAnimationFrame(raf);
+  }, [ref, ambientOn, mx, my]);
+
+  return { interactive, tiltOn, ambientOn, srx, sry, spotlight, dotMask, reduce, fine };
+}
+
+/* the lit dot grid. Interactive: spotlight pool + brighter dots near the
+   cursor. Touch / reduced motion: a static soft glow. */
+export function Ambience({ d, entered = true }: { d: Diorama; entered?: boolean }) {
+  const dotGrid: React.CSSProperties = {
+    backgroundImage: "radial-gradient(rgba(106,116,136,0.35) 1px, transparent 1px)",
+    backgroundSize: "34px 34px",
+  };
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={entered ? { opacity: 1 } : undefined}
+      transition={{ duration: d.reduce ? 0.2 : 1.1, ease: EXPO }}
+    >
+      <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.12 }} />
+      {d.interactive ? (
+        <>
+          <motion.div
+            className="absolute inset-0"
+            style={{ ...dotGrid, opacity: 0.5, maskImage: d.dotMask, WebkitMaskImage: d.dotMask }}
+          />
+          <motion.div className="absolute inset-0" style={{ background: d.spotlight }} />
+        </>
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(420px circle at 60% 40%, rgba(91,140,255,0.08), transparent 70%)" }}
+        />
+      )}
+    </motion.div>
+  );
+}
