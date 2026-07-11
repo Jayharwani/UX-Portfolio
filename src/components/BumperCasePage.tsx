@@ -1031,8 +1031,9 @@ function BackToTopButton() {
           className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 p-3 sm:p-4 bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-full hover:bg-white/15 transition-all duration-300"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
+          aria-label="Back to top"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 rotate-90" />
+          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 rotate-90" aria-hidden="true" />
         </motion.button>
       )}
     </AnimatePresence>

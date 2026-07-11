@@ -20,7 +20,7 @@
   --border-strong: #2E3950;
   --text: #E8ECF3;
   --text-2: #99A4B6;
-  --text-3: #6A7488;
+  --text-3: #7D89A0; /* was #6A7488 — lightened to clear WCAG AA (>=4.5:1) on slate */
   --accent: #5B8CFF;
   --accent-soft: rgba(91, 140, 255, 0.14);
   --font-display: 'Clash Display', 'Syne', sans-serif;

@@ -225,7 +225,9 @@ function Nav() {
     background: "none",
     border: "none",
     cursor: "pointer",
-    padding: "8px 12px",
+    padding: "13px 12px", // >=44px tap target
+    display: "inline-flex",
+    alignItems: "center",
   };
 
   return (
@@ -268,7 +270,7 @@ function Nav() {
               fontSize: 13.5,
               fontWeight: 600,
               color: V.text,
-              padding: "8px 16px",
+              padding: "13px 16px", // >=44px tap target
               borderRadius: 8,
               border: `1px solid ${V.borderStrong}`,
               background: V.accentSoft,
@@ -282,7 +284,7 @@ function Nav() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
-            style={{ width: 38, height: 38, borderRadius: 8, background: "none", border: `1px solid ${menuOpen ? "var(--border-strong)" : "transparent"}`, color: V.text, cursor: "pointer" }}
+            style={{ width: 44, height: 44, borderRadius: 8, background: "none", border: `1px solid ${menuOpen ? "var(--border-strong)" : "transparent"}`, color: V.text, cursor: "pointer" }}
           >
             {menuOpen ? <X size={19} /> : <List size={19} />}
           </button>
@@ -564,12 +566,13 @@ function HeadroomPreview({ active }: { active: boolean }) {
 
   return (
     <div
+      aria-hidden="true"
       className="relative w-full h-full flex items-center justify-center"
       style={{ background: "radial-gradient(120% 120% at 70% 20%, #0D2A1F 0%, #081A12 60%, #06130D 100%)", minHeight: "inherit" }}
     >
       <div style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #1E2A24", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
         <div style={{ borderRadius: 21, background: "#FFFFFF", overflow: "hidden", padding: "16px 14px 12px" }}>
-          <p style={{ fontFamily: V.mono, fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "#97A09B" }}>
+          <p style={{ fontFamily: V.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B6560" }}>
             Safe to spend
           </p>
           <p style={{ fontFamily: V.display, fontSize: 30, fontWeight: 600, color: "#10160F", lineHeight: 1.1, marginTop: 3, fontVariantNumeric: "tabular-nums" }}>
@@ -602,12 +605,13 @@ function HeadroomPreview({ active }: { active: boolean }) {
 function ChronoWeavePreview({ active }: { active: boolean }) {
   return (
     <div
+      aria-hidden="true"
       className="relative w-full h-full flex items-center justify-center"
       style={{ background: "radial-gradient(120% 120% at 30% 20%, #1A1430 0%, #110D20 60%, #0C0916 100%)", minHeight: "inherit" }}
     >
       <div style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #241E38", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
         <div style={{ borderRadius: 21, background: "#120E22", overflow: "hidden", padding: "16px 14px 44px", position: "relative" }}>
-          <p style={{ fontFamily: V.mono, fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "#7E76A3" }}>
+          <p style={{ fontFamily: V.mono, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#A79FC9" }}>
             Focus block
           </p>
           {/* time ring */}
@@ -632,7 +636,7 @@ function ChronoWeavePreview({ active }: { active: boolean }) {
               <span style={{ fontFamily: V.display, fontSize: 20, fontWeight: 600, color: "#EDEAF7", fontVariantNumeric: "tabular-nums" }}>
                 24:00
               </span>
-              <span style={{ fontFamily: V.mono, fontSize: 7.5, color: "#7E76A3", letterSpacing: "0.1em" }}>REMAINING</span>
+              <span style={{ fontFamily: V.mono, fontSize: 9, color: "#A79FC9", letterSpacing: "0.1em" }}>REMAINING</span>
             </div>
           </div>
           {/* haptic dots */}
@@ -653,15 +657,14 @@ function ChronoWeavePreview({ active }: { active: boolean }) {
               bottom: 10,
               borderRadius: 10,
               padding: "8px 10px",
-              background: "rgba(167,139,250,0.14)",
-              border: "1px solid rgba(167,139,250,0.4)",
-              backdropFilter: "blur(6px)",
+              background: "#2A2247",
+              border: "1px solid rgba(167,139,250,0.5)",
             }}
             animate={{ y: active ? 0 : 40, opacity: active ? 1 : 0 }}
             transition={{ duration: 0.45, ease: EASE }}
           >
-            <p style={{ fontFamily: V.body, fontSize: 9, fontWeight: 600, color: "#D6CCF7" }}>Gentle nudge</p>
-            <p style={{ fontFamily: V.body, fontSize: 8.5, color: "#9C8FD0", marginTop: 1 }}>Halfway through. Feel the pulse.</p>
+            <p style={{ fontFamily: V.body, fontSize: 10, fontWeight: 600, color: "#E4DEFA" }}>Gentle nudge</p>
+            <p style={{ fontFamily: V.body, fontSize: 9.5, color: "#B7ACE4", marginTop: 1 }}>Halfway through. Feel the pulse.</p>
           </motion.div>
         </div>
       </div>
@@ -673,6 +676,7 @@ function ChronoWeavePreview({ active }: { active: boolean }) {
 function BumperPreview({ active }: { active: boolean }) {
   return (
     <div
+      aria-hidden="true"
       className="relative w-full h-full flex items-center justify-center px-6"
       style={{ background: "radial-gradient(120% 120% at 70% 25%, #0A2422 0%, #071A18 55%, #061211 100%)", minHeight: "inherit" }}
     >
@@ -685,7 +689,7 @@ function BumperPreview({ active }: { active: boolean }) {
               <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: "#1F332F" }} />
             ))}
           </div>
-          <span style={{ fontFamily: V.mono, fontSize: 8, color: "#5F7A74", flex: 1, textAlign: "center" }}>
+          <span style={{ fontFamily: V.mono, fontSize: 9, color: "#8AA39D", flex: 1, textAlign: "center" }}>
             checkout.store/cart
           </span>
         </div>
@@ -699,8 +703,8 @@ function BumperPreview({ active }: { active: boolean }) {
             </div>
             <span style={{ fontFamily: V.mono, fontSize: 10, color: "#B9C9C4", fontVariantNumeric: "tabular-nums" }}>$89</span>
           </div>
-          <div style={{ marginTop: 12, height: 26, borderRadius: 7, background: "rgba(20,184,166,0.12)", border: "1px solid rgba(20,184,166,0.24)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: V.body, fontSize: 9.5, fontWeight: 600, color: "#5ED3C5" }}>Buy now</span>
+          <div style={{ marginTop: 12, height: 26, borderRadius: 7, background: "#10231F", border: "1px solid #1C453E", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: V.body, fontSize: 10, fontWeight: 600, color: "#63D8CA" }}>Buy now</span>
           </div>
 
           {/* intercept panel */}
@@ -710,8 +714,8 @@ function BumperPreview({ active }: { active: boolean }) {
               bottom: 8,
               borderRadius: 10,
               padding: "10px 12px",
-              background: "rgba(13,26,24,0.96)",
-              border: "1px solid rgba(20,184,166,0.45)",
+              background: "#0D1A18",
+              border: "1px solid rgba(20,184,166,0.5)",
               boxShadow: "0 -8px 26px rgba(0,0,0,0.45)",
             }}
             animate={{ y: active ? 0 : 110, opacity: active ? 1 : 0 }}
@@ -719,7 +723,7 @@ function BumperPreview({ active }: { active: boolean }) {
           >
             <div className="flex items-center gap-1.5">
               <span style={{ width: 5, height: 5, borderRadius: 999, background: "#14B8A6" }} />
-              <span style={{ fontFamily: V.mono, fontSize: 7.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4FB8AB" }}>
+              <span style={{ fontFamily: V.mono, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6FD3C6" }}>
                 Bumper
               </span>
             </div>
@@ -727,10 +731,10 @@ function BumperPreview({ active }: { active: boolean }) {
               Wait. Do you need this, or do you want it?
             </p>
             <div className="flex gap-1.5" style={{ marginTop: 7 }}>
-              <span style={{ fontFamily: V.body, fontSize: 8.5, fontWeight: 600, color: "#0A1512", background: "#14B8A6", borderRadius: 5, padding: "4px 9px" }}>
+              <span style={{ fontFamily: V.body, fontSize: 9, fontWeight: 600, color: "#06120F", background: "#3FCFBE", borderRadius: 5, padding: "4px 9px" }}>
                 Sleep on it
               </span>
-              <span style={{ fontFamily: V.body, fontSize: 8.5, fontWeight: 500, color: "#7E9A94", border: "1px solid #1F3833", borderRadius: 5, padding: "4px 9px" }}>
+              <span style={{ fontFamily: V.body, fontSize: 9, fontWeight: 500, color: "#9CB8B2", border: "1px solid #24463F", borderRadius: 5, padding: "4px 9px" }}>
                 Buy anyway
               </span>
             </div>
@@ -847,7 +851,7 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
                 </span>
               ))}
             </div>
-            <h3
+            <h2
               style={{
                 fontFamily: V.display,
                 fontSize: featured ? "clamp(1.9rem, 3.4vw, 2.6rem)" : "1.65rem",
@@ -858,7 +862,7 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
               }}
             >
               {project.name}
-            </h3>
+            </h2>
             <p style={{ fontFamily: V.body, fontSize: 15.5, lineHeight: 1.6, color: V.text2, marginTop: 10, maxWidth: 420 }}>
               {project.line}
             </p>
@@ -1382,14 +1386,14 @@ function SiteFooter() {
       <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text3 }}>Jay Harwani</span>
         <div className="flex items-center gap-5">
-          <a href={LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="link-draw" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3 }}>
-            LINKEDIN
+          <a href={LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>
+            <span className="link-draw">LINKEDIN</span>
           </a>
-          <a href={`mailto:${LINKS.email}`} className="link-draw" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3 }}>
-            EMAIL
+          <a href={`mailto:${LINKS.email}`} className="inline-flex items-center" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>
+            <span className="link-draw">EMAIL</span>
           </a>
-          <a href={LINKS.cv} target="_blank" rel="noopener noreferrer" className="link-draw inline-flex items-center gap-1" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3 }}>
-            <FileText size={12} weight="duotone" color="#6A7488" /> CV
+          <a href={LINKS.cv} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>
+            <FileText size={12} weight="duotone" color="#7D89A0" /> <span className="link-draw">CV</span>
           </a>
         </div>
         <span style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, letterSpacing: "0.08em" }}>2026 / v4.0</span>
