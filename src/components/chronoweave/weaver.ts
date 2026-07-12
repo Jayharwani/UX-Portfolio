@@ -30,6 +30,7 @@ export function useWeaver() {
   const stRef = useRef(st);
   stRef.current = st;
   const lastQuarterRef = useRef<number>(-1);
+  const lastWeaveTs = useRef(0);
 
   /* audio ↔ solar warmth, continuously */
   useEffect(() => {
@@ -89,9 +90,13 @@ export function useWeaver() {
       }
       if (q !== lastQuarterRef.current) {
         lastQuarterRef.current = q;
-        const quarter = ((Math.floor(nowMin / 15) % 4) + 4) % 4; // 0..3 within the hour
-        // one weave only, even if several quarters were missed (catch-up rule)
+        /* one weave only, even if several quarters were missed (catch-up
+           rule) — and never more than one weave per 4 s, so a demo-time
+           sweep (24 min/s) plays occasional motifs, not a barrage */
         void catchUp;
+        if (Date.now() - lastWeaveTs.current < 4000) return;
+        lastWeaveTs.current = Date.now();
+        const quarter = ((Math.floor(nowMin / 15) % 4) + 4) % 4; // 0..3 within the hour
         weave((quarter === 0 ? 4 : quarter) as 1 | 2 | 3 | 4);
       }
     };

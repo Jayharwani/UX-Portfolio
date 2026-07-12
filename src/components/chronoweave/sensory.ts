@@ -119,9 +119,24 @@ class AudioEngineImpl {
   private _armed = false;
   private muted = false;
   private warmth = 0.3;
+  private padFilter: BiquadFilterNode | null = null;
+  private padWanted = false;
 
   get armed() {
     return this._armed;
+  }
+
+  /** The ambient pad exists only inside the app proper — never during
+      onboarding or calibration. Ramps in/out over a couple of seconds. */
+  padOn(on: boolean) {
+    this.padWanted = on;
+    if (!this.ctx || !this.padGain || !this.lfoGain) return;
+    const t = this.ctx.currentTime;
+    /* breathing envelope: gain = base + sine·amp with base = amp, so the
+       trough touches true silence once per cycle */
+    const peak = 0.055;
+    this.padGain.gain.setTargetAtTime(on ? peak / 2 : 0, t, 1.2);
+    this.lfoGain.gain.setTargetAtTime(on ? peak / 2 : 0, t, 1.2);
   }
 
   /** must be called from a user gesture (Web Audio autoplay rule, §4) */
@@ -135,7 +150,7 @@ class AudioEngineImpl {
       if (!Ctx) return false;
       this.ctx = new Ctx();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.05; // background presence, ~ -30 dB feel
+      this.master.gain.value = 0.04; // background presence, ~ -30 dB feel
       this.master.connect(this.ctx.destination);
 
       this.filter = this.ctx.createBiquadFilter();
@@ -144,25 +159,38 @@ class AudioEngineImpl {
       this.filter.Q.value = 0.4;
       this.filter.connect(this.master);
 
-      /* ambient pad: two detuned triangles, very quiet, shimmering via LFO */
+      /* ambient pad: two detuned triangles that BREATHE — the amplitude LFO
+         swings the gain all the way to zero each cycle, so the pad swells
+         out of silence and sinks back into it (a constant drone reads as
+         buzz, and nothing in this app is allowed to drone). A3 not A2:
+         an octave up trades hum for air on small speakers. The pad gets its
+         OWN always-soft lowpass — the shared warmth filter opens bright in
+         the morning, which is right for motifs and wrong for a drone. */
+      this.padFilter = this.ctx.createBiquadFilter();
+      this.padFilter.type = "lowpass";
+      this.padFilter.frequency.value = 500;
+      this.padFilter.Q.value = 0.2;
+      this.padFilter.connect(this.master);
+
       this.padGain = this.ctx.createGain();
-      this.padGain.gain.value = 0.16;
-      this.padGain.connect(this.filter);
+      this.padGain.gain.value = 0; // silent until padOn(true) — app phase only
+      this.padGain.connect(this.padFilter);
 
       this.oscA = this.ctx.createOscillator();
       this.oscA.type = "triangle";
-      this.oscA.frequency.value = 110; // A2
+      this.oscA.frequency.value = 220; // A3
       this.oscB = this.ctx.createOscillator();
       this.oscB.type = "triangle";
-      this.oscB.frequency.value = 110 * Math.pow(2, 4 / 1200); // +4 cents detune
+      this.oscB.frequency.value = 220 * Math.pow(2, 3 / 1200); // +3 cents detune
       this.oscA.connect(this.padGain);
       this.oscB.connect(this.padGain);
 
+      /* breathing: gain = base + lfo, tuned so the trough touches 0 */
       this.lfo = this.ctx.createOscillator();
       this.lfo.type = "sine";
-      this.lfo.frequency.value = 0.22;
+      this.lfo.frequency.value = 0.08; // ~12s breath
       this.lfoGain = this.ctx.createGain();
-      this.lfoGain.gain.value = 0.08;
+      this.lfoGain.gain.value = 0; // engaged by padOn()
       this.lfo.connect(this.lfoGain);
       this.lfoGain.connect(this.padGain.gain);
 
@@ -171,6 +199,7 @@ class AudioEngineImpl {
       this.lfo.start();
       this._armed = true;
       this.setWarmth(this.warmth);
+      if (this.padWanted) this.padOn(true);
       return true;
     } catch {
       return false;
@@ -197,13 +226,15 @@ class AudioEngineImpl {
     if (!this.ctx || !this.filter || !this.lfo) return;
     const cutoff = 2400 - (2400 - 700) * w;
     this.filter.frequency.setTargetAtTime(cutoff, this.ctx.currentTime, 2);
-    this.lfo.frequency.setTargetAtTime(0.34 - 0.22 * w, this.ctx.currentTime, 2);
+    /* breath rate stays a BREATH: ~10s bright morning → ~18s warm dusk.
+       (Anything faster reads as throbbing, which reads as buzz.) */
+    this.lfo.frequency.setTargetAtTime(0.1 - 0.045 * w, this.ctx.currentTime, 2);
   }
 
   setMuted(m: boolean) {
     this.muted = m;
     if (this.ctx && this.master) {
-      this.master.gain.setTargetAtTime(m ? 0 : 0.05, this.ctx.currentTime, 0.15);
+      this.master.gain.setTargetAtTime(m ? 0 : 0.04, this.ctx.currentTime, 0.15);
     }
   }
 

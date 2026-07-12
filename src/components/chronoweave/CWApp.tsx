@@ -116,6 +116,12 @@ function AppInner() {
   /* the weaver: quarter-mark scheduling, adaptive rules, warmth sync */
   useWeaver();
 
+  /* the ambient pad breathes only inside the app proper — onboarding and
+     calibration stay silent apart from their explicit demos */
+  useEffect(() => {
+    audio.padOn(st.phase === "app" && st.channels.sound.enabled);
+  }, [st.phase, st.channels.sound.enabled]);
+
   /* returning users: audio re-arms on the first tap anywhere (§11) */
   const needsWake = st.phase === "app" && st.channels.sound.enabled && !st.audioArmed;
   useEffect(() => {
