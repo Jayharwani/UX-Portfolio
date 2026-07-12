@@ -1162,22 +1162,21 @@ export function ChronoWeavePage() {
 
             <div className="relative z-10">
               <motion.h2 variants={fadeInUp} className="text-2xl sm:text-3xl font-bold text-white mb-4">
-                Experience the Full Prototype
+                Feel the Working Prototype
               </motion.h2>
               <motion.p variants={fadeInUp} className="text-slate-400 text-base sm:text-lg mb-8 max-w-2xl mx-auto">
-                Explore the interactive Figma prototype to see ChronoWeave's complete user flow in action.
+                Not a mockup — a functional build. Calibrate your own time perception, watch the interface drift with the
+                real sun, and let the quarter-hour weave run. Built in code, right here.
               </motion.p>
               <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
-                  href="https://revamp-sauna-76244505.figma.site"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/chronoweave/live"
                   className="inline-flex items-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-slate-900 rounded-full font-semibold hover:shadow-xl hover:shadow-purple-500/10 hover:scale-105 transition-all duration-300 group text-sm sm:text-base"
                 >
                   <Smartphone className="w-5 h-5" />
-                  View Interactive Prototype
+                  Open the Live Prototype
                   <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                </a>
+                </Link>
                 <Link
                   to="/"
                   className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 border border-white/10 text-white rounded-full hover:bg-white/[0.03] transition-all duration-300 text-sm sm:text-base"

@@ -6,6 +6,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 /* Case-study pages split into their own chunks so the homepage loads light */
 const BumperCasePage = lazy(() => import("./components/BumperCasePage").then((m) => ({ default: m.BumperCasePage })));
 const ChronoWeavePage = lazy(() => import("./components/ChronoWeavePage").then((m) => ({ default: m.ChronoWeavePage })));
+const ChronoWeaveLive = lazy(() => import("./components/chronoweave/CWApp"));
 const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => ({ default: m.HeadroomPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
+            <Route path="/chronoweave/live" element={<ChronoWeaveLive />} />
             <Route path="/headroom" element={<HeadroomPage />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>
