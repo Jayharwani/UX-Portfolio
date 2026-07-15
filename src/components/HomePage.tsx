@@ -22,7 +22,7 @@ import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience } from "./home/motionKit";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
-const MobileIconField = lazy(() => import("./home/MobileIconField"));
+const DeskObjects = lazy(() => import("./home/DeskObjects"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -439,11 +439,11 @@ function Hero() {
         </motion.div>
       </motion.div>
 
-      {/* mobile signature: the same blocks as a 3D moment — tumble in from
-          depth, float forever, pop on tap (drag physics stays desktop) */}
+      {/* mobile signature: desk objects with tap stories — a live mini
+          ChronoWeave, coffee, a MetroCard, a sticky note (physics stays desktop) */}
       <div className="absolute inset-0 md:hidden">
         <Suspense fallback={null}>
-          <MobileIconField />
+          <DeskObjects />
         </Suspense>
       </div>
 

@@ -105,7 +105,7 @@ interface Tile {
   icon: (iconSize: number) => ReactNode;
 }
 
-export const TILES: Tile[] = [
+const TILES: Tile[] = [
   { id: "figma", label: "Figma", size: 96, icon: (s) => <FigmaIcon size={s} /> },
   { id: "claude", label: "Claude", size: 96, icon: (s) => <Simple d={P.claude} fill="#D97757" size={s} /> },
   { id: "chatgpt", label: "ChatGPT", size: 86, icon: (s) => <Simple d={P.openai} fill="#E8ECF3" size={s} /> },
@@ -118,7 +118,7 @@ export const TILES: Tile[] = [
   { id: "aidesign", label: "AI Design", size: 78, icon: (s) => <AIDesignIcon size={s} /> },
 ];
 
-export const tileStyle = (size: number): React.CSSProperties => ({
+const tileStyle = (size: number): React.CSSProperties => ({
   width: size,
   height: size,
   borderRadius: 18,
