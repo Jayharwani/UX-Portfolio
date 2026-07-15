@@ -22,6 +22,7 @@ import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience } from "./home/motionKit";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
+const MobileIconField = lazy(() => import("./home/MobileIconField"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -438,7 +439,13 @@ function Hero() {
         </motion.div>
       </motion.div>
 
-      {/* mobile keeps the clean text hero; the playground is a desktop signature */}
+      {/* mobile signature: the same blocks as a 3D moment — tumble in from
+          depth, float forever, pop on tap (drag physics stays desktop) */}
+      <div className="absolute inset-0 md:hidden">
+        <Suspense fallback={null}>
+          <MobileIconField />
+        </Suspense>
+      </div>
 
       <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-16" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         <div className="max-w-[640px]">
