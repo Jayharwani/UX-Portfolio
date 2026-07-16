@@ -105,13 +105,17 @@ function PhoneChrono() {
 
   return (
     <button onClick={sweep} aria-label="ChronoWeave mini demo — tap to sweep the sun through a day" style={{ ...bareBtn, width: 86, transform: "rotate(-7deg)" }}>
+      <span className="dsk-float" style={{ animationDelay: "1.4s" }}>
+      <span className="dsk-pop">
+      <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(139,124,246,0.5), transparent 72%)" }} />
       <div
         style={{
           borderRadius: 16,
           padding: 5,
           background: "linear-gradient(155deg, #232B3E, #10151F)",
           border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 14px 30px -12px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08)",
+          boxShadow:
+            "0 18px 34px -12px rgba(0,0,0,0.7), 0 0 22px rgba(139,124,246,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
         <div className={sweeping ? "dsk-sky dsk-sky-on" : "dsk-sky"} style={{ position: "relative", width: "100%", height: 130, borderRadius: 11, overflow: "hidden" }}>
@@ -125,13 +129,15 @@ function PhoneChrono() {
           </div>
         </div>
       </div>
+      </span>
+      </span>
       <Ground w={70} />
     </button>
   );
 }
 
 /* ── 2 · coffee: a real cup, a loud slurp ───────────────────────────────── */
-function Coffee() {
+function Coffee({ size = 92 }: { size?: number }) {
   const [tilt, setTilt] = useState(false);
   const timer = useRef(0);
   const tap = () => {
@@ -143,37 +149,44 @@ function Coffee() {
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   return (
-    <button onClick={tap} aria-label="Coffee — tap for a loud sip" style={{ ...bareBtn, width: 76 }}>
-      {/* rising steam over the real cup */}
-      <svg width="40" height="26" viewBox="0 0 40 26" fill="none" aria-hidden="true" style={{ position: "absolute", top: -8, left: 14 }}>
-        <g className="dsk-steam">
-          <path d="M10 24c-3-5 3-7 0-12" stroke={INK2} strokeWidth="1.6" strokeLinecap="round" opacity="0.6" />
-          <path d="M20 22c-3-5 3-7 0-12" stroke={INK2} strokeWidth="1.6" strokeLinecap="round" opacity="0.45" />
-          <path d="M30 24c-3-5 3-7 0-12" stroke={INK2} strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-        </g>
-      </svg>
-      <img
-        src="/desk/coffee-3d.png"
-        alt=""
-        width={76}
-        height={76}
-        draggable={false}
-        style={{
-          display: "block",
-          transform: tilt ? "rotate(-16deg) translateY(-3px)" : "rotate(0deg)",
-          transition: "transform 300ms cubic-bezier(0.34,1.4,0.64,1)",
-          transformOrigin: "30% 85%",
-          filter: "drop-shadow(0 10px 16px rgba(0,0,0,0.45))",
-        }}
-      />
-      <Ground w={60} />
+    <button onClick={tap} aria-label="Coffee — tap for a loud sip" style={{ ...bareBtn, width: size }}>
+      <span className="dsk-float" style={{ animationDelay: "0.2s" }}>
+        <span className="dsk-pop">
+          {/* a warm pool of light behind the cup */}
+          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(236,170,88,0.55), transparent 72%)" }} />
+          {/* rising steam over the real cup */}
+          <svg width="44" height="28" viewBox="0 0 40 26" fill="none" aria-hidden="true" style={{ position: "absolute", top: Math.round(size * 0.02), left: Math.round(size * 0.26) }}>
+            <g className="dsk-steam">
+              <path d="M10 24c-3-5 3-7 0-12" stroke="#C9D4EA" strokeWidth="1.7" strokeLinecap="round" opacity="0.7" />
+              <path d="M20 22c-3-5 3-7 0-12" stroke="#C9D4EA" strokeWidth="1.7" strokeLinecap="round" opacity="0.5" />
+              <path d="M30 24c-3-5 3-7 0-12" stroke="#C9D4EA" strokeWidth="1.7" strokeLinecap="round" opacity="0.6" />
+            </g>
+          </svg>
+          <img
+            src="/desk/coffee-3d.png"
+            alt=""
+            width={size}
+            height={size}
+            draggable={false}
+            style={{
+              display: "block",
+              transform: tilt ? "rotate(-16deg) translateY(-3px)" : "rotate(0deg)",
+              transition: "transform 300ms cubic-bezier(0.34,1.4,0.64,1)",
+              transformOrigin: "30% 85%",
+              filter:
+                "saturate(1.3) contrast(1.07) brightness(1.06) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(236,170,88,0.3))",
+            }}
+          />
+        </span>
+      </span>
+      <Ground w={Math.round(size * 0.76)} />
     </button>
   );
 }
 
 /* ── 3 · laptop: typing sound + the line types itself out ───────────────── */
 const LINE = "i think, design, code & ship — using AI";
-function Laptop() {
+function Laptop({ size = 100 }: { size?: number }) {
   const [typed, setTyped] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
   const run = () => {
@@ -189,13 +202,13 @@ function Laptop() {
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
 
   return (
-    <button onClick={run} aria-label="Laptop — tap to hear how I work" style={{ ...bareBtn, width: 84, transform: "rotate(3deg)" }}>
+    <button onClick={run} aria-label="Laptop — tap to hear how I work" style={{ ...bareBtn, width: size, transform: "rotate(3deg)" }}>
       {/* the typed line, floating above the laptop */}
       {typed !== null && (
         <div
           style={{
             position: "absolute",
-            bottom: 86,
+            bottom: size + 2,
             left: -26,
             width: 210,
             padding: "8px 10px",
@@ -216,21 +229,30 @@ function Laptop() {
           <span className="dsk-caret">▍</span>
         </div>
       )}
-      <img
-        src="/desk/laptop-3d.png"
-        alt=""
-        width={84}
-        height={84}
-        draggable={false}
-        style={{ display: "block", filter: "drop-shadow(0 10px 16px rgba(0,0,0,0.45))" }}
-      />
-      <Ground w={68} />
+      <span className="dsk-float" style={{ animationDelay: "0.6s" }}>
+        <span className="dsk-pop">
+          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(96,196,255,0.5), transparent 72%)" }} />
+          <img
+            src="/desk/laptop-3d.png"
+            alt=""
+            width={size}
+            height={size}
+            draggable={false}
+            style={{
+              display: "block",
+              filter:
+                "saturate(1.32) contrast(1.07) brightness(1.07) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(96,196,255,0.28))",
+            }}
+          />
+        </span>
+      </span>
+      <Ground w={Math.round(size * 0.8)} />
     </button>
   );
 }
 
 /* ── 4 · luggage: zip it open, six soft skills spill out ────────────────── */
-function Luggage() {
+function Luggage({ size = 94 }: { size?: number }) {
   const [open, setOpen] = useState(false);
   const timer = useRef(0);
 
@@ -254,22 +276,28 @@ function Luggage() {
         onClick={toggle}
         aria-label={open ? "Luggage open — six soft skills out. Tap to zip it back up." : "Luggage — tap to unzip my soft skills"}
         aria-expanded={open}
-        style={{ ...bareBtn, width: 80, transform: "rotate(-4deg)" }}
+        style={{ ...bareBtn, width: size, transform: "rotate(-4deg)" }}
       >
-        <img
-          src="/desk/luggage-3d.png"
-          alt=""
-          width={80}
-          height={80}
-          draggable={false}
-          style={{
-            display: "block",
-            transform: open ? "rotate(-7deg) scale(1.05)" : "rotate(0deg) scale(1)",
-            transition: "transform 320ms cubic-bezier(0.34,1.4,0.64,1)",
-            filter: "drop-shadow(0 10px 16px rgba(0,0,0,0.45))",
-          }}
-        />
-        <Ground w={64} />
+        <span className="dsk-float" style={{ animationDelay: "1s" }}>
+          <span className="dsk-pop">
+            <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(91,140,255,0.55), transparent 72%)" }} />
+            <img
+              src="/desk/luggage-3d.png"
+              alt=""
+              width={size}
+              height={size}
+              draggable={false}
+              style={{
+                display: "block",
+                transform: open ? "rotate(-7deg) scale(1.05)" : "rotate(0deg) scale(1)",
+                transition: "transform 320ms cubic-bezier(0.34,1.4,0.64,1)",
+                filter:
+                  "saturate(1.3) contrast(1.06) brightness(1.06) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(91,140,255,0.32))",
+              }}
+            />
+          </span>
+        </span>
+        <Ground w={Math.round(size * 0.8)} />
       </button>
 
       {/* the six soft skills that live in the bag */}
@@ -348,10 +376,33 @@ function DeskCss() {
           100% { opacity: 1; transform: translateY(0) scale(1) rotate(var(--r)); }
         }
 
+        /* idle float: objects hover a few px above their grounded shadow */
+        .dsk-float { display: block; animation: dsk-float 5.4s ease-in-out infinite alternate; will-change: transform; }
+        @keyframes dsk-float { from { transform: translateY(0); } to { transform: translateY(-7px); } }
+
+        /* hover lift + press squish (pointer devices) */
+        .dsk-pop { display: block; position: relative; transition: transform 260ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+        @media (hover: hover) {
+          .dsk-in button:hover .dsk-pop { transform: scale(1.08); }
+        }
+        .dsk-in button:active .dsk-pop { transform: scale(0.93); }
+
+        /* tinted light pool behind each object — breathing */
+        .dsk-halo {
+          position: absolute;
+          inset: -20%;
+          border-radius: 50%;
+          filter: blur(16px);
+          animation: dsk-halo 4.6s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+        @keyframes dsk-halo { from { opacity: 0.45; } to { opacity: 0.8; } }
+
         @media (prefers-reduced-motion: reduce) {
           .dsk-in { animation-duration: 1ms; }
-          .dsk-sky-on, .dsk-arm-on, .dsk-sun, .dsk-steam path, .dsk-caret, .dsk-skill { animation: none !important; }
+          .dsk-sky-on, .dsk-arm-on, .dsk-sun, .dsk-steam path, .dsk-caret, .dsk-skill, .dsk-float, .dsk-halo { animation: none !important; }
           .dsk-skill { opacity: 1; transform: rotate(var(--r)); }
+          .dsk-halo { opacity: 0.55; }
         }
       `}</style>
   );
@@ -372,26 +423,26 @@ export default function DeskObjects() {
         </div>
       </Enter>
 
-      {/* coffee, left, above the laptop — caption below so the CTA stays clean */}
-      <Enter i={1} style={{ left: "7%", bottom: "14.5%" }}>
+      {/* coffee, left, above the laptop — compact sizes so the 375px band fits */}
+      <Enter i={1} style={{ left: "7%", bottom: "13.5%" }}>
         <div style={{ position: "relative" }}>
-          <Coffee />
-          <Caption style={{ position: "absolute", top: 12, left: 82, transform: "rotate(8deg)" }}>slurp!</Caption>
+          <Coffee size={76} />
+          <Caption style={{ position: "absolute", top: 12, left: 70, transform: "rotate(8deg)" }}>slurp!</Caption>
         </div>
       </Enter>
 
       {/* laptop, left column below coffee — caption to its right */}
       <Enter i={2} style={{ left: "9%", bottom: "1%" }}>
         <div style={{ position: "relative" }}>
-          <Laptop />
+          <Laptop size={84} />
           <Caption style={{ position: "absolute", bottom: 26, left: 88, transform: "rotate(-2deg)" }}>how i ship</Caption>
         </div>
       </Enter>
 
       {/* luggage, center — caption above */}
-      <Enter i={3} style={{ left: "40%", bottom: "10%" }}>
+      <Enter i={3} style={{ left: "40%", bottom: "9%" }}>
         <div style={{ position: "relative" }}>
-          <Luggage />
+          <Luggage size={78} />
           <Caption style={{ position: "absolute", top: -26, left: 2, transform: "rotate(3deg)" }}>unzip me</Caption>
         </div>
       </Enter>

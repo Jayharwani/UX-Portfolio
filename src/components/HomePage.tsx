@@ -399,8 +399,11 @@ function Hero() {
         }}
       />
 
-      {/* desktop: two desk objects each side of the centered copy (paridhi-style) */}
-      <div className="absolute inset-0 hidden md:block">
+      {/* desktop: two desk objects each side of the centered copy (paridhi-style).
+          z-20 keeps the buttons ABOVE the full-width text container (z-10),
+          which otherwise swallows every tap; the layer root is pointer-events
+          none so the copy and CTA stay clickable through it. */}
+      <div className="absolute inset-0 hidden md:block z-20 pointer-events-none">
         <Suspense fallback={null}>
           <DeskFlanks />
         </Suspense>
@@ -408,7 +411,7 @@ function Hero() {
 
       {/* mobile signature: desk objects with tap stories — a live mini
           ChronoWeave, coffee, laptop, luggage (physics stays desktop) */}
-      <div className="absolute inset-0 md:hidden">
+      <div className="absolute inset-0 md:hidden z-20 pointer-events-none">
         <Suspense fallback={null}>
           <DeskObjects />
         </Suspense>
