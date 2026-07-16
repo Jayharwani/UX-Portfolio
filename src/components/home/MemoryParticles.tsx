@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { playIntroSound } from "./heroSound";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -42,11 +43,16 @@ interface P {
   vy: number;
   sx: number; // scatter origin for the intro
   sy: number;
-  t0: number; // intro stagger offset 0..0.55
+  t0: number; // intro stagger offset 0..0.62
   drift: number; // per-particle drift phase for the dissolve
   size: number;
   bucket: number; // color bucket index
   word: boolean;
+  /* ambient survivors: after assembly they drift to the hero's flanks and
+     stay alive — the memories that didn't make it into the words */
+  ambient: boolean;
+  ax: number;
+  ay: number;
 }
 
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
@@ -213,11 +219,14 @@ export default function MemoryParticles({
           vy: 0,
           sx: 0,
           sy: 0,
-          t0: Math.random() * 0.55,
+          t0: Math.random() * 0.62,
           drift: Math.random() * Math.PI * 2,
           size: Math.random() < 0.82 ? 1.6 : 2.4,
           bucket: word ? 3 + Math.floor(Math.random() * 3) : Math.floor(Math.random() * 3),
           word,
+          ambient: false,
+          ax: 0,
+          ay: 0,
         };
       };
       const parts: P[] = [...restPts.map((p) => mk(p, false)), ...wordPts.map((p) => mk(p, true))];
@@ -225,6 +234,25 @@ export default function MemoryParticles({
         p.sx = p.x;
         p.sy = p.y;
       });
+
+      /* ambient survivors (desktop only): a sparse constellation stays in
+         the empty flanks after the headline lands */
+      if (heroRect.width >= 900) {
+        const rest = parts.filter((p) => !p.word);
+        const want = Math.min(220, Math.floor(rest.length / 8));
+        const stride = Math.max(1, Math.floor(rest.length / want));
+        const midTop = heroRect.height * 0.1;
+        const midBot = heroRect.height * 0.86;
+        for (let i = 0; i < rest.length; i += stride) {
+          const p = rest[i];
+          p.ambient = true;
+          const leftSide = Math.random() < 0.5;
+          p.ax = leftSide
+            ? heroRect.width * (0.03 + Math.random() * 0.22)
+            : heroRect.width * (0.75 + Math.random() * 0.22);
+          p.ay = midTop + Math.random() * (midBot - midTop);
+        }
+      }
       // render order sorted by bucket so fillStyle changes ~6 times/frame
       parts.sort((a, b) => a.bucket - b.bucket);
 
@@ -234,6 +262,8 @@ export default function MemoryParticles({
         dissolve: 0, // word only: 0 home → 1 dispersed
         restAlpha: 1, // non-word particles fade out after the crossfade
         wordAlpha: 0, // word particles visible only during the dissolve loop
+        ambientAlpha: 0, // the flank constellation fades in after assembly
+        masterAlpha: 0, // everything emerges from darkness, no pop-in
         running: true,
         time: 0,
       };
@@ -267,14 +297,31 @@ export default function MemoryParticles({
 
         let lastBucket = -1;
         for (const p of parts) {
-          const alpha = p.word ? (state.intro < 1 ? 1 : state.wordAlpha) : state.intro < 1 ? 1 : state.restAlpha;
+          const alpha = p.word
+            ? state.intro < 1
+              ? 1
+              : state.wordAlpha
+            : state.intro < 1
+            ? 1
+            : p.ambient
+            ? state.ambientAlpha
+            : state.restAlpha;
           if (alpha <= 0.01) continue;
 
-          /* home position: intro converges from scatter; dissolve sends the
-             word particles wandering upward like smoke */
+          /* home position: a slow ambient drift while scattered, then the
+             convergence takes over; dissolve sends the word particles
+             wandering upward like smoke */
           const ip = easeOutExpo(Math.max(0, Math.min(1, (state.intro - p.t0) / (1 - p.t0 + 0.0001))));
-          let hx = p.sx + (p.tx - p.sx) * ip;
-          let hy = p.sy + (p.ty - p.sy) * ip;
+          const pre = 1 - ip; // cinematic pre-drift, fades as convergence wins
+          let hx =
+            p.sx + (p.tx - p.sx) * ip + (Math.sin(t * 0.5 + p.drift) * 16 + Math.sin(t * 0.23 + p.drift * 2.1) * 10) * pre;
+          let hy =
+            p.sy + (p.ty - p.sy) * ip + (Math.cos(t * 0.42 + p.drift * 1.6) * 14 + Math.sin(t * 0.31 + p.drift) * 8) * pre;
+          if (p.ambient && state.intro >= 1 && state.ambientAlpha > 0.01) {
+            /* the survivors: slow orbital wander in the flanks */
+            hx = p.ax + Math.sin(t * 0.32 + p.drift) * 18 + Math.sin(t * 0.13 + p.drift * 2.4) * 10;
+            hy = p.ay + Math.cos(t * 0.27 + p.drift * 1.7) * 16 + Math.cos(t * 0.11 + p.drift) * 9;
+          }
           if (p.word && state.dissolve > 0) {
             const d = state.dissolve;
             const wander = Math.sin(t * 1.7 + p.drift) * 26 + Math.sin(t * 0.9 + p.drift * 2.3) * 18;
@@ -304,7 +351,7 @@ export default function MemoryParticles({
             ctx.fillStyle = BUCKETS[p.bucket];
             lastBucket = p.bucket;
           }
-          const fade = p.word && state.dissolve > 0 ? alpha * (1 - state.dissolve * 0.55) : alpha;
+          const fade = (p.word && state.dissolve > 0 ? alpha * (1 - state.dissolve * 0.55) : alpha) * state.masterAlpha;
           ctx.globalAlpha = fade;
           ctx.fillRect(p.x, p.y, p.size, p.size);
         }
@@ -327,23 +374,26 @@ export default function MemoryParticles({
         document.removeEventListener("visibilitychange", onVis);
       });
 
-      /* ── choreography ── */
+      /* ── choreography (cinematic: emerge → drift → converge → land) ── */
       const tl = gsap.timeline();
-      tl.to(state, { intro: 1, duration: 2.1, ease: "none" }) // per-particle easing handles the feel
+      tl.add(() => playIntroSound(3.3)) // plays where the browser allows it
+        .to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
+        .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
         .add(() => {
           assembledCb.current(); // real text fades in over the particles
-        }, "-=0.25")
-        .to(state, { restAlpha: 0, duration: 0.7, ease: "power2.out" }, "-=0.05");
+        }, "-=0.4")
+        .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
+        .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 
       /* the forgetting loop — runs after assembly, forever */
-      const loop = gsap.timeline({ repeat: -1, repeatDelay: 4.6, delay: 3.4, paused: true });
+      const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });
       loop
         .add(() => {
           state.wordAlpha = 1;
           gsap.set(wordEl, { opacity: 0 }); // canvas takes over the word
         })
-        .to(state, { dissolve: 1, duration: 1.5, ease: "power2.in" })
-        .to(state, { dissolve: 0, duration: 1.7, ease: "expo.inOut" }, "+=0.9")
+        .to(state, { dissolve: 1, duration: 1.9, ease: "power2.in" })
+        .to(state, { dissolve: 0, duration: 2.0, ease: "expo.inOut" }, "+=1.1")
         .add(() => {
           state.wordAlpha = 0;
           gsap.to(wordEl, { opacity: 1, duration: 0.25, ease: "power1.out" }); // DOM word returns

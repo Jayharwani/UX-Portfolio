@@ -388,7 +388,15 @@ function Hero() {
       {/* the memory-particles layer: assembles the headline, then owns the
           "forgets." dissolve loop. Skipped entirely under reduced motion. */}
       {particles && (
-        <MemoryParticles heroRef={heroRef} h1Ref={h1Ref} wordRef={wordRef} onAssembled={() => setAssembled(true)} />
+        <MemoryParticles
+          heroRef={heroRef}
+          h1Ref={h1Ref}
+          wordRef={wordRef}
+          onAssembled={() => {
+            setAssembled(true);
+            if (import.meta.env.DEV) (window as any).__heroAssembled = true;
+          }}
+        />
       )}
       {/* soft accent glows */}
       <div
@@ -412,16 +420,35 @@ function Hero() {
         }}
       />
 
-      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-10 md:pb-4" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
+      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         {/* copy centered on every breakpoint */}
         <div className="max-w-[820px] mx-auto text-center flex flex-col items-center">
-          {/* H1: in particle mode the crisp text crossfades in AFTER the
-              particles assemble it; reduced motion keeps a plain reveal */}
+          {/* H1: in particle mode the crisp text lands AFTER the particles
+              assemble it — a blur-to-sharp crossfade with one glow pulse,
+              like a memory clicking into focus. Reduced motion: plain reveal. */}
           <motion.h1
             ref={h1Ref}
-            initial={{ opacity: particles ? 0 : 0 }}
-            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
-            transition={{ duration: particles ? 0.55 : 0.8, ease: EASE }}
+            initial={{ opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }}
+            animate={
+              !particles
+                ? { opacity: 1, filter: "blur(0px)" }
+                : assembled
+                ? {
+                    opacity: 1,
+                    filter: "blur(0px)",
+                    textShadow: [
+                      "0 0 0px rgba(143,176,255,0)",
+                      "0 0 48px rgba(143,176,255,0.5)",
+                      "0 0 0px rgba(143,176,255,0)",
+                    ],
+                  }
+                : { opacity: 0, filter: "blur(12px)" }
+            }
+            transition={
+              assembled
+                ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
+                : { duration: 0.8, ease: EASE }
+            }
             style={{
               fontFamily: V.display,
               fontWeight: 600,
@@ -439,11 +466,13 @@ function Hero() {
             ))}
           </motion.h1>
 
+          {/* sub + CTA are gated on the assembly moment, not fixed clocks,
+              so they always land right after the headline does */}
           <motion.p
             className="md:mx-auto"
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: particles ? 1.7 : 0.52 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
+            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.35 : 0.52 }}
             style={{
               fontFamily: V.body,
               fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
@@ -458,8 +487,8 @@ function Hero() {
 
           <motion.div
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: particles ? 1.85 : 0.64 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
+            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.6 : 0.64 }}
             className="flex flex-wrap items-center gap-4 md:justify-center"
             style={{ marginTop: 30 }}
           >
@@ -470,10 +499,11 @@ function Hero() {
         </div>
       </motion.div>
 
-      {/* the blocks playground: a full-width band under the hero copy (desktop) */}
+      {/* the blocks playground: a full-width band tucked right under the CTA
+          (36vh, not 44 — the floor rises, so no dead space below the button) */}
       <motion.div
         className="relative hidden md:block w-full"
-        style={reduce ? { height: "44vh" } : { height: "44vh", y: playY, opacity: heroFade }}
+        style={reduce ? { height: "36vh" } : { height: "36vh", y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >
         <motion.div
