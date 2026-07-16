@@ -20,6 +20,7 @@ import {
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience } from "./home/motionKit";
+import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
@@ -341,6 +342,13 @@ function Hero() {
   const reduce = useReducedMotion();
   const [showPlay, setShowPlay] = useState(false);
   const [hintGone, setHintGone] = useState(false);
+  /* memory-particles choreography: the DOM headline stays invisible until
+     the particles have assembled it, then crossfades in (crisp text wins) */
+  const [assembled, setAssembled] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const wordRef = useRef<HTMLElement>(null);
+  const particles = !reduce;
 
   /* gentle exit parallax: text drifts up faster than the page, playground lags */
   const { scrollY } = useScroll();
@@ -369,12 +377,19 @@ function Hero() {
     "for the people",
     <>
       it{" "}
-      <em style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>forgets.</em>
+      <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
+        forgets.
+      </em>
     </>,
   ];
 
   return (
-    <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
+    <section ref={heroRef} className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
+      {/* the memory-particles layer: assembles the headline, then owns the
+          "forgets." dissolve loop. Skipped entirely under reduced motion. */}
+      {particles && (
+        <MemoryParticles heroRef={heroRef} h1Ref={h1Ref} wordRef={wordRef} onAssembled={() => setAssembled(true)} />
+      )}
       {/* soft accent glows */}
       <div
         className="absolute pointer-events-none"
@@ -400,8 +415,13 @@ function Hero() {
       <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-10 md:pb-4" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         {/* copy centered on every breakpoint */}
         <div className="max-w-[820px] mx-auto text-center flex flex-col items-center">
-          {/* H1 with per-line clip reveal */}
-          <h1
+          {/* H1: in particle mode the crisp text crossfades in AFTER the
+              particles assemble it; reduced motion keeps a plain reveal */}
+          <motion.h1
+            ref={h1Ref}
+            initial={{ opacity: particles ? 0 : 0 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
+            transition={{ duration: particles ? 0.55 : 0.8, ease: EASE }}
             style={{
               fontFamily: V.display,
               fontWeight: 600,
@@ -413,24 +433,17 @@ function Hero() {
             }}
           >
             {lines.map((line, i) => (
-              <span key={i} className="block overflow-hidden">
-                <motion.span
-                  className="block"
-                  initial={reduce ? { opacity: 0 } : { y: "108%" }}
-                  animate={reduce ? { opacity: 1 } : { y: 0 }}
-                  transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.09 }}
-                >
-                  {line}
-                </motion.span>
+              <span key={i} data-line className="block">
+                {line}
               </span>
             ))}
-          </h1>
+          </motion.h1>
 
           <motion.p
             className="md:mx-auto"
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: 0.52 }}
+            transition={{ duration: 0.65, ease: EASE, delay: particles ? 1.7 : 0.52 }}
             style={{
               fontFamily: V.body,
               fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
@@ -446,7 +459,7 @@ function Hero() {
           <motion.div
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: 0.64 }}
+            transition={{ duration: 0.65, ease: EASE, delay: particles ? 1.85 : 0.64 }}
             className="flex flex-wrap items-center gap-4 md:justify-center"
             style={{ marginTop: 30 }}
           >
