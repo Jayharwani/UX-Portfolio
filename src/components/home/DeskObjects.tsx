@@ -28,14 +28,15 @@ const SKILLS = [
   "fast learner",
   "ownership",
 ];
-/* sticker spots: right-half cloud, clear of the CTA (left) and hero copy */
+/* sticker spots relative to the bag itself (px from its top-left), fanning
+   up and to the right — works wherever the bag sits, mobile or desktop */
 const SKILL_SPOTS = [
-  { left: "55%", top: "66%", r: -6 },
-  { left: "78%", top: "64.5%", r: 5 },
-  { left: "57%", top: "72%", r: 4 },
-  { left: "80%", top: "71%", r: -5 },
-  { left: "55.5%", top: "78%", r: -3 },
-  { left: "79%", top: "77.5%", r: 6 },
+  { dx: 95, dy: -115, r: -6 },
+  { dx: 58, dy: -98, r: 5 },
+  { dx: 148, dy: -70, r: 4 },
+  { dx: 62, dy: -42, r: -5 },
+  { dx: 150, dy: -14, r: -3 },
+  { dx: -2, dy: -16, r: 6 },
 ];
 
 function Enter({ i, children, style }: { i: number; children: React.ReactNode; style?: React.CSSProperties }) {
@@ -229,54 +230,85 @@ function Laptop() {
 }
 
 /* ── 4 · luggage: zip it open, six soft skills spill out ────────────────── */
-function Luggage({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      aria-label={open ? "Luggage open — six soft skills out. Tap to zip it back up." : "Luggage — tap to unzip my soft skills"}
-      aria-expanded={open}
-      style={{ ...bareBtn, width: 80, transform: "rotate(-4deg)" }}
-    >
-      <img
-        src="/desk/luggage-3d.png"
-        alt=""
-        width={80}
-        height={80}
-        draggable={false}
-        style={{
-          display: "block",
-          transform: open ? "rotate(-7deg) scale(1.05)" : "rotate(0deg) scale(1)",
-          transition: "transform 320ms cubic-bezier(0.34,1.4,0.64,1)",
-          filter: "drop-shadow(0 10px 16px rgba(0,0,0,0.45))",
-        }}
-      />
-      <Ground w={64} />
-    </button>
-  );
-}
+function Luggage() {
+  const [open, setOpen] = useState(false);
+  const timer = useRef(0);
 
-/* ── the desk ───────────────────────────────────────────────────────────── */
-export default function DeskObjects() {
-  const [bagOpen, setBagOpen] = useState(false);
-  const bagTimer = useRef(0);
-
-  const toggleBag = () => {
-    zip(!bagOpen);
-    setBagOpen((o) => !o);
-    window.clearTimeout(bagTimer.current);
-    if (!bagOpen) {
+  const toggle = () => {
+    zip(!open);
+    setOpen((o) => !o);
+    window.clearTimeout(timer.current);
+    if (!open) {
       // auto-zip back after a while so the hero tidies itself
-      bagTimer.current = window.setTimeout(() => {
+      timer.current = window.setTimeout(() => {
         zip(false);
-        setBagOpen(false);
+        setOpen(false);
       }, 7000);
     }
   };
-  useEffect(() => () => window.clearTimeout(bagTimer.current), []);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-      <style>{`
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={toggle}
+        aria-label={open ? "Luggage open — six soft skills out. Tap to zip it back up." : "Luggage — tap to unzip my soft skills"}
+        aria-expanded={open}
+        style={{ ...bareBtn, width: 80, transform: "rotate(-4deg)" }}
+      >
+        <img
+          src="/desk/luggage-3d.png"
+          alt=""
+          width={80}
+          height={80}
+          draggable={false}
+          style={{
+            display: "block",
+            transform: open ? "rotate(-7deg) scale(1.05)" : "rotate(0deg) scale(1)",
+            transition: "transform 320ms cubic-bezier(0.34,1.4,0.64,1)",
+            filter: "drop-shadow(0 10px 16px rgba(0,0,0,0.45))",
+          }}
+        />
+        <Ground w={64} />
+      </button>
+
+      {/* the six soft skills that live in the bag */}
+      {open &&
+        SKILLS.map((s, i) => (
+          <div
+            key={s}
+            className="dsk-skill"
+            style={{
+              position: "absolute",
+              left: SKILL_SPOTS[i].dx,
+              top: SKILL_SPOTS[i].dy,
+              // @ts-expect-error CSS var for the settle rotation
+              "--r": `${SKILL_SPOTS[i].r}deg`,
+              animationDelay: `${i * 75}ms`,
+              padding: "5px 11px",
+              borderRadius: 9,
+              background: "rgba(20,27,43,0.94)",
+              border: "1px solid rgba(91,140,255,0.45)",
+              boxShadow: "0 8px 20px -8px rgba(0,0,0,0.6), 0 0 12px rgba(91,140,255,0.15)",
+              fontFamily: CAVEAT,
+              fontSize: 17,
+              color: "#CFE0FF",
+              whiteSpace: "nowrap",
+              zIndex: 4,
+              pointerEvents: "none",
+            }}
+          >
+            {s}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+/* shared animation css for the mobile collage AND the desktop flanks */
+function DeskCss() {
+  return (
+    <style>{`
         .dsk-in { opacity: 0; animation: dsk-in 640ms cubic-bezier(0.34, 1.35, 0.64, 1) both; }
         @keyframes dsk-in {
           0% { opacity: 0; transform: translateY(-14px) rotate(4deg) scale(0.92); }
@@ -322,6 +354,14 @@ export default function DeskObjects() {
           .dsk-skill { opacity: 1; transform: rotate(var(--r)); }
         }
       `}</style>
+  );
+}
+
+/* ── the mobile desk ────────────────────────────────────────────────────── */
+export default function DeskObjects() {
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      <DeskCss />
 
       {/* phone, lower right */}
       <Enter i={0} style={{ right: "6%", bottom: "5%" }}>
@@ -351,40 +391,47 @@ export default function DeskObjects() {
       {/* luggage, center — caption above */}
       <Enter i={3} style={{ left: "40%", bottom: "10%" }}>
         <div style={{ position: "relative" }}>
-          <Luggage open={bagOpen} onToggle={toggleBag} />
+          <Luggage />
           <Caption style={{ position: "absolute", top: -26, left: 2, transform: "rotate(3deg)" }}>unzip me</Caption>
         </div>
       </Enter>
+    </div>
+  );
+}
 
-      {/* the six soft skills that live in the bag */}
-      {bagOpen &&
-        SKILLS.map((s, i) => (
-          <div
-            key={s}
-            className="dsk-skill"
-            style={{
-              position: "absolute",
-              left: SKILL_SPOTS[i].left,
-              top: SKILL_SPOTS[i].top,
-              // @ts-expect-error CSS var for the settle rotation
-              "--r": `${SKILL_SPOTS[i].r}deg`,
-              animationDelay: `${i * 75}ms`,
-              padding: "5px 11px",
-              borderRadius: 9,
-              background: "rgba(20,27,43,0.94)",
-              border: "1px solid rgba(91,140,255,0.45)",
-              boxShadow: "0 8px 20px -8px rgba(0,0,0,0.6), 0 0 12px rgba(91,140,255,0.15)",
-              fontFamily: CAVEAT,
-              fontSize: 17,
-              color: "#CFE0FF",
-              whiteSpace: "nowrap",
-              zIndex: 4,
-              pointerEvents: "none",
-            }}
-          >
-            {s}
-          </div>
-        ))}
+/* ── the desktop flanks: two objects each side of the centered hero copy ── */
+export function DeskFlanks() {
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      <DeskCss />
+
+      {/* left of the text: coffee above, luggage below */}
+      <Enter i={1} style={{ left: "6%", top: "24%" }}>
+        <div style={{ position: "relative" }}>
+          <Coffee />
+          <Caption style={{ position: "absolute", top: 12, left: 82, transform: "rotate(8deg)" }}>slurp!</Caption>
+        </div>
+      </Enter>
+      <Enter i={3} style={{ left: "10%", top: "46%" }}>
+        <div style={{ position: "relative" }}>
+          <Luggage />
+          <Caption style={{ position: "absolute", bottom: -26, left: 2, transform: "rotate(3deg)" }}>unzip me</Caption>
+        </div>
+      </Enter>
+
+      {/* right of the text: laptop above, the live phone below */}
+      <Enter i={2} style={{ right: "7%", top: "24%" }}>
+        <div style={{ position: "relative" }}>
+          <Laptop />
+          <Caption style={{ position: "absolute", bottom: -24, left: 8, transform: "rotate(-2deg)" }}>how i ship</Caption>
+        </div>
+      </Enter>
+      <Enter i={0} style={{ right: "6%", top: "40%" }}>
+        <div style={{ position: "relative" }}>
+          <Caption style={{ position: "absolute", top: -30, right: 0, transform: "rotate(-4deg)" }}>my latest build, live</Caption>
+          <PhoneChrono />
+        </div>
+      </Enter>
     </div>
   );
 }

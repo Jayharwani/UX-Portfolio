@@ -23,6 +23,7 @@ import { useDiorama, Ambience } from "./home/motionKit";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const DeskObjects = lazy(() => import("./home/DeskObjects"));
+const DeskFlanks = lazy(() => import("./home/DeskObjects").then((m) => ({ default: m.DeskFlanks })));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -350,11 +351,19 @@ function Hero() {
   const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
   useEffect(() => {
-    // load the physics chunk after first paint, desktop only
-    if (window.matchMedia("(min-width: 768px)").matches) {
-      const t = setTimeout(() => setShowPlay(true), 250);
-      return () => clearTimeout(t);
-    }
+    // load the physics chunk after first paint, desktop only — and keep
+    // listening so a small→large resize (rotation, window resize) gets it too
+    const mql = window.matchMedia("(min-width: 768px)");
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      if (mql.matches) t = setTimeout(() => setShowPlay(true), 250);
+    };
+    arm();
+    mql.addEventListener("change", arm);
+    return () => {
+      clearTimeout(t);
+      mql.removeEventListener("change", arm);
+    };
   }, []);
 
   const lines: ReactNode[] = [
@@ -367,7 +376,7 @@ function Hero() {
   ];
 
   return (
-    <section className="relative min-h-[100svh] flex items-center overflow-hidden" style={{ background: V.bg }}>
+    <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
       {/* soft accent glows */}
       <div
         className="absolute pointer-events-none"
@@ -390,10 +399,85 @@ function Hero() {
         }}
       />
 
-      {/* icon playground signature, right side (desktop: physics, drag + collide) */}
+      {/* desktop: two desk objects each side of the centered copy (paridhi-style) */}
+      <div className="absolute inset-0 hidden md:block">
+        <Suspense fallback={null}>
+          <DeskFlanks />
+        </Suspense>
+      </div>
+
+      {/* mobile signature: desk objects with tap stories — a live mini
+          ChronoWeave, coffee, laptop, luggage (physics stays desktop) */}
+      <div className="absolute inset-0 md:hidden">
+        <Suspense fallback={null}>
+          <DeskObjects />
+        </Suspense>
+      </div>
+
+      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-10 md:pb-4" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
+        {/* centered on desktop (objects flank the copy); left-aligned on mobile */}
+        <div className="max-w-[640px] md:max-w-[820px] md:mx-auto md:text-center md:flex md:flex-col md:items-center">
+          {/* H1 with per-line clip reveal */}
+          <h1
+            style={{
+              fontFamily: V.display,
+              fontWeight: 600,
+              fontSize: "clamp(3rem, 8.4vw, 6.6rem)",
+              lineHeight: 1.02,
+              letterSpacing: "-0.02em",
+              color: V.text,
+              margin: 0,
+            }}
+          >
+            {lines.map((line, i) => (
+              <span key={i} className="block overflow-hidden">
+                <motion.span
+                  className="block"
+                  initial={reduce ? { opacity: 0 } : { y: "108%" }}
+                  animate={reduce ? { opacity: 1 } : { y: 0 }}
+                  transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.09 }}
+                >
+                  {line}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
+
+          <motion.p
+            className="md:mx-auto"
+            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: EASE, delay: 0.52 }}
+            style={{
+              fontFamily: V.body,
+              fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
+              lineHeight: 1.6,
+              color: V.text2,
+              marginTop: 28,
+              maxWidth: 460,
+            }}
+          >
+            I'm Jay. I design AI products and ship them as working code. HCI research at UMBC.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: EASE, delay: 0.64 }}
+            className="flex flex-wrap items-center gap-4 md:justify-center"
+            style={{ marginTop: 30 }}
+          >
+            <MagneticButton onClick={() => scrollToId("work")}>
+              See the work <ArrowRight size={16} weight="bold" />
+            </MagneticButton>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* the blocks playground: a full-width band under the hero copy (desktop) */}
       <motion.div
-        className="absolute hidden md:block"
-        style={reduce ? { top: 76, bottom: 0, right: 0, width: "46%" } : { top: 76, bottom: 0, right: 0, width: "46%", y: playY, opacity: heroFade }}
+        className="relative hidden md:block w-full"
+        style={reduce ? { height: "44vh" } : { height: "44vh", y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >
         <motion.div
@@ -437,72 +521,6 @@ function Hero() {
             Drag the blocks. Give them a toss.
           </span>
         </motion.div>
-      </motion.div>
-
-      {/* mobile signature: desk objects with tap stories — a live mini
-          ChronoWeave, coffee, a MetroCard, a sticky note (physics stays desktop) */}
-      <div className="absolute inset-0 md:hidden">
-        <Suspense fallback={null}>
-          <DeskObjects />
-        </Suspense>
-      </div>
-
-      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-16" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
-        <div className="max-w-[640px]">
-          {/* H1 with per-line clip reveal */}
-          <h1
-            style={{
-              fontFamily: V.display,
-              fontWeight: 600,
-              fontSize: "clamp(3rem, 8.4vw, 6.6rem)",
-              lineHeight: 1.02,
-              letterSpacing: "-0.02em",
-              color: V.text,
-              margin: 0,
-            }}
-          >
-            {lines.map((line, i) => (
-              <span key={i} className="block overflow-hidden">
-                <motion.span
-                  className="block"
-                  initial={reduce ? { opacity: 0 } : { y: "108%" }}
-                  animate={reduce ? { opacity: 1 } : { y: 0 }}
-                  transition={{ duration: 0.8, ease: EASE, delay: 0.15 + i * 0.09 }}
-                >
-                  {line}
-                </motion.span>
-              </span>
-            ))}
-          </h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: 0.52 }}
-            style={{
-              fontFamily: V.body,
-              fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
-              lineHeight: 1.6,
-              color: V.text2,
-              marginTop: 28,
-              maxWidth: 460,
-            }}
-          >
-            I'm Jay. I design AI products and ship them as working code. HCI research at UMBC.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: EASE, delay: 0.64 }}
-            className="flex flex-wrap items-center gap-4"
-            style={{ marginTop: 30 }}
-          >
-            <MagneticButton onClick={() => scrollToId("work")}>
-              See the work <ArrowRight size={16} weight="bold" />
-            </MagneticButton>
-          </motion.div>
-        </div>
       </motion.div>
     </section>
   );
