@@ -1,42 +1,40 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChatTeardropText, TreeStructure, HandHeart, UsersThree, Lightning, Flag, X } from "@phosphor-icons/react";
 import { slurp, zip, typing, typingMs, chime } from "./deskSounds";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Desk objects: the mobile hero signature. Real 3D-rendered objects
-   (Microsoft Fluent 3D, MIT) with handwritten captions — and every tap has
-   a SOUND and a story:
+   Desk objects: the hero signature. REAL photo cutouts (not renders), every
+   tap has a sound and a story:
 
-     phone    a live mini ChronoWeave — tap: soft chime + the sun sweeps a day
-     coffee   tap: a loud, honest slurp; the cup tips back
-     laptop   tap: keyboard typing while a line types itself out —
-              "i think, design, code & ship — using AI"
-     luggage  tap: zip-open sound and six soft-skill stickers spill out;
-              tap again zips them back in
+     phone     a live mini ChronoWeave — tap: soft chime + the sun sweeps a day
+     coffee    tap: a loud, honest slurp; the cup tips back
+     laptop    tap: keyboard typing while a line types itself out
+     suitcase  tap: zip-open sound → a card modal with six soft skills,
+               each with its own icon (the paridhi "values" pattern)
 
-   Desktop keeps the physics block playground.
+   Photo sources (transparent cutouts):
+     coffee   Wikimedia Commons "Cup of Coffee with foam"        CC BY-SA 3.0
+     laptop   Wikimedia Commons "MacBook Pro transparency"       CC BY 2.0
+     suitcase Wikimedia Commons "Travel luggage" (blue, cropped) CC0
    ────────────────────────────────────────────────────────────────────────── */
 
 const CAVEAT = "'Caveat', cursive";
 const MONO = "'Geist Mono', monospace";
+const DISPLAY = "'Clash Display', 'General Sans', sans-serif";
+const BODY = "'General Sans', sans-serif";
 const INK2 = "#97A3BD";
 
-const SKILLS = [
-  "storytelling",
-  "systems thinking",
-  "user empathy",
-  "cross-team collab",
-  "fast learner",
-  "ownership",
-];
-/* sticker spots relative to the bag itself (px from its top-left), fanning
-   up and to the right — works wherever the bag sits, mobile or desktop */
-const SKILL_SPOTS = [
-  { dx: 95, dy: -115, r: -6 },
-  { dx: 58, dy: -98, r: 5 },
-  { dx: 148, dy: -70, r: 4 },
-  { dx: 62, dy: -42, r: -5 },
-  { dx: 150, dy: -14, r: -3 },
-  { dx: -2, dy: -16, r: 6 },
+/* natural aspect ratios of the real photos (w / h) */
+const ASPECT = { coffee: 512 / 389, laptop: 512 / 412, suitcase: 392 / 293 };
+
+const SKILLS: { label: string; Icon: typeof ChatTeardropText }[] = [
+  { label: "Storytelling", Icon: ChatTeardropText },
+  { label: "Systems thinking", Icon: TreeStructure },
+  { label: "User empathy", Icon: HandHeart },
+  { label: "Cross-team collaboration", Icon: UsersThree },
+  { label: "Fast learner", Icon: Lightning },
+  { label: "Ownership", Icon: Flag },
 ];
 
 function Enter({ i, children, style }: { i: number; children: React.ReactNode; style?: React.CSSProperties }) {
@@ -136,10 +134,11 @@ function PhoneChrono() {
   );
 }
 
-/* ── 2 · coffee: a real cup, a loud slurp ───────────────────────────────── */
+/* ── 2 · coffee: a real cappuccino, a loud slurp ────────────────────────── */
 function Coffee({ size = 92 }: { size?: number }) {
   const [tilt, setTilt] = useState(false);
   const timer = useRef(0);
+  const h = Math.round(size / ASPECT.coffee);
   const tap = () => {
     slurp();
     setTilt(true);
@@ -152,10 +151,9 @@ function Coffee({ size = 92 }: { size?: number }) {
     <button onClick={tap} aria-label="Coffee — tap for a loud sip" style={{ ...bareBtn, width: size }}>
       <span className="dsk-float" style={{ animationDelay: "0.2s" }}>
         <span className="dsk-pop">
-          {/* a warm pool of light behind the cup */}
-          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(236,170,88,0.55), transparent 72%)" }} />
-          {/* rising steam over the real cup */}
-          <svg width="44" height="28" viewBox="0 0 40 26" fill="none" aria-hidden="true" style={{ position: "absolute", top: Math.round(size * 0.02), left: Math.round(size * 0.26) }}>
+          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(236,170,88,0.5), transparent 72%)" }} />
+          {/* rising steam over the foam */}
+          <svg width="44" height="28" viewBox="0 0 40 26" fill="none" aria-hidden="true" style={{ position: "absolute", top: -14, left: Math.round(size * 0.14) }}>
             <g className="dsk-steam">
               <path d="M10 24c-3-5 3-7 0-12" stroke="#C9D4EA" strokeWidth="1.7" strokeLinecap="round" opacity="0.7" />
               <path d="M20 22c-3-5 3-7 0-12" stroke="#C9D4EA" strokeWidth="1.7" strokeLinecap="round" opacity="0.5" />
@@ -163,32 +161,33 @@ function Coffee({ size = 92 }: { size?: number }) {
             </g>
           </svg>
           <img
-            src="/desk/coffee-3d.png"
+            src="/desk/coffee-real.png"
             alt=""
             width={size}
-            height={size}
+            height={h}
             draggable={false}
             style={{
               display: "block",
-              transform: tilt ? "rotate(-16deg) translateY(-3px)" : "rotate(0deg)",
+              transform: tilt ? "rotate(-14deg) translateY(-3px)" : "rotate(0deg)",
               transition: "transform 300ms cubic-bezier(0.34,1.4,0.64,1)",
               transformOrigin: "30% 85%",
               filter:
-                "saturate(1.3) contrast(1.07) brightness(1.06) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(236,170,88,0.3))",
+                "saturate(1.06) contrast(1.04) drop-shadow(0 18px 24px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(236,170,88,0.25))",
             }}
           />
         </span>
       </span>
-      <Ground w={Math.round(size * 0.76)} />
+      <Ground w={Math.round(size * 0.82)} />
     </button>
   );
 }
 
-/* ── 3 · laptop: typing sound + the line types itself out ───────────────── */
+/* ── 3 · laptop: a real MacBook, typing sound + the line types out ──────── */
 const LINE = "i think, design, code & ship — using AI";
 function Laptop({ size = 100 }: { size?: number }) {
   const [typed, setTyped] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
+  const h = Math.round(size / ASPECT.laptop);
   const run = () => {
     if (typed !== null) return;
     typing(16);
@@ -208,7 +207,7 @@ function Laptop({ size = 100 }: { size?: number }) {
         <div
           style={{
             position: "absolute",
-            bottom: size + 2,
+            bottom: h + 8,
             left: -26,
             width: 210,
             padding: "8px 10px",
@@ -231,104 +230,197 @@ function Laptop({ size = 100 }: { size?: number }) {
       )}
       <span className="dsk-float" style={{ animationDelay: "0.6s" }}>
         <span className="dsk-pop">
-          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(96,196,255,0.5), transparent 72%)" }} />
+          <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(96,196,255,0.45), transparent 72%)" }} />
           <img
-            src="/desk/laptop-3d.png"
+            src="/desk/laptop-real.png"
             alt=""
             width={size}
-            height={size}
+            height={h}
             draggable={false}
             style={{
               display: "block",
               filter:
-                "saturate(1.32) contrast(1.07) brightness(1.07) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(96,196,255,0.28))",
+                "saturate(1.05) contrast(1.05) drop-shadow(0 18px 24px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(96,196,255,0.22))",
             }}
           />
         </span>
       </span>
-      <Ground w={Math.round(size * 0.8)} />
+      <Ground w={Math.round(size * 0.84)} />
     </button>
   );
 }
 
-/* ── 4 · luggage: zip it open, six soft skills spill out ────────────────── */
-function Luggage({ size = 94 }: { size?: number }) {
-  const [open, setOpen] = useState(false);
-  const timer = useRef(0);
+/* ── the six-skills card modal (zip open → her "values" pattern) ────────── */
+function SkillsModal({ onClose }: { onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-  const toggle = () => {
-    zip(!open);
-    setOpen((o) => !o);
-    window.clearTimeout(timer.current);
-    if (!open) {
-      // auto-zip back after a while so the hero tidies itself
-      timer.current = window.setTimeout(() => {
-        zip(false);
-        setOpen(false);
-      }, 7000);
-    }
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.documentElement.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      className="dskm-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 90,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        background: "rgba(5, 8, 13, 0.74)",
+        backdropFilter: "blur(7px)",
+        WebkitBackdropFilter: "blur(7px)",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Soft skills I carry everywhere"
+        onClick={(e) => e.stopPropagation()}
+        className="dskm-panel"
+        style={{
+          position: "relative",
+          width: "min(600px, 100%)",
+          borderRadius: 26,
+          padding: "clamp(22px, 5vw, 36px)",
+          background: "linear-gradient(165deg, #131A29 0%, #0D1320 100%)",
+          border: "1px solid rgba(255,255,255,0.09)",
+          boxShadow: "0 40px 90px -20px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.07)",
+        }}
+      >
+        <button
+          ref={closeRef}
+          onClick={onClose}
+          aria-label="Zip it back up"
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.05)",
+            color: "#E8ECF3",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <X size={18} weight="bold" />
+        </button>
+
+        <div style={{ fontFamily: CAVEAT, fontSize: 19, color: "#5B8CFF", marginBottom: 4 }}>unzipped ↓</div>
+        <h2
+          style={{
+            fontFamily: DISPLAY,
+            fontWeight: 600,
+            fontSize: "clamp(1.45rem, 4.6vw, 2rem)",
+            letterSpacing: "-0.02em",
+            color: "#E8ECF3",
+            margin: "0 0 22px",
+            paddingRight: 44,
+          }}
+        >
+          Soft skills I carry everywhere
+        </h2>
+
+        <div className="dskm-grid">
+          {SKILLS.map(({ label, Icon }, i) => (
+            <div
+              key={label}
+              className="dskm-card"
+              style={{
+                animationDelay: `${90 + i * 55}ms`,
+                borderRadius: 16,
+                padding: "16px 14px 15px",
+                background: "rgba(255,255,255,0.035)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}
+            >
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 11,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(91,140,255,0.12)",
+                  border: "1px solid rgba(91,140,255,0.25)",
+                }}
+              >
+                <Icon size={20} weight="duotone" color="#5B8CFF" />
+              </span>
+              <span style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.35, fontWeight: 500, color: "#D5DCEA" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* ── 4 · suitcase: a real case; unzip → the skills card ─────────────────── */
+function Suitcase({ size = 94 }: { size?: number }) {
+  const [open, setOpen] = useState(false);
+  const h = Math.round(size / ASPECT.suitcase);
+
+  const openUp = () => {
+    zip(true);
+    setOpen(true);
   };
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const close = () => {
+    zip(false);
+    setOpen(false);
+  };
 
   return (
     <div style={{ position: "relative" }}>
       <button
-        onClick={toggle}
-        aria-label={open ? "Luggage open — six soft skills out. Tap to zip it back up." : "Luggage — tap to unzip my soft skills"}
+        onClick={openUp}
+        aria-label="Suitcase — tap to unzip my soft skills"
         aria-expanded={open}
         style={{ ...bareBtn, width: size, transform: "rotate(-4deg)" }}
       >
         <span className="dsk-float" style={{ animationDelay: "1s" }}>
           <span className="dsk-pop">
-            <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(91,140,255,0.55), transparent 72%)" }} />
+            <span aria-hidden="true" className="dsk-halo" style={{ background: "radial-gradient(closest-side, rgba(91,140,255,0.5), transparent 72%)" }} />
             <img
-              src="/desk/luggage-3d.png"
+              src="/desk/suitcase-real.png"
               alt=""
               width={size}
-              height={size}
+              height={h}
               draggable={false}
               style={{
                 display: "block",
-                transform: open ? "rotate(-7deg) scale(1.05)" : "rotate(0deg) scale(1)",
-                transition: "transform 320ms cubic-bezier(0.34,1.4,0.64,1)",
                 filter:
-                  "saturate(1.3) contrast(1.06) brightness(1.06) drop-shadow(0 18px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 20px rgba(91,140,255,0.32))",
+                  "saturate(1.12) contrast(1.05) brightness(1.08) drop-shadow(0 18px 24px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(91,140,255,0.3))",
               }}
             />
           </span>
         </span>
-        <Ground w={Math.round(size * 0.8)} />
+        <Ground w={Math.round(size * 0.84)} />
       </button>
-
-      {/* the six soft skills that live in the bag */}
-      {open &&
-        SKILLS.map((s, i) => (
-          <div
-            key={s}
-            className="dsk-skill"
-            style={{
-              position: "absolute",
-              left: SKILL_SPOTS[i].dx,
-              top: SKILL_SPOTS[i].dy,
-              // @ts-expect-error CSS var for the settle rotation
-              "--r": `${SKILL_SPOTS[i].r}deg`,
-              animationDelay: `${i * 75}ms`,
-              padding: "5px 11px",
-              borderRadius: 9,
-              background: "rgba(20,27,43,0.94)",
-              border: "1px solid rgba(91,140,255,0.45)",
-              boxShadow: "0 8px 20px -8px rgba(0,0,0,0.6), 0 0 12px rgba(91,140,255,0.15)",
-              fontFamily: CAVEAT,
-              fontSize: 17,
-              color: "#CFE0FF",
-              whiteSpace: "nowrap",
-              zIndex: 4,
-              pointerEvents: "none",
-            }}
-          >
-            {s}
-          </div>
-        ))}
+      {open && <SkillsModal onClose={close} />}
     </div>
   );
 }
@@ -370,12 +462,6 @@ function DeskCss() {
         .dsk-caret { animation: dsk-caret 0.9s step-end infinite; color: #5B8CFF; }
         @keyframes dsk-caret { 50% { opacity: 0; } }
 
-        .dsk-skill { animation: dsk-skill 480ms cubic-bezier(0.34, 1.45, 0.64, 1) both; }
-        @keyframes dsk-skill {
-          0% { opacity: 0; transform: translateY(26px) scale(0.5) rotate(0deg); }
-          100% { opacity: 1; transform: translateY(0) scale(1) rotate(var(--r)); }
-        }
-
         /* idle float: objects hover a few px above their grounded shadow */
         .dsk-float { display: block; animation: dsk-float 5.4s ease-in-out infinite alternate; will-change: transform; }
         @keyframes dsk-float { from { transform: translateY(0); } to { transform: translateY(-7px); } }
@@ -398,11 +484,33 @@ function DeskCss() {
         }
         @keyframes dsk-halo { from { opacity: 0.45; } to { opacity: 0.8; } }
 
+        /* skills modal: springs in like the bag popping open */
+        .dskm-backdrop { animation: dskm-fade 240ms ease-out both; }
+        @keyframes dskm-fade { from { opacity: 0; } to { opacity: 1; } }
+        .dskm-panel { animation: dskm-pop 420ms cubic-bezier(0.34, 1.3, 0.64, 1) both; }
+        @keyframes dskm-pop {
+          0% { opacity: 0; transform: translateY(26px) scale(0.94); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .dskm-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+        @media (min-width: 480px) {
+          .dskm-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        }
+        .dskm-card { animation: dskm-card 380ms cubic-bezier(0.34, 1.35, 0.64, 1) both; }
+        @keyframes dskm-card {
+          0% { opacity: 0; transform: translateY(14px) scale(0.94); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .dsk-in { animation-duration: 1ms; }
-          .dsk-sky-on, .dsk-arm-on, .dsk-sun, .dsk-steam path, .dsk-caret, .dsk-skill, .dsk-float, .dsk-halo { animation: none !important; }
-          .dsk-skill { opacity: 1; transform: rotate(var(--r)); }
+          .dsk-sky-on, .dsk-arm-on, .dsk-sun, .dsk-steam path, .dsk-caret, .dsk-float, .dsk-halo { animation: none !important; }
           .dsk-halo { opacity: 0.55; }
+          .dskm-backdrop, .dskm-panel, .dskm-card { animation-duration: 1ms; }
         }
       `}</style>
   );
@@ -424,26 +532,26 @@ export default function DeskObjects() {
       </Enter>
 
       {/* coffee, left, above the laptop — compact sizes so the 375px band fits */}
-      <Enter i={1} style={{ left: "7%", bottom: "13.5%" }}>
+      <Enter i={1} style={{ left: "7%", bottom: "15%" }}>
         <div style={{ position: "relative" }}>
-          <Coffee size={76} />
-          <Caption style={{ position: "absolute", top: 12, left: 70, transform: "rotate(8deg)" }}>slurp!</Caption>
+          <Coffee size={82} />
+          <Caption style={{ position: "absolute", top: 8, left: 78, transform: "rotate(8deg)" }}>slurp!</Caption>
         </div>
       </Enter>
 
       {/* laptop, left column below coffee — caption to its right */}
-      <Enter i={2} style={{ left: "9%", bottom: "1%" }}>
+      <Enter i={2} style={{ left: "9%", bottom: "2.5%" }}>
         <div style={{ position: "relative" }}>
-          <Laptop size={84} />
-          <Caption style={{ position: "absolute", bottom: 26, left: 88, transform: "rotate(-2deg)" }}>how i ship</Caption>
+          <Laptop size={92} />
+          <Caption style={{ position: "absolute", bottom: 22, left: 98, transform: "rotate(-2deg)" }}>how i ship</Caption>
         </div>
       </Enter>
 
-      {/* luggage, center — caption above */}
-      <Enter i={3} style={{ left: "40%", bottom: "9%" }}>
+      {/* suitcase, center — caption above */}
+      <Enter i={3} style={{ left: "42%", bottom: "10.5%" }}>
         <div style={{ position: "relative" }}>
-          <Luggage size={78} />
-          <Caption style={{ position: "absolute", top: -26, left: 2, transform: "rotate(3deg)" }}>unzip me</Caption>
+          <Suitcase size={86} />
+          <Caption style={{ position: "absolute", top: -26, left: 4, transform: "rotate(3deg)" }}>unzip me</Caption>
         </div>
       </Enter>
     </div>
@@ -456,28 +564,28 @@ export function DeskFlanks() {
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       <DeskCss />
 
-      {/* left of the text: coffee above, luggage below */}
+      {/* left of the text: coffee above, suitcase below */}
       <Enter i={1} style={{ left: "6%", top: "24%" }}>
         <div style={{ position: "relative" }}>
-          <Coffee />
-          <Caption style={{ position: "absolute", top: 12, left: 82, transform: "rotate(8deg)" }}>slurp!</Caption>
+          <Coffee size={104} />
+          <Caption style={{ position: "absolute", top: 8, left: 96, transform: "rotate(8deg)" }}>slurp!</Caption>
         </div>
       </Enter>
-      <Enter i={3} style={{ left: "10%", top: "46%" }}>
+      <Enter i={3} style={{ left: "10%", top: "48%" }}>
         <div style={{ position: "relative" }}>
-          <Luggage />
-          <Caption style={{ position: "absolute", bottom: -26, left: 2, transform: "rotate(3deg)" }}>unzip me</Caption>
+          <Suitcase size={112} />
+          <Caption style={{ position: "absolute", bottom: -26, left: 6, transform: "rotate(3deg)" }}>unzip me</Caption>
         </div>
       </Enter>
 
       {/* right of the text: laptop above, the live phone below */}
       <Enter i={2} style={{ right: "7%", top: "24%" }}>
         <div style={{ position: "relative" }}>
-          <Laptop />
-          <Caption style={{ position: "absolute", bottom: -24, left: 8, transform: "rotate(-2deg)" }}>how i ship</Caption>
+          <Laptop size={118} />
+          <Caption style={{ position: "absolute", bottom: -24, left: 12, transform: "rotate(-2deg)" }}>how i ship</Caption>
         </div>
       </Enter>
-      <Enter i={0} style={{ right: "6%", top: "40%" }}>
+      <Enter i={0} style={{ right: "6%", top: "42%" }}>
         <div style={{ position: "relative" }}>
           <Caption style={{ position: "absolute", top: -30, right: 0, transform: "rotate(-4deg)" }}>my latest build, live</Caption>
           <PhoneChrono />
