@@ -22,8 +22,6 @@ import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience } from "./home/motionKit";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
-const DeskObjects = lazy(() => import("./home/DeskObjects"));
-const DeskFlanks = lazy(() => import("./home/DeskObjects").then((m) => ({ default: m.DeskFlanks })));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -399,27 +397,9 @@ function Hero() {
         }}
       />
 
-      {/* desktop: two desk objects each side of the centered copy (paridhi-style).
-          z-20 keeps the buttons ABOVE the full-width text container (z-10),
-          which otherwise swallows every tap; the layer root is pointer-events
-          none so the copy and CTA stay clickable through it. */}
-      <div className="absolute inset-0 hidden md:block z-20 pointer-events-none">
-        <Suspense fallback={null}>
-          <DeskFlanks />
-        </Suspense>
-      </div>
-
-      {/* mobile signature: desk objects with tap stories — a live mini
-          ChronoWeave, coffee, laptop, luggage (physics stays desktop) */}
-      <div className="absolute inset-0 md:hidden z-20 pointer-events-none">
-        <Suspense fallback={null}>
-          <DeskObjects />
-        </Suspense>
-      </div>
-
       <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-28 pb-10 md:pb-4" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
-        {/* centered on desktop (objects flank the copy); left-aligned on mobile */}
-        <div className="max-w-[640px] md:max-w-[820px] md:mx-auto md:text-center md:flex md:flex-col md:items-center">
+        {/* copy centered on every breakpoint */}
+        <div className="max-w-[820px] mx-auto text-center flex flex-col items-center">
           {/* H1 with per-line clip reveal */}
           <h1
             style={{
