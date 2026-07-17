@@ -357,20 +357,14 @@ function Hero() {
   const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
   useEffect(() => {
-    // load the physics chunk after first paint, desktop only — and keep
-    // listening so a small→large resize (rotation, window resize) gets it too
-    const mql = window.matchMedia("(min-width: 768px)");
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const arm = () => {
-      if (mql.matches) t = setTimeout(() => setShowPlay(true), 250);
-    };
-    arm();
-    mql.addEventListener("change", arm);
-    return () => {
-      clearTimeout(t);
-      mql.removeEventListener("change", arm);
-    };
+    // load the physics chunk after first paint — every breakpoint now;
+    // touch devices get tap-to-bounce instead of drag (scroll stays free)
+    const t = setTimeout(() => setShowPlay(true), 250);
+    return () => clearTimeout(t);
   }, []);
+
+  /* coarse pointer = tap mode for the blocks (no drag, page scroll wins) */
+  const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
 
   const lines: ReactNode[] = [
     "Designing AI",
@@ -499,11 +493,11 @@ function Hero() {
         </div>
       </motion.div>
 
-      {/* the blocks playground: a full-width band tucked right under the CTA
-          (36vh, not 44 — the floor rises, so no dead space below the button) */}
+      {/* the blocks playground: a full-width band tucked right under the CTA,
+          on EVERY breakpoint — drag on desktop, tap-to-bounce on touch */}
       <motion.div
-        className="relative hidden md:block w-full"
-        style={reduce ? { height: "36vh" } : { height: "36vh", y: playY, opacity: heroFade }}
+        className="relative w-full h-[30vh] md:h-[36vh]"
+        style={reduce ? undefined : { y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >
         <motion.div
@@ -514,7 +508,7 @@ function Hero() {
         >
           {showPlay && (
             <Suspense fallback={null}>
-              <IconPlayground interactive={!reduce} />
+              <IconPlayground interactive={!reduce} tapOnly={coarse} />
             </Suspense>
           )}
         </motion.div>
@@ -544,7 +538,7 @@ function Hero() {
             <HandGrabbing size={16} weight="duotone" color="#5B8CFF" />
           </motion.span>
           <span style={{ fontFamily: V.mono, fontSize: 11, letterSpacing: "0.08em", color: V.text2 }}>
-            Drag the blocks. Give them a toss.
+            {coarse ? "Tap the blocks." : "Drag the blocks. Give them a toss."}
           </span>
         </motion.div>
       </motion.div>

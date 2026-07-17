@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { playIntroSound } from "./heroSound";
+import { introAttempt, gestureUnlock, cueDissolve, cueReform } from "./heroSound";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -235,22 +235,39 @@ export default function MemoryParticles({
         p.sy = p.y;
       });
 
-      /* ambient survivors (desktop only): a sparse constellation stays in
-         the empty flanks after the headline lands */
-      if (heroRect.width >= 900) {
+      /* ambient survivors (every breakpoint): a sparse constellation stays
+         alive after the headline lands, living anywhere EXCEPT over the
+         copy — desktop gets the flanks, mobile the strips above and below */
+      {
+        const copyEl = h1.parentElement; // the centered copy column (h1 + sub + CTA)
+        const cr = copyEl ? copyEl.getBoundingClientRect() : null;
+        const pad = 26;
+        const zone = cr
+          ? {
+              l: cr.left - heroRect.left - pad,
+              r: cr.right - heroRect.left + pad,
+              t: cr.top - heroRect.top - pad,
+              b: cr.bottom - heroRect.top + pad,
+            }
+          : null;
+        const inCopy = (x: number, y: number) => !!zone && x > zone.l && x < zone.r && y > zone.t && y < zone.b;
+
         const rest = parts.filter((p) => !p.word);
-        const want = Math.min(220, Math.floor(rest.length / 8));
-        const stride = Math.max(1, Math.floor(rest.length / want));
-        const midTop = heroRect.height * 0.1;
-        const midBot = heroRect.height * 0.86;
+        const want = Math.min(heroRect.width >= 900 ? 220 : 90, Math.floor(rest.length / 8));
+        const stride = Math.max(1, Math.floor(rest.length / Math.max(1, want)));
         for (let i = 0; i < rest.length; i += stride) {
           const p = rest[i];
-          p.ambient = true;
-          const leftSide = Math.random() < 0.5;
-          p.ax = leftSide
-            ? heroRect.width * (0.03 + Math.random() * 0.22)
-            : heroRect.width * (0.75 + Math.random() * 0.22);
-          p.ay = midTop + Math.random() * (midBot - midTop);
+          // rejection-sample a home outside the copy block
+          for (let tries = 0; tries < 12; tries++) {
+            const x = heroRect.width * (0.03 + Math.random() * 0.94);
+            const y = heroRect.height * (0.06 + Math.random() * 0.85);
+            if (!inCopy(x, y)) {
+              p.ambient = true;
+              p.ax = x;
+              p.ay = y;
+              break;
+            }
+          }
         }
       }
       // render order sorted by bucket so fillStyle changes ~6 times/frame
@@ -376,7 +393,7 @@ export default function MemoryParticles({
 
       /* ── choreography (cinematic: emerge → drift → converge → land) ── */
       const tl = gsap.timeline();
-      tl.add(() => playIntroSound(3.3)) // plays where the browser allows it
+      tl.add(() => introAttempt(3.3)) // polite autoplay try; the gesture door below covers the rest
         .to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
         .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
         .add(() => {
@@ -385,15 +402,27 @@ export default function MemoryParticles({
         .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
         .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 
+      /* the first real gesture anywhere unlocks audio: mid-intro it joins
+         the swell in progress; afterwards it answers with a soft chime */
+      const unlockEvents: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchend"];
+      const onFirstGesture = () => {
+        unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture));
+        gestureUnlock(Math.max(0, 3.45 - tl.time()));
+      };
+      unlockEvents.forEach((ev) => window.addEventListener(ev, onFirstGesture, { passive: true }));
+      cleanupFns.push(() => unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture)));
+
       /* the forgetting loop — runs after assembly, forever */
       const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });
       loop
         .add(() => {
           state.wordAlpha = 1;
           gsap.set(wordEl, { opacity: 0 }); // canvas takes over the word
+          cueDissolve(); // whisper-level, only once audio is unlocked
         })
         .to(state, { dissolve: 1, duration: 1.9, ease: "power2.in" })
         .to(state, { dissolve: 0, duration: 2.0, ease: "expo.inOut" }, "+=1.1")
+        .add(() => cueReform(), "<")
         .add(() => {
           state.wordAlpha = 0;
           gsap.to(wordEl, { opacity: 1, duration: 0.25, ease: "power1.out" }); // DOM word returns

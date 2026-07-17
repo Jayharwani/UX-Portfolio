@@ -144,7 +144,7 @@ const STATIC_POS = [
   { x: 45, y: 82, r: 8 },
 ];
 
-export default function IconPlayground({ interactive = true }: { interactive?: boolean }) {
+export default function IconPlayground({ interactive = true, tapOnly = false }: { interactive?: boolean; tapOnly?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tileRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -159,7 +159,7 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
     // physics engine loads lazily so it never blocks first paint
     import("matter-js").then((Matter) => {
       if (destroyed || !container) return;
-      const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Sleeping } = Matter;
+      const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Sleeping, Query } = Matter;
 
       const W = container.clientWidth;
       const H = container.clientHeight;
@@ -194,23 +194,43 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
       });
       Composite.add(engine.world, bodies);
 
-      // drag
-      const mouse = Mouse.create(container);
-      const mc = MouseConstraint.create(engine, {
-        mouse,
-        constraint: { stiffness: 0.18, damping: 0.12, render: { visible: false } },
-      });
-      Composite.add(engine.world, mc);
-      // matter's mouse eats page scroll; give the wheel back to the page
-      const m = mouse as unknown as { element: HTMLElement; mousewheel: EventListener };
-      m.element.removeEventListener("wheel", m.mousewheel);
-      m.element.removeEventListener("mousewheel", m.mousewheel as EventListener);
-      m.element.removeEventListener("DOMMouseScroll", m.mousewheel as EventListener);
+      let removeTap: (() => void) | undefined;
+      if (!tapOnly) {
+        // desktop: full drag-and-toss
+        const mouse = Mouse.create(container);
+        const mc = MouseConstraint.create(engine, {
+          mouse,
+          constraint: { stiffness: 0.18, damping: 0.12, render: { visible: false } },
+        });
+        Composite.add(engine.world, mc);
+        // matter's mouse eats page scroll; give the wheel back to the page
+        const m = mouse as unknown as { element: HTMLElement; mousewheel: EventListener };
+        m.element.removeEventListener("wheel", m.mousewheel);
+        m.element.removeEventListener("mousewheel", m.mousewheel as EventListener);
+        m.element.removeEventListener("DOMMouseScroll", m.mousewheel as EventListener);
 
-      // wake everything when grabbed
-      Matter.Events.on(mc, "startdrag", (e: { body?: Matter.Body }) => {
-        if (e.body) Sleeping.set(e.body, false);
-      });
+        // wake everything when grabbed
+        Matter.Events.on(mc, "startdrag", (e: { body?: Matter.Body }) => {
+          if (e.body) Sleeping.set(e.body, false);
+        });
+      } else {
+        // touch: no drag constraint (page scroll stays free) — a tap on a
+        // block pops it with an upward kick and a spin
+        const onTap = (e: PointerEvent) => {
+          const r = container.getBoundingClientRect();
+          const pt = { x: e.clientX - r.left, y: e.clientY - r.top };
+          const hit = Query.point(bodies, pt)[0];
+          if (!hit) return;
+          Sleeping.set(hit, false);
+          Body.applyForce(hit, hit.position, {
+            x: (Math.random() - 0.5) * 0.05 * hit.mass,
+            y: -(0.05 + Math.random() * 0.035) * hit.mass,
+          });
+          Body.setAngularVelocity(hit, (Math.random() - 0.5) * 0.35);
+        };
+        container.addEventListener("pointerdown", onTap);
+        removeTap = () => container.removeEventListener("pointerdown", onTap);
+      }
 
       // rAF render loop; physics only steps while the hero is on screen
       // (plain rect check — IntersectionObserver misreports in some
@@ -252,6 +272,7 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
         alive = false;
         cancelAnimationFrame(raf);
         ro.disconnect();
+        removeTap?.();
         Composite.clear(engine.world, false);
         Engine.clear(engine);
       };
@@ -261,14 +282,19 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
       destroyed = true;
       cleanup?.();
     };
-  }, [interactive]);
+  }, [interactive, tapOnly]);
 
   return (
     <div
       ref={containerRef}
       className="relative w-full h-full"
-      style={{ userSelect: "none", touchAction: interactive ? "none" : "auto", overflow: "hidden" }}
-      aria-label="Draggable blocks of the tools I work with"
+      style={{
+        userSelect: "none",
+        /* tap mode keeps vertical scrolling free; drag mode owns the pointer */
+        touchAction: !interactive ? "auto" : tapOnly ? "pan-y" : "none",
+        overflow: "hidden",
+      }}
+      aria-label={tapOnly ? "Blocks of the tools I work with — tap one to bounce it" : "Draggable blocks of the tools I work with"}
       role="img"
     >
       {TILES.map((t, i) => {
@@ -284,7 +310,7 @@ export default function IconPlayground({ interactive = true }: { interactive?: b
             style={{
               position: "absolute",
               ...tileStyle(t.size),
-              cursor: interactive ? "grab" : "default",
+              cursor: !interactive ? "default" : tapOnly ? "pointer" : "grab",
               ...(interactive
                 ? { left: 0, top: 0, transform: "translate(-300px, -300px)" } /* offscreen until physics places it */
                 : { left: `${sp.x}%`, top: `${sp.y}%`, transform: `rotate(${sp.r}deg)` }),
