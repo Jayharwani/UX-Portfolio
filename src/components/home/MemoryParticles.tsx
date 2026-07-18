@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { introAttempt, gestureUnlock, cueDissolve, cueReform } from "./heroSound";
+import { introAttempt, gestureUnlock } from "./heroSound";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -402,27 +402,27 @@ export default function MemoryParticles({
         .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
         .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 
-      /* the first real gesture anywhere unlocks audio: mid-intro it joins
-         the swell in progress; afterwards it answers with a soft chime */
+      /* the ONLY sound moment is the intro itself: a first gesture during
+         the assembly joins the swell in progress; once the intro is over,
+         the page stays silent (no sound on the forgetting loop) */
       const unlockEvents: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchend"];
       const onFirstGesture = () => {
         unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture));
-        gestureUnlock(Math.max(0, 3.45 - tl.time()));
+        const remaining = 3.45 - tl.time();
+        if (remaining > 0.9) gestureUnlock(remaining);
       };
       unlockEvents.forEach((ev) => window.addEventListener(ev, onFirstGesture, { passive: true }));
       cleanupFns.push(() => unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture)));
 
-      /* the forgetting loop — runs after assembly, forever */
+      /* the forgetting loop — runs after assembly, forever, silently */
       const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });
       loop
         .add(() => {
           state.wordAlpha = 1;
           gsap.set(wordEl, { opacity: 0 }); // canvas takes over the word
-          cueDissolve(); // whisper-level, only once audio is unlocked
         })
         .to(state, { dissolve: 1, duration: 1.9, ease: "power2.in" })
         .to(state, { dissolve: 0, duration: 2.0, ease: "expo.inOut" }, "+=1.1")
-        .add(() => cueReform(), "<")
         .add(() => {
           state.wordAlpha = 0;
           gsap.to(wordEl, { opacity: 1, duration: 0.25, ease: "power1.out" }); // DOM word returns
