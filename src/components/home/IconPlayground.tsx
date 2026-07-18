@@ -168,21 +168,32 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
       const engine = Engine.create({ enableSleeping: true });
       engine.gravity.y = 1;
 
-      // walls: thick, invisible; ceiling sits high so tossed tiles return
+      /* the ceiling sits at the TOP OF THE HERO, not the top of the band —
+         a good toss sends a block sailing up past the headline and back.
+         (The container overflows visibly for the same reason.) */
+      const heroEl = container.closest("section");
+      const rise = Math.max(
+        300,
+        heroEl ? Math.round(container.getBoundingClientRect().top - heroEl.getBoundingClientRect().top) : 460
+      );
+      const sideH = H + rise + 280;
+      const sideY = (H - rise - 20) / 2;
+
       const wallOpts = { isStatic: true, friction: 0.2 };
       const walls = [
         Bodies.rectangle(W / 2, H + 60, W + 400, 120, wallOpts), // floor
-        Bodies.rectangle(-60, H / 2 - 300, 120, H + 900, wallOpts), // left
-        Bodies.rectangle(W + 60, H / 2 - 300, 120, H + 900, wallOpts), // right
-        Bodies.rectangle(W / 2, -700, W + 400, 120, wallOpts), // ceiling, far up
+        Bodies.rectangle(-60, sideY, 120, sideH, wallOpts), // left
+        Bodies.rectangle(W + 60, sideY, 120, sideH, wallOpts), // right
+        Bodies.rectangle(W / 2, -(rise + 60), W + 400, 120, wallOpts), // ceiling at hero top
       ];
       Composite.add(engine.world, walls);
 
-      // tile bodies drop in from above, staggered — all spawn BELOW the
-      // ceiling wall (which spans down to about -640) or they land on top of it
+      // tile bodies drop in from above, staggered — spawn spacing adapts so
+      // every tile starts BELOW the ceiling (else it lands on top of it)
+      const spawnStep = Math.max(24, Math.min(52, (rise - 90) / TILES.length));
       const bodies = TILES.map((t, i) => {
         const x = W * (0.16 + 0.68 * ((i * 0.618) % 1));
-        const y = -60 - i * 55;
+        const y = -40 - i * spawnStep;
         const b = Bodies.rectangle(x, y, t.size, t.size, {
           chamfer: { radius: 17 },
           restitution: 0.38,
@@ -263,7 +274,7 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
         const h2 = container.clientHeight;
         if (!w2 || !h2) return;
         Body.setPosition(walls[0], { x: w2 / 2, y: h2 + 60 });
-        Body.setPosition(walls[2], { x: w2 + 60, y: h2 / 2 - 300 });
+        Body.setPosition(walls[2], { x: w2 + 60, y: (h2 - rise - 20) / 2 });
         bodies.forEach((b) => Sleeping.set(b, false));
       });
       ro.observe(container);
@@ -292,7 +303,8 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
         userSelect: "none",
         /* tap mode keeps vertical scrolling free; drag mode owns the pointer */
         touchAction: !interactive ? "auto" : tapOnly ? "pan-y" : "none",
-        overflow: "hidden",
+        /* visible: tossed blocks fly up over the hero copy instead of clipping */
+        overflow: interactive ? "visible" : "hidden",
       }}
       aria-label={tapOnly ? "Blocks of the tools I work with — tap one to bounce it" : "Draggable blocks of the tools I work with"}
       role="img"

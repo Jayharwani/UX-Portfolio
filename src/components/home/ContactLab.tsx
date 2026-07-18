@@ -457,7 +457,9 @@ export function ContactSection() {
   const [slider, setSlider] = useState(100); // start on OUT-EXPO
 
   useEffect(() => {
-    setFine(window.matchMedia("(pointer: fine)").matches);
+    /* dev-only: ?touch=1 forces the touch path for desktop testing */
+    const forceTouch = import.meta.env.DEV && new URLSearchParams(window.location.search).has("touch");
+    setFine(forceTouch ? false : window.matchMedia("(pointer: fine)").matches);
     setWide(window.matchMedia("(min-width: 1024px)").matches);
   }, []);
   useEffect(() => {
@@ -470,8 +472,10 @@ export function ContactSection() {
   const easeCss = `cubic-bezier(${ease.join(",")})`;
 
   const interactive = fine && !reduce;
-  const tiltOn = interactive && wide && highMotion;
-  const ambientOn = interactive && highMotion;
+  const scrollDrive = !fine && !reduce; // touch: scroll drives the diorama
+  const live = interactive || scrollDrive;
+  const tiltOn = (interactive && wide && highMotion) || (scrollDrive && highMotion);
+  const ambientOn = live && highMotion;
 
   /* ── section tilt (the diorama) ── */
   const rx = useMotionValue(0);
@@ -534,10 +538,10 @@ export function ContactSection() {
     };
   }, [interactive, tiltOn, mx, my, rx, ry]);
 
-  /* idle drift: after 4s without movement, the spotlight wanders */
+  /* idle drift (cursor mode): after 4s without movement, the spotlight wanders */
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el || !ambientOn) return;
+    if (!el || !ambientOn || !interactive) return;
     let raf = 0;
     const drift = (t: number) => {
       if (performance.now() - lastMove.current > 4000) {
@@ -549,7 +553,38 @@ export function ContactSection() {
     };
     raf = requestAnimationFrame(drift);
     return () => cancelAnimationFrame(raf);
-  }, [ambientOn, mx, my]);
+  }, [ambientOn, interactive, mx, my]);
+
+  /* scroll drive (touch): tilt follows the section through the viewport,
+     spotlight wanders — the mobile version is never static. Plain-rect
+     visibility check: IntersectionObserver misreports in some embedded
+     viewports (same workaround as the blocks playground). */
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || !scrollDrive) return;
+    let raf = 0;
+    let alive = true;
+    const loop = (t: number) => {
+      if (!alive) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.bottom > -80 && r.top < vh + 80) {
+        const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
+        if (tiltOn) {
+          rx.set(prog * 4.5 * 0.9);
+          ry.set(Math.sin(t / 2600) * 5.5 * 0.22);
+        }
+        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
+        my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [scrollDrive, tiltOn, mx, my, rx, ry]);
 
   /* entrance variants */
   const enter = (i: number, dy = 24) => ({
@@ -585,9 +620,9 @@ export function ContactSection() {
       >
         {/* base grid, very dim */}
         <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.12 }} />
-        {interactive ? (
+        {live ? (
           <>
-            {/* brighter dots revealed near the cursor */}
+            {/* brighter dots revealed near the light */}
             <motion.div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.5, maskImage: dotMask, WebkitMaskImage: dotMask }} />
             {/* the pool of light itself */}
             <motion.div className="absolute inset-0" style={{ background: spotlight }} />

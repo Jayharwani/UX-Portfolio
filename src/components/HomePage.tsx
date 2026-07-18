@@ -496,7 +496,7 @@ function Hero() {
       {/* the blocks playground: a full-width band tucked right under the CTA,
           on EVERY breakpoint — drag on desktop, tap-to-bounce on touch */}
       <motion.div
-        className="relative w-full h-[30vh] md:h-[36vh]"
+        className="relative z-20 w-full h-[30vh] md:h-[36vh]"
         style={reduce ? undefined : { y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >
@@ -1426,9 +1426,44 @@ function About() {
 
 /* ── footer ──────────────────────────────────────────────────────────────── */
 function SiteFooter() {
+  const pill: React.CSSProperties = {
+    fontFamily: V.mono,
+    fontSize: 11.5,
+    letterSpacing: "0.08em",
+    color: V.text2,
+    border: `1px solid ${V.border}`,
+    borderRadius: 12,
+    minHeight: 46,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    flex: 1,
+    background: "rgba(255,255,255,0.02)",
+  };
   return (
     <footer style={{ background: V.bg, borderTop: `1px solid ${V.border}` }}>
-      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* mobile: three equal link pills, then a quiet meta row */}
+      <div className="sm:hidden px-6 py-7">
+        <div className="flex items-stretch gap-2.5">
+          <a href={LINKS.linkedin} target="_blank" rel="noopener noreferrer" style={pill}>
+            LINKEDIN
+          </a>
+          <a href={`mailto:${LINKS.email}`} style={pill}>
+            EMAIL
+          </a>
+          <a href={LINKS.cv} target="_blank" rel="noopener noreferrer" style={pill}>
+            <FileText size={12} weight="duotone" color="#7D89A0" /> CV
+          </a>
+        </div>
+        <div className="flex items-baseline justify-between" style={{ marginTop: 18 }}>
+          <span style={{ fontFamily: V.body, fontSize: 13, color: V.text3 }}>Jay Harwani</span>
+          <span style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, letterSpacing: "0.08em" }}>2026 / v4.0</span>
+        </div>
+      </div>
+
+      {/* desktop: the single quiet row */}
+      <div className="hidden sm:flex mx-auto max-w-6xl px-6 md:px-10 lg:px-16 py-8 flex-row items-center justify-between gap-4">
         <span style={{ fontFamily: V.body, fontSize: 13.5, color: V.text3 }}>Jay Harwani</span>
         <div className="flex items-center gap-5">
           <a href={LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>

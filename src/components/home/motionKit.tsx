@@ -29,7 +29,9 @@ export function useMediaFlags() {
   const [fine, setFine] = useState(false);
   const [wide, setWide] = useState(false);
   useEffect(() => {
-    setFine(window.matchMedia("(pointer: fine)").matches);
+    /* dev-only: ?touch=1 forces the touch path for desktop testing */
+    const forceTouch = import.meta.env.DEV && new URLSearchParams(window.location.search).has("touch");
+    setFine(forceTouch ? false : window.matchMedia("(pointer: fine)").matches);
     setWide(window.matchMedia("(min-width: 1024px)").matches);
   }, []);
   return { reduce, fine, wide };
@@ -37,6 +39,8 @@ export function useMediaFlags() {
 
 export interface Diorama {
   interactive: boolean;
+  /** any live motion source — cursor (desktop) or scroll (touch) */
+  live: boolean;
   tiltOn: boolean;
   ambientOn: boolean;
   srx: MotionValue<number>;
@@ -48,15 +52,20 @@ export interface Diorama {
 }
 
 /* cursor spotlight + shallow tilt for a section. `tilt`/`ambient` let a
-   caller (the Lab toggle) switch high-motion behavior on and off. */
+   caller (the Lab toggle) switch high-motion behavior on and off.
+   Touch devices get the SAME diorama driven by scroll: the section tilts
+   as it travels through the viewport and the spotlight wanders on its own,
+   so mobile is never the static version. */
 export function useDiorama(
   ref: RefObject<HTMLElement>,
   { tilt = true, ambient = true, maxX = 4.5, maxY = 5.5 }: { tilt?: boolean; ambient?: boolean; maxX?: number; maxY?: number } = {}
 ): Diorama {
   const { reduce, fine, wide } = useMediaFlags();
   const interactive = fine && !reduce;
-  const tiltOn = interactive && wide && tilt;
-  const ambientOn = interactive && ambient;
+  const scrollDrive = !fine && !reduce;
+  const live = interactive || scrollDrive;
+  const tiltOn = (interactive && wide && tilt) || (scrollDrive && tilt);
+  const ambientOn = live && ambient;
 
   const rx = useMotionValue(0);
   const ry = useMotionValue(0);
@@ -117,10 +126,10 @@ export function useDiorama(
     };
   }, [ref, interactive, tiltOn, maxX, maxY, mx, my, rx, ry]);
 
-  /* idle drift: after 4s without movement, the spotlight wanders */
+  /* idle drift (cursor mode): after 4s without movement, the spotlight wanders */
   useEffect(() => {
     const el = ref.current;
-    if (!el || !ambientOn) return;
+    if (!el || !ambientOn || !interactive) return;
     let raf = 0;
     const drift = (t: number) => {
       if (performance.now() - lastMove.current > 4000) {
@@ -132,9 +141,41 @@ export function useDiorama(
     };
     raf = requestAnimationFrame(drift);
     return () => cancelAnimationFrame(raf);
-  }, [ref, ambientOn, mx, my]);
+  }, [ref, ambientOn, interactive, mx, my]);
 
-  return { interactive, tiltOn, ambientOn, srx, sry, spotlight, dotMask, reduce, fine };
+  /* scroll drive (touch mode): tilt follows the section's travel through the
+     viewport; the spotlight wanders continuously. Plain-rect visibility check
+     inside the loop — IntersectionObserver misreports in some embedded and
+     emulated viewports (same workaround as the blocks playground). */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !scrollDrive) return;
+    let raf = 0;
+    let alive = true;
+    const loop = (t: number) => {
+      if (!alive) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.bottom > -80 && r.top < vh + 80) {
+        /* +1 when the section is below the viewport, 0 centered, −1 above */
+        const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
+        if (tilt) {
+          rx.set(prog * maxX * 0.9);
+          ry.set(Math.sin(t / 2600) * maxY * 0.22);
+        }
+        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
+        my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [ref, scrollDrive, tilt, maxX, maxY, mx, my, rx, ry]);
+
+  return { interactive, live, tiltOn, ambientOn, srx, sry, spotlight, dotMask, reduce, fine };
 }
 
 /* the lit dot grid. Interactive: spotlight pool + brighter dots near the
@@ -153,7 +194,7 @@ export function Ambience({ d, entered = true }: { d: Diorama; entered?: boolean 
       transition={{ duration: d.reduce ? 0.2 : 1.1, ease: EXPO }}
     >
       <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.12 }} />
-      {d.interactive ? (
+      {d.live ? (
         <>
           <motion.div
             className="absolute inset-0"
