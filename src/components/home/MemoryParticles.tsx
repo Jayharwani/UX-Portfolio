@@ -97,6 +97,18 @@ export default function MemoryParticles({
       window.clearTimeout(failsafe);
     });
 
+    /* the ONLY sound moment is the intro. Arm the gesture door IMMEDIATELY
+       (mobile visitors touch the screen before fonts even finish loading) —
+       heroSound itself knows how much of the assembly is left and stays
+       silent if the moment has passed. */
+    const unlockEvents: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchend"];
+    const onFirstGesture = () => {
+      unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture));
+      gestureUnlock();
+    };
+    unlockEvents.forEach((ev) => window.addEventListener(ev, onFirstGesture, { passive: true }));
+    cleanupFns.push(() => unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture)));
+
     const setup = async () => {
       try {
         await document.fonts.ready;
@@ -402,17 +414,6 @@ export default function MemoryParticles({
         .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
         .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 
-      /* the ONLY sound moment is the intro itself: a first gesture during
-         the assembly joins the swell in progress; once the intro is over,
-         the page stays silent (no sound on the forgetting loop) */
-      const unlockEvents: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchend"];
-      const onFirstGesture = () => {
-        unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture));
-        const remaining = 3.45 - tl.time();
-        if (remaining > 0.9) gestureUnlock(remaining);
-      };
-      unlockEvents.forEach((ev) => window.addEventListener(ev, onFirstGesture, { passive: true }));
-      cleanupFns.push(() => unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture)));
 
       /* the forgetting loop — runs after assembly, forever, silently */
       const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });

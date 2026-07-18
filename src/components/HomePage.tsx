@@ -357,10 +357,25 @@ function Hero() {
   const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
   useEffect(() => {
-    // load the physics chunk after first paint — every breakpoint now;
-    // touch devices get tap-to-bounce instead of drag (scroll stays free)
-    const t = setTimeout(() => setShowPlay(true), 250);
-    return () => clearTimeout(t);
+    // the blocks band is a desktop signature (≥768px) — phones skip the
+    // physics chunk entirely; the particle intro carries the mobile hero.
+    // Watch the breakpoint instead of sampling once: windows that START
+    // narrow and widen later still get their blocks.
+    const mql = window.matchMedia("(min-width: 768px)");
+    let t = 0;
+    const arm = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setShowPlay(true), 250);
+    };
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) arm();
+    };
+    if (mql.matches) arm();
+    mql.addEventListener("change", onChange);
+    return () => {
+      mql.removeEventListener("change", onChange);
+      window.clearTimeout(t);
+    };
   }, []);
 
   /* coarse pointer = tap mode for the blocks (no drag, page scroll wins) */
@@ -493,10 +508,10 @@ function Hero() {
         </div>
       </motion.div>
 
-      {/* the blocks playground: a full-width band tucked right under the CTA,
-          on EVERY breakpoint — drag on desktop, tap-to-bounce on touch */}
+      {/* the blocks playground: a full-width band tucked right under the CTA.
+          Desktop-only — on phones the particle intro IS the hero */}
       <motion.div
-        className="relative z-20 w-full h-[30vh] md:h-[36vh]"
+        className="relative z-20 w-full hidden md:block md:h-[36vh]"
         style={reduce ? undefined : { y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >

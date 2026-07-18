@@ -13,6 +13,9 @@
 
 let ctx: AudioContext | null = null;
 let swellPlayed = false;
+let outputUnlocked = false;
+let introStartMs: number | null = null;
+let introDurSec = 3.3;
 
 function ensure(): AudioContext | null {
   if (ctx) return ctx;
@@ -23,6 +26,57 @@ function ensure(): AudioContext | null {
     return ctx;
   } catch {
     return null;
+  }
+}
+
+/** seconds of assembly still ahead; full duration before the intro starts */
+function remainingNow(): number {
+  if (introStartMs == null) return introDurSec;
+  return introDurSec - (performance.now() - introStartMs) / 1000;
+}
+
+/* iPhone mute-switch bypass: Web Audio is classified as "sound effects" and
+   the hardware silent switch kills it. Flipping the audio session to
+   "playback" (iOS 16.4+) and kicking a near-silent <audio> element inside
+   the first real gesture reroutes us as media, which the switch spares.
+   Harmless everywhere else. */
+function unlockOutput() {
+  if (outputUnlocked) return;
+  outputUnlocked = true;
+  try {
+    const s = (navigator as any).audioSession;
+    if (s && typeof s.type === "string") s.type = "playback";
+  } catch {
+    /* not iOS, fine */
+  }
+  try {
+    // hand-built 50ms silent WAV — no asset, no magic base64
+    const rate = 8000;
+    const n = 400;
+    const bytes = new Uint8Array(44 + n * 2);
+    const dv = new DataView(bytes.buffer);
+    const w = (o: number, s: string) => {
+      for (let i = 0; i < s.length; i++) bytes[o + i] = s.charCodeAt(i);
+    };
+    w(0, "RIFF");
+    dv.setUint32(4, 36 + n * 2, true);
+    w(8, "WAVEfmt ");
+    dv.setUint32(16, 16, true);
+    dv.setUint16(20, 1, true);
+    dv.setUint16(22, 1, true);
+    dv.setUint32(24, rate, true);
+    dv.setUint32(28, rate * 2, true);
+    dv.setUint16(32, 2, true);
+    dv.setUint16(34, 16, true);
+    w(36, "data");
+    dv.setUint32(40, n * 2, true);
+    let bin = "";
+    bytes.forEach((b) => (bin += String.fromCharCode(b)));
+    const a = new Audio("data:audio/wav;base64," + btoa(bin));
+    a.volume = 0.01;
+    void a.play().catch(() => {});
+  } catch {
+    /* ignore */
   }
 }
 /* ── building blocks ── */
@@ -75,27 +129,37 @@ function chime(c: AudioContext, at: number, vol: number) {
 
 /** polite autoplay attempt as the intro starts */
 export function introAttempt(durationSec = 3.3) {
+  introDurSec = durationSec;
+  introStartMs = performance.now();
   const c = ensure();
   if (!c || swellPlayed) return;
   if (c.state === "running") {
     swell(c, durationSec);
-  } else {
-    c.resume()
-      .then(() => {
-        if (c.state === "running" && !swellPlayed) swell(c, durationSec);
-      })
-      .catch(() => {});
+    return;
   }
+  /* When autoplay is blocked, resume() doesn't reject — it stays PENDING
+     until the user's first gesture finally unlocks the context. That can
+     be seconds (or minutes) later, so on resolve we recompute what's left
+     of the assembly and only join if it's still in progress. The intro
+     sound must never play after the intro. */
+  c.resume()
+    .then(() => {
+      const rem = remainingNow();
+      if (c.state === "running" && !swellPlayed && rem > 0.5) swell(c, Math.min(durationSec, rem));
+    })
+    .catch(() => {});
 }
 
-/** first real gesture DURING the assembly: unlock audio and join the swell.
-    Callers only invoke this while the intro is still forming. */
-export function gestureUnlock(remainingIntroSec: number) {
+/** the first real gesture: reroute iOS output, resume the context, and if
+    the assembly is still forming, join the swell for whatever remains */
+export function gestureUnlock() {
+  unlockOutput(); // must happen inside the gesture
   const c = ensure();
   if (!c) return;
   const go = () => {
-    if (swellPlayed || remainingIntroSec <= 0.9) return;
-    swell(c, remainingIntroSec);
+    const rem = remainingNow();
+    if (swellPlayed || rem <= 0.5) return;
+    swell(c, rem);
   };
   if (c.state === "running") go();
   else c.resume().then(go).catch(() => {});
