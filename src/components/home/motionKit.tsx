@@ -6,7 +6,7 @@ import {
   useReducedMotion,
   type MotionValue,
 } from "motion/react";
-import { useState, useEffect, useRef, type RefObject } from "react";
+import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Motion kit: the shared physics for the homepage's interactive sections.
@@ -176,6 +176,127 @@ export function useDiorama(
   }, [ref, scrollDrive, tilt, maxX, maxY, mx, my, rx, ry]);
 
   return { interactive, live, tiltOn, ambientOn, srx, sry, spotlight, dotMask, reduce, fine };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   MobileScroll3D — a strong scroll-linked 3D lift for a single card, TOUCH
+   ONLY. Desktop (fine pointer, wide) renders the children with NO wrapper at
+   all, so the mouse-driven experience there is byte-for-byte unchanged.
+
+   On a phone: the card enters tilted back / pushed away / dimmed, rises to
+   flat-upright-full as it reaches the vertical middle of the screen, then
+   recedes gently as it exits the top. A faint continuous sway near center
+   keeps it alive. Values are lerped for a buttery, scroll-tracking feel.
+   ────────────────────────────────────────────────────────────────────────── */
+function detectTouchMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    return window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 767px)").matches;
+  } catch {
+    return false;
+  }
+}
+
+export function MobileScroll3D({
+  children,
+  origin = "center center",
+  maxTilt = 20,
+  lift = 42,
+}: {
+  children: ReactNode;
+  origin?: string;
+  maxTilt?: number;
+  lift?: number;
+}) {
+  const [enabled] = useState(detectTouchMotion);
+  const ref = useRef<HTMLDivElement>(null);
+  const rx = useMotionValue(maxTilt);
+  const ry = useMotionValue(0);
+  const ty = useMotionValue(lift);
+  const sc = useMotionValue(0.9);
+  const op = useMotionValue(0.5);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    let alive = true;
+    let first = true;
+    let cRx = maxTilt;
+    let cTy = lift;
+    let cSc = 0.9;
+    let cOp = 0.5;
+    const loop = (t: number) => {
+      if (!alive) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.bottom > -160 && r.top < vh + 160) {
+        /* p: +1 fully below viewport center → 0 centered → −1 fully above */
+        const p = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
+        let tRx: number, tTy: number, tSc: number, tOp: number;
+        if (p >= 0) {
+          // entering from below: tilt back, sit low, pushed away, dimmed
+          tRx = p * maxTilt;
+          tTy = p * lift;
+          tSc = 1 - p * 0.1;
+          tOp = 1 - p * 0.5;
+        } else {
+          // past center, exiting the top: recede a little
+          const q = -p;
+          tRx = -q * (maxTilt * 0.5);
+          tTy = -q * (lift * 0.36);
+          tSc = 1 - q * 0.05;
+          tOp = 1 - q * 0.3;
+        }
+        if (first) {
+          cRx = tRx;
+          cTy = tTy;
+          cSc = tSc;
+          cOp = tOp;
+          first = false;
+        } else {
+          const k = 0.16;
+          cRx += (tRx - cRx) * k;
+          cTy += (tTy - cTy) * k;
+          cSc += (tSc - cSc) * k;
+          cOp += (tOp - cOp) * k;
+        }
+        rx.set(cRx);
+        ry.set(Math.sin(t / 2600) * 2.6 * (1 - Math.abs(p))); // sway, strongest near center
+        ty.set(cTy);
+        sc.set(cSc);
+        op.set(cOp);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [enabled, maxTilt, lift, rx, ry, ty, sc, op]);
+
+  if (!enabled) return <>{children}</>;
+  return (
+    <motion.div
+      ref={ref}
+      style={{
+        transformPerspective: 900,
+        transformOrigin: origin,
+        rotateX: rx,
+        rotateY: ry,
+        y: ty,
+        scale: sc,
+        opacity: op,
+        transformStyle: "preserve-3d",
+        willChange: "transform, opacity",
+      }}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 /* the lit dot grid. Interactive: spotlight pool + brighter dots near the

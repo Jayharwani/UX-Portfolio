@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { introAttempt, gestureUnlock } from "./heroSound";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -96,18 +95,6 @@ export default function MemoryParticles({
       document.removeEventListener("visibilitychange", armFailsafe);
       window.clearTimeout(failsafe);
     });
-
-    /* the ONLY sound moment is the intro. Arm the gesture door IMMEDIATELY
-       (mobile visitors touch the screen before fonts even finish loading) —
-       heroSound itself knows how much of the assembly is left and stays
-       silent if the moment has passed. */
-    const unlockEvents: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchend"];
-    const onFirstGesture = () => {
-      unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture));
-      gestureUnlock();
-    };
-    unlockEvents.forEach((ev) => window.addEventListener(ev, onFirstGesture, { passive: true }));
-    cleanupFns.push(() => unlockEvents.forEach((ev) => window.removeEventListener(ev, onFirstGesture)));
 
     const setup = async () => {
       try {
@@ -405,8 +392,7 @@ export default function MemoryParticles({
 
       /* ── choreography (cinematic: emerge → drift → converge → land) ── */
       const tl = gsap.timeline();
-      tl.add(() => introAttempt(3.3)) // polite autoplay try; the gesture door below covers the rest
-        .to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
+      tl.to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
         .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
         .add(() => {
           assembledCb.current(); // real text fades in over the particles

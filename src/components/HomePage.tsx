@@ -19,7 +19,7 @@ import {
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
-import { useDiorama, Ambience } from "./home/motionKit";
+import { useDiorama, Ambience, MobileScroll3D } from "./home/motionKit";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -1203,7 +1203,9 @@ function HowIWork() {
         </div>
 
         <Reveal delay={0.12} className="min-w-0">
-          <ToolchainCard />
+          <MobileScroll3D>
+            <ToolchainCard />
+          </MobileScroll3D>
         </Reveal>
       </motion.div>
     </section>
@@ -1289,6 +1291,7 @@ function About() {
       >
         {/* photo: tilt, glow, HUD corners, floating chips */}
         <Reveal>
+          <MobileScroll3D>
           <div className="relative mx-auto md:mx-0" style={{ maxWidth: 380, perspective: 900 }}>
             {/* glow behind */}
             <motion.div
@@ -1393,6 +1396,7 @@ function About() {
               </motion.span>
             ))}
           </div>
+          </MobileScroll3D>
         </Reveal>
 
         {/* copy with accent wipes */}

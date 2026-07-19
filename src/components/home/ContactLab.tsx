@@ -8,6 +8,7 @@ import {
 } from "motion/react";
 import { useState, useEffect, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 import { EnvelopeSimple, CopySimple, LinkedinLogo } from "@phosphor-icons/react";
+import { MobileScroll3D } from "./motionKit";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Contact: a live interaction lab that is also the CTA.
@@ -758,18 +759,20 @@ export function ContactSection() {
             {...enter(2, 28)}
             style={{ transform: tiltOn ? "translateZ(30px)" : undefined }}
           >
-            <LabPanel
-              reduce={reduce}
-              fine={fine}
-              highMotion={highMotion}
-              setHighMotion={setHighMotion}
-              slider={slider}
-              setSlider={setSlider}
-              presetIdx={presetIdx}
-              dur={dur}
-              ease={ease}
-              entered={entered}
-            />
+            <MobileScroll3D>
+              <LabPanel
+                reduce={reduce}
+                fine={fine}
+                highMotion={highMotion}
+                setHighMotion={setHighMotion}
+                slider={slider}
+                setSlider={setSlider}
+                presetIdx={presetIdx}
+                dur={dur}
+                ease={ease}
+                entered={entered}
+              />
+            </MobileScroll3D>
           </motion.div>
         </div>
 
