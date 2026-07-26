@@ -4,6 +4,7 @@ import { HomePage } from "./components/HomePage";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
+const SignalCasePage = lazy(() => import("./components/SignalCasePage").then((m) => ({ default: m.SignalCasePage })));
 const BumperCasePage = lazy(() => import("./components/BumperCasePage").then((m) => ({ default: m.BumperCasePage })));
 const ChronoWeavePage = lazy(() => import("./components/ChronoWeavePage").then((m) => ({ default: m.ChronoWeavePage })));
 const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => ({ default: m.HeadroomPage })));
@@ -35,6 +36,7 @@ export default function App() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />

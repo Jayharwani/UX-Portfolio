@@ -608,6 +608,120 @@ function WhatIDo() {
 /* ── work cards: live-feeling previews ───────────────────────────────────── */
 
 /* Headroom preview: safe-to-spend counts up, bar fills */
+/* Signal preview: a mini DMV map — category pins, a Chesapeake water nod, and
+   the Fit card counting up "N you can make" with the open/tight/conflict legend */
+function SignalPreview({ active }: { active: boolean }) {
+  const [n, setN] = useState(4);
+  useEffect(() => {
+    if (!active) {
+      setN(4);
+      return;
+    }
+    let raf = 0;
+    let start: number | null = null;
+    const tick = (t: number) => {
+      if (start === null) start = t;
+      const p = Math.min((t - start) / 850, 1);
+      setN(4 + Math.round((1 - Math.pow(1 - p, 3)) * 8)); // 4 → 12
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
+
+  const pins = [
+    { x: 20, y: 32, c: "#0090CE", fit: "open" },
+    { x: 37, y: 22, c: "#C8102E", fit: "tight" },
+    { x: 55, y: 30, c: "#E07B00", fit: "open" },
+    { x: 30, y: 50, c: "#009A44", fit: "open" },
+    { x: 63, y: 48, c: "#E8B800", fit: "conflict" },
+    { x: 46, y: 62, c: "#7E868C", fit: "open" },
+    { x: 74, y: 36, c: "#009A44", fit: "tight" },
+  ];
+  const ring: Record<string, string> = { open: "#1F9D55", tight: "#E0A100", conflict: "#C8102E" };
+
+  return (
+    <div
+      aria-hidden="true"
+      className="relative w-full h-full"
+      style={{ background: "radial-gradient(120% 120% at 28% 12%, #141922 0%, #0C0F15 62%, #090B0F 100%)", minHeight: "inherit", overflow: "hidden" }}
+    >
+      {/* faint street grid */}
+      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.5 }} preserveAspectRatio="none">
+        {[18, 38, 58, 78].map((y) => (
+          <line key={"h" + y} x1="0" y1={`${y}%`} x2="100%" y2={`${y}%`} stroke="#1B2230" strokeWidth="1" />
+        ))}
+        {[16, 34, 52, 70, 88].map((x) => (
+          <line key={"v" + x} x1={`${x}%`} y1="0" x2={`${x}%`} y2="100%" stroke="#1B2230" strokeWidth="1" />
+        ))}
+        <path d="M2 78 Q 30 60 46 66 T 96 40" stroke="#243042" strokeWidth="2" fill="none" opacity="0.8" />
+      </svg>
+      {/* Chesapeake water nod */}
+      <div style={{ position: "absolute", right: "-10%", top: "6%", width: "44%", height: "58%", background: "linear-gradient(160deg, rgba(120,152,170,0.18), rgba(90,120,140,0.05))", borderRadius: "45% 35% 55% 40%", filter: "blur(2px)" }} />
+
+      {/* pins — ink tiles with a category dot; ring encodes Fit when active */}
+      {pins.map((p, i) => (
+        <motion.div
+          key={i}
+          style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-100%)" }}
+          animate={active ? { y: [0, -3, 0] } : { y: 0 }}
+          transition={{ duration: 2.4, repeat: active ? Infinity : 0, ease: "easeInOut", delay: (i % 4) * 0.3 }}
+        >
+          <span
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 18,
+              height: 18,
+              borderRadius: 6,
+              background: "#16181C",
+              boxShadow: active ? `0 0 0 2px ${ring[p.fit]}, 0 4px 10px rgba(0,0,0,0.5)` : "0 4px 10px rgba(0,0,0,0.5)",
+              transition: "box-shadow 0.4s ease",
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: 2, background: p.c }} />
+          </span>
+          <span style={{ display: "block", width: 1.5, height: 6, background: "#16181C", margin: "0 auto" }} />
+        </motion.div>
+      ))}
+
+      {/* the Fit card */}
+      <div
+        className="absolute"
+        style={{
+          left: 16,
+          bottom: 16,
+          borderRadius: 12,
+          padding: "12px 14px",
+          background: "rgba(251,250,246,0.96)",
+          border: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 14px 34px -14px rgba(0,0,0,0.55)",
+          minWidth: 150,
+        }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span style={{ width: 5, height: 5, borderRadius: 999, background: "#1F9D55" }} />
+          <span style={{ fontFamily: V.mono, fontSize: 8.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8A8F97" }}>This week · Fit</span>
+        </div>
+        <p style={{ fontFamily: V.display, fontSize: 26, fontWeight: 600, color: "#16181C", lineHeight: 1.05, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+          {n} <span style={{ fontFamily: V.body, fontSize: 12, fontWeight: 600, color: "#4A4E55" }}>you can make</span>
+        </p>
+        <div className="flex items-center gap-3" style={{ marginTop: 8 }}>
+          {[
+            { l: "open", c: "#1F9D55" },
+            { l: "tight", c: "#E0A100" },
+            { l: "conflict", c: "#C8102E" },
+          ].map((s) => (
+            <span key={s.l} className="inline-flex items-center gap-1" style={{ fontFamily: V.body, fontSize: 8.5, fontWeight: 600, color: "#4A4E55" }}>
+              <span style={{ width: 5, height: 5, borderRadius: 999, background: s.c }} /> {s.l}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HeadroomPreview({ active }: { active: boolean }) {
   const [n, setN] = useState(1730);
   useEffect(() => {
@@ -818,6 +932,15 @@ interface Project {
 
 const PROJECTS: Project[] = [
   {
+    slug: "signal",
+    to: "/signal",
+    name: "Signal",
+    line: "A live map of DMV tech events that reads your calendar and shows which ones you can actually make.",
+    tags: ["Live Product", "Maps", "Front-End"],
+    accent: "#1F9D55",
+    Preview: SignalPreview,
+  },
+  {
     slug: "headroom",
     to: "/headroom",
     name: "Headroom",
@@ -954,12 +1077,11 @@ function SelectedWork() {
             <WorkCard project={PROJECTS[0]} featured />
           </Reveal>
           <div className="grid md:grid-cols-2 gap-6 items-stretch">
-            <Reveal delay={0.08} className="h-full">
-              <WorkCard project={PROJECTS[1]} />
-            </Reveal>
-            <Reveal delay={0.14} className="h-full">
-              <WorkCard project={PROJECTS[2]} />
-            </Reveal>
+            {PROJECTS.slice(1).map((project, i) => (
+              <Reveal key={project.slug} delay={0.08 + i * 0.06} className="h-full">
+                <WorkCard project={project} />
+              </Reveal>
+            ))}
           </div>
         </div>
       </div>
