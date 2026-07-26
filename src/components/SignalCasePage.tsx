@@ -37,29 +37,53 @@ function Reveal({ children, delay = 0, className, style }: { children: ReactNode
   );
 }
 
-function Figure({ src, alt, caption }: { src: string; alt: string; caption: string }) {
-  /* Show the honest fallback by default; upgrade to the real screenshot only
-     once it truly decodes (naturalWidth > 0). A missing file — whether the
-     host 404s, hangs, or returns index.html — simply never upgrades, so the
-     figure is never a broken box. Drop the real .webp in and it appears. */
-  const [ready, setReady] = useState(false);
+/* Resolve a craft shot from a base path (no extension). Tries png → jpg →
+   jpeg → webp so the real file works whatever you saved it as. Only accepts a
+   candidate that truly decodes (naturalWidth > 0); a 404, a SPA host that
+   returns index.html, or a hang all just advance, so the figure never shows a
+   broken box — it stays on the honest fallback until a real image appears. */
+function useResolvedShot(base: string): string | null {
+  const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!HAS_CRAFT_SHOTS) return;
     let alive = true;
-    const img = new Image();
-    img.onload = () => {
-      if (alive && img.naturalWidth > 0) setReady(true);
+    let timer = 0;
+    const exts = ["png", "jpg", "jpeg", "webp"];
+    let i = 0;
+    const attempt = () => {
+      if (!alive || i >= exts.length) return;
+      const candidate = `${base}.${exts[i]}`;
+      const img = new Image();
+      const advance = () => {
+        window.clearTimeout(timer);
+        i++;
+        attempt();
+      };
+      img.onload = () => {
+        if (!alive) return;
+        window.clearTimeout(timer);
+        if (img.naturalWidth > 0) setUrl(candidate);
+        else advance();
+      };
+      img.onerror = advance;
+      timer = window.setTimeout(advance, 4000); // hang guard
+      img.src = candidate;
     };
-    img.src = src;
+    attempt();
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
-  }, [src]);
+  }, [base]);
+  return url;
+}
 
+function Figure({ base, alt, caption }: { base: string; alt: string; caption: string }) {
+  const url = useResolvedShot(base);
   return (
     <figure className="sig-fig">
-      {ready ? (
-        <img src={src} alt={alt} loading="lazy" className="sig-shot" />
+      {url ? (
+        <img src={url} alt={alt} loading="lazy" className="sig-shot" />
       ) : (
         <a className="sig-shot sig-shot-live" href={LIVE} target="_blank" rel="noopener noreferrer" aria-label={alt}>
           <span className="sig-dot" aria-hidden="true" />
@@ -297,7 +321,7 @@ export function SignalCasePage() {
 
           <Reveal delay={0.1} className="sig-fig-wide">
             <Figure
-              src="/signal/fit.webp"
+              base="/signal/fit"
               alt="Signal's Fit sheet: connect a calendar that stays on your device, or add busy time by hand, and pick how you get around"
               caption="Connect a calendar — it stays on your device — and Fit re-sorts the map around your real week."
             />
@@ -332,14 +356,14 @@ export function SignalCasePage() {
           <div className="sig-craft">
             <Reveal delay={0.04}>
               <Figure
-                src="/signal/panel.webp"
+                base="/signal/panel"
                 alt="The redesigned panel: upcoming events grouped by week with a calm, category-coded hierarchy"
                 caption="The redesigned panel — events first, calm hierarchy."
               />
             </Reveal>
             <Reveal delay={0.08}>
               <Figure
-                src="/signal/event-card.webp"
+                base="/signal/event-card"
                 alt="An event selected on the map: its card shows what, when, where, and how to register at a glance"
                 caption="The event card — what, when, where, and how to register, at a glance."
               />
