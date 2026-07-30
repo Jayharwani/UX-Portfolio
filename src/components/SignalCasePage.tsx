@@ -320,31 +320,50 @@ function useResolvedShot(base: string): string | null {
   return url;
 }
 
-function Shot({ base, alt, caption }: { base: string; alt: string; caption: string }) {
+/* The panel, presented in an app window whose content pans as you scroll —
+   a tall screenshot shown raw would tower over the copy and leave a void
+   beside it. Fixed viewport height keeps the two columns balanced, and the
+   pan reveals the rest of the list instead of hiding it. */
+function PanelFrame({ base, alt, caption, progress }: { base: string; alt: string; caption: string; progress: MotionValue<number> }) {
   const reduce = useReducedMotion();
   const url = useResolvedShot(base);
-  const { ref, srx, sry } = useTilt(6, 8);
+  const { ref, srx, sry } = useTilt(5, 7);
   const holder = useRef<HTMLElement>(null);
   const inView = useInView(holder, { once: true, margin: "-8% 0px" });
+  const panY = useTransform(progress, [0.12, 0.92], ["0%", "-42%"]);
+
   return (
     <figure className="sg-fig" ref={holder}>
       <motion.div
         ref={ref}
-        className="sg-shot-3d"
+        className="sg-win"
         style={reduce ? undefined : { rotateX: srx, rotateY: sry }}
-        initial={reduce ? false : { opacity: 0, y: 34, rotateZ: -1.5 }}
-        animate={inView ? { opacity: 1, y: 0, rotateZ: 0 } : undefined}
+        initial={reduce ? false : { y: 34, rotateZ: -1 }}
+        animate={inView ? { y: 0, rotateZ: 0 } : undefined}
         transition={{ duration: 1, ease: EASE }}
       >
-        <span className="sg-shot-glow" aria-hidden="true" />
-        {url ? (
-          <img src={url} alt={alt} loading="lazy" className="sg-shot" />
-        ) : (
-          <a className="sg-shot sg-shot-live" href={LIVE} target="_blank" rel="noopener noreferrer" aria-label={alt}>
-            <span className="sg-dot" aria-hidden="true" />
-            See this live <span aria-hidden="true">↗</span>
-          </a>
-        )}
+        <span className="sg-win-glow" aria-hidden="true" />
+        <div className="sg-win-bar">
+          <span className="sg-win-dots" aria-hidden="true"><i /><i /><i /></span>
+          <span className="sg-win-title">Signal — the panel</span>
+        </div>
+        <div className="sg-win-view">
+          {url ? (
+            <motion.img
+              src={url}
+              alt={alt}
+              loading="lazy"
+              className="sg-win-img"
+              style={reduce ? undefined : { y: panY }}
+            />
+          ) : (
+            <a className="sg-win-fallback" href={LIVE} target="_blank" rel="noopener noreferrer" aria-label={alt}>
+              <span className="sg-dot" aria-hidden="true" />
+              See this live <span aria-hidden="true">↗</span>
+            </a>
+          )}
+          <span className="sg-win-fade" aria-hidden="true" />
+        </div>
       </motion.div>
       <Reveal delay={0.2}>
         <figcaption className="sg-cap">{caption}</figcaption>
@@ -434,10 +453,69 @@ function FeatureRow({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
 }
 
 const NOTES = [
-  { t: "Events first, tools second", b: "My first build buried the list behind the calendar controls. I inverted it — events became the permanent content and setup moved behind a single button. Same feature, different hierarchy." },
-  { t: "One card, one decision", b: "Category, day and time, venue, organizer, and a register link — everything needed to commit, without opening anything." },
-  { t: "Freshness stated plainly", b: "The footer says when the data last refreshed and how many events are live, so you never wonder whether the map is stale." },
+  { n: "01", t: "Events first, tools second", b: "My first build buried the list behind the calendar controls. I inverted it — events became the permanent content and setup moved behind a single button. Same feature, different hierarchy." },
+  { n: "02", t: "One card, one decision", b: "Category, day and time, venue, organizer, and a register link — everything needed to commit, without opening anything." },
+  { n: "03", t: "Freshness stated plainly", b: "The footer says when the data last refreshed and how many events are live, so you never wonder whether the map is stale." },
 ];
+
+/* the interface section owns its own scroll progress so the panel can pan */
+function InterfaceSection() {
+  const reduce = useReducedMotion();
+  const secRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: secRef, offset: ["start end", "end start"] });
+  const listRef = useRef<HTMLOListElement>(null);
+  const listIn = useInView(listRef, { once: true, margin: "-15% 0px" });
+
+  return (
+    <section className="sg-sec" ref={secRef}>
+      <div className="sg-wrap">
+        <Reveal>
+          <p className="sg-kicker"><i />The interface</p>
+        </Reveal>
+        <div className="sg-shotrow">
+          <div className="sg-shotcol">
+            <PanelFrame
+              base="/signal/panel"
+              alt="Signal's panel: upcoming events grouped by week, each showing category, day and time, venue, organizer, and a register link, with a footer showing when the data last updated"
+              caption="The panel, as it ships — scroll to move through the list."
+              progress={scrollYProgress}
+            />
+          </div>
+
+          <ol className="sg-tl" ref={listRef}>
+            <motion.span
+              className="sg-tl-rail"
+              aria-hidden="true"
+              initial={reduce ? false : { scaleY: 0 }}
+              animate={listIn ? { scaleY: 1 } : undefined}
+              transition={{ duration: 1.1, ease: EASE }}
+            />
+            {NOTES.map((note, i) => (
+              <motion.li
+                key={note.t}
+                className="sg-tl-item"
+                initial={reduce ? false : { x: 18 }}
+                animate={listIn ? { x: 0 } : undefined}
+                transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.15 + i * 0.14 }}
+              >
+                <motion.span
+                  className="sg-tl-dot"
+                  aria-hidden="true"
+                  initial={reduce ? false : { scale: 0 }}
+                  animate={listIn ? { scale: 1 } : undefined}
+                  transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : 0.25 + i * 0.14 }}
+                />
+                <span className="sg-tl-n">{note.n}</span>
+                <h3 className="sg-tl-t">{note.t}</h3>
+                <p className="sg-tl-b">{note.b}</p>
+              </motion.li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 const STACK = ["React + Vite", "MapLibre GL", "Protomaps tiles", "Scheduled ingest", "Local-first, no backend"];
 
@@ -563,33 +641,7 @@ export function SignalCasePage() {
         </section>
 
         {/* ── 4 · the interface ── */}
-        <section className="sg-sec">
-          <div className="sg-wrap">
-            <Reveal>
-              <p className="sg-kicker"><i />The interface</p>
-            </Reveal>
-            <div className="sg-shotrow">
-              <div className="sg-shotcol">
-                <Shot
-                  base="/signal/panel"
-                  alt="Signal's panel: upcoming events grouped by week, each showing category, day and time, venue, organizer, and a register link, with a footer showing when the data last updated"
-                  caption="The panel, as it ships."
-                />
-              </div>
-              <div className="sg-notes">
-                {NOTES.map((n, i) => (
-                  <Reveal key={n.t} delay={0.08 + i * 0.1}>
-                    <div className="sg-note-item">
-                      <span className="sg-note-bar" aria-hidden="true" />
-                      <h3 className="sg-note-t">{n.t}</h3>
-                      <p className="sg-note-b">{n.b}</p>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
+        <InterfaceSection />
 
         {/* ── 5 · built with ── */}
         <section className="sg-sec">
@@ -830,18 +882,35 @@ const CSS = `
 .sg-k[data-fit="conflict"] i { background: #3C424B; }
 
 /* ── the interface ── */
-.sg-shotrow { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: start; }
-.sg-fig { margin: 0; perspective: 1200px; }
-.sg-shot-3d { position: relative; transform-style: preserve-3d; will-change: transform; border-radius: var(--r); }
-.sg-shot-glow { position: absolute; inset: 6% 8% -4%; border-radius: 40px; background: radial-gradient(60% 60% at 50% 60%, rgba(47,190,107,.4), transparent 70%); filter: blur(34px); z-index: -1; }
-.sg-shot { display: block; width: 100%; height: auto; border-radius: var(--r); border: 1px solid var(--line2); box-shadow: 0 40px 80px -34px rgba(0,0,0,.9); }
-.sg-shot-live { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 280px; font-size: 15px; font-weight: 600; color: var(--soft); border-style: dashed; }
+.sg-shotrow { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: clamp(28px, 5vw, 68px); align-items: center; }
+.sg-fig { margin: 0; perspective: 1400px; }
+
+/* the app window */
+.sg-win {
+  position: relative; border-radius: var(--r); overflow: hidden; transform-style: preserve-3d; will-change: transform;
+  background: #14161b; border: 1px solid var(--line2);
+  box-shadow: 0 50px 100px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03), 0 0 80px -34px rgba(47,190,107,.4);
+}
+.sg-win-glow { position: absolute; inset: 10% 10% -6%; border-radius: 50px; background: radial-gradient(60% 60% at 50% 60%, rgba(47,190,107,.45), transparent 70%); filter: blur(38px); z-index: -1; }
+.sg-win-bar { display: flex; align-items: center; gap: 12px; padding: 11px 15px; background: #0f1116; border-bottom: 1px solid var(--line); }
+.sg-win-dots { display: inline-flex; gap: 6px; }
+.sg-win-dots i { width: 9px; height: 9px; border-radius: 999px; background: rgba(255,255,255,.16); }
+.sg-win-dots i:first-child { background: rgba(47,190,107,.55); }
+.sg-win-title { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--faint); }
+.sg-win-view { position: relative; height: clamp(400px, 56vh, 560px); overflow: hidden; background: #f3f1ea; }
+.sg-win-img { display: block; width: 100%; height: auto; will-change: transform; }
+.sg-win-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(11,13,17,.75)); }
+.sg-win-fallback { display: flex; align-items: center; justify-content: center; gap: 10px; height: 100%; font-size: 15px; font-weight: 600; color: var(--soft); background: #101319; }
 .sg-cap { font-size: 13.5px; color: var(--faint); margin: 18px 2px 0; }
-.sg-notes { display: flex; flex-direction: column; gap: 26px; }
-.sg-note-item { position: relative; padding-left: 20px; }
-.sg-note-bar { position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: linear-gradient(180deg, var(--accent), transparent); }
-.sg-note-t { font-family: var(--display); font-size: 19px; font-weight: 400; line-height: 1.3; color: #fff; margin: 0; }
-.sg-note-b { font-size: 15.5px; line-height: 1.68; color: var(--soft); margin: 9px 0 0; max-width: 46ch; }
+
+/* the notes, as a drawn timeline */
+.sg-tl { position: relative; list-style: none; margin: 0; padding: 0 0 0 30px; display: flex; flex-direction: column; gap: 30px; }
+.sg-tl-rail { position: absolute; left: 5px; top: 8px; bottom: 8px; width: 1px; transform-origin: top center; background: linear-gradient(180deg, var(--accent), rgba(47,190,107,.25) 55%, transparent); }
+.sg-tl-item { position: relative; }
+.sg-tl-dot { position: absolute; left: -29px; top: 9px; width: 11px; height: 11px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 4px rgba(47,190,107,.14), 0 0 14px rgba(47,190,107,.85); }
+.sg-tl-n { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--faint); display: block; margin-bottom: 6px; }
+.sg-tl-t { font-family: var(--display); font-size: clamp(1.2rem, 2.1vw, 1.5rem); font-weight: 400; line-height: 1.25; color: #fff; margin: 0; }
+.sg-tl-b { font-size: 15.5px; line-height: 1.7; color: var(--soft); margin: 10px 0 0; max-width: 46ch; }
 
 /* stack */
 .sg-stack { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; padding: 0; margin: 0; }
@@ -859,8 +928,8 @@ const CSS = `
 @media (max-width: 900px) {
   .sg-why-grid { grid-template-columns: 1fr; }
   .sg-dio-wrap { max-width: 420px; margin: 8px auto 0; }
-  .sg-shotrow { grid-template-columns: 1fr; }
-  .sg-shotcol { max-width: 320px; margin: 0 auto; }
+  .sg-shotrow { grid-template-columns: 1fr; align-items: start; }
+  .sg-shotcol { max-width: 360px; margin: 0 auto; width: 100%; }
   .sg-sub { max-width: none; }
   .sg-big { max-width: none; }
 }
