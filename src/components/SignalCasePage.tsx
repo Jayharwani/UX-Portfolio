@@ -1,23 +1,77 @@
 import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from "react";
-import { motion, useInView, useReducedMotion, useMotionValue, useSpring } from "motion/react";
+import {
+  motion,
+  useInView,
+  useReducedMotion,
+  useMotionValue,
+  useSpring,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import { Link } from "react-router";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Signal — a short case study.
-   Six small blocks: what it is (with the real product embedded), what it
-   does, why it exists, the interface, how it's built, links.
+   Signal — case study.
 
-   Type: Clash Display for headings, General Sans for reading, Geist Mono for
-   labels — the same families the portfolio already loads and serves.
-   Motion: one easing curve, every reveal fires once, all of it disabled
-   under prefers-reduced-motion. Nothing animates that isn't already legible.
+   Same six blocks, same length. The delivery is cinematic: a dark
+   atmospheric stage, glass surfaces with specular edges, and a real 3D
+   centerpiece — an exploded layer diorama (basemap → events → fit) built in
+   CSS 3D, tilting with the cursor. It is the product's core idea made
+   literal: a directory tells you WHERE, the Fit layer tells you WHAT YOU
+   CAN MAKE.
+
+   Every animated element is legible at rest: reveals only add opacity/offset
+   on top of a correct final state, so reduced-motion and any JS hiccup still
+   render a complete page. One easing curve throughout. Reveals fire once.
    ────────────────────────────────────────────────────────────────────────── */
 
 const LIVE = "https://jayharwani.github.io/dmv-map/";
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-/* fade-rise, once */
-function Reveal({ children, delay = 0, y = 18, className, style }: { children: ReactNode; delay?: number; y?: number; className?: string; style?: CSSProperties }) {
+/* ── shared: cursor tilt in 3D ── */
+function useTilt(maxX = 6, maxY = 8) {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const gx = useMotionValue(50);
+  const gy = useMotionValue(50);
+  const srx = useSpring(rx, { stiffness: 120, damping: 18, mass: 0.6 });
+  const sry = useSpring(ry, { stiffness: 120, damping: 18, mass: 0.6 });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduce) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const nx = (e.clientX - r.left) / r.width - 0.5;
+      const ny = (e.clientY - r.top) / r.height - 0.5;
+      ry.set(nx * maxY);
+      rx.set(-ny * maxX);
+      gx.set(((e.clientX - r.left) / r.width) * 100);
+      gy.set(((e.clientY - r.top) / r.height) * 100);
+    };
+    const onLeave = () => {
+      rx.set(0);
+      ry.set(0);
+      gx.set(50);
+      gy.set(50);
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+    };
+  }, [reduce, maxX, maxY, rx, ry, gx, gy]);
+
+  return { ref, srx, sry, gx, gy };
+}
+
+/* ── reveals ── */
+function Reveal({ children, delay = 0, y = 20, className, style }: { children: ReactNode; delay?: number; y?: number; className?: string; style?: CSSProperties }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
@@ -28,14 +82,13 @@ function Reveal({ children, delay = 0, y = 18, className, style }: { children: R
       style={style}
       initial={reduce ? false : { opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: 0.65, ease: EASE, delay: reduce ? 0 : delay }}
+      transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : delay }}
     >
       {children}
     </motion.div>
   );
 }
 
-/* per-character rise — the hero word only */
 function Chars({ text, className }: { text: string; className?: string }) {
   const reduce = useReducedMotion();
   return (
@@ -45,9 +98,9 @@ function Chars({ text, className }: { text: string; className?: string }) {
           key={i}
           aria-hidden="true"
           style={{ display: "inline-block" }}
-          initial={reduce ? false : { opacity: 0, y: 34 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : 0.1 + i * 0.055 }}
+          initial={reduce ? false : { opacity: 0, y: 44, rotateX: -60 }}
+          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          transition={{ duration: 0.9, ease: EASE, delay: reduce ? 0 : 0.12 + i * 0.06 }}
         >
           {c}
         </motion.span>
@@ -56,7 +109,6 @@ function Chars({ text, className }: { text: string; className?: string }) {
   );
 }
 
-/* per-word rise — used once, on the statement line */
 function Words({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLParagraphElement>(null);
@@ -67,9 +119,9 @@ function Words({ text, className, delay = 0 }: { text: string; className?: strin
         <motion.span
           key={i}
           style={{ display: "inline-block", whiteSpace: "pre" }}
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : delay + i * 0.035 }}
+          initial={reduce ? false : { opacity: 0, y: 20, filter: "blur(6px)" }}
+          animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : undefined}
+          transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : delay + i * 0.038 }}
         >
           {w}{" "}
         </motion.span>
@@ -78,75 +130,133 @@ function Words({ text, className, delay = 0 }: { text: string; className?: strin
   );
 }
 
-/* a hairline that draws itself in */
-function Rule({ delay = 0 }: { delay?: number }) {
+/* ══════════════════════════════════════════════════════════════════════════
+   The 3D diorama — three map layers exploded on Z, tilting with the cursor.
+   Bottom: the basemap grid. Middle: every event as a pin. Top: the Fit
+   verdicts. This is the product's thesis as an object you can look around.
+   ══════════════════════════════════════════════════════════════════════════ */
+const DIO_PINS = [
+  { x: 22, y: 30 }, { x: 47, y: 20 }, { x: 70, y: 33 }, { x: 33, y: 48 },
+  { x: 58, y: 44 }, { x: 80, y: 55 }, { x: 18, y: 62 }, { x: 43, y: 68 },
+  { x: 64, y: 74 }, { x: 30, y: 80 }, { x: 76, y: 22 }, { x: 52, y: 58 },
+];
+/* honest to the mechanic: most fit, a few are tight, a couple conflict */
+const DIO_FIT: ("open" | "tight" | "conflict")[] = [
+  "open", "open", "tight", "open", "open", "conflict",
+  "open", "tight", "open", "open", "open", "conflict",
+];
+
+function Diorama() {
   const reduce = useReducedMotion();
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const { ref, srx, sry } = useTilt(7, 9);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(wrapRef, { once: true, margin: "-15% 0px" });
+
+  const LAYERS = [
+    { label: "Basemap", z: 0 },
+    { label: "Every event", z: 62 },
+    { label: "Fit", z: 124 },
+  ];
+
   return (
-    <motion.span
-      ref={ref}
-      className="sg-rule"
-      aria-hidden="true"
-      initial={reduce ? false : { scaleX: 0 }}
-      animate={inView ? { scaleX: 1 } : undefined}
-      transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : delay }}
-    />
+    <div className="sg-dio-wrap" ref={wrapRef}>
+      {/* NOTE: nothing here starts at opacity 0. The diorama is the centerpiece,
+          so its resting state is already a legible stacked map — motion only
+          explodes it apart on Z. A stalled script degrades to flat, not blank. */}
+      <motion.div
+        ref={ref}
+        className="sg-dio"
+        style={{ rotateX: srx, rotateY: sry }}
+        initial={reduce ? false : { y: 30 }}
+        animate={inView ? { y: 0 } : undefined}
+        transition={{ duration: 1, ease: EASE }}
+      >
+        <div className="sg-dio-inner">
+          {LAYERS.map((L, li) => (
+            <motion.div
+              key={L.label}
+              className={`sg-plane sg-plane-${li}`}
+              initial={reduce ? false : { z: 0 }}
+              animate={inView ? { z: L.z } : undefined}
+              transition={{ duration: 1.1, ease: EASE, delay: reduce ? 0 : 0.15 + li * 0.16 }}
+            >
+              {/* the plane surface */}
+              <div className="sg-plane-face">
+                {li === 0 && (
+                  <svg className="sg-grid" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M0 20H100M0 40H100M0 60H100M0 80H100M20 0V100M40 0V100M60 0V100M80 0V100" />
+                    <path className="sg-river" d="M-2 62C18 55 32 76 52 68S86 48 102 58" />
+                  </svg>
+                )}
+                {li === 1 &&
+                  DIO_PINS.map((p, i) => (
+                    <motion.span
+                      key={i}
+                      className="sg-dpin"
+                      style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                      initial={reduce ? false : { scale: 0.45 }}
+                      animate={inView ? { scale: 1 } : undefined}
+                      transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : 0.5 + i * 0.035 }}
+                    />
+                  ))}
+                {li === 2 &&
+                  DIO_PINS.map((p, i) => (
+                    <motion.span
+                      key={i}
+                      className="sg-dfit"
+                      data-fit={DIO_FIT[i]}
+                      style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                      initial={reduce ? false : { scale: 0.35, y: 8 }}
+                      animate={inView ? { scale: 1, y: 0 } : undefined}
+                      transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : 0.85 + i * 0.045 }}
+                    />
+                  ))}
+              </div>
+              <span className="sg-plane-label">{L.label}</span>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      <Reveal delay={0.3}>
+        <div className="sg-dio-key">
+          <span className="sg-k" data-fit="open"><i />Open</span>
+          <span className="sg-k" data-fit="tight"><i />Tight</span>
+          <span className="sg-k" data-fit="conflict"><i />Conflict</span>
+        </div>
+      </Reveal>
+    </div>
   );
 }
 
-/* the embedded live product: rises in, then tilts a few degrees toward the cursor */
-function LiveStage() {
+/* ── the live product in a glass frame ── */
+function LiveStage({ progress }: { progress: MotionValue<number> }) {
   const reduce = useReducedMotion();
   const [framed, setFramed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const rx = useMotionValue(0);
-  const ry = useMotionValue(0);
-  const srx = useSpring(rx, { stiffness: 110, damping: 18 });
-  const sry = useSpring(ry, { stiffness: 110, damping: 18 });
+  const { ref, srx, sry } = useTilt(4, 6);
+  const y = useTransform(progress, [0, 1], [0, -60]);
 
   useEffect(() => {
     const id = window.setTimeout(() => setFramed(true), 250);
     return () => window.clearTimeout(id);
   }, []);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || reduce) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const nx = (e.clientX - r.left) / r.width - 0.5;
-      const ny = (e.clientY - r.top) / r.height - 0.5;
-      ry.set(nx * 5);
-      rx.set(-ny * 4);
-    };
-    const onLeave = () => {
-      rx.set(0);
-      ry.set(0);
-    };
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerleave", onLeave);
-    return () => {
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerleave", onLeave);
-    };
-  }, [reduce, rx, ry]);
-
   return (
     <div className="sg-stage-wrap">
       <motion.div
         ref={ref}
         className="sg-stage"
-        style={{ rotateX: srx, rotateY: sry, transformPerspective: 1400 }}
-        initial={reduce ? false : { opacity: 0, y: 34, scale: 0.985 }}
+        style={reduce ? undefined : { rotateX: srx, rotateY: sry, y }}
+        initial={reduce ? false : { opacity: 0, y: 50, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.9, ease: EASE, delay: reduce ? 0 : 0.5 }}
+        transition={{ duration: 1, ease: EASE, delay: reduce ? 0 : 0.55 }}
       >
+        <span className="sg-stage-shine" aria-hidden="true" />
         <div className="sg-stage-bar">
           <span className="sg-dot" aria-hidden="true" />
           <span className="sg-stage-url">jayharwani.github.io/dmv-map</span>
+          <span className="sg-stage-tag">live</span>
         </div>
         <div className="sg-stage-view">
           {framed && (
@@ -167,14 +277,14 @@ function LiveStage() {
           )}
         </div>
       </motion.div>
-      <Reveal delay={0.7}>
-        <p className="sg-note">The running product, embedded. Pan it, filter it, load a calendar.</p>
+      <Reveal delay={0.75}>
+        <p className="sg-note">The running product, embedded — pan it, filter it, load a calendar.</p>
       </Reveal>
     </div>
   );
 }
 
-/* craft shots: try png/jpg/webp; never render a broken image */
+/* ── craft shot ── */
 function useResolvedShot(base: string): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -213,21 +323,26 @@ function useResolvedShot(base: string): string | null {
 function Shot({ base, alt, caption }: { base: string; alt: string; caption: string }) {
   const reduce = useReducedMotion();
   const url = useResolvedShot(base);
-  const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-8% 0px" });
+  const { ref, srx, sry } = useTilt(6, 8);
+  const holder = useRef<HTMLElement>(null);
+  const inView = useInView(holder, { once: true, margin: "-8% 0px" });
   return (
-    <figure className="sg-fig" ref={ref}>
+    <figure className="sg-fig" ref={holder}>
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: 26, clipPath: "inset(8% 0% 0% 0% round 16px)" }}
-        animate={inView ? { opacity: 1, y: 0, clipPath: "inset(0% 0% 0% 0% round 16px)" } : undefined}
-        transition={{ duration: 0.9, ease: EASE }}
+        ref={ref}
+        className="sg-shot-3d"
+        style={reduce ? undefined : { rotateX: srx, rotateY: sry }}
+        initial={reduce ? false : { opacity: 0, y: 34, rotateZ: -1.5 }}
+        animate={inView ? { opacity: 1, y: 0, rotateZ: 0 } : undefined}
+        transition={{ duration: 1, ease: EASE }}
       >
+        <span className="sg-shot-glow" aria-hidden="true" />
         {url ? (
           <img src={url} alt={alt} loading="lazy" className="sg-shot" />
         ) : (
           <a className="sg-shot sg-shot-live" href={LIVE} target="_blank" rel="noopener noreferrer" aria-label={alt}>
             <span className="sg-dot" aria-hidden="true" />
-            See this live in the map <span aria-hidden="true">↗</span>
+            See this live <span aria-hidden="true">↗</span>
           </a>
         )}
       </motion.div>
@@ -240,62 +355,76 @@ function Shot({ base, alt, caption }: { base: string; alt: string; caption: stri
 
 /* ── feature glyphs ── */
 const IconMap = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
     <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
     <path d="M9 4v13.5M15 6.5V20" stroke="currentColor" strokeWidth="1.5" opacity=".45" />
   </svg>
 );
 const IconFit = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
     <rect x="3.5" y="5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.5" />
     <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="m8.5 14.5 2.2 2.2 4.6-4.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m8.5 14.5 2.2 2.2 4.6-4.6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const IconRefresh = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
     <path d="M20 12a8 8 0 1 1-2.6-5.9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     <path d="M20 4.5V10h-5.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const FEATURES = [
-  {
-    Icon: IconMap,
-    title: "One map, the whole region",
-    body: "Tech, design, and AI events across DC, Northern Virginia, and Baltimore — searchable and filterable by category.",
-  },
-  {
-    Icon: IconFit,
-    title: "Fit — what you can actually make",
-    body: "Connect a calendar and every event is marked open, tight, or a conflict, weighing real travel between your commitments. Read in your browser, never uploaded.",
-  },
-  {
-    Icon: IconRefresh,
-    title: "Always current, on its own",
-    body: "A scheduled pipeline pulls from event sources every few hours and republishes the map. No dashboard to tend, no recurring cost.",
-  },
+  { Icon: IconMap, n: "01", title: "One map, the whole region", body: "Tech, design, and AI events across DC, Northern Virginia, and Baltimore — searchable and filterable by category." },
+  { Icon: IconFit, n: "02", title: "Fit — what you can actually make", body: "Connect a calendar and every event is marked open, tight, or a conflict, weighing real travel between your commitments. Read in your browser, never uploaded." },
+  { Icon: IconRefresh, n: "03", title: "Always current, on its own", body: "A scheduled pipeline pulls from event sources every few hours and republishes the map. No dashboard to tend, no recurring cost." },
 ];
 
+function FeatureCard({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
+  const reduce = useReducedMotion();
+  const { ref, srx, sry, gx, gy } = useTilt(5, 7);
+  const holder = useRef<HTMLDivElement>(null);
+  const inView = useInView(holder, { once: true, margin: "-8% 0px" });
+  const spot = useTransform([gx, gy], ([x, y]) => `radial-gradient(340px circle at ${x}% ${y}%, rgba(31,157,85,0.16), transparent 65%)`);
+  return (
+    <div ref={holder}>
+      <motion.article
+        ref={ref}
+        className="sg-card"
+        style={reduce ? undefined : { rotateX: srx, rotateY: sry }}
+        initial={reduce ? false : { opacity: 0, y: 34 }}
+        animate={inView ? { opacity: 1, y: 0 } : undefined}
+        transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : i * 0.12 }}
+      >
+        {!reduce && <motion.span className="sg-card-spot" aria-hidden="true" style={{ background: spot }} />}
+        <span className="sg-card-edge" aria-hidden="true" />
+        <div className="sg-card-in">
+          <div className="sg-card-top">
+            <span className="sg-card-ic"><f.Icon /></span>
+            <span className="sg-card-n">{f.n}</span>
+          </div>
+          <h2 className="sg-card-t">{f.title}</h2>
+          <p className="sg-card-b">{f.body}</p>
+        </div>
+      </motion.article>
+    </div>
+  );
+}
+
 const NOTES = [
-  {
-    t: "Events first, tools second",
-    b: "My first build buried the list behind the calendar controls. I inverted it — events became the permanent content and setup moved behind a single button. Same feature, different hierarchy.",
-  },
-  {
-    t: "One card, one decision",
-    b: "Category, day and time, venue, organizer, and a register link — everything needed to commit, without opening anything.",
-  },
-  {
-    t: "Freshness stated plainly",
-    b: "The footer says when the data last refreshed and how many events are live, so you never wonder whether you're looking at a stale map.",
-  },
+  { t: "Events first, tools second", b: "My first build buried the list behind the calendar controls. I inverted it — events became the permanent content and setup moved behind a single button. Same feature, different hierarchy." },
+  { t: "One card, one decision", b: "Category, day and time, venue, organizer, and a register link — everything needed to commit, without opening anything." },
+  { t: "Freshness stated plainly", b: "The footer says when the data last refreshed and how many events are live, so you never wonder whether the map is stale." },
 ];
 
 const STACK = ["React + Vite", "MapLibre GL", "Protomaps tiles", "Scheduled ingest", "Local-first, no backend"];
 
 export function SignalCasePage() {
   const reduce = useReducedMotion();
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll();
+  const { scrollYProgress: heroProg } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const barX = useSpring(scrollYProgress, { stiffness: 120, damping: 26, restDelta: 0.001 });
 
   useEffect(() => {
     const prev = document.title;
@@ -309,6 +438,8 @@ export function SignalCasePage() {
   return (
     <div className="sg">
       <style>{CSS}</style>
+      <div className="sg-grain" aria-hidden="true" />
+      {!reduce && <motion.div className="sg-progress" style={{ scaleX: barX }} aria-hidden="true" />}
 
       <header className="sg-top">
         <Link to="/" className="sg-back">
@@ -320,13 +451,13 @@ export function SignalCasePage() {
       </header>
 
       <main>
-        {/* ── 1 · what it is + the real product ── */}
-        <section className="sg-hero">
-          <div className="sg-glow" aria-hidden="true" />
-          <div className="sg-wrap">
+        {/* ── 1 · what it is ── */}
+        <section className="sg-hero" ref={heroRef}>
+          <div className="sg-aurora" aria-hidden="true" />
+          <div className="sg-wrap sg-hero-in">
             <motion.p
               className="sg-eyebrow"
-              initial={reduce ? false : { opacity: 0, y: 10 }}
+              initial={reduce ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: EASE }}
             >
@@ -337,9 +468,9 @@ export function SignalCasePage() {
 
             <motion.p
               className="sg-sub"
-              initial={reduce ? false : { opacity: 0, y: 16 }}
+              initial={reduce ? false : { opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.32 }}
+              transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : 0.38 }}
             >
               A live map of tech, design, and AI events across the DMV — with a layer that shows which ones you can{" "}
               <span className="sg-mark">
@@ -347,7 +478,7 @@ export function SignalCasePage() {
                   aria-hidden="true"
                   initial={reduce ? false : { scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.75 }}
+                  transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : 0.85 }}
                 />
                 <span className="sg-mark-t">actually make</span>
               </span>
@@ -356,16 +487,18 @@ export function SignalCasePage() {
 
             <motion.div
               className="sg-cta"
-              initial={reduce ? false : { opacity: 0, y: 14 }}
+              initial={reduce ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : 0.42 }}
+              transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.48 }}
             >
               <a className="sg-btn" href={LIVE} target="_blank" rel="noopener noreferrer">
+                <span className="sg-btn-shine" aria-hidden="true" />
                 View live <span aria-hidden="true">↗</span>
               </a>
+              <span className="sg-facts">3 metros · 6 categories · refreshed every few hours</span>
             </motion.div>
 
-            <LiveStage />
+            <LiveStage progress={heroProg} />
           </div>
         </section>
 
@@ -373,41 +506,37 @@ export function SignalCasePage() {
         <section className="sg-sec">
           <div className="sg-wrap">
             <Reveal>
-              <p className="sg-kicker">What it does</p>
+              <p className="sg-kicker"><i />What it does</p>
             </Reveal>
-            <div className="sg-features">
+            <div className="sg-cards">
               {FEATURES.map((f, i) => (
-                <div className="sg-feature" key={f.title}>
-                  <Rule delay={0.05 + i * 0.1} />
-                  <Reveal delay={0.12 + i * 0.1}>
-                    <span className="sg-feature-ic">
-                      <f.Icon />
-                    </span>
-                    <h2 className="sg-feature-t">{f.title}</h2>
-                    <p className="sg-feature-b">{f.body}</p>
-                  </Reveal>
-                </div>
+                <FeatureCard key={f.title} f={f} i={i} />
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── 3 · why (two sentences) ── */}
+        {/* ── 3 · why — the 3D diorama ── */}
         <section className="sg-sec sg-why">
           <div className="sg-wrap">
             <Reveal>
-              <p className="sg-kicker">Why I built it</p>
+              <p className="sg-kicker"><i />Why I built it</p>
             </Reveal>
-            <Words
-              className="sg-big"
-              text="SF and NYC have their startup maps. The DMV had none — and Baltimore gets quietly dropped from almost every regional list."
-            />
-            <Reveal delay={0.16}>
-              <p className="sg-body">
-                So the harder question became the interesting one: a directory tells you where events are; it never tells
-                you which ones fit the week you already have. That's the layer I wanted to build.
-              </p>
-            </Reveal>
+            <div className="sg-why-grid">
+              <div>
+                <Words
+                  className="sg-big"
+                  text="SF and NYC have their startup maps. The DMV had none — and Baltimore gets quietly dropped from almost every regional list."
+                />
+                <Reveal delay={0.15}>
+                  <p className="sg-body">
+                    So the harder question became the interesting one. A directory tells you <em>where</em> events are.
+                    It never tells you which ones fit the week you already have. That's the layer I wanted to build.
+                  </p>
+                </Reveal>
+              </div>
+              <Diorama />
+            </div>
           </div>
         </section>
 
@@ -415,13 +544,13 @@ export function SignalCasePage() {
         <section className="sg-sec">
           <div className="sg-wrap">
             <Reveal>
-              <p className="sg-kicker">The interface</p>
+              <p className="sg-kicker"><i />The interface</p>
             </Reveal>
             <div className="sg-shotrow">
               <div className="sg-shotcol">
                 <Shot
                   base="/signal/panel"
-                  alt="Signal's panel: upcoming events grouped by week, each showing category, day and time, venue, organizer, and a register link, with a footer reading updated 1 hour ago and 174 events"
+                  alt="Signal's panel: upcoming events grouped by week, each showing category, day and time, venue, organizer, and a register link, with a footer showing when the data last updated"
                   caption="The panel, as it ships."
                 />
               </div>
@@ -429,6 +558,7 @@ export function SignalCasePage() {
                 {NOTES.map((n, i) => (
                   <Reveal key={n.t} delay={0.08 + i * 0.1}>
                     <div className="sg-note-item">
+                      <span className="sg-note-bar" aria-hidden="true" />
                       <h3 className="sg-note-t">{n.t}</h3>
                       <p className="sg-note-b">{n.b}</p>
                     </div>
@@ -439,26 +569,26 @@ export function SignalCasePage() {
           </div>
         </section>
 
-        {/* ── 5 · how it's built ── */}
+        {/* ── 5 · built with ── */}
         <section className="sg-sec">
           <div className="sg-wrap">
             <Reveal>
-              <p className="sg-kicker">Built with</p>
+              <p className="sg-kicker"><i />Built with</p>
             </Reveal>
             <ul className="sg-stack">
               {STACK.map((s, i) => (
                 <motion.li
                   key={s}
-                  initial={reduce ? false : { opacity: 0, y: 12, scale: 0.96 }}
+                  initial={reduce ? false : { opacity: 0, y: 14, scale: 0.95 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: "-8% 0px" }}
-                  transition={{ duration: 0.5, ease: EASE, delay: reduce ? 0 : i * 0.06 }}
+                  transition={{ duration: 0.55, ease: EASE, delay: reduce ? 0 : i * 0.07 }}
                 >
                   {s}
                 </motion.li>
               ))}
             </ul>
-            <Reveal delay={0.1}>
+            <Reveal delay={0.12}>
               <p className="sg-body sg-body-tight">
                 Designed and built solo. Claude Code did much of the typing; the product decisions were the real work.
               </p>
@@ -472,6 +602,7 @@ export function SignalCasePage() {
             <Reveal>
               <div className="sg-links">
                 <a className="sg-btn" href={LIVE} target="_blank" rel="noopener noreferrer">
+                  <span className="sg-btn-shine" aria-hidden="true" />
                   View live <span aria-hidden="true">↗</span>
                 </a>
                 <Link className="sg-btn sg-btn-ghost" to="/">
@@ -492,128 +623,200 @@ export function SignalCasePage() {
 
 const CSS = `
 .sg {
-  --paper: #FBFAF6; --ink: #16181C; --ink-deep: #0E1013; --soft: #4C5158; --faint: #8A8F97;
-  --line: #E7E3DA; --accent: #1F9D55; --card: #FFF;
-  --max: 1000px; --r: 16px;
+  --bg: #0B0D11; --bg2: #10131A; --ink: #F4F2ED; --soft: #A8ACB6; --faint: #767B86;
+  --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.14);
+  --accent: #2FBE6B; --accent-dim: #1F9D55; --amber: #E0A100; --dim: #5A6068;
+  --max: 1080px; --r: 18px;
   --display: 'Clash Display', 'General Sans', -apple-system, sans-serif;
   --text: 'General Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --mono: 'Geist Mono', ui-monospace, monospace;
-  background: var(--paper); color: var(--ink);
-  font-family: var(--text);
+  background: var(--bg); color: var(--ink); font-family: var(--text);
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
-  overflow-x: hidden; min-height: 100vh;
+  overflow-x: hidden; min-height: 100vh; position: relative;
 }
 .sg *, .sg *::before, .sg *::after { box-sizing: border-box; }
 .sg a { color: inherit; text-decoration: none; }
-.sg ::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.sg ::selection { background: rgba(47,190,107,.28); }
 .sg-wrap { max-width: var(--max); margin: 0 auto; padding: 0 clamp(20px, 5vw, 40px); }
 
-/* top bar */
+.sg-grain {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: .045; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.sg-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 70; transform-origin: 0 50%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); box-shadow: 0 0 14px rgba(47,190,107,.6); }
+
 .sg-top {
-  position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
   padding: 13px clamp(20px, 5vw, 40px);
-  background: color-mix(in srgb, var(--ink-deep) 82%, transparent); backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgb(255 255 255 / 0.07); color: #EDEBE4;
+  background: rgba(11,13,17,.72); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
 }
-.sg-back { font-size: 14.5px; font-weight: 500; color: #C7C4BC; display: inline-flex; gap: 7px; align-items: center; }
-.sg-back:hover { color: #fff; }
-.sg-top-live { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: #fff; display: inline-flex; gap: 8px; align-items: center; }
-.sg-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); flex-shrink: 0; animation: sg-pulse 2.6s ease-in-out infinite; }
-@keyframes sg-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); } }
+.sg-back { font-size: 14.5px; font-weight: 500; color: var(--soft); display: inline-flex; gap: 8px; align-items: center; transition: color .2s; }
+.sg-back:hover { color: var(--ink); }
+.sg-top-live { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); display: inline-flex; gap: 8px; align-items: center; }
+.sg-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 10px var(--accent); animation: sg-pulse 2.4s ease-in-out infinite; }
+@keyframes sg-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(47,190,107,.5), 0 0 10px var(--accent); } 50% { box-shadow: 0 0 0 6px rgba(47,190,107,0), 0 0 14px var(--accent); } }
 
-/* hero */
-.sg-hero { position: relative; background: var(--ink-deep); color: #F3F1EA; overflow: hidden; padding: clamp(52px, 9vw, 96px) 0 clamp(56px, 8vw, 92px); }
-.sg-glow {
-  position: absolute; inset: -30% -10% auto -10%; height: 80%; pointer-events: none; opacity: .5;
-  background: radial-gradient(42% 55% at 20% 20%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 70%),
-              radial-gradient(46% 56% at 80% 6%, rgba(122,150,168,0.26), transparent 72%);
-  filter: blur(24px); animation: sg-drift 24s ease-in-out infinite alternate;
+/* ── hero ── */
+.sg-hero { position: relative; overflow: hidden; padding: clamp(56px, 9vw, 104px) 0 clamp(60px, 9vw, 104px); }
+.sg-aurora {
+  position: absolute; inset: -25% -12% auto -12%; height: 92%; pointer-events: none; opacity: .75;
+  background:
+    radial-gradient(38% 48% at 18% 16%, rgba(47,190,107,.30), transparent 70%),
+    radial-gradient(42% 52% at 78% 4%, rgba(90,132,168,.28), transparent 72%),
+    radial-gradient(36% 44% at 52% 40%, rgba(47,190,107,.10), transparent 70%);
+  filter: blur(30px); animation: sg-drift 26s ease-in-out infinite alternate;
 }
-@keyframes sg-drift { from { transform: translate3d(-1.5%, -1%, 0) scale(1); } to { transform: translate3d(2.5%, 1.5%, 0) scale(1.07); } }
-.sg-hero .sg-wrap { position: relative; z-index: 1; }
+@keyframes sg-drift { from { transform: translate3d(-2%,-1%,0) scale(1); } to { transform: translate3d(3%,2%,0) scale(1.1); } }
+.sg-hero-in { position: relative; z-index: 1; }
 
-.sg-eyebrow { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: #9A968C; margin: 0; }
+.sg-eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 0; }
 .sg-title {
-  font-family: var(--display); font-weight: 600; color: #fff;
-  /* min sized so "Signal" always fits a 360px phone without clipping */
-  font-size: clamp(2.9rem, 12vw, 6.2rem); line-height: 1; letter-spacing: -.02em; margin: 16px 0 0;
+  font-family: var(--display); font-weight: 600; color: #fff; perspective: 800px;
+  font-size: clamp(2.9rem, 12vw, 6.4rem); line-height: 1; letter-spacing: -.025em; margin: 18px 0 0;
+  text-shadow: 0 0 60px rgba(47,190,107,.18);
 }
-.sg-sub {
-  font-size: clamp(1.2rem, 2.4vw, 1.55rem); line-height: 1.5; font-weight: 400; color: #DBD8CF;
-  margin: 24px 0 0; max-width: 32ch;
-}
+.sg-sub { font-size: clamp(1.2rem, 2.5vw, 1.6rem); line-height: 1.48; color: #D2D6DD; margin: 26px 0 0; max-width: 33ch; font-weight: 400; }
 .sg-mark { position: relative; display: inline-block; color: #fff; font-weight: 600; white-space: nowrap; }
-.sg-mark i { position: absolute; left: -.08em; right: -.08em; bottom: .04em; height: .44em; background: color-mix(in srgb, var(--accent) 45%, transparent); transform-origin: left center; border-radius: 2px; }
+.sg-mark i { position: absolute; left: -.1em; right: -.1em; bottom: .02em; height: .46em; background: linear-gradient(90deg, rgba(47,190,107,.5), rgba(47,190,107,.22)); transform-origin: left center; border-radius: 3px; }
 .sg-mark-t { position: relative; }
-.sg-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.sg-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 34px; }
+.sg-facts { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--faint); }
 
 .sg-btn {
-  display: inline-flex; align-items: center; gap: 8px; font-family: var(--text); font-size: 15px; font-weight: 600;
-  background: var(--accent); color: #06130B; padding: 13px 21px; border-radius: 11px;
-  box-shadow: 0 8px 26px -8px color-mix(in srgb, var(--accent) 72%, transparent);
-  transition: transform .2s cubic-bezier(.16,1,.3,1), box-shadow .24s ease;
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--text); font-size: 15px; font-weight: 600;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim)); color: #04140A;
+  padding: 14px 22px; border-radius: 12px;
+  box-shadow: 0 10px 30px -8px rgba(47,190,107,.5), inset 0 1px 0 rgba(255,255,255,.35);
+  transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .25s ease;
 }
-.sg-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 32px -10px color-mix(in srgb, var(--accent) 75%, transparent); }
-.sg-btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
-.sg-btn-ghost:hover { border-color: var(--faint); box-shadow: none; }
+.sg-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -10px rgba(47,190,107,.6), inset 0 1px 0 rgba(255,255,255,.4); }
+.sg-btn-shine { position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: sg-shine 4.5s ease-in-out infinite; }
+@keyframes sg-shine { 0%, 62% { left: -60%; } 88%, 100% { left: 120%; } }
+.sg-btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line2); box-shadow: none; }
+.sg-btn-ghost:hover { border-color: var(--soft); box-shadow: none; }
 
 /* the embedded product */
-.sg-stage-wrap { margin-top: clamp(34px, 5vw, 54px); }
-.sg-stage { border-radius: var(--r); overflow: hidden; background: #14161b; border: 1px solid rgb(255 255 255 / 0.09); box-shadow: 0 40px 90px -44px rgba(0,0,0,.75); will-change: transform; }
-.sg-stage-bar { display: flex; align-items: center; gap: 9px; padding: 11px 15px; background: #0f1116; border-bottom: 1px solid rgb(255 255 255 / 0.07); }
-.sg-stage-url { font-family: var(--mono); font-size: 12px; color: #8C8880; }
+.sg-stage-wrap { margin-top: clamp(38px, 6vw, 60px); perspective: 1600px; }
+.sg-stage {
+  position: relative; border-radius: var(--r); overflow: hidden; background: #14161b;
+  border: 1px solid var(--line2); transform-style: preserve-3d; will-change: transform;
+  box-shadow: 0 50px 100px -40px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.03), 0 0 90px -30px rgba(47,190,107,.35);
+}
+.sg-stage-shine { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 22%); }
+.sg-stage-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #0f1116; border-bottom: 1px solid var(--line); }
+.sg-stage-url { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+.sg-stage-tag { margin-left: auto; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(47,190,107,.35); border-radius: 999px; padding: 3px 9px; }
 .sg-stage-view { position: relative; height: clamp(400px, 60vh, 580px); background: #eceae3; }
 .sg-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; transition: opacity .5s ease; }
 .sg-skeleton { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg,#14161b,#0f1116); }
-.sg-skeleton span { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #6E6A61; }
-.sg-note { font-size: 14px; color: #8C8880; margin: 15px 2px 0; }
+.sg-skeleton span { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+.sg-note { font-size: 14px; color: var(--faint); margin: 18px 2px 0; }
 
-/* sections */
-.sg-sec { padding: clamp(58px, 8vw, 100px) 0; }
-.sg-kicker { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 30px; }
-.sg-big { font-family: var(--display); font-size: clamp(1.6rem, 3.6vw, 2.4rem); line-height: 1.22; font-weight: 500; letter-spacing: -.015em; color: var(--ink); margin: 0; max-width: 34ch; }
-.sg-body { font-size: 17px; line-height: 1.68; color: var(--soft); margin: 22px 0 0; max-width: 60ch; }
-.sg-body-tight { margin-top: 24px; font-size: 16px; }
-.sg-why { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+/* ── sections ── */
+.sg-sec { padding: clamp(64px, 9vw, 112px) 0; position: relative; }
+.sg-why { background: linear-gradient(180deg, transparent, rgba(255,255,255,.022) 15%, rgba(255,255,255,.022) 85%, transparent); }
+.sg-kicker { display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 36px; }
+.sg-kicker i { width: 28px; height: 1px; background: var(--accent); display: inline-block; box-shadow: 0 0 8px var(--accent); }
+.sg-big { font-family: var(--display); font-size: clamp(1.55rem, 3.3vw, 2.3rem); line-height: 1.24; font-weight: 500; letter-spacing: -.015em; color: #fff; margin: 0; max-width: 26ch; }
+.sg-body { font-size: 16.5px; line-height: 1.7; color: var(--soft); margin: 24px 0 0; max-width: 52ch; }
+.sg-body em { font-style: italic; color: var(--ink); }
+.sg-body-tight { margin-top: 26px; font-size: 15.5px; }
 
-/* what it does — no boxes, a drawn rule per column */
-.sg-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(22px, 4vw, 44px); }
-.sg-feature { position: relative; padding-top: 26px; }
-.sg-rule { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--ink); opacity: .16; transform-origin: left center; display: block; }
-.sg-feature-ic { display: block; color: var(--accent); }
-.sg-feature-t { font-family: var(--display); font-size: 19px; font-weight: 600; line-height: 1.3; letter-spacing: -.005em; color: var(--ink); margin: 16px 0 0; }
-.sg-feature-b { font-size: 15.5px; line-height: 1.66; color: var(--soft); margin: 10px 0 0; }
+/* what it does — glass cards, cursor spotlight, 3D tilt */
+.sg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; perspective: 1200px; }
+.sg-card {
+  position: relative; height: 100%; border-radius: var(--r); overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  border: 1px solid var(--line); transform-style: preserve-3d; will-change: transform;
+  box-shadow: 0 24px 60px -30px rgba(0,0,0,.9);
+}
+.sg-card-edge { position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); }
+.sg-card-spot { position: absolute; inset: 0; pointer-events: none; }
+.sg-card-in { position: relative; padding: 26px 24px 28px; }
+.sg-card-top { display: flex; align-items: center; justify-content: space-between; }
+.sg-card-ic {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; color: var(--accent);
+  background: rgba(47,190,107,.1); border: 1px solid rgba(47,190,107,.28); box-shadow: 0 0 24px -6px rgba(47,190,107,.5), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.sg-card-n { font-family: var(--mono); font-size: 11.5px; color: var(--faint); letter-spacing: .1em; }
+.sg-card-t { font-family: var(--display); font-size: 18.5px; font-weight: 600; line-height: 1.32; color: #fff; margin: 22px 0 0; }
+.sg-card-b { font-size: 15px; line-height: 1.68; color: var(--soft); margin: 11px 0 0; }
 
-/* the interface */
-.sg-shotrow { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: clamp(24px, 5vw, 60px); align-items: start; }
-.sg-notes { display: flex; flex-direction: column; gap: 28px; padding-top: 4px; }
-.sg-note-t { font-family: var(--display); font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--ink); margin: 0; }
-.sg-note-b { font-size: 16px; line-height: 1.66; color: var(--soft); margin: 9px 0 0; max-width: 46ch; }
-.sg-fig { margin: 0; }
-.sg-shot { display: block; width: 100%; height: auto; border-radius: var(--r); border: 1px solid var(--line); background: var(--card); box-shadow: 0 14px 44px rgb(22 24 28 / .1); }
-.sg-shot-live { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 260px; font-size: 15px; font-weight: 600; color: var(--soft); border-style: dashed; }
-.sg-shot-live:hover { color: var(--ink); border-color: var(--faint); }
-.sg-cap { font-size: 14px; line-height: 1.5; color: var(--faint); margin: 14px 2px 0; }
+/* ── the 3D diorama ── */
+.sg-why-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(30px, 5vw, 64px); align-items: center; }
+.sg-dio-wrap { perspective: 1400px; }
+.sg-dio { position: relative; width: 100%; aspect-ratio: 1 / 0.92; transform-style: preserve-3d; will-change: transform; }
+.sg-dio-inner { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(-30deg) translateZ(-40px); }
+.sg-plane { position: absolute; inset: 12% 14%; transform-style: preserve-3d; }
+.sg-plane-face {
+  position: absolute; inset: 0; border-radius: 10px; border: 1px solid var(--line2);
+  background: linear-gradient(145deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  box-shadow: 0 30px 50px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter: blur(2px);
+}
+.sg-plane-0 .sg-plane-face { background: linear-gradient(145deg, rgba(120,140,170,.14), rgba(255,255,255,.02)); }
+.sg-plane-2 .sg-plane-face { border-color: rgba(47,190,107,.3); background: linear-gradient(145deg, rgba(47,190,107,.09), rgba(255,255,255,.015)); }
+.sg-plane-label {
+  position: absolute; left: 100%; top: 50%; transform: translate(14px, -50%) rotateZ(30deg) rotateX(-58deg);
+  transform-origin: left center; white-space: nowrap;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint);
+}
+.sg-plane-2 .sg-plane-label { color: var(--accent); }
+.sg-grid { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 10px; }
+.sg-grid path { stroke: rgba(255,255,255,.09); stroke-width: .5; fill: none; }
+.sg-grid .sg-river { stroke: rgba(122,160,190,.3); stroke-width: 2; }
+.sg-dpin { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 3px; background: #98A0AE; box-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.sg-dfit { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 4px; }
+.sg-dfit[data-fit="open"] { background: var(--accent); box-shadow: 0 0 14px rgba(47,190,107,.9), 0 3px 8px rgba(0,0,0,.5); }
+.sg-dfit[data-fit="tight"] { background: var(--amber); box-shadow: 0 0 12px rgba(224,161,0,.75), 0 3px 8px rgba(0,0,0,.5); }
+.sg-dfit[data-fit="conflict"] { background: #3C424B; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.sg-dio-key { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 6px; }
+.sg-k { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.sg-k i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.sg-k[data-fit="open"] i { background: var(--accent); box-shadow: 0 0 10px rgba(47,190,107,.8); }
+.sg-k[data-fit="tight"] i { background: var(--amber); box-shadow: 0 0 10px rgba(224,161,0,.7); }
+.sg-k[data-fit="conflict"] i { background: #3C424B; }
+
+/* ── the interface ── */
+.sg-shotrow { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: start; }
+.sg-fig { margin: 0; perspective: 1200px; }
+.sg-shot-3d { position: relative; transform-style: preserve-3d; will-change: transform; border-radius: var(--r); }
+.sg-shot-glow { position: absolute; inset: 6% 8% -4%; border-radius: 40px; background: radial-gradient(60% 60% at 50% 60%, rgba(47,190,107,.4), transparent 70%); filter: blur(34px); z-index: -1; }
+.sg-shot { display: block; width: 100%; height: auto; border-radius: var(--r); border: 1px solid var(--line2); box-shadow: 0 40px 80px -34px rgba(0,0,0,.9); }
+.sg-shot-live { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 280px; font-size: 15px; font-weight: 600; color: var(--soft); border-style: dashed; }
+.sg-cap { font-size: 13.5px; color: var(--faint); margin: 18px 2px 0; }
+.sg-notes { display: flex; flex-direction: column; gap: 26px; }
+.sg-note-item { position: relative; padding-left: 20px; }
+.sg-note-bar { position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: linear-gradient(180deg, var(--accent), transparent); }
+.sg-note-t { font-family: var(--display); font-size: 17.5px; font-weight: 600; line-height: 1.3; color: #fff; margin: 0; }
+.sg-note-b { font-size: 15.5px; line-height: 1.68; color: var(--soft); margin: 9px 0 0; max-width: 46ch; }
 
 /* stack */
 .sg-stack { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; padding: 0; margin: 0; }
 .sg-stack li {
-  font-size: 14px; font-weight: 500; color: var(--soft);
-  background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px;
+  font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em; color: var(--soft);
+  background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px;
+  transition: border-color .22s, color .22s, transform .22s cubic-bezier(.16,1,.3,1);
 }
+.sg-stack li:hover { border-color: rgba(47,190,107,.45); color: var(--ink); transform: translateY(-2px); }
 
-.sg-close { padding-top: clamp(20px, 3vw, 32px); }
+.sg-close { padding-top: clamp(24px, 3vw, 36px); }
 .sg-links { display: flex; flex-wrap: wrap; gap: 12px; }
-.sg-foot { border-top: 1px solid var(--line); padding: 28px 0 44px; font-family: var(--mono); font-size: 12.5px; color: var(--faint); }
+.sg-foot { border-top: 1px solid var(--line); padding: 30px 0 46px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
 
-@media (max-width: 860px) {
-  .sg-features { grid-template-columns: 1fr; gap: 26px; }
+@media (max-width: 900px) {
+  .sg-cards { grid-template-columns: 1fr; }
+  .sg-why-grid { grid-template-columns: 1fr; }
+  .sg-dio-wrap { max-width: 420px; margin: 8px auto 0; }
   .sg-shotrow { grid-template-columns: 1fr; }
-  .sg-shotcol { max-width: 300px; margin: 0 auto; }
+  .sg-shotcol { max-width: 320px; margin: 0 auto; }
   .sg-sub { max-width: none; }
+  .sg-big { max-width: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sg-dot, .sg-glow { animation: none; }
+  .sg-dot, .sg-aurora, .sg-btn-shine { animation: none; }
+  .sg-btn-shine { display: none; }
   .sg * { transition: none !important; }
 }
 `;
