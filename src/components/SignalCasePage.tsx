@@ -353,60 +353,82 @@ function Shot({ base, alt, caption }: { base: string; alt: string; caption: stri
   );
 }
 
-/* ── feature glyphs ── */
-const IconMap = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-    <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    <path d="M9 4v13.5M15 6.5V20" stroke="currentColor" strokeWidth="1.5" opacity=".45" />
-  </svg>
-);
-const IconFit = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-    <rect x="3.5" y="5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="m8.5 14.5 2.2 2.2 4.6-4.6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const IconRefresh = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-    <path d="M20 12a8 8 0 1 1-2.6-5.9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M20 4.5V10h-5.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+/* ── live micro-visuals, one per capability.
+      Pure CSS animation (no JS gate), so they run regardless of the motion
+      layer, sit still under reduced-motion, and are legible at rest. ── */
+function VisMap() {
+  return (
+    <svg viewBox="0 0 132 88" className="sg-vis" aria-hidden="true">
+      <rect x=".5" y=".5" width="131" height="87" rx="11" className="sg-vis-bd" />
+      <g className="sg-vis-grid">
+        <path d="M0 30H132M0 59H132M33 0V88M66 0V88M99 0V88" />
+      </g>
+      <path className="sg-vis-river" d="M-2 64C18 57 30 74 52 66S94 46 134 57" />
+      <g className="sg-vis-pins">
+        <circle cx="37" cy="32" r="4.5" />
+        <circle cx="76" cy="49" r="4.5" />
+        <circle cx="103" cy="25" r="4.5" />
+      </g>
+    </svg>
+  );
+}
+const FIT_SEQ: ("open" | "tight" | "conflict")[] = ["open", "open", "tight", "open", "conflict", "open"];
+function VisFit() {
+  return (
+    <div className="sg-vis sg-vis-fit" aria-hidden="true">
+      {FIT_SEQ.map((s, i) => (
+        <span key={i} data-fit={s} style={{ animationDelay: `${i * 0.22}s` }} />
+      ))}
+    </div>
+  );
+}
+function VisRefresh() {
+  return (
+    <div className="sg-vis sg-vis-ref" aria-hidden="true">
+      <svg viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="23" className="sg-ref-track" />
+        <circle cx="32" cy="32" r="23" className="sg-ref-arc" />
+      </svg>
+      <span className="sg-ref-dot" />
+    </div>
+  );
+}
 
 const FEATURES = [
-  { Icon: IconMap, n: "01", title: "One map, the whole region", body: "Tech, design, and AI events across DC, Northern Virginia, and Baltimore — searchable and filterable by category." },
-  { Icon: IconFit, n: "02", title: "Fit — what you can actually make", body: "Connect a calendar and every event is marked open, tight, or a conflict, weighing real travel between your commitments. Read in your browser, never uploaded." },
-  { Icon: IconRefresh, n: "03", title: "Always current, on its own", body: "A scheduled pipeline pulls from event sources every few hours and republishes the map. No dashboard to tend, no recurring cost." },
+  { Vis: VisMap, n: "01", title: "One map, the whole region", body: "Tech, design, and AI events across DC, Northern Virginia, and Baltimore — searchable and filterable by category." },
+  { Vis: VisFit, n: "02", title: "Fit — what you can actually make", body: "Connect a calendar and every event is marked open, tight, or a conflict, weighing real travel between your commitments. Read in your browser, never uploaded." },
+  { Vis: VisRefresh, n: "03", title: "Always current, on its own", body: "A scheduled pipeline pulls from event sources every few hours and republishes the map. No dashboard to tend, no recurring cost." },
 ];
 
-function FeatureCard({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
+/* editorial row — each sizes to its own content, so there is no dead space */
+function FeatureRow({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
   const reduce = useReducedMotion();
-  const { ref, srx, sry, gx, gy } = useTilt(5, 7);
-  const holder = useRef<HTMLDivElement>(null);
-  const inView = useInView(holder, { once: true, margin: "-8% 0px" });
-  const spot = useTransform([gx, gy], ([x, y]) => `radial-gradient(340px circle at ${x}% ${y}%, rgba(31,157,85,0.16), transparent 65%)`);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
   return (
-    <div ref={holder}>
-      <motion.article
-        ref={ref}
-        className="sg-card"
-        style={reduce ? undefined : { rotateX: srx, rotateY: sry }}
-        initial={reduce ? false : { opacity: 0, y: 34 }}
-        animate={inView ? { opacity: 1, y: 0 } : undefined}
-        transition={{ duration: 0.8, ease: EASE, delay: reduce ? 0 : i * 0.12 }}
+    <div className="sg-row" ref={ref}>
+      <motion.span
+        className="sg-row-line"
+        aria-hidden="true"
+        initial={reduce ? false : { scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : undefined}
+        transition={{ duration: 0.9, ease: EASE, delay: reduce ? 0 : i * 0.1 }}
+      />
+      <motion.div
+        className="sg-row-in"
+        initial={reduce ? false : { y: 24 }}
+        animate={inView ? { y: 0 } : undefined}
+        transition={{ duration: 0.75, ease: EASE, delay: reduce ? 0 : 0.08 + i * 0.1 }}
       >
-        {!reduce && <motion.span className="sg-card-spot" aria-hidden="true" style={{ background: spot }} />}
-        <span className="sg-card-edge" aria-hidden="true" />
-        <div className="sg-card-in">
-          <div className="sg-card-top">
-            <span className="sg-card-ic"><f.Icon /></span>
-            <span className="sg-card-n">{f.n}</span>
-          </div>
-          <h2 className="sg-card-t">{f.title}</h2>
-          <p className="sg-card-b">{f.body}</p>
+        <span className="sg-row-n">{f.n}</span>
+        <div className="sg-row-txt">
+          <h2 className="sg-row-t">{f.title}</h2>
+          <p className="sg-row-b">{f.body}</p>
         </div>
-      </motion.article>
+        <div className="sg-row-vis">
+          <f.Vis />
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -508,9 +530,9 @@ export function SignalCasePage() {
             <Reveal>
               <p className="sg-kicker"><i />What it does</p>
             </Reveal>
-            <div className="sg-cards">
+            <div className="sg-rows">
               {FEATURES.map((f, i) => (
-                <FeatureCard key={f.title} f={f} i={i} />
+                <FeatureRow key={f.title} f={f} i={i} />
               ))}
             </div>
           </div>
@@ -627,8 +649,10 @@ const CSS = `
   --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.14);
   --accent: #2FBE6B; --accent-dim: #1F9D55; --amber: #E0A100; --dim: #5A6068;
   --max: 1080px; --r: 18px;
-  --display: 'Clash Display', 'General Sans', -apple-system, sans-serif;
-  --text: 'General Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Editorial serif display over a neutral UI sans — legible, and a clear
+     step away from the condensed grotesk that read as cramped. */
+  --display: 'Instrument Serif', 'Playfair Display', Georgia, serif;
+  --text: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, monospace;
   background: var(--bg); color: var(--ink); font-family: var(--text);
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
@@ -671,8 +695,10 @@ const CSS = `
 
 .sg-eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin: 0; }
 .sg-title {
-  font-family: var(--display); font-weight: 600; color: #fff; perspective: 800px;
-  font-size: clamp(2.9rem, 12vw, 6.4rem); line-height: 1; letter-spacing: -.025em; margin: 18px 0 0;
+  /* Instrument Serif ships one weight — never request 600 or the browser
+     synthesises a smeared fake bold. */
+  font-family: var(--display); font-weight: 400; color: #fff; perspective: 800px;
+  font-size: clamp(3.1rem, 12.5vw, 6.8rem); line-height: 1; letter-spacing: -.02em; margin: 18px 0 0;
   text-shadow: 0 0 60px rgba(47,190,107,.18);
 }
 .sg-sub { font-size: clamp(1.2rem, 2.5vw, 1.6rem); line-height: 1.48; color: #D2D6DD; margin: 26px 0 0; max-width: 33ch; font-weight: 400; }
@@ -718,30 +744,55 @@ const CSS = `
 .sg-why { background: linear-gradient(180deg, transparent, rgba(255,255,255,.022) 15%, rgba(255,255,255,.022) 85%, transparent); }
 .sg-kicker { display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 36px; }
 .sg-kicker i { width: 28px; height: 1px; background: var(--accent); display: inline-block; box-shadow: 0 0 8px var(--accent); }
-.sg-big { font-family: var(--display); font-size: clamp(1.55rem, 3.3vw, 2.3rem); line-height: 1.24; font-weight: 500; letter-spacing: -.015em; color: #fff; margin: 0; max-width: 26ch; }
+.sg-big { font-family: var(--display); font-size: clamp(1.7rem, 3.6vw, 2.6rem); line-height: 1.22; font-weight: 400; letter-spacing: -.01em; color: #fff; margin: 0; max-width: 26ch; }
 .sg-body { font-size: 16.5px; line-height: 1.7; color: var(--soft); margin: 24px 0 0; max-width: 52ch; }
 .sg-body em { font-style: italic; color: var(--ink); }
 .sg-body-tight { margin-top: 26px; font-size: 15.5px; }
 
-/* what it does — glass cards, cursor spotlight, 3D tilt */
-.sg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; perspective: 1200px; }
-.sg-card {
-  position: relative; height: 100%; border-radius: var(--r); overflow: hidden;
-  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
-  border: 1px solid var(--line); transform-style: preserve-3d; will-change: transform;
-  box-shadow: 0 24px 60px -30px rgba(0,0,0,.9);
+/* what it does — editorial rows. Each sizes to its own content, so there is
+   no stretched-to-match dead space, and the eye reads down a clean column. */
+.sg-rows { display: flex; flex-direction: column; }
+.sg-row { position: relative; }
+.sg-row-line { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,.22), rgba(255,255,255,.05) 60%, transparent); transform-origin: left center; display: block; }
+.sg-row-in {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  gap: clamp(20px, 4vw, 52px); padding: clamp(28px, 3.4vw, 40px) 6px;
+  transition: background .3s ease;
 }
-.sg-card-edge { position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); }
-.sg-card-spot { position: absolute; inset: 0; pointer-events: none; }
-.sg-card-in { position: relative; padding: 26px 24px 28px; }
-.sg-card-top { display: flex; align-items: center; justify-content: space-between; }
-.sg-card-ic {
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; color: var(--accent);
-  background: rgba(47,190,107,.1); border: 1px solid rgba(47,190,107,.28); box-shadow: 0 0 24px -6px rgba(47,190,107,.5), inset 0 1px 0 rgba(255,255,255,.12);
+.sg-row:hover .sg-row-in { background: linear-gradient(90deg, rgba(47,190,107,.05), transparent 55%); }
+.sg-row-n { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--faint); transition: color .3s ease; align-self: start; padding-top: 6px; }
+.sg-row:hover .sg-row-n { color: var(--accent); }
+.sg-row-t { font-family: var(--display); font-weight: 400; font-size: clamp(1.4rem, 2.6vw, 1.95rem); line-height: 1.2; letter-spacing: -.005em; color: #fff; margin: 0; }
+.sg-row-b { font-size: 15.5px; line-height: 1.7; color: var(--soft); margin: 10px 0 0; max-width: 54ch; }
+.sg-row-vis { flex-shrink: 0; }
+
+/* the micro-visuals */
+.sg-vis { display: block; width: 132px; height: 88px; }
+.sg-vis-bd { fill: rgba(255,255,255,.03); stroke: var(--line); }
+.sg-vis-grid path { stroke: rgba(255,255,255,.08); stroke-width: 1; fill: none; }
+.sg-vis-river { stroke: rgba(122,160,190,.3); stroke-width: 2.5; fill: none; }
+.sg-vis-pins circle { fill: var(--accent); filter: drop-shadow(0 0 6px rgba(47,190,107,.9)); animation: sg-pin 3.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.sg-vis-pins circle:nth-child(2) { animation-delay: .5s; }
+.sg-vis-pins circle:nth-child(3) { animation-delay: 1s; }
+@keyframes sg-pin { 0%, 62%, 100% { transform: scale(1); opacity: .82; } 22% { transform: scale(1.5); opacity: 1; } }
+
+.sg-vis-fit { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; width: 132px; height: 88px; }
+.sg-vis-fit span { border-radius: 6px; background: #2A2F37; animation: sg-verdict 5.4s ease-in-out infinite; }
+.sg-vis-fit span[data-fit="open"] { --vc: var(--accent); }
+.sg-vis-fit span[data-fit="tight"] { --vc: var(--amber); }
+.sg-vis-fit span[data-fit="conflict"] { --vc: #3C424B; }
+@keyframes sg-verdict {
+  0%, 12% { background: #2A2F37; box-shadow: none; }
+  30%, 72% { background: var(--vc); box-shadow: 0 0 14px -2px var(--vc); }
+  92%, 100% { background: #2A2F37; box-shadow: none; }
 }
-.sg-card-n { font-family: var(--mono); font-size: 11.5px; color: var(--faint); letter-spacing: .1em; }
-.sg-card-t { font-family: var(--display); font-size: 18.5px; font-weight: 600; line-height: 1.32; color: #fff; margin: 22px 0 0; }
-.sg-card-b { font-size: 15px; line-height: 1.68; color: var(--soft); margin: 11px 0 0; }
+
+.sg-vis-ref { position: relative; display: grid; place-items: center; width: 132px; height: 88px; }
+.sg-vis-ref svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+.sg-ref-track { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 3; }
+.sg-ref-arc { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 40 105; filter: drop-shadow(0 0 5px rgba(47,190,107,.8)); animation: sg-arc 3.4s cubic-bezier(.5,0,.5,1) infinite; transform-origin: center; }
+@keyframes sg-arc { to { transform: rotate(360deg); } }
+.sg-ref-dot { position: absolute; width: 7px; height: 7px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: sg-pulse 2.4s ease-in-out infinite; }
 
 /* ── the 3D diorama ── */
 .sg-why-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(30px, 5vw, 64px); align-items: center; }
@@ -789,7 +840,7 @@ const CSS = `
 .sg-notes { display: flex; flex-direction: column; gap: 26px; }
 .sg-note-item { position: relative; padding-left: 20px; }
 .sg-note-bar { position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: linear-gradient(180deg, var(--accent), transparent); }
-.sg-note-t { font-family: var(--display); font-size: 17.5px; font-weight: 600; line-height: 1.3; color: #fff; margin: 0; }
+.sg-note-t { font-family: var(--display); font-size: 19px; font-weight: 400; line-height: 1.3; color: #fff; margin: 0; }
 .sg-note-b { font-size: 15.5px; line-height: 1.68; color: var(--soft); margin: 9px 0 0; max-width: 46ch; }
 
 /* stack */
@@ -806,7 +857,6 @@ const CSS = `
 .sg-foot { border-top: 1px solid var(--line); padding: 30px 0 46px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
 
 @media (max-width: 900px) {
-  .sg-cards { grid-template-columns: 1fr; }
   .sg-why-grid { grid-template-columns: 1fr; }
   .sg-dio-wrap { max-width: 420px; margin: 8px auto 0; }
   .sg-shotrow { grid-template-columns: 1fr; }
@@ -814,9 +864,18 @@ const CSS = `
   .sg-sub { max-width: none; }
   .sg-big { max-width: none; }
 }
+@media (max-width: 700px) {
+  /* rows stack: number + title, then copy, then the visual */
+  .sg-row-in { grid-template-columns: auto minmax(0, 1fr); gap: 14px 16px; }
+  .sg-row-vis { grid-column: 1 / -1; }
+  .sg-vis, .sg-vis-fit, .sg-vis-ref { width: 118px; height: 78px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .sg-dot, .sg-aurora, .sg-btn-shine { animation: none; }
+  .sg-dot, .sg-aurora, .sg-btn-shine,
+  .sg-vis-pins circle, .sg-vis-fit span, .sg-ref-arc, .sg-ref-dot { animation: none; }
   .sg-btn-shine { display: none; }
+  /* verdicts still read correctly with motion off */
+  .sg-vis-fit span { background: var(--vc); }
   .sg * { transition: none !important; }
 }
 `;
