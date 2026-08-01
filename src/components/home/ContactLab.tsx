@@ -249,198 +249,233 @@ function EmailCopy({ ease, dur, reduce }: { ease: Bez; dur: number; reduce: bool
   );
 }
 
-/* ── bezier curve preview ── */
-function CurvePreview({ bez }: { bez: Bez }) {
-  const d = `M 4 40 C ${4 + bez[0] * 52} ${40 - bez[1] * 36}, ${4 + bez[2] * 52} ${40 - bez[3] * 36}, 56 4`;
+/* ══════════════════════════════════════════════════════════════════════════
+   THE VAULT — hover (or tap / focus) and the doors part, releasing three
+   things about me. Move away and they lock back in.
+   ══════════════════════════════════════════════════════════════════════════ */
+function FilmMark() {
   return (
-    <svg width="60" height="44" viewBox="0 0 60 44" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <line x1="4" y1="40" x2="56" y2="40" stroke="var(--border)" strokeWidth="1" />
-      <line x1="4" y1="40" x2="4" y2="4" stroke="var(--border)" strokeWidth="1" />
-      <motion.path d={d} animate={{ d }} transition={SPRING.snappy} stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <circle cx="4" cy="40" r="2" fill="var(--text-3)" />
-      <circle cx="56" cy="4" r="2" fill="var(--accent)" />
+    <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">
+      <rect x="6" y="15" width="52" height="34" rx="6" fill="#0C111C" stroke="#2A3550" strokeWidth="1.5" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect key={`t${i}`} x={11 + i * 10.5} y="18.5" width="6" height="4" rx="1.2" fill="#5B8CFF" opacity=".38" />
+      ))}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect key={`b${i}`} x={11 + i * 10.5} y="41.5" width="6" height="4" rx="1.2" fill="#5B8CFF" opacity=".38" />
+      ))}
+      <path d="M28 26.5 41 32l-13 5.5z" fill="#5B8CFF" />
     </svg>
   );
 }
 
-/* ── The Lab panel ── */
-function LabPanel({
-  reduce,
-  fine,
-  highMotion,
-  setHighMotion,
-  slider,
-  setSlider,
-  presetIdx,
-  dur,
-  ease,
-  entered,
-}: {
-  reduce: boolean;
-  fine: boolean;
-  highMotion: boolean;
-  setHighMotion: (v: boolean) => void;
-  slider: number;
-  setSlider: (v: number) => void;
-  presetIdx: number;
-  dur: number;
-  ease: Bez;
-  entered: boolean;
-}) {
-  const [toast, setToast] = useState(0);
-  const easeCss = `cubic-bezier(${ease.join(",")})`;
+const VAULT_ITEMS = [
+  { key: "ahm", kicker: "Born in", title: "Ahmedabad", sub: "Gujarat, India", img: "/vault/ahmedabad.jpg" },
+  { key: "umbc", kicker: "Masters at", title: "UMBC", sub: "MS, Human-Centered Computing", logo: "/vault/umbc.svg" },
+  { key: "film", kicker: "Off the clock", title: "Movie lover", sub: "Anything with a good third act", film: true },
+];
 
-  const rowAnim = (i: number) => ({
-    initial: reduce ? { opacity: 0 } : { opacity: 0, y: 14 },
-    animate: entered ? { opacity: 1, y: 0 } : undefined,
-    transition: reduce ? { duration: 0.2 } : { duration: 0.55, ease: EXPO, delay: 0.5 + i * 0.06 },
-  });
+function Vault({ reduce, fine, entered }: { reduce: boolean; fine: boolean; entered: boolean }) {
+  const [open, setOpen] = useState(false);
+  const spring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 210, damping: 26, mass: 0.7 };
 
   return (
-    <div
-      className="relative"
-      style={{
-        background: "rgba(17,23,37,0.88)",
-        border: "1px solid var(--border-strong)",
-        borderRadius: 14,
-        padding: "20px 22px",
-        backdropFilter: "blur(10px)",
-        boxShadow: "0 30px 70px -30px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05)",
-      }}
+    <motion.div
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 26 }}
+      animate={entered ? { opacity: 1, y: 0 } : undefined}
+      transition={reduce ? { duration: 0.2 } : { duration: 0.7, ease: EXPO, delay: 0.35 }}
+      style={{ position: "relative" }}
     >
-      <motion.div {...rowAnim(0)} className="flex items-center justify-between" style={{ marginBottom: 18 }}>
-        <span style={label}>The lab</span>
-        <span style={{ ...label, color: "var(--accent)" }}>try me</span>
-      </motion.div>
-
-      {/* toggle row */}
-      <motion.div {...rowAnim(1)} className="flex items-center justify-between" style={{ padding: "12px 0", borderTop: "1px solid var(--border)" }}>
-        <span style={label}>Toggle / {highMotion ? "on" : "off"}</span>
-        <button
-          role="switch"
-          aria-checked={highMotion}
-          aria-label="High motion mode"
-          onClick={() => setHighMotion(!highMotion)}
-          className="relative flex items-center justify-center"
-          style={{ width: 64, height: 44, background: "none", border: "none", cursor: "pointer", flexShrink: 0, padding: 0 }}
-        >
-          {/* visual track (44px hit area around it) */}
-          <span
-            className="relative block"
-            style={{
-              width: 56,
-              height: 30,
-              borderRadius: 999,
-              background: highMotion ? "var(--accent-soft)" : "rgba(255,255,255,0.06)",
-              border: `1px solid ${highMotion ? "rgba(91,140,255,0.55)" : "var(--border-strong)"}`,
-              transition: `background ${dur}ms ${easeCss}, border-color ${dur}ms ${easeCss}`,
-              boxShadow: highMotion ? "0 0 14px rgba(91,140,255,0.25)" : "none",
-            }}
-          >
+      <div
+        onMouseEnter={() => fine && setOpen(true)}
+        onMouseLeave={() => fine && setOpen(false)}
+        style={{
+          position: "relative",
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "rgba(13,18,30,0.92)",
+          border: "1px solid var(--border-strong)",
+          boxShadow: open
+            ? "0 40px 90px -40px rgba(0,0,0,0.8), 0 0 60px -24px rgba(91,140,255,0.5)"
+            : "0 30px 70px -34px rgba(0,0,0,0.7)",
+          transition: "box-shadow .5s ease",
+          minHeight: 396,
+        }}
+      >
+        {/* ── the contents, revealed ── */}
+        <div style={{ padding: "22px 22px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex items-center justify-between">
+            <span style={label}>The vault</span>
             <motion.span
-              className="absolute top-1/2"
-              style={{ width: 22, height: 22, marginTop: -11, borderRadius: 999, background: highMotion ? "var(--accent)" : "#99A4B6" }}
-              animate={{ left: highMotion ? 30 : 3 }}
-              transition={reduce ? { duration: 0 } : SPRING.overshoot}
-            />
-          </span>
-        </button>
-      </motion.div>
+              style={{ ...label, color: "var(--accent)" }}
+              animate={{ opacity: open ? 1 : 0.75 }}
+              transition={{ duration: 0.3 }}
+            >
+              {open ? "unlocked" : fine ? "hover me" : "tap me"}
+            </motion.span>
+          </div>
 
-      {/* SAY HI row: the button reports its own timing */}
-      <motion.div {...rowAnim(2)} className="flex items-center justify-between gap-4" style={{ padding: "12px 0", borderTop: "1px solid var(--border)" }}>
-        <div className="flex flex-col gap-1" style={{ minWidth: 0 }}>
-          <span style={label}>Button / primary</span>
-          <span style={{ ...mono, fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{Math.round(dur)}ms</span>
-        </div>
-        <div className="relative">
-          <Magnetic
-            enabled={fine && !reduce}
-            onClick={() => setToast(Date.now())}
-            ariaLabel="Say hi"
-          >
-            {({ x, y }) => (
-              <span
-                className="inline-flex items-center justify-center"
+          {VAULT_ITEMS.map((it, i) => (
+            <motion.div
+              key={it.key}
+              className="flex items-center gap-14"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: 12,
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.035)",
+                border: "1px solid var(--border)",
+                transformStyle: "preserve-3d",
+              }}
+              initial={false}
+              animate={
+                open
+                  ? { opacity: 1, y: 0, scale: 1, rotateX: 0, filter: "blur(0px)" }
+                  : reduce
+                  ? { opacity: 0.28, y: 0, scale: 1, rotateX: 0, filter: "blur(0px)" }
+                  : { opacity: 0, y: 26, scale: 0.94, rotateX: -22, filter: "blur(4px)" }
+              }
+              transition={{ ...spring, delay: reduce ? 0 : (open ? 0.16 + i * 0.09 : (2 - i) * 0.04) }}
+            >
+              {/* the thing itself */}
+              <div
                 style={{
-                  padding: "12px 22px",
-                  minHeight: 44,
+                  width: 78,
+                  height: 62,
+                  flexShrink: 0,
                   borderRadius: 9,
-                  background: "var(--accent)",
-                  color: "#0A0E16",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                  boxShadow: "0 8px 26px -8px rgba(91,140,255,0.5)",
+                  overflow: "hidden",
+                  background: it.logo ? "#fff" : "#0C111C",
+                  border: "1px solid var(--border-strong)",
+                  display: "grid",
+                  placeItems: "center",
+                  padding: it.logo ? 8 : 0,
                 }}
               >
-                <motion.span style={{ x, y }}>SAY HI</motion.span>
-              </span>
-            )}
-          </Magnetic>
-          {toast > 0 && (
-            <motion.span
-              key={toast}
-              className="absolute pointer-events-none"
-              style={{ ...mono, left: "50%", top: -10, fontSize: 12, color: "var(--accent)", whiteSpace: "nowrap" }}
-              initial={{ opacity: 0, y: 6, x: "-50%" }}
-              animate={{ opacity: [0, 1, 1, 0], y: [6, -14, -18, -26] }}
-              transition={{ duration: reduce ? 0.3 : 1.2, times: [0, 0.15, 0.7, 1] }}
-              onAnimationComplete={() => setToast(0)}
-            >
-              hi.
-            </motion.span>
-          )}
+                {it.img && <img src={it.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                {it.logo && <img src={it.logo} alt="" style={{ width: "100%", height: "auto", display: "block" }} />}
+                {it.film && <div style={{ width: 54, height: 54 }}><FilmMark /></div>}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...label, fontSize: 9.5, marginBottom: 3 }}>{it.kicker}</div>
+                <div style={{ fontFamily: "var(--font-body)", fontSize: 16, fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>
+                  {it.title}
+                </div>
+                <div style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--text-3)", marginTop: 2 }}>{it.sub}</div>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </motion.div>
 
-      {/* easing slider row */}
-      <motion.div {...rowAnim(3)} style={{ padding: "12px 0 4px", borderTop: "1px solid var(--border)" }}>
-        <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-          <span style={label}>Ease / {PRESETS[presetIdx].name}</span>
-          <span style={{ ...label, fontSize: 9.5 }}>drag to retune this section</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1" style={{ height: 44, display: "flex", alignItems: "center" }}>
-            {/* track */}
-            <div className="absolute left-0 right-0" style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.08)" }} />
+        {/* ── the doors ── */}
+        {[-1, 1].map((side) => (
+          <motion.div
+            key={side}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              [side === -1 ? "left" : "right"]: 0,
+              width: "50.5%",
+              background: "linear-gradient(180deg, #131A29, #0C1220)",
+              borderRight: side === -1 ? "1px solid rgba(255,255,255,0.07)" : undefined,
+              borderLeft: side === 1 ? "1px solid rgba(255,255,255,0.07)" : undefined,
+              pointerEvents: "none",
+            }}
+            initial={false}
+            animate={{ x: open ? `${side * 101}%` : "0%" }}
+            transition={reduce ? { duration: 0.2 } : { type: "spring", stiffness: 150, damping: 24, mass: 0.9 }}
+          >
+            {/* brushed seam + rivets */}
             <div
-              className="absolute left-0"
-              style={{ height: 3, borderRadius: 2, width: `${slider}%`, background: "var(--accent)", opacity: 0.75, transition: "none" }}
-            />
-            {/* preset ticks */}
-            {[0, 33.3, 66.6, 100].map((p) => (
-              <span key={p} className="absolute" style={{ left: `calc(${p}% - 1px)`, width: 2, height: 9, background: "var(--border-strong)", borderRadius: 1 }} />
-            ))}
-            {/* thumb */}
-            <span
-              className="absolute pointer-events-none"
               style={{
-                left: `calc(${slider}% - 8px)`,
-                width: 16,
-                height: 16,
-                borderRadius: 999,
-                background: "var(--bg-2)",
-                border: "2px solid var(--accent)",
-                boxShadow: "0 0 10px rgba(91,140,255,0.4)",
+                position: "absolute",
+                inset: 0,
+                backgroundImage:
+                  "repeating-linear-gradient(90deg, rgba(255,255,255,0.022) 0 2px, transparent 2px 5px)",
+                opacity: 0.7,
               }}
             />
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={slider}
-              onChange={(e) => setSlider(Number(e.target.value))}
-              aria-label="Easing and timing of this section's animations"
-              className="absolute left-0 right-0"
-              style={{ width: "100%", height: 44, opacity: 0, cursor: "ew-resize", margin: 0 }}
-            />
-          </div>
-          <CurvePreview bez={ease} />
-        </div>
-      </motion.div>
-    </div>
+            {[16, 1].map((t, k) => (
+              <span
+                key={k}
+                style={{
+                  position: "absolute",
+                  [side === -1 ? "left" : "right"]: 14,
+                  top: k === 0 ? 16 : undefined,
+                  bottom: k === 1 ? 16 : undefined,
+                  width: 5,
+                  height: 5,
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.16)",
+                }}
+              />
+            ))}
+          </motion.div>
+        ))}
+
+        {/* the dial, sitting on the seam */}
+        <motion.div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: 76,
+            height: 76,
+            marginLeft: -38,
+            marginTop: -38,
+            borderRadius: 999,
+            border: "2px solid rgba(91,140,255,0.5)",
+            background: "radial-gradient(circle at 50% 40%, rgba(91,140,255,0.22), rgba(12,17,28,0.95))",
+            display: "grid",
+            placeItems: "center",
+            pointerEvents: "none",
+            boxShadow: "0 0 26px rgba(91,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.14)",
+          }}
+          initial={false}
+          animate={{ opacity: open ? 0 : 1, rotate: open ? 150 : 0, scale: open ? 0.7 : 1 }}
+          transition={reduce ? { duration: 0.2 } : { duration: 0.55, ease: EXPO }}
+        >
+          <svg viewBox="0 0 40 40" width="34" height="34">
+            <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(91,140,255,0.75)" strokeWidth="2" />
+            {[0, 90, 180, 270].map((a) => (
+              <line
+                key={a}
+                x1="20"
+                y1="4"
+                x2="20"
+                y2="9"
+                stroke="rgba(91,140,255,0.9)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                transform={`rotate(${a} 20 20)`}
+              />
+            ))}
+            <circle cx="20" cy="20" r="3.5" fill="#5B8CFF" />
+          </svg>
+        </motion.div>
+
+        {/* the whole panel is one control: click / tap / keyboard */}
+        <button
+          onClick={() => setOpen((o) => !o)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          aria-expanded={open}
+          aria-label={open ? "Close the vault" : "Open the vault: three things about me"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            zIndex: 3,
+          }}
+        />
+      </div>
+    </motion.div>
   );
 }
 
@@ -454,8 +489,7 @@ export function ContactSection() {
   const [entered, setEntered] = useState(false);
   const [fine, setFine] = useState(false);
   const [wide, setWide] = useState(false);
-  const [highMotion, setHighMotion] = useState(true);
-  const [slider, setSlider] = useState(100); // start on OUT-EXPO
+  const highMotion = true; // the lab's toggle is gone; the section keeps its motion
 
   useEffect(() => {
     /* dev-only: ?touch=1 forces the touch path for desktop testing */
@@ -467,9 +501,8 @@ export function ContactSection() {
     if (inView) setEntered(true);
   }, [inView]);
 
-  const presetIdx = Math.round((slider / 100) * (PRESETS.length - 1));
-  const ease = PRESETS[presetIdx].bez;
-  const dur = 120 + (slider / 100) * 280; // 120..400ms, live-reported by the lab
+  const ease = EXPO; // out-expo, the section's one curve
+  const dur = 400;
   const easeCss = `cubic-bezier(${ease.join(",")})`;
 
   const interactive = fine && !reduce;
@@ -611,10 +644,14 @@ export function ContactSection() {
         perspective: 1200,
       }}
     >
-      {/* ── ambient: dot grid + cursor spotlight ── */}
+      {/* ── ambient: dot grid + cursor spotlight ──
+           pointer-events: none is REQUIRED — these are full-bleed aria-hidden
+           decorations, and without it they sit over the section's real
+           controls (Email / copy / LinkedIn) and can swallow clicks. */}
       <motion.div
         aria-hidden="true"
         className="absolute inset-0"
+        style={{ pointerEvents: "none" }}
         initial={{ opacity: 0 }}
         animate={entered ? { opacity: 1 } : undefined}
         transition={{ duration: reduce ? 0.2 : 1.1, ease: EXPO }}
@@ -754,24 +791,13 @@ export function ContactSection() {
             </div>
           </div>
 
-          {/* ── right: the lab ── */}
+          {/* ── right: the vault ── */}
           <motion.div
             {...enter(2, 28)}
             style={{ transform: tiltOn ? "translateZ(30px)" : undefined }}
           >
             <MobileScroll3D>
-              <LabPanel
-                reduce={reduce}
-                fine={fine}
-                highMotion={highMotion}
-                setHighMotion={setHighMotion}
-                slider={slider}
-                setSlider={setSlider}
-                presetIdx={presetIdx}
-                dur={dur}
-                ease={ease}
-                entered={entered}
-              />
+              <Vault reduce={reduce} fine={fine} entered={entered} />
             </MobileScroll3D>
           </motion.div>
         </div>
