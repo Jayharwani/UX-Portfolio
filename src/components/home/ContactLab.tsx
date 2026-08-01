@@ -250,126 +250,254 @@ function EmailCopy({ ease, dur, reduce }: { ease: Bez; dur: number; reduce: bool
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   THE VAULT — hover (or tap / focus) and the doors part, releasing three
-   things about me. Move away and they lock back in.
+   THE MAGICIAN'S VAULT
+   A obsidian cabinet in the portfolio's own blue. Hover (tap on touch, or
+   focus by keyboard) and its two doors swing open on real 3D hinges, the
+   sigil dissolves, and three cards levitate out in a fan — each one a thing
+   about me. Leave, and they spin back inside and the doors shut.
+
+   All CSS 3D (preserve-3d + rotateY hinges + translateZ depth): it stays
+   smooth, needs no WebGL, and degrades to a plain readable list under
+   prefers-reduced-motion.
    ══════════════════════════════════════════════════════════════════════════ */
 function FilmMark() {
   return (
     <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">
-      <rect x="6" y="15" width="52" height="34" rx="6" fill="#0C111C" stroke="#2A3550" strokeWidth="1.5" />
+      <rect x="7" y="16" width="50" height="32" rx="6" fill="#0B1120" stroke="rgba(91,140,255,0.45)" strokeWidth="1.4" />
       {[0, 1, 2, 3, 4].map((i) => (
-        <rect key={`t${i}`} x={11 + i * 10.5} y="18.5" width="6" height="4" rx="1.2" fill="#5B8CFF" opacity=".38" />
+        <rect key={`t${i}`} x={11.5 + i * 9.8} y="19.5" width="5.4" height="3.6" rx="1.1" fill="#5B8CFF" opacity=".4" />
       ))}
       {[0, 1, 2, 3, 4].map((i) => (
-        <rect key={`b${i}`} x={11 + i * 10.5} y="41.5" width="6" height="4" rx="1.2" fill="#5B8CFF" opacity=".38" />
+        <rect key={`b${i}`} x={11.5 + i * 9.8} y="41" width="5.4" height="3.6" rx="1.1" fill="#5B8CFF" opacity=".4" />
       ))}
       <path d="M28 26.5 41 32l-13 5.5z" fill="#5B8CFF" />
     </svg>
   );
 }
 
+/* the four-point sparkle that says "magic" without saying "clip art" */
+function Spark({ size = 14, opacity = 1 }: { size?: number; opacity?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ opacity, display: "block" }}>
+      <path d="M12 0c.7 6.4 4.9 10.6 12 12-7.1 1.4-11.3 5.6-12 12-.7-6.4-4.9-10.6-12-12C7.1 10.6 11.3 6.4 12 0Z" fill="#5B8CFF" />
+    </svg>
+  );
+}
+
 const VAULT_ITEMS = [
   { key: "ahm", kicker: "Born in", title: "Ahmedabad", sub: "Gujarat, India", img: "/vault/ahmedabad.jpg" },
-  { key: "umbc", kicker: "Masters at", title: "UMBC", sub: "MS, Human-Centered Computing", logo: "/vault/umbc.svg" },
-  { key: "film", kicker: "Off the clock", title: "Movie lover", sub: "Anything with a good third act", film: true },
+  { key: "umbc", kicker: "Masters at", title: "UMBC", sub: "Human-Centered Computing", logo: "/vault/umbc.svg" },
+  { key: "film", kicker: "Off the clock", title: "Movie lover", sub: "Give me a good third act", film: true },
 ];
 
-function Vault({ reduce, fine, entered }: { reduce: boolean; fine: boolean; entered: boolean }) {
+/* where each card lands when the trick fires */
+const FAN = [
+  { x: -1, rot: -13, y: 12, z: 40 },
+  { x: 0, rot: 0, y: -20, z: 96 },
+  { x: 1, rot: 13, y: 12, z: 40 },
+];
+const SPARKS = [
+  { x: 14, y: 20, s: 13, d: 0.16 }, { x: 84, y: 16, s: 10, d: 0.3 },
+  { x: 50, y: 8, s: 15, d: 0.22 }, { x: 26, y: 78, s: 11, d: 0.4 },
+  { x: 76, y: 82, s: 14, d: 0.26 }, { x: 92, y: 52, s: 9, d: 0.36 },
+  { x: 6, y: 54, s: 10, d: 0.44 },
+];
+
+function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean; entered: boolean }) {
   const [open, setOpen] = useState(false);
-  const spring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 210, damping: 26, mass: 0.7 };
+  const [compact, setCompact] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  /* the fan needs less spread in a narrow column */
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setCompact(el.clientWidth < 430);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  /* the whole cabinet leans toward the cursor */
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const srx = useSpring(rx, { stiffness: 120, damping: 18 });
+  const sry = useSpring(ry, { stiffness: 120, damping: 18 });
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || reduce || !fine) return;
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      ry.set(((e.clientX - r.left) / r.width - 0.5) * 13);
+      rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
+    };
+    const onLeave = () => { rx.set(0); ry.set(0); };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => { el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerleave", onLeave); };
+  }, [reduce, fine, rx, ry]);
+
+  const spread = compact ? 86 : 132;
+  const cardW = compact ? 108 : 138;
+  const cardH = compact ? 148 : 186;
+  const doorSpring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 120, damping: 20, mass: 1 };
+  const cardSpring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 190, damping: 22, mass: 0.8 };
 
   return (
     <motion.div
+      ref={wrapRef}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 26 }}
       animate={entered ? { opacity: 1, y: 0 } : undefined}
       transition={reduce ? { duration: 0.2 } : { duration: 0.7, ease: EXPO, delay: 0.35 }}
-      style={{ position: "relative" }}
+      onMouseEnter={() => fine && setOpen(true)}
+      onMouseLeave={() => fine && setOpen(false)}
+      style={{ position: "relative", perspective: 1400 }}
     >
-      <div
-        onMouseEnter={() => fine && setOpen(true)}
-        onMouseLeave={() => fine && setOpen(false)}
+      {/* IMPORTANT: the clipping shell and the 3D stage must be two different
+          elements. `overflow: hidden` forces transform-style to FLAT on the
+          same element, which would silently collapse every hinge and depth in
+          here (and computed styles still read "preserve-3d", so it looks fine
+          while being broken). Shell clips and paints; stage does the 3D. */}
+      <motion.div
         style={{
           position: "relative",
-          borderRadius: 16,
+          height: 396,
+          borderRadius: 20,
           overflow: "hidden",
-          background: "rgba(13,18,30,0.92)",
+          background: "radial-gradient(120% 100% at 50% 0%, #131B2E 0%, #0B101B 60%, #080C14 100%)",
           border: "1px solid var(--border-strong)",
           boxShadow: open
-            ? "0 40px 90px -40px rgba(0,0,0,0.8), 0 0 60px -24px rgba(91,140,255,0.5)"
-            : "0 30px 70px -34px rgba(0,0,0,0.7)",
-          transition: "box-shadow .5s ease",
-          minHeight: 396,
+            ? "0 50px 110px -50px rgba(0,0,0,0.95), 0 0 90px -30px rgba(91,140,255,0.55), inset 0 1px 0 rgba(255,255,255,0.07)"
+            : "0 34px 80px -44px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)",
+          transition: "box-shadow .6s ease",
         }}
       >
-        {/* ── the contents, revealed ── */}
-        <div style={{ padding: "22px 22px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="flex items-center justify-between">
-            <span style={label}>The vault</span>
-            <motion.span
-              style={{ ...label, color: "var(--accent)" }}
-              animate={{ opacity: open ? 1 : 0.75 }}
-              transition={{ duration: 0.3 }}
-            >
-              {open ? "unlocked" : fine ? "hover me" : "tap me"}
-            </motion.span>
-          </div>
+      <motion.div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transformStyle: "preserve-3d",
+          perspective: 1400,
+          rotateX: reduce ? 0 : srx,
+          rotateY: reduce ? 0 : sry,
+        }}
+      >
+        {/* the interior: a lit void the cards come out of */}
+        <motion.div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(60% 55% at 50% 50%, rgba(91,140,255,0.30), rgba(10,14,22,0) 70%), #05070C",
+            pointerEvents: "none",
+          }}
+          animate={{ opacity: open ? 1 : 0.35 }}
+          transition={{ duration: 0.5 }}
+        />
 
-          {VAULT_ITEMS.map((it, i) => (
-            <motion.div
-              key={it.key}
-              className="flex items-center gap-14"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                padding: 12,
-                borderRadius: 12,
-                background: "rgba(255,255,255,0.035)",
-                border: "1px solid var(--border)",
-                transformStyle: "preserve-3d",
-              }}
-              initial={false}
-              animate={
-                open
-                  ? { opacity: 1, y: 0, scale: 1, rotateX: 0, filter: "blur(0px)" }
-                  : reduce
-                  ? { opacity: 0.28, y: 0, scale: 1, rotateX: 0, filter: "blur(0px)" }
-                  : { opacity: 0, y: 26, scale: 0.94, rotateX: -22, filter: "blur(4px)" }
-              }
-              transition={{ ...spring, delay: reduce ? 0 : (open ? 0.16 + i * 0.09 : (2 - i) * 0.04) }}
-            >
-              {/* the thing itself */}
-              <div
+        {/* floor grid, so the void has depth */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "linear-gradient(rgba(91,140,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(91,140,255,0.10) 1px, transparent 1px)",
+            backgroundSize: "34px 34px",
+            maskImage: "radial-gradient(70% 60% at 50% 55%, #000, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(70% 60% at 50% 55%, #000, transparent 75%)",
+            opacity: 0.5,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* ── the three cards ── */}
+        <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", pointerEvents: "none" }}>
+          {VAULT_ITEMS.map((it, i) => {
+            const f = FAN[i];
+            const openState = {
+              x: f.x * spread,
+              y: f.y,
+              z: f.z,
+              rotateZ: f.rot,
+              rotateY: 0,
+              scale: 1,
+              opacity: 1,
+            };
+            const shutState = { x: 0, y: 0, z: -70, rotateZ: 0, rotateY: 0, scale: 0.7, opacity: 0 };
+            return (
+              <motion.div
+                key={it.key}
                 style={{
-                  width: 78,
-                  height: 62,
-                  flexShrink: 0,
-                  borderRadius: 9,
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: cardW,
+                  height: cardH,
+                  marginLeft: -cardW / 2,
+                  marginTop: -cardH / 2,
+                  /* no preserve-3d here: the card's own children are flat, and
+                     overflow:hidden (for the rounded corners) would force it to
+                     flat anyway. The card still lives in the stage's 3D space. */
+                  borderRadius: 14,
                   overflow: "hidden",
-                  background: it.logo ? "#fff" : "#0C111C",
-                  border: "1px solid var(--border-strong)",
-                  display: "grid",
-                  placeItems: "center",
-                  padding: it.logo ? 8 : 0,
+                  background: "linear-gradient(170deg, #1B2438 0%, #121A2A 60%, #0E1524 100%)",
+                  border: "1px solid rgba(91,140,255,0.4)",
+                  boxShadow: "0 26px 50px -20px rgba(0,0,0,0.9), 0 0 26px -8px rgba(91,140,255,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
                 }}
+                initial={false}
+                animate={reduce ? { ...openState, x: 0, y: (i - 1) * 4, z: 0, rotateZ: 0, opacity: open ? 1 : 0 } : open ? openState : shutState}
+                transition={{ ...cardSpring, delay: reduce ? 0 : open ? 0.18 + i * 0.08 : (2 - i) * 0.05 }}
               >
-                {it.img && <img src={it.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-                {it.logo && <img src={it.logo} alt="" style={{ width: "100%", height: "auto", display: "block" }} />}
-                {it.film && <div style={{ width: 54, height: 54 }}><FilmMark /></div>}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ ...label, fontSize: 9.5, marginBottom: 3 }}>{it.kicker}</div>
-                <div style={{ fontFamily: "var(--font-body)", fontSize: 16, fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>
-                  {it.title}
+                {/* the face */}
+                <div style={{ height: "58%", position: "relative", background: it.logo ? "#fff" : "#080D16", display: "grid", placeItems: "center", padding: it.logo ? 12 : 0 }}>
+                  {it.img && <img src={it.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                  {it.logo && <img src={it.logo} alt="" style={{ width: "100%", height: "auto", display: "block" }} />}
+                  {it.film && <div style={{ width: "72%" }}><FilmMark /></div>}
                 </div>
-                <div style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--text-3)", marginTop: 2 }}>{it.sub}</div>
-              </div>
-            </motion.div>
-          ))}
+                <div style={{ padding: compact ? "9px 10px" : "12px 13px" }}>
+                  <div style={{ ...label, fontSize: 8.5, marginBottom: 3 }}>{it.kicker}</div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 13 : 15, fontWeight: 600, color: "var(--text)", lineHeight: 1.15 }}>
+                    {it.title}
+                  </div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 10 : 11.5, color: "var(--text-3)", marginTop: 3, lineHeight: 1.3 }}>
+                    {it.sub}
+                  </div>
+                </div>
+                {/* a glint across the card face */}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.16) 50%, transparent 65%)",
+                    pointerEvents: "none",
+                  }}
+                />
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* ── the doors ── */}
-        {[-1, 1].map((side) => (
+        {/* ── sparks ── */}
+        {!reduce &&
+          SPARKS.map((sp, i) => (
+            <motion.span
+              key={i}
+              aria-hidden="true"
+              style={{ position: "absolute", left: `${sp.x}%`, top: `${sp.y}%`, pointerEvents: "none", transformStyle: "preserve-3d" }}
+              initial={false}
+              animate={open ? { opacity: [0, 1, 0.85], scale: [0.2, 1.25, 1], z: 120, rotate: 90 } : { opacity: 0, scale: 0.2, z: 0, rotate: 0 }}
+              transition={{ duration: 0.9, ease: EXPO, delay: open ? 0.2 + sp.d : 0 }}
+            >
+              <Spark size={sp.s} />
+            </motion.span>
+          ))}
+
+        {/* ── the doors, on real hinges ── */}
+        {([-1, 1] as const).map((side) => (
           <motion.div
             key={side}
             aria-hidden="true"
@@ -377,104 +505,115 @@ function Vault({ reduce, fine, entered }: { reduce: boolean; fine: boolean; ente
               position: "absolute",
               top: 0,
               bottom: 0,
-              [side === -1 ? "left" : "right"]: 0,
-              width: "50.5%",
-              background: "linear-gradient(180deg, #131A29, #0C1220)",
-              borderRight: side === -1 ? "1px solid rgba(255,255,255,0.07)" : undefined,
-              borderLeft: side === 1 ? "1px solid rgba(255,255,255,0.07)" : undefined,
+              left: side === -1 ? 0 : "50%",
+              width: "50%",
+              transformOrigin: side === -1 ? "left center" : "right center",
+              transformStyle: "preserve-3d",
+              background:
+                "linear-gradient(150deg, #1A2338 0%, #131A2B 45%, #0D1421 100%)",
+              borderRight: side === -1 ? "1px solid rgba(91,140,255,0.28)" : undefined,
+              borderLeft: side === 1 ? "1px solid rgba(91,140,255,0.28)" : undefined,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
               pointerEvents: "none",
             }}
             initial={false}
-            animate={{ x: open ? `${side * 101}%` : "0%" }}
-            transition={reduce ? { duration: 0.2 } : { type: "spring", stiffness: 150, damping: 24, mass: 0.9 }}
+            animate={{ rotateY: open ? side * -112 : 0 }}
+            transition={doorSpring}
           >
-            {/* brushed seam + rivets */}
-            <div
+            {/* engraved panel line */}
+            <span
+              style={{
+                position: "absolute",
+                inset: 16,
+                borderRadius: 12,
+                border: "1px solid rgba(91,140,255,0.16)",
+                boxShadow: "inset 0 0 30px rgba(91,140,255,0.06)",
+              }}
+            />
+            {/* brushed metal grain */}
+            <span
               style={{
                 position: "absolute",
                 inset: 0,
-                backgroundImage:
-                  "repeating-linear-gradient(90deg, rgba(255,255,255,0.022) 0 2px, transparent 2px 5px)",
-                opacity: 0.7,
+                backgroundImage: "repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 6px)",
               }}
             />
-            {[16, 1].map((t, k) => (
-              <span
-                key={k}
-                style={{
-                  position: "absolute",
-                  [side === -1 ? "left" : "right"]: 14,
-                  top: k === 0 ? 16 : undefined,
-                  bottom: k === 1 ? 16 : undefined,
-                  width: 5,
-                  height: 5,
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.16)",
-                }}
-              />
-            ))}
+            {/* the handle */}
+            <span
+              style={{
+                position: "absolute",
+                top: "50%",
+                [side === -1 ? "right" : "left"]: 12,
+                width: 4,
+                height: 34,
+                marginTop: -17,
+                borderRadius: 999,
+                background: "linear-gradient(180deg, rgba(91,140,255,0.9), rgba(91,140,255,0.35))",
+                boxShadow: "0 0 12px rgba(91,140,255,0.6)",
+              }}
+            />
           </motion.div>
         ))}
 
-        {/* the dial, sitting on the seam */}
+        {/* ── the sigil on the seam ── */}
         <motion.div
           aria-hidden="true"
           style={{
             position: "absolute",
             left: "50%",
             top: "50%",
-            width: 76,
-            height: 76,
-            marginLeft: -38,
-            marginTop: -38,
-            borderRadius: 999,
-            border: "2px solid rgba(91,140,255,0.5)",
-            background: "radial-gradient(circle at 50% 40%, rgba(91,140,255,0.22), rgba(12,17,28,0.95))",
+            width: 108,
+            height: 108,
+            marginLeft: -54,
+            marginTop: -54,
             display: "grid",
             placeItems: "center",
             pointerEvents: "none",
-            boxShadow: "0 0 26px rgba(91,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.14)",
+            transformStyle: "preserve-3d",
           }}
           initial={false}
-          animate={{ opacity: open ? 0 : 1, rotate: open ? 150 : 0, scale: open ? 0.7 : 1 }}
-          transition={reduce ? { duration: 0.2 } : { duration: 0.55, ease: EXPO }}
+          animate={{ opacity: open ? 0 : 1, scale: open ? 0.6 : 1, rotate: open ? 120 : 0, z: open ? -40 : 30 }}
+          transition={{ duration: reduce ? 0.2 : 0.6, ease: EXPO }}
         >
-          <svg viewBox="0 0 40 40" width="34" height="34">
-            <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(91,140,255,0.75)" strokeWidth="2" />
-            {[0, 90, 180, 270].map((a) => (
-              <line
-                key={a}
-                x1="20"
-                y1="4"
-                x2="20"
-                y2="9"
-                stroke="rgba(91,140,255,0.9)"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                transform={`rotate(${a} 20 20)`}
-              />
+          <motion.svg
+            viewBox="0 0 120 120"
+            width="108"
+            height="108"
+            animate={reduce ? undefined : { rotate: 360 }}
+            transition={{ duration: 34, repeat: Infinity, ease: "linear" }}
+          >
+            <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(91,140,255,0.34)" strokeWidth="1.2" strokeDasharray="3 7" />
+            <circle cx="60" cy="60" r="33" fill="none" stroke="rgba(91,140,255,0.5)" strokeWidth="1.4" />
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <line key={a} x1="60" y1="16" x2="60" y2="26" stroke="rgba(91,140,255,0.75)" strokeWidth="2" strokeLinecap="round" transform={`rotate(${a} 60 60)`} />
             ))}
-            <circle cx="20" cy="20" r="3.5" fill="#5B8CFF" />
-          </svg>
+          </motion.svg>
+          <div style={{ position: "absolute", display: "grid", placeItems: "center" }}>
+            <Spark size={30} />
+          </div>
         </motion.div>
 
-        {/* the whole panel is one control: click / tap / keyboard */}
+        </motion.div>
+        {/* ── end 3D stage ── */}
+
+        {/* label + prompt, flat above the doors */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "18px 20px", display: "flex", justifyContent: "space-between", pointerEvents: "none", zIndex: 4 }}>
+          <span style={label}>The vault</span>
+          <motion.span style={{ ...label, color: "var(--accent)" }} animate={{ opacity: open ? 1 : 0.8 }} transition={{ duration: 0.3 }}>
+            {open ? "abracadabra" : fine ? "hover to open" : "tap to open"}
+          </motion.span>
+        </div>
+
+        {/* one control for mouse, touch and keyboard */}
         <button
           onClick={() => setOpen((o) => !o)}
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           aria-expanded={open}
           aria-label={open ? "Close the vault" : "Open the vault: three things about me"}
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            zIndex: 3,
-          }}
+          style={{ position: "absolute", inset: 0, background: "none", border: "none", cursor: "pointer", zIndex: 5 }}
         />
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -797,7 +936,7 @@ export function ContactSection() {
             style={{ transform: tiltOn ? "translateZ(30px)" : undefined }}
           >
             <MobileScroll3D>
-              <Vault reduce={reduce} fine={fine} entered={entered} />
+              <MagicVault reduce={reduce} fine={fine} entered={entered} />
             </MobileScroll3D>
           </motion.div>
         </div>
