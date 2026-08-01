@@ -1736,9 +1736,9 @@ export function HomePage() {
         <Hero />
         <WhatIDo />
         <SelectedWork />
+        <ContactSection />
         <HowIWork />
         <About />
-        <ContactSection />
       </main>
       <SiteFooter />
       <FlyerTrigger />

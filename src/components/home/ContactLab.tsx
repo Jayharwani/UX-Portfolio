@@ -307,6 +307,11 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
   const [open, setOpen] = useState(false);
   const [compact, setCompact] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* on touch the vault must not be a hold-to-see toy: once it is open it
+     STAYS open (no blur-close), and it opens itself the first time it comes
+     into view so the trick is never missed. */
+  const touch = !fine;
+  const armed = useRef(false);
 
   /* the fan needs less spread in a narrow column */
   useEffect(() => {
@@ -318,6 +323,23 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  /* touch: open once on first sight, then leave it to the user */
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || !touch || reduce) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !armed.current) {
+          armed.current = true;
+          window.setTimeout(() => setOpen(true), 320);
+        }
+      },
+      { threshold: 0.45 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [touch, reduce]);
 
   /* the whole cabinet leans toward the cursor */
   const rx = useMotionValue(0);
@@ -338,11 +360,21 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
     return () => { el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerleave", onLeave); };
   }, [reduce, fine, rx, ry]);
 
-  const spread = compact ? 86 : 132;
-  const cardW = compact ? 108 : 138;
-  const cardH = compact ? 148 : 186;
-  const doorSpring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 120, damping: 20, mass: 1 };
-  const cardSpring = reduce ? { duration: 0.2 } : { type: "spring" as const, stiffness: 190, damping: 22, mass: 0.8 };
+  /* Bigger, readable cards (+25% on desktop). Spread is tuned so the OUTER
+     corner of a 13deg-rotated card, magnified by its translateZ, still lands
+     inside the cabinet: desktop 239px vs a 250px half-frame, mobile 142 vs
+     151. Raise either size and the side cards start clipping. */
+  const cardW = compact ? 118 : 172;
+  const cardH = compact ? 162 : 236;
+  const spread = compact ? 62 : 122;
+  /* cinematic: heavy doors that take their time, cards that drift out after
+     them. Slow springs (low stiffness, high mass) read as weight, not lag. */
+  const doorSpring = reduce
+    ? { duration: 0.2 }
+    : { type: "spring" as const, stiffness: 38, damping: 15, mass: 1.5 };
+  const cardSpring = reduce
+    ? { duration: 0.2 }
+    : { type: "spring" as const, stiffness: 52, damping: 15, mass: 1.1 };
 
   return (
     <motion.div
@@ -362,7 +394,7 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
       <motion.div
         style={{
           position: "relative",
-          height: 396,
+          height: compact ? 400 : 452,
           borderRadius: 20,
           overflow: "hidden",
           background: "radial-gradient(120% 100% at 50% 0%, #131B2E 0%, #0B101B 60%, #080C14 100%)",
@@ -449,7 +481,9 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
                 }}
                 initial={false}
                 animate={reduce ? { ...openState, x: 0, y: (i - 1) * 4, z: 0, rotateZ: 0, opacity: open ? 1 : 0 } : open ? openState : shutState}
-                transition={{ ...cardSpring, delay: reduce ? 0 : open ? 0.18 + i * 0.08 : (2 - i) * 0.05 }}
+                /* cards wait for the doors to be genuinely apart, then drift
+                   out one at a time; closing, they retreat before the doors */
+                transition={{ ...cardSpring, delay: reduce ? 0 : open ? 0.5 + i * 0.16 : (2 - i) * 0.08 }}
               >
                 {/* the face */}
                 <div style={{ height: "58%", position: "relative", background: it.logo ? "#fff" : "#080D16", display: "grid", placeItems: "center", padding: it.logo ? 12 : 0 }}>
@@ -457,12 +491,12 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
                   {it.logo && <img src={it.logo} alt="" style={{ width: "100%", height: "auto", display: "block" }} />}
                   {it.film && <div style={{ width: "72%" }}><FilmMark /></div>}
                 </div>
-                <div style={{ padding: compact ? "9px 10px" : "12px 13px" }}>
-                  <div style={{ ...label, fontSize: 8.5, marginBottom: 3 }}>{it.kicker}</div>
-                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 13 : 15, fontWeight: 600, color: "var(--text)", lineHeight: 1.15 }}>
+                <div style={{ padding: compact ? "10px 12px" : "14px 16px" }}>
+                  <div style={{ ...label, fontSize: compact ? 9 : 10, marginBottom: 4 }}>{it.kicker}</div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 15 : 19, fontWeight: 600, color: "var(--text)", lineHeight: 1.15, letterSpacing: "-0.01em" }}>
                     {it.title}
                   </div>
-                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 10 : 11.5, color: "var(--text-3)", marginTop: 3, lineHeight: 1.3 }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: compact ? 11.5 : 13, color: "var(--text-2)", marginTop: 4, lineHeight: 1.35 }}>
                     {it.sub}
                   </div>
                 </div>
@@ -490,7 +524,7 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
               style={{ position: "absolute", left: `${sp.x}%`, top: `${sp.y}%`, pointerEvents: "none", transformStyle: "preserve-3d" }}
               initial={false}
               animate={open ? { opacity: [0, 1, 0.85], scale: [0.2, 1.25, 1], z: 120, rotate: 90 } : { opacity: 0, scale: 0.2, z: 0, rotate: 0 }}
-              transition={{ duration: 0.9, ease: EXPO, delay: open ? 0.2 + sp.d : 0 }}
+              transition={{ duration: 1.5, ease: EXPO, delay: open ? 0.42 + sp.d * 1.6 : 0 }}
             >
               <Spark size={sp.s} />
             </motion.span>
@@ -518,7 +552,9 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
             }}
             initial={false}
             animate={{ rotateY: open ? side * -112 : 0 }}
-            transition={doorSpring}
+            /* the right door trails the left by a beat, the way a real pair
+               of heavy doors never moves in perfect lockstep */
+            transition={{ ...doorSpring, delay: reduce ? 0 : (side === 1 ? 0.12 : 0) }}
           >
             {/* engraved panel line */}
             <span
@@ -573,7 +609,7 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
           }}
           initial={false}
           animate={{ opacity: open ? 0 : 1, scale: open ? 0.6 : 1, rotate: open ? 120 : 0, z: open ? -40 : 30 }}
-          transition={{ duration: reduce ? 0.2 : 0.6, ease: EXPO }}
+          transition={{ duration: reduce ? 0.2 : 1.1, ease: EXPO, delay: reduce ? 0 : open ? 0 : 0.55 }}
         >
           <motion.svg
             viewBox="0 0 120 120"
@@ -608,7 +644,10 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
         <button
           onClick={() => setOpen((o) => !o)}
           onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
+          /* only a keyboard/mouse visitor gets the close-on-blur. On touch,
+             tapping anything else on the page fires blur, which is exactly
+             what made the vault snap shut and need re-tapping. */
+          onBlur={() => { if (!touch) setOpen(false); }}
           aria-expanded={open}
           aria-label={open ? "Close the vault" : "Open the vault: three things about me"}
           style={{ position: "absolute", inset: 0, background: "none", border: "none", cursor: "pointer", zIndex: 5 }}
