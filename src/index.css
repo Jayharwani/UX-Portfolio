@@ -55,6 +55,20 @@
 }
 .link-draw:hover::after { transform: scaleX(1); }
 
+/* Contact LinkedIn button. Deliberately plain: the anchor itself carries the
+   padding and the hover, so no wrapper transform can move the hit area away
+   from where the user sees the button. */
+.sg-linkedin { border: 1px solid var(--border-strong); }
+.sg-linkedin:hover {
+  border-color: #5B8CFF;
+  color: #E8EDF7;
+  transform: translateY(-1px);
+}
+.sg-linkedin:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .sg-linkedin:hover, .sg-linkedin:active { transform: none; }
+}
+
 /* Performance: GPU-accelerated animations */
 @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes spin-slow-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }

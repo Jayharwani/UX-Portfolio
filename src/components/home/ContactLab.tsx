@@ -50,7 +50,11 @@ const label: CSSProperties = {
 };
 
 /* ── magnetic pull hook: element eases toward a nearby cursor ── */
-function useMagnetic(enabled: boolean, radius = 90, strength = 0.35, innerStrength = 0.2) {
+/* NOTE on radius/strength: these used to be 90 / 0.35, which let a button
+   travel ~50px toward the cursor — far enough for the Email button to slide
+   on top of the LinkedIn button beside it and eat its clicks. Kept subtle so
+   a magnetic control never leaves its own footprint. */
+function useMagnetic(enabled: boolean, radius = 46, strength = 0.18, innerStrength = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -918,9 +922,12 @@ export function ContactSection() {
               One email. I reply fast, and the work speaks for itself.
             </motion.p>
 
+            {/* Every control in this row is positioned, so DOM order decides
+                who paints on top in any overlap — and LinkedIn, being last,
+                can no longer be covered by the button before it. */}
             <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 30 }}>
               {/* Email me: primary, magnetic, breathing glow */}
-              <motion.div {...enter(1)} className="relative">
+              <motion.div {...enter(1)} className="relative" style={{ position: "relative", zIndex: 1 }}>
                 {/* pre-blurred breathing glow (opacity only) */}
                 <motion.span
                   aria-hidden="true"
@@ -953,35 +960,41 @@ export function ContactSection() {
               </motion.div>
 
               {/* the copy hero */}
-              <motion.div {...enter(2)} style={{ minWidth: 0, maxWidth: "100%" }}>
+              <motion.div {...enter(2)} style={{ minWidth: 0, maxWidth: "100%", position: "relative", zIndex: 2 }}>
                 <EmailCopy ease={ease} dur={dur} reduce={reduce} />
               </motion.div>
 
-              {/* LinkedIn */}
-              <motion.div {...enter(3)}>
-                <Magnetic enabled={interactive} href={LINKEDIN} ariaLabel="LinkedIn profile">
-                  {({ x, y }) => (
-                    <span
-                      className="inline-flex items-center gap-2 group"
-                      style={{
-                        padding: "13px 18px",
-                        minHeight: 44,
-                        borderRadius: 8,
-                        background: "rgba(17,23,37,0.85)",
-                        border: "1px solid var(--border-strong)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: 14.5,
-                        fontWeight: 500,
-                        color: "var(--text-2)",
-                        transition: `border-color ${dur}ms ${easeCss}`,
-                      }}
-                    >
-                      <motion.span className="inline-flex items-center gap-2" style={{ x, y }}>
-                        <LinkedinLogo size={16} weight="duotone" color="#5B8CFF" /> LinkedIn
-                      </motion.span>
-                    </span>
-                  )}
-                </Magnetic>
+              {/* LinkedIn — reported as unclickable twice, so this one is now
+                  a plain anchor: the <a> IS the padded box (no nested spans
+                  carrying the hit area), no magnetic transform, no z-translate
+                  inside the section's 3D context, and it sits highest in the
+                  row. Nothing here can move it out from under a click. The
+                  hover lift is pure CSS on the anchor itself. */}
+              <motion.div {...enter(3)} style={{ position: "relative", zIndex: 3 }}>
+                <a
+                  href={LINKEDIN}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn profile"
+                  className="sg-linkedin inline-flex items-center gap-2"
+                  style={{
+                    padding: "13px 18px",
+                    minHeight: 44,
+                    borderRadius: 8,
+                    background: "rgba(17,23,37,0.85)",
+                    /* border lives in .sg-linkedin so :hover can override it
+                       without !important — an inline border would win. */
+                    fontFamily: "var(--font-body)",
+                    fontSize: 14.5,
+                    fontWeight: 500,
+                    color: "var(--text-2)",
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    transition: "border-color .25s ease, transform .25s ease, color .25s ease",
+                  }}
+                >
+                  <LinkedinLogo size={16} weight="duotone" color="#5B8CFF" /> LinkedIn
+                </a>
               </motion.div>
             </div>
           </div>

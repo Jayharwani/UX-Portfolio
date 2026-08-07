@@ -8,7 +8,6 @@ import {
   Code,
   ArrowRight,
   ArrowUpRight,
-  FileText,
   List,
   X,
   HandGrabbing,
@@ -52,7 +51,6 @@ const V = {
 const LINKS = {
   email: "harwanijay9498@gmail.com",
   linkedin: "https://www.linkedin.com/in/jay-harwani/",
-  cv: "https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing",
 };
 
 /* ── shared bits ─────────────────────────────────────────────────────────── */
@@ -261,24 +259,6 @@ function Nav() {
           <button className="hidden md:block" style={navLink} onClick={() => go("contact")}>
             Contact
           </button>
-          <a
-            href={LINKS.cv}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 ml-2"
-            style={{
-              fontFamily: V.body,
-              fontSize: 13.5,
-              fontWeight: 600,
-              color: V.text,
-              padding: "13px 16px", // >=44px tap target
-              borderRadius: 8,
-              border: `1px solid ${V.borderStrong}`,
-              background: V.accentSoft,
-            }}
-          >
-            CV <ArrowUpRight size={14} weight="bold" />
-          </a>
           {/* mobile menu toggle */}
           <button
             className="md:hidden ml-1 flex items-center justify-center"
@@ -1600,9 +1580,6 @@ function SiteFooter() {
           <a href={`mailto:${LINKS.email}`} style={pill}>
             EMAIL
           </a>
-          <a href={LINKS.cv} target="_blank" rel="noopener noreferrer" style={pill}>
-            <FileText size={12} weight="duotone" color="#7D89A0" /> CV
-          </a>
         </div>
         <div className="flex items-baseline justify-between" style={{ marginTop: 18 }}>
           <span style={{ fontFamily: V.body, fontSize: 13, color: V.text3 }}>Jay Harwani</span>
@@ -1619,9 +1596,6 @@ function SiteFooter() {
           </a>
           <a href={`mailto:${LINKS.email}`} className="inline-flex items-center" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>
             <span className="link-draw">EMAIL</span>
-          </a>
-          <a href={LINKS.cv} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1" style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, padding: "13px 6px" }}>
-            <FileText size={12} weight="duotone" color="#7D89A0" /> <span className="link-draw">CV</span>
           </a>
         </div>
         <span style={{ fontFamily: V.mono, fontSize: 11.5, color: V.text3, letterSpacing: "0.08em" }}>2026 / v4.0</span>

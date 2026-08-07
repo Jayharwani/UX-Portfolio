@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Mail, Linkedin, FileText, ArrowUpRight } from "lucide-react";
+import { Mail, Linkedin, ArrowUpRight } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -117,23 +117,6 @@ export function Footer() {
               <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={2.5} />
             </a>
 
-            <a
-              href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2 text-[14px] font-semibold px-7 py-3.5 rounded-full transition-all hover:bg-black/[0.04]"
-              style={{
-                color: '#09090B',
-                border: '1px solid rgba(15,23,42,0.15)',
-                backgroundColor: 'rgba(255,255,255,0.6)',
-                fontFamily: 'DM Sans, sans-serif',
-                backdropFilter: 'blur(12px)',
-              }}
-            >
-              <FileText className="w-4 h-4" strokeWidth={2.5} />
-              <span>Resume</span>
-              <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" strokeWidth={2.5} />
-            </a>
           </motion.div>
 
           {/* Availability strip */}

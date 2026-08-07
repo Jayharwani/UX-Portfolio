@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Linkedin,
-  FileText,
   Menu,
   X,
 } from "lucide-react";
@@ -142,16 +141,6 @@ export function AboutPage() {
             >
               LinkedIn
             </a>
-            <a
-              href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-2 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] px-4 py-2 rounded-full transition-all hover:scale-[1.03] active:scale-[0.97]"
-              style={{ backgroundColor: "#09090B", color: "#FFFFFF", fontFamily: "DM Sans, sans-serif" }}
-            >
-              CV
-              <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-            </a>
           </nav>
 
           <div className="md:hidden">
@@ -205,16 +194,6 @@ export function AboutPage() {
                 style={{ color: "#09090B" }}
               >
                 LinkedIn
-              </a>
-              <a
-                href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mx-2 mt-2 mb-1 text-center text-[13px] font-semibold rounded-full py-3"
-                style={{ backgroundColor: "#09090B", color: "#FFFFFF" }}
-              >
-                Curriculum Vitae
               </a>
             </nav>
           </motion.div>
@@ -341,7 +320,7 @@ export function AboutPage() {
                 transition={{ duration: 0.7, delay: 0.9, ease: easeOut }}
               >
                 <a
-                  href="https://docs.google.com/document/d/1XNBHnLUtPLExp9zibtkigSb1N1eiY_VN1FIRBaOiwqw/edit?usp=sharing"
+                  href="https://www.linkedin.com/in/jay-harwani/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold px-7 py-4 rounded-full transition-transform duration-150 hover:scale-[1.02] active:scale-[0.97]"
@@ -350,27 +329,6 @@ export function AboutPage() {
                     color: "#FFFFFF",
                     fontFamily: "DM Sans, sans-serif",
                     boxShadow: "0 12px 24px -10px rgba(9,9,11,0.4)",
-                  }}
-                >
-                  <FileText className="w-4 h-4" strokeWidth={2.5} />
-                  <span>Resume</span>
-                  <ArrowUpRight
-                    className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    strokeWidth={2.5}
-                  />
-                </a>
-
-                <a
-                  href="https://www.linkedin.com/in/jay-harwani/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-center justify-center gap-2.5 text-[14px] font-semibold px-7 py-4 rounded-full transition-all duration-150 hover:bg-black/[0.04] active:scale-[0.97]"
-                  style={{
-                    fontFamily: "DM Sans, sans-serif",
-                    color: "#09090B",
-                    border: "1px solid rgba(15,23,42,0.18)",
-                    backgroundColor: "rgba(255,255,255,0.6)",
-                    backdropFilter: "blur(12px)",
                   }}
                 >
                   <Linkedin className="w-4 h-4" strokeWidth={2.5} />
