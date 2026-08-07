@@ -1,10 +1,10 @@
 import { motion } from "motion/react";
-import DriftMapImage from "../assets/chronoweave-driftmap.png";
-import LiveNudgeImage from "../assets/chronoweave-livenudge.png";
-import TodaysRhythmImage from "../assets/chronoweave-todaysrhythm.png";
-import WeeklyInsightsImage from "../assets/chronoweave-weeklyinsights.png";
-import CalibrateImage from "../assets/chronoweave-calibrate.png";
-import TimeFeelImage from "../assets/chronoweave-timefeel.png";
+import DriftMapImage from "../assets/chronoweave-driftmap.webp";
+import LiveNudgeImage from "../assets/chronoweave-livenudge.webp";
+import TodaysRhythmImage from "../assets/chronoweave-todaysrhythm.webp";
+import WeeklyInsightsImage from "../assets/chronoweave-weeklyinsights.webp";
+import CalibrateImage from "../assets/chronoweave-calibrate.webp";
+import TimeFeelImage from "../assets/chronoweave-timefeel.webp";
 
 // Screen 1: Drift Map
 export function TodaysRhythmScreen() {

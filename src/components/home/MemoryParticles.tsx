@@ -105,7 +105,15 @@ export default function MemoryParticles({
       if (disposed) return;
 
       const heroRect = hero.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      /* Budget the effect to the machine it landed on. Phones and low-core
+         laptops were running the same particle count and the same 2x canvas
+         as a desktop, which is what made the hero stutter on other people's
+         devices. Half the pixels and roughly a third of the particles there —
+         the effect still reads, the frame budget survives. */
+      const cores = (navigator as any).hardwareConcurrency || 4;
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      const lowPower = coarse || cores <= 4 || window.innerWidth < 900;
+      const dpr = Math.min(lowPower ? 1.5 : 2, window.devicePixelRatio || 1);
       canvas.width = Math.round(heroRect.width * dpr);
       canvas.height = Math.round(heroRect.height * dpr);
       canvas.style.width = `${heroRect.width}px`;
@@ -185,7 +193,10 @@ export default function MemoryParticles({
 
       /* adaptive density: aim ~7k desktop, ~3k phones */
       const area = heroRect.width * heroRect.height;
-      const step = area > 700_000 ? 3 : 4;
+      /* sampling stride: bigger stride = fewer particles. Each particle costs
+         spring math + a fillRect every frame, so this is the single biggest
+         lever on hero smoothness. */
+      const step = lowPower ? 6 : area > 700_000 ? 3 : 4;
 
       const sample = (only: "word" | "rest"): { x: number; y: number }[] => {
         drawRuns(only);

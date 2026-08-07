@@ -1446,6 +1446,13 @@ function About() {
                   src={userPhoto}
                   alt="Jay Harwani"
                   className="block w-full"
+                  /* below the fold: never let it compete with first paint.
+                     Intrinsic size is declared so it reserves space instead of
+                     shifting the layout when it arrives. */
+                  loading="lazy"
+                  decoding="async"
+                  width={900}
+                  height={1200}
                   style={{ filter: "grayscale(1) contrast(1.06) brightness(0.88)", display: "block", transition: "filter 0.45s, transform 0.6s" }}
                   onMouseEnter={(e) => {
                     if (!reduce) (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0.55) contrast(1.05) brightness(0.94)";

@@ -776,11 +776,22 @@ export function ContactSection() {
     if (!el || !scrollDrive) return;
     let raf = 0;
     let alive = true;
+    let idle = 0;
+    let onScreen = true;
+    /* off-screen, sample the rect every 8th frame instead of every frame:
+       getBoundingClientRect forces layout and this is one of several loops
+       running together on the homepage. */
     const loop = (t: number) => {
       if (!alive) return;
+      if (!onScreen && ++idle < 8) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      idle = 0;
       const r = el.getBoundingClientRect();
       const vh = window.innerHeight || 800;
-      if (r.bottom > -80 && r.top < vh + 80) {
+      onScreen = r.bottom > -80 && r.top < vh + 80;
+      if (onScreen) {
         const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
         if (tiltOn) {
           rx.set(prog * 4.5 * 0.9);
@@ -792,9 +803,15 @@ export function ContactSection() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
+    const onVis = () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else raf = requestAnimationFrame(loop);
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [scrollDrive, tiltOn, mx, my, rx, ry]);
 

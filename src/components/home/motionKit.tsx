@@ -152,26 +152,42 @@ export function useDiorama(
     if (!el || !scrollDrive) return;
     let raf = 0;
     let alive = true;
+    let idle = 0;
+    let onScreen = true;
+    /* getBoundingClientRect() forces a synchronous layout, and several of
+       these loops run at once. Off-screen we sample it every 8th frame
+       instead of every frame — ~90% less layout work while scrolling past,
+       and it self-corrects (the rect read is what tells us we're back). */
     const loop = (t: number) => {
       if (!alive) return;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 800;
-      if (r.bottom > -80 && r.top < vh + 80) {
-        /* +1 when the section is below the viewport, 0 centered, −1 above */
-        const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
-        if (tilt) {
-          rx.set(prog * maxX * 0.9);
-          ry.set(Math.sin(t / 2600) * maxY * 0.22);
+      if (onScreen || ++idle >= 8) {
+        idle = 0;
+        const r = el.getBoundingClientRect();
+        const vh = window.innerHeight || 800;
+        onScreen = r.bottom > -80 && r.top < vh + 80;
+        if (onScreen) {
+          /* +1 when the section is below the viewport, 0 centered, −1 above */
+          const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
+          if (tilt) {
+            rx.set(prog * maxX * 0.9);
+            ry.set(Math.sin(t / 2600) * maxY * 0.22);
+          }
+          mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
+          my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
         }
-        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
-        my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
+    const onVis = () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else raf = requestAnimationFrame(loop);
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [ref, scrollDrive, tilt, maxX, maxY, mx, my, rx, ry]);
 
@@ -228,11 +244,22 @@ export function MobileScroll3D({
     let cTy = lift;
     let cSc = 0.9;
     let cOp = 0.5;
+    let idle = 0;
+    let onScreen = true;
+    /* three of these run at once (How I work, About, Contact). Sampling the
+       rect every frame from each was a third of the scroll cost on a phone;
+       off-screen they now sample every 8th frame. */
     const loop = (t: number) => {
       if (!alive) return;
+      if (!onScreen && ++idle < 8) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      idle = 0;
       const r = el.getBoundingClientRect();
       const vh = window.innerHeight || 800;
-      if (r.bottom > -160 && r.top < vh + 160) {
+      onScreen = r.bottom > -160 && r.top < vh + 160;
+      if (onScreen) {
         /* p: +1 fully below viewport center → 0 centered → −1 fully above */
         const p = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
         let tRx: number, tTy: number, tSc: number, tOp: number;
