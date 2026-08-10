@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import fs from 'fs';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // Cloudflare Pages SPA routing: copy index.html → 404.html so all routes serve the app
 function cloudflareSpaPulgin() {
   return {
@@ -20,7 +22,7 @@ function cloudflareSpaPulgin() {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cloudflareSpaPulgin()],
+  plugins: [react(), tailwindcss(), cloudflareSpaPulgin(), cloudflare()],
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
