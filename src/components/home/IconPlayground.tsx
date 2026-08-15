@@ -246,8 +246,18 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
       // rAF render loop; physics only steps while the hero is on screen
       // (plain rect check — IntersectionObserver misreports in some
       // embedded/emulated viewports and would freeze the scene)
+      //
+      // PERF: this used to call getBoundingClientRect() on every single frame,
+      // forever. That is a forced synchronous layout 60x/sec for the whole life
+      // of the page, and it kept costing even while the hero was scrolled far
+      // out of view — one of the two things that made the page feel sticky on
+      // slower machines. The visibility answer changes at scroll speed, not at
+      // frame speed, so it is now sampled every 10th frame and cached, and once
+      // off screen the loop idles instead of running a full-rate no-op.
       let raf = 0;
       let alive = true;
+      let sinceCheck = 1e9; // force a check on the very first frame
+      let onScreen = true;
       const sync = () => {
         for (let i = 0; i < bodies.length; i++) {
           const el = tileRefs.current[i];
@@ -258,13 +268,18 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
       };
       const loop = () => {
         if (!alive) return;
-        const r = container.getBoundingClientRect();
-        const vh = window.innerHeight || document.documentElement.clientHeight || 900;
-        if (r.bottom > 0 && r.top < vh) {
-          Engine.update(engine, 1000 / 60);
-          sync();
-        }
         raf = requestAnimationFrame(loop);
+
+        if (++sinceCheck >= 10) {
+          sinceCheck = 0;
+          const r = container.getBoundingClientRect();
+          const vh = window.innerHeight || document.documentElement.clientHeight || 900;
+          onScreen = r.bottom > 0 && r.top < vh;
+        }
+        if (!onScreen || document.hidden) return;
+
+        Engine.update(engine, 1000 / 60);
+        sync();
       };
       raf = requestAnimationFrame(loop);
 

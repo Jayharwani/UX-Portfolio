@@ -111,8 +111,13 @@ export default function MemoryParticles({
          devices. Half the pixels and roughly a third of the particles there —
          the effect still reads, the frame budget survives. */
       const cores = (navigator as any).hardwareConcurrency || 4;
+      const memGB = (navigator as any).deviceMemory ?? 8;
       const coarse = window.matchMedia("(pointer: coarse)").matches;
-      const lowPower = coarse || cores <= 4 || window.innerWidth < 900;
+      /* `cores <= 4` was too narrow a definition of "slow". Plenty of the
+         laptops this felt bad on report 8 threads while running integrated
+         graphics, so they took the full desktop budget. Treat <= 6 threads or
+         <= 4 GB as low power too. */
+      const lowPower = coarse || cores <= 6 || memGB <= 4 || window.innerWidth < 900;
       const dpr = Math.min(lowPower ? 1.5 : 2, window.devicePixelRatio || 1);
       canvas.width = Math.round(heroRect.width * dpr);
       canvas.height = Math.round(heroRect.height * dpr);
@@ -212,8 +217,30 @@ export default function MemoryParticles({
         return pts;
       };
 
-      const restPts = sample("rest");
-      const wordPts = sample("word");
+      const restPtsRaw = sample("rest");
+      const wordPtsRaw = sample("word");
+
+      /* Hard ceiling on the particle count.
+         The stride above adapts to hero size but has no upper bound, so a wide
+         desktop hero was producing on the order of 7,000 particles — and every
+         one of them costs a globalAlpha assignment plus a fillRect on every
+         frame of the intro. That is the hero stuttering on exactly the machines
+         this was reported on. Cap the total and thin evenly across the sampled
+         points, which keeps the glyph shapes intact (an even stride reads as
+         "sparser text", where truncating the tail would lop off whole letters).
+         Word particles carry the recurring dissolve loop, so they hold a larger
+         share of the budget than the one-shot intro scatter. */
+      const MAX_PARTS = lowPower ? 1800 : 4200;
+      const thin = <T,>(arr: T[], keep: number): T[] => {
+        if (arr.length <= keep || keep <= 0) return arr;
+        const out: T[] = [];
+        const stride = arr.length / keep;
+        for (let i = 0; i < keep; i++) out.push(arr[Math.floor(i * stride)]);
+        return out;
+      };
+      const wordKeep = Math.min(wordPtsRaw.length, Math.round(MAX_PARTS * 0.42));
+      const restPts = thin(restPtsRaw, MAX_PARTS - wordKeep);
+      const wordPts = thin(wordPtsRaw, wordKeep);
 
       /* color buckets keep fillStyle switches cheap */
       const BUCKETS = ["#E8ECF3", "#C7CFDD", "#AAB6CB", "#9FBBFF", "#7FA4FF", "#5B8CFF"];
@@ -296,10 +323,22 @@ export default function MemoryParticles({
       };
       const pointer = { x: -9999, y: -9999, active: false };
 
-      const onMove = (e: PointerEvent) => {
+      /* PERF: this read hero.getBoundingClientRect() on every pointermove,
+         which forces a synchronous layout for each of the 60–120 move events a
+         second a mouse produces — on the hero, the first thing anyone touches.
+         The hero's offset only changes when the page scrolls or resizes, so
+         cache it and refresh on those two events instead. */
+      let heroLeft = 0;
+      let heroTop = 0;
+      const readHeroOffset = () => {
         const r = hero.getBoundingClientRect();
-        pointer.x = e.clientX - r.left;
-        pointer.y = e.clientY - r.top;
+        heroLeft = r.left;
+        heroTop = r.top;
+      };
+      readHeroOffset();
+      const onMove = (e: PointerEvent) => {
+        pointer.x = e.clientX - heroLeft;
+        pointer.y = e.clientY - heroTop;
         pointer.active = true;
       };
       const onLeave = () => {
@@ -309,9 +348,13 @@ export default function MemoryParticles({
       };
       hero.addEventListener("pointermove", onMove);
       hero.addEventListener("pointerleave", onLeave);
+      window.addEventListener("scroll", readHeroOffset, { passive: true });
+      window.addEventListener("resize", readHeroOffset);
       cleanupFns.push(() => {
         hero.removeEventListener("pointermove", onMove);
         hero.removeEventListener("pointerleave", onLeave);
+        window.removeEventListener("scroll", readHeroOffset);
+        window.removeEventListener("resize", readHeroOffset);
       });
 
       /* ── the frame ── */

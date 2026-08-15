@@ -34,6 +34,25 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
       },
+      output: {
+        /*
+         * Vendor code was landing in one 503 KB main chunk together with the
+         * homepage, so any change to the site busted the cache on all of it and
+         * the browser had to parse the lot before first paint.
+         *
+         * These libraries change only when they are upgraded, so they are split
+         * out to be cached across deploys and fetched in parallel. Only split
+         * what the homepage genuinely needs up front — lucide-react is left
+         * alone deliberately, since it is imported solely by the lazy
+         * case-study routes and grouping it here would pull it onto the
+         * homepage's critical path.
+         */
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router'],
+          motion: ['motion'],
+          scroll: ['gsap', 'lenis'],
+        },
+      },
     },
   },
   server: {

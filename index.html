@@ -15,8 +15,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-    <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Expanded:wght@500;600;700&family=Caveat:wght@600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!--
+      Font loading is split by priority.
+
+      Fontshare carries Clash Display + General Sans — the --font-display and
+      --font-body tokens the hero renders in. That one stays render-blocking so
+      the first thing a visitor sees is already in the right typeface.
+
+      Google carries the secondary/case-study faces. It loads async (media=print
+      flipped to all on load) so first paint is never gated on a second
+      third-party round trip. Everything below the fold has swapped in long
+      before it is scrolled to.
+
+      Removed here: Archivo (0 uses), Archivo Expanded (0 uses, and not a real
+      Google family — the request was always discarded), Caveat (0 uses).
+      Playfair is requested at 400..500 only, in italic and upright: every use
+      in the app is italic, but the old URL asked for six upright weights and no
+      italic at all, so the browser was downloading faces it never used and
+      faking the slant. Variable ranges (400..700) fetch one file per family
+      instead of one per weight.
+    -->
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&family=Syne:wght@400..800&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all';this.onload=null"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&family=Syne:wght@400..800&display=swap"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&family=Syne:wght@400..800&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
