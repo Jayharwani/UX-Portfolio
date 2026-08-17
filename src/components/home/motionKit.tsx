@@ -2,7 +2,6 @@ import {
   motion,
   useMotionValue,
   useSpring,
-  useTransform,
   useReducedMotion,
   type MotionValue,
 } from "motion/react";
@@ -144,8 +143,17 @@ export function useDiorama(
     if (!el || !ambientOn || !interactive) return;
     let raf = 0;
     let alive = true;
-    let idle = 0;
-    let onScreen = true;
+    let onScreen = false;
+
+    /* Visibility and size both come from observers, so the loop itself never
+       touches the layout. An earlier version of this fix polled
+       getBoundingClientRect() once per frame just to decide whether the
+       section was on screen — with three sections that is three forced layouts
+       every frame, interleaved with the motion-value writes that dirty style,
+       which is precisely the read/write/read pattern that makes scrolling
+       stutter. It was worse than the bug it replaced.
+       A false negative from the observer is harmless here: the worst case is
+       that an ambient flourish pauses. */
     let w = el.offsetWidth;
     let h = el.offsetHeight;
     const ro = new ResizeObserver(() => {
@@ -153,31 +161,39 @@ export function useDiorama(
       h = el.offsetHeight;
     });
     ro.observe(el);
+
     const drift = (t: number) => {
       if (!alive) return;
       raf = requestAnimationFrame(drift);
-      if (!onScreen && ++idle < 8) return;
-      idle = 0;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 800;
-      onScreen = r.bottom > 0 && r.top < vh;
-      if (!onScreen) return;
+      if (!onScreen || document.hidden) return;
       if (performance.now() - lastMove.current > 4000) {
         mx.set(w / 2 + Math.sin(t / 2400) * w * 0.28);
         my.set(h / 2 + Math.cos(t / 3100) * h * 0.22);
       }
     };
-    raf = requestAnimationFrame(drift);
-    const onVis = () => {
-      cancelAnimationFrame(raf);
-      if (!document.hidden && alive) raf = requestAnimationFrame(drift);
-    };
-    document.addEventListener("visibilitychange", onVis);
+
+    /* No webview guard on this one, unlike the other two: the drift is purely
+       ambient, so a browser that never delivers observer callbacks simply gets
+       a still spotlight rather than anything that looks broken. Not worth
+       spending frames to rescue. */
+    const io = new IntersectionObserver(
+      ([e]) => {
+        onScreen = e.isIntersecting;
+        if (onScreen && !raf) raf = requestAnimationFrame(drift);
+        if (!onScreen && raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      },
+      { rootMargin: "80px" }
+    );
+    io.observe(el);
+
     return () => {
       alive = false;
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
+      io.disconnect();
       ro.disconnect();
-      document.removeEventListener("visibilitychange", onVis);
     };
   }, [ref, ambientOn, interactive, mx, my]);
 
@@ -190,42 +206,85 @@ export function useDiorama(
     if (!el || !scrollDrive) return;
     let raf = 0;
     let alive = true;
-    let idle = 0;
-    let onScreen = true;
-    /* getBoundingClientRect() forces a synchronous layout, and several of
-       these loops run at once. Off-screen we sample it every 8th frame
-       instead of every frame — ~90% less layout work while scrolling past,
-       and it self-corrects (the rect read is what tells us we're back). */
+    let onScreen = false;
+
+    /* This is scroll-linked, so it genuinely needs to know where the section
+       sits every frame — but it does NOT need a fresh getBoundingClientRect to
+       find out. The section's position in the document only changes when the
+       layout above it changes; what moves each frame is the scroll offset. So
+       measure once, then derive `top` from window.scrollY, which is a far
+       cheaper read and identical for every one of these loops in the same
+       frame. Re-measure on the events that can actually invalidate it, plus a
+       slow safety tick for late-loading content above. */
+    let docTop = 0;
+    let elW = 0;
+    let elH = 0;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      docTop = r.top + window.scrollY;
+      elW = r.width;
+      elH = r.height;
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+
+    let sinceMeasure = 0;
     const loop = (t: number) => {
       if (!alive) return;
-      if (onScreen || ++idle >= 8) {
-        idle = 0;
-        const r = el.getBoundingClientRect();
-        const vh = window.innerHeight || 800;
-        onScreen = r.bottom > -80 && r.top < vh + 80;
-        if (onScreen) {
-          /* +1 when the section is below the viewport, 0 centered, −1 above */
-          const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
-          if (tilt) {
-            rx.set(prog * maxX * 0.9);
-            ry.set(Math.sin(t / 2600) * maxY * 0.22);
-          }
-          mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
-          my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
-        }
-      }
       raf = requestAnimationFrame(loop);
+      if (!onScreen || document.hidden) return;
+      if (++sinceMeasure >= 30) {
+        sinceMeasure = 0;
+        measure();
+      }
+      const vh = window.innerHeight || 800;
+      const top = docTop - window.scrollY;
+      /* +1 when the section is below the viewport, 0 centered, −1 above */
+      const prog = Math.max(-1, Math.min(1, (top + elH / 2 - vh / 2) / (vh / 2 + elH / 2)));
+      if (tilt) {
+        rx.set(prog * maxX * 0.9);
+        ry.set(Math.sin(t / 2600) * maxY * 0.22);
+      }
+      mx.set(elW / 2 + Math.sin(t / 2400) * elW * 0.3);
+      my.set(elH * 0.4 + Math.cos(t / 3100) * elH * 0.22 - prog * elH * 0.18);
     };
-    raf = requestAnimationFrame(loop);
-    const onVis = () => {
-      if (document.hidden) cancelAnimationFrame(raf);
-      else raf = requestAnimationFrame(loop);
-    };
-    document.addEventListener("visibilitychange", onVis);
+
+    /* one synchronous pass on entry, then it self-schedules — same reasoning
+       as MobileScroll3D, including the guard for webviews that accept an
+       observer and never deliver to it */
+    let ioFired = false;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        ioFired = true;
+        onScreen = e.isIntersecting;
+        if (onScreen) {
+          measure();
+          if (!raf) loop(performance.now());
+        } else if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      },
+      { rootMargin: "80px" }
+    );
+    io.observe(el);
+
+    const ioGuard = window.setTimeout(() => {
+      if (ioFired || !alive) return;
+      onScreen = true;
+      measure();
+      if (!raf) loop(performance.now());
+    }, 1200);
+
     return () => {
       alive = false;
-      cancelAnimationFrame(raf);
-      document.removeEventListener("visibilitychange", onVis);
+      window.clearTimeout(ioGuard);
+      if (raf) cancelAnimationFrame(raf);
+      io.disconnect();
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
     };
   }, [ref, scrollDrive, tilt, maxX, maxY, mx, my, rx, ry]);
 
@@ -265,11 +324,18 @@ export function MobileScroll3D({
 }) {
   const [enabled] = useState(detectTouchMotion);
   const ref = useRef<HTMLDivElement>(null);
-  const rx = useMotionValue(maxTilt);
+  /* Resting values, NOT the "entering" pose (tilted back, dimmed, pushed away).
+     If the driving loop never runs — a browser where IntersectionObserver does
+     not deliver, which does happen in some in-app webviews — a card seeded with
+     the entering pose stays dim and tilted forever, which looks broken. Seeded
+     neutral, the worst case is simply that the effect is absent. The loop snaps
+     to the true pose on its first tick, and because it starts 160px before the
+     card is visible, that snap happens off screen. */
+  const rx = useMotionValue(0);
   const ry = useMotionValue(0);
-  const ty = useMotionValue(lift);
-  const sc = useMotionValue(0.9);
-  const op = useMotionValue(0.5);
+  const ty = useMotionValue(0);
+  const sc = useMotionValue(1);
+  const op = useMotionValue(1);
 
   useEffect(() => {
     if (!enabled) return;
@@ -282,24 +348,40 @@ export function MobileScroll3D({
     let cTy = lift;
     let cSc = 0.9;
     let cOp = 0.5;
-    let idle = 0;
-    let onScreen = true;
-    /* three of these run at once (How I work, About, Contact). Sampling the
-       rect every frame from each was a third of the scroll cost on a phone;
-       off-screen they now sample every 8th frame. */
+    let onScreen = false;
+    /* Three of these run at once (How I work, About, Contact) and each one used
+       to take a getBoundingClientRect every frame — on a phone that was a large
+       share of the scroll budget, and it is avoidable: the card's position in
+       the document is stable, only the scroll offset moves. Measure once, derive
+       from window.scrollY, and let an IntersectionObserver decide when to run at
+       all. Re-measure on resize, on the card's own size changes, and on a slow
+       tick so late-loading content above cannot leave it stale. */
+    let docTop = 0;
+    let elH = 0;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      docTop = r.top + window.scrollY;
+      elH = r.height;
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+
+    let sinceMeasure = 0;
     const loop = (t: number) => {
       if (!alive) return;
-      if (!onScreen && ++idle < 8) {
-        raf = requestAnimationFrame(loop);
-        return;
+      raf = requestAnimationFrame(loop);
+      if (!onScreen || document.hidden) return;
+      if (++sinceMeasure >= 30) {
+        sinceMeasure = 0;
+        measure();
       }
-      idle = 0;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 800;
-      onScreen = r.bottom > -160 && r.top < vh + 160;
-      if (onScreen) {
+      {
+        const vh = window.innerHeight || 800;
+        const top = docTop - window.scrollY;
         /* p: +1 fully below viewport center → 0 centered → −1 fully above */
-        const p = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
+        const p = Math.max(-1, Math.min(1, (top + elH / 2 - vh / 2) / (vh / 2 + elH / 2)));
         let tRx: number, tTy: number, tSc: number, tOp: number;
         if (p >= 0) {
           // entering from below: tilt back, sit low, pushed away, dimmed
@@ -334,12 +416,49 @@ export function MobileScroll3D({
         sc.set(cSc);
         op.set(cOp);
       }
-      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
+
+    /* Run one pass synchronously on entry rather than waiting for the next
+       frame, so there is no gap between becoming visible and the first tick.
+       loop() schedules its own successor, so this both paints now and starts
+       it. */
+    let ioFired = false;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        ioFired = true;
+        onScreen = e.isIntersecting;
+        if (onScreen) {
+          measure();
+          if (!raf) loop(performance.now());
+        } else if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      },
+      { rootMargin: "160px" }
+    );
+    io.observe(el);
+
+    /* Fallback for browsers that accept an observer and then never deliver to
+       it — some embedded webviews do exactly that, which is why this file used
+       plain rect polling before. If nothing has arrived shortly after mount,
+       drive the loop unconditionally: it costs a little idle work off screen,
+       and it is the difference between the effect being absent and the card
+       being stuck in a pose. */
+    const ioGuard = window.setTimeout(() => {
+      if (ioFired || !alive) return;
+      onScreen = true;
+      measure();
+      if (!raf) loop(performance.now());
+    }, 1200);
+
     return () => {
       alive = false;
-      cancelAnimationFrame(raf);
+      window.clearTimeout(ioGuard);
+      if (raf) cancelAnimationFrame(raf);
+      io.disconnect();
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
     };
   }, [enabled, maxTilt, lift, rx, ry, ty, sc, op]);
 
@@ -366,26 +485,26 @@ export function MobileScroll3D({
 
 /* the lit dot grid. Interactive: spotlight pool + brighter dots near the
    cursor. Touch / reduced motion: a static soft glow. */
-/* Radius of the two moving layers. The elements are fixed at this size with a
-   STATIC gradient baked in and are moved by transform, so the compositor can
-   slide them around without ever repainting — the previous version rebuilt a
-   gradient string into `background` and `mask-image` on every frame. */
+/* The light is one fixed-size element with a STATIC gradient baked in, moved by
+   transform, so the compositor slides it without repainting. The original
+   version rebuilt a gradient string into `background` every frame, which
+   repainted a section-sized layer each time. */
 const LIGHT_R = 320;
-const DOTS_R = 260;
 
 export function Ambience({ d, entered = true }: { d: Diorama; entered?: boolean }) {
   const dotGrid: React.CSSProperties = {
     backgroundImage: "radial-gradient(rgba(106,116,136,0.35) 1px, transparent 1px)",
     backgroundSize: "34px 34px",
   };
-  /* The bright dots live inside the moving mask, so on their own they would
-     slide with it and the grid would visibly swim against the static dots
-     underneath. Counter-translating the inner layer by the same amount pins
-     the pattern to the section while the mask travels over it. Both halves are
-     transforms, so this stays composited. */
-  const dotsX = useTransform(d.smx, (v) => DOTS_R - v);
-  const dotsY = useTransform(d.smy, (v) => DOTS_R - v);
 
+  /* There used to be a second moving layer here: brighter dots revealed through
+     a travelling mask. It is gone deliberately. The drift animation keeps the
+     light moving whenever the section is on screen and the pointer has been
+     still — which is exactly what happens while someone scrolls — so that
+     masked layer was re-rasterizing on every scroll frame, and an animated mask
+     is the one thing the compositor cannot take off the main thread. Dropping
+     it removes a mask and an oversized child layer per section; the pool of
+     light was always the part that actually reads. */
   return (
     <motion.div
       aria-hidden="true"
@@ -394,60 +513,21 @@ export function Ambience({ d, entered = true }: { d: Diorama; entered?: boolean 
       animate={entered ? { opacity: 1 } : undefined}
       transition={{ duration: d.reduce ? 0.2 : 1.1, ease: EXPO }}
     >
-      <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.12 }} />
+      <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.14 }} />
       {d.live ? (
-        <>
-          {/* brighter dots, revealed by a static mask that travels with the light */}
-          <motion.div
-            className="absolute top-0 left-0 overflow-hidden"
-            style={{
-              width: DOTS_R * 2,
-              height: DOTS_R * 2,
-              marginLeft: -DOTS_R,
-              marginTop: -DOTS_R,
-              maskImage: "radial-gradient(circle closest-side, #000 25%, transparent 75%)",
-              WebkitMaskImage: "radial-gradient(circle closest-side, #000 25%, transparent 75%)",
-              x: d.smx,
-              y: d.smy,
-              willChange: "transform",
-            }}
-          >
-            {/* Deliberately far larger than the mask window: it is pinned to
-                the section origin while the window travels, so it has to be big
-                enough to still be under the window when the light reaches the
-                far corner of a section. maxWidth is reset because globals.css
-                sets `* { max-width: 100% }`, which was silently clamping this
-                to the parent's 520px and leaving the far side of the light with
-                no bright dots under it. */}
-            <motion.div
-              className="absolute top-0 left-0"
-              style={{
-                ...dotGrid,
-                opacity: 0.5,
-                width: 2400,
-                height: 2400,
-                maxWidth: "none",
-                maxHeight: "none",
-                x: dotsX,
-                y: dotsY,
-              }}
-            />
-          </motion.div>
-          {/* the pool of light itself */}
-          <motion.div
-            className="absolute top-0 left-0"
-            style={{
-              width: LIGHT_R * 2,
-              height: LIGHT_R * 2,
-              marginLeft: -LIGHT_R,
-              marginTop: -LIGHT_R,
-              background: "radial-gradient(circle closest-side, rgba(91,140,255,0.13), transparent 70%)",
-              x: d.smx,
-              y: d.smy,
-              willChange: "transform",
-            }}
-          />
-        </>
+        <motion.div
+          className="absolute top-0 left-0"
+          style={{
+            width: LIGHT_R * 2,
+            height: LIGHT_R * 2,
+            marginLeft: -LIGHT_R,
+            marginTop: -LIGHT_R,
+            background: "radial-gradient(circle closest-side, rgba(91,140,255,0.15), transparent 70%)",
+            x: d.smx,
+            y: d.smy,
+            willChange: "transform",
+          }}
+        />
       ) : (
         <div
           className="absolute inset-0"
