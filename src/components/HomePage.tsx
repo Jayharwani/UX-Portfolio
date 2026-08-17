@@ -365,19 +365,68 @@ function Hero() {
      system samples each [data-line] span as its own text run — a reflowed line
      would resample at a different width and the assembly would land crooked.
      The <em> is the phrase the particle loop periodically dissolves, so it is
-     "out of the way." here: the words literally get out of the way. */
-  const lines: ReactNode[] = [
-    "I design interfaces",
-    <>
-      that get{" "}
-      <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
-        out of the way.
-      </em>
-    </>,
-    "Because the ultimate",
-    "user experience is",
-    "closing the laptop.",
+     "out of the way." here: the words literally get out of the way.
+
+     Two tiers, because the second sentence is a punchline and five lines at one
+     size delivered it at the same volume as the setup, which is what made the
+     block read as a wall. The lead states the position; the kicker drops to
+     quiet body type and lets the joke land deadpan. It also cuts the headline
+     block roughly in half. Per-line sizing is safe: MemoryParticles reads
+     getComputedStyle on each [data-line] span, so it samples each tier at its
+     own size, and keeping the kicker as a bare text node (not a wrapper
+     element) keeps it in the sampler's white text branch rather than the blue
+     accent branch reserved for the em. */
+  type HeroLine = { node: ReactNode; kicker?: boolean; gap?: boolean };
+  const lines: HeroLine[] = [
+    { node: "I design interfaces" },
+    {
+      node: (
+        <>
+          that get{" "}
+          <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
+            out of the way.
+          </em>
+        </>
+      ),
+    },
+    { node: "Because the ultimate user experience", kicker: true, gap: true },
+    { node: "is closing the laptop.", kicker: true },
   ];
+
+  const leadLine: React.CSSProperties = {
+    fontFamily: V.display,
+    fontWeight: 600,
+    fontSize: "clamp(1.5rem, 5.2vw, 3.4rem)",
+    lineHeight: 1.06,
+    /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
+       track plus a touch of word-spacing separates the words again. */
+    letterSpacing: "-0.015em",
+    wordSpacing: "0.04em",
+    color: V.text,
+  };
+  /* The kicker stays in the display face rather than dropping to muted body
+     type: the bio line directly beneath it is already General Sans in --text-2,
+     so a muted body kicker produced two near-identical grey blocks in a row and
+     the punchline read as just another paragraph. Same family and colour as the
+     lead, roughly half the size and a step lighter — subordinate, but still
+     clearly the end of the sentence rather than the start of the bio. */
+  const kickerLine: React.CSSProperties = {
+    fontFamily: V.display,
+    fontWeight: 500,
+    /* Upper bound keeps the widest kicker line narrower than the widest lead
+       line; a subordinate tier that measures wider than the one above it makes
+       centred text look like it is falling over.
+       Lower bound matters for a different reason: "Because the ultimate user
+       experience" is the longest string in the headline, and at 1.05rem it left
+       only 11px of slack in a 360px column. Because the breaks are authored for
+       the particle sampler, a wrap here would not just look wrong, it would
+       resample that line at the wrong width. 0.95rem buys ~40px of slack. */
+    fontSize: "clamp(0.95rem, 2.4vw, 1.6rem)",
+    lineHeight: 1.28,
+    letterSpacing: "-0.01em",
+    wordSpacing: "0.03em",
+    color: V.text,
+  };
 
   return (
     <section ref={heroRef} className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
@@ -445,23 +494,21 @@ function Hero() {
                 ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
                 : { duration: 0.8, ease: EASE }
             }
-            style={{
-              fontFamily: V.display,
-              fontWeight: 600,
-              /* Sized down from clamp(3rem, 8.4vw, 6.6rem): the headline went
-                 from three short lines to five longer ones, and the widest
-                 ("that get out of the way.") has to sit inside the 820px copy
-                 column at desktop and inside 360px minus gutters on a phone. */
-              fontSize: "clamp(1.75rem, 5.6vw, 3.8rem)",
-              lineHeight: 1.06,
-              letterSpacing: "-0.02em",
-              color: V.text,
-              margin: 0,
-            }}
+            /* type now lives per line (leadLine / kickerLine) so the two tiers
+               can differ; the h1 only carries what they share */
+            style={{ color: V.text, margin: 0 }}
           >
             {lines.map((line, i) => (
-              <span key={i} data-line className="block">
-                {line}
+              <span
+                key={i}
+                data-line
+                className="block"
+                style={{
+                  ...(line.kicker ? kickerLine : leadLine),
+                  ...(line.gap ? { marginTop: "0.85em" } : null),
+                }}
+              >
+                {line.node}
               </span>
             ))}
           </motion.h1>
