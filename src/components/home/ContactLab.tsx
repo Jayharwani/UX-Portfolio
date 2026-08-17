@@ -7,7 +7,7 @@ import {
 } from "motion/react";
 import { useState, useEffect, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 import { EnvelopeSimple, CopySimple, LinkedinLogo } from "@phosphor-icons/react";
-import { MobileScroll3D, useDiorama, Ambience } from "./motionKit";
+import { MobileScroll3D, useDiorama, Ambience, useOnScreen } from "./motionKit";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Contact: a live interaction lab that is also the CTA.
@@ -310,6 +310,8 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
   const [open, setOpen] = useState(false);
   const [compact, setCompact] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* the sigil ring spins forever; only spin it while it can be seen */
+  const visible = useOnScreen(wrapRef);
   /* on touch the vault must not be a hold-to-see toy: once it is open it
      STAYS open (no blur-close), and it opens itself the first time it comes
      into view so the trick is never missed. */
@@ -618,7 +620,7 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
             viewBox="0 0 120 120"
             width="108"
             height="108"
-            animate={reduce ? undefined : { rotate: 360 }}
+            animate={reduce || !visible ? undefined : { rotate: 360 }}
             transition={{ duration: 34, repeat: Infinity, ease: "linear" }}
           >
             <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(91,140,255,0.34)" strokeWidth="1.2" strokeDasharray="3 7" />
@@ -692,6 +694,7 @@ export function ContactSection() {
      so this is a straight swap. */
   const d = useDiorama(sectionRef);
   const { interactive, live, tiltOn, ambientOn, srx, sry } = d;
+  const visible = useOnScreen(sectionRef);
 
   /* entrance variants */
   const enter = (i: number, dy = 24) => ({
@@ -868,7 +871,7 @@ export function ContactSection() {
           <span className="inline-flex items-center gap-2" style={{ ...label, fontSize: 10.5, letterSpacing: "0.12em" }}>
             <motion.span
               style={{ width: 6, height: 6, borderRadius: 999, background: LIVE, boxShadow: `0 0 8px ${LIVE}` }}
-              animate={reduce ? {} : { opacity: [0.9, 0.35, 0.9], scale: [1, 0.85, 1] }}
+              animate={reduce || !visible ? {} : { opacity: [0.9, 0.35, 0.9], scale: [1, 0.85, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />
             MICRO-INTERACTIONS · LIVE

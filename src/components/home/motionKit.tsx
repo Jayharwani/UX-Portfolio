@@ -36,6 +36,27 @@ export function useMediaFlags() {
   return { reduce, fine, wide };
 }
 
+/* Is this element on screen right now?
+   Looping decorations (`repeat: Infinity`) keep running for the life of the
+   page otherwise — a DevTools recording of the site showed the Animations track
+   solid for 47 seconds straight, because roughly a dozen of them never stop
+   whether or not anyone can see them. Framer drives those from the main thread,
+   so each one is a style write every frame, forever. Gate them on this.
+   Defaults to true so that a browser which accepts an observer and never
+   delivers to it (some in-app webviews) shows the animation rather than a
+   frozen decoration. */
+export function useOnScreen(ref: RefObject<Element>, rootMargin = "120px") {
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, rootMargin]);
+  return onScreen;
+}
+
 export interface Diorama {
   interactive: boolean;
   /** any live motion source — cursor (desktop) or scroll (touch) */

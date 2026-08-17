@@ -18,7 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
-import { useDiorama, Ambience, MobileScroll3D } from "./home/motionKit";
+import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -999,6 +999,9 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { margin: "-35% 0px -35% 0px" });
+  /* `inView` is deliberately narrow (it drives the touch "active" state near the
+     centre of the screen). The looping dot needs plain visibility. */
+  const visible = useOnScreen(ref);
   const [coarse, setCoarse] = useState(false);
   useEffect(() => {
     setCoarse(window.matchMedia("(pointer: coarse)").matches);
@@ -1123,6 +1126,10 @@ function ToolchainCard() {
   const [shine, setShine] = useState({ x: 50, y: 50, on: false });
   const [hoverRow, setHoverRow] = useState(-1);
   const [typed, setTyped] = useState("");
+  /* The typing loop below re-renders this component roughly twenty times a
+     second, and it used to do so for the entire life of the page whether or not
+     the card was anywhere near the viewport. Gate it on visibility. */
+  const visible = useOnScreen(cardRef);
 
   const tools = [
     { icon: TerminalWindow, name: "Claude Code", role: "Ships production React from my terminal" },
@@ -1138,6 +1145,7 @@ function ToolchainCard() {
       setTyped(lines[2]);
       return;
     }
+    if (!visible) return;
     let li = 0;
     let ci = 0;
     let deleting = false;
@@ -1165,7 +1173,7 @@ function ToolchainCard() {
     };
     t = window.setTimeout(step, 1200);
     return () => clearTimeout(t);
-  }, [reduce]);
+  }, [reduce, visible]);
 
   return (
     <div style={{ perspective: 1100 }}>
@@ -1290,7 +1298,7 @@ function ToolchainCard() {
             <motion.span
               aria-hidden="true"
               style={{ width: 7, height: 15, background: V.accent, display: "inline-block" }}
-              animate={reduce ? {} : { opacity: [1, 0, 1] }}
+              animate={reduce || !visible ? {} : { opacity: [1, 0, 1] }}
               transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
             />
           </div>
@@ -1419,6 +1427,9 @@ function About() {
   const d = useDiorama(sectionRef, { maxX: 3.5, maxY: 4.5 });
   const frameRef = useRef<HTMLDivElement>(null);
   const inView = useInView(frameRef, { once: true, margin: "-15% 0px" });
+  /* `inView` above is once:true — it latches on and never turns off, so it
+     cannot gate a looping animation. This one tracks visibility both ways. */
+  const visible = useOnScreen(sectionRef);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   const chips = [
@@ -1444,8 +1455,12 @@ function About() {
             <motion.div
               aria-hidden="true"
               className="absolute pointer-events-none"
-              style={{ inset: -34, background: "radial-gradient(60% 60% at 50% 50%, rgba(91,140,255,0.16), transparent 70%)", filter: "blur(6px)" }}
-              animate={reduce ? {} : { opacity: [0.6, 1, 0.6] }}
+              /* blur(6px) dropped: a radial gradient is already soft, so it was
+                 an invisible filter pass — and animating opacity through a
+                 filter forces the filtered region to be repainted every frame
+                 rather than just re-composited. */
+              style={{ inset: -34, background: "radial-gradient(60% 60% at 50% 50%, rgba(91,140,255,0.16), transparent 70%)" }}
+              animate={reduce || !visible ? {} : { opacity: [0.6, 1, 0.6] }}
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
             />
 
@@ -1508,7 +1523,7 @@ function About() {
                   <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 11, color: V.text2, letterSpacing: "0.08em" }}>
                     <motion.span
                       style={{ width: 5, height: 5, borderRadius: 999, background: V.accent, boxShadow: "0 0 7px rgba(91,140,255,0.9)" }}
-                      animate={reduce ? {} : { opacity: [1, 0.35, 1] }}
+                      animate={reduce || !visible ? {} : { opacity: [1, 0.35, 1] }}
                       transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                     />
                     JAY HARWANI
@@ -1543,7 +1558,7 @@ function About() {
               >
                 <motion.span
                   className="inline-block"
-                  animate={reduce ? {} : { y: [0, -4, 0] }}
+                  animate={reduce || !visible ? {} : { y: [0, -4, 0] }}
                   transition={{ duration: c.bob, repeat: Infinity, ease: "easeInOut", delay: i * 0.7 }}
                 >
                   {c.label}
