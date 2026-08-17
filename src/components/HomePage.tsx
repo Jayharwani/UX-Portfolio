@@ -235,9 +235,15 @@ function Nav() {
       initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
+      /* No backdrop-filter here, deliberately. This bar is position:fixed and
+         full width, so the content it is blurring moves under it on every
+         scroll frame — the browser has to re-sample and re-blur the whole strip
+         each time, for the entire duration of a scroll. It was the single most
+         expensive thing on the page while scrolling. The background was already
+         82% opaque, so the blur was contributing almost nothing; at 94% the bar
+         reads the same and costs nothing. */
       style={{
-        background: scrolled ? "rgba(10,14,22,0.82)" : "transparent",
-        backdropFilter: scrolled ? "blur(14px)" : "none",
+        background: scrolled ? "rgba(10,14,22,0.94)" : "transparent",
         borderBottom: `1px solid ${scrolled ? "var(--border)" : "transparent"}`,
         transition: "background 0.3s, border-color 0.3s",
       }}
@@ -280,8 +286,7 @@ function Nav() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease: EASE }}
           style={{
-            background: "rgba(17,23,37,0.96)",
-            backdropFilter: "blur(14px)",
+            background: "rgba(17,23,37,0.99)",
             border: `1px solid ${V.border}`,
             borderRadius: 12,
             overflow: "hidden",
@@ -557,9 +562,8 @@ function Hero() {
             bottom: 26,
             padding: "8px 14px",
             borderRadius: 999,
-            background: "rgba(22,29,46,0.85)",
+            background: "rgba(22,29,46,0.94)",
             border: `1px solid ${V.borderStrong}`,
-            backdropFilter: "blur(8px)",
             pointerEvents: "none",
           }}
           initial={{ opacity: 0, y: 8 }}
@@ -1497,7 +1501,9 @@ function About() {
                 )}
                 <div
                   className="absolute left-0 right-0 bottom-0 flex items-center justify-between"
-                  style={{ padding: "10px 14px", background: "rgba(10,14,22,0.72)", backdropFilter: "blur(8px)", borderTop: `1px solid ${V.border}` }}
+                  /* one of these per project card; blur dropped for the same
+                     reason as the nav — they sit over moving content */
+                  style={{ padding: "10px 14px", background: "rgba(10,14,22,0.9)", borderTop: `1px solid ${V.border}` }}
                 >
                   <span className="inline-flex items-center gap-2" style={{ fontFamily: V.mono, fontSize: 11, color: V.text2, letterSpacing: "0.08em" }}>
                     <motion.span
@@ -1523,11 +1529,10 @@ function About() {
                   fontSize: 10,
                   letterSpacing: "0.08em",
                   color: V.text2,
-                  background: "rgba(22,29,46,0.9)",
+                  background: "rgba(22,29,46,0.96)",
                   border: `1px solid ${V.borderStrong}`,
                   borderRadius: 999,
                   padding: "6px 11px",
-                  backdropFilter: "blur(6px)",
                   boxShadow: "0 10px 26px -10px rgba(0,0,0,0.6)",
                   whiteSpace: "nowrap",
                   zIndex: 2,

@@ -94,8 +94,10 @@ export function AboutPage() {
       <motion.header
         className="fixed top-0 left-0 right-0 z-50"
         style={{
-          backgroundColor: scrolled ? "rgba(250,250,247,0.88)" : "transparent",
-          backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+          /* blur removed: a fixed full-width bar re-blurs its backdrop on every
+             scroll frame, and blur+saturate is two filter passes. Opacity
+             raised to compensate. */
+          backgroundColor: scrolled ? "rgba(250,250,247,0.96)" : "transparent",
           borderBottom: scrolled ? "1px solid rgba(15,23,42,0.06)" : "1px solid transparent",
           transition: "background-color 0.3s, border-color 0.3s, backdrop-filter 0.3s",
         }}
@@ -171,8 +173,7 @@ export function AboutPage() {
             <nav
               className="flex flex-col gap-1 rounded-2xl p-4 shadow-2xl"
               style={{
-                backgroundColor: "rgba(255,255,255,0.95)",
-                backdropFilter: "blur(20px)",
+                backgroundColor: "rgba(255,255,255,0.99)",
                 border: "1px solid rgba(15,23,42,0.08)",
                 fontFamily: "DM Sans, sans-serif",
               }}
@@ -373,8 +374,7 @@ export function AboutPage() {
                 <div
                   className="absolute top-3 left-3 px-2.5 py-1 rounded"
                   style={{
-                    backgroundColor: "rgba(15,23,42,0.55)",
-                    backdropFilter: "blur(8px)",
+                    backgroundColor: "rgba(15,23,42,0.72)",
                   }}
                 >
                   <span
