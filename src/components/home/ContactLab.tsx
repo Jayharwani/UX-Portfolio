@@ -2,13 +2,12 @@ import {
   motion,
   useMotionValue,
   useSpring,
-  useMotionTemplate,
   useReducedMotion,
   useInView,
 } from "motion/react";
 import { useState, useEffect, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 import { EnvelopeSimple, CopySimple, LinkedinLogo } from "@phosphor-icons/react";
-import { MobileScroll3D } from "./motionKit";
+import { MobileScroll3D, useDiorama, Ambience } from "./motionKit";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Contact: a live interaction lab that is also the CTA.
@@ -670,14 +669,11 @@ export function ContactSection() {
   const inView = useInView(sectionRef, { once: true, amount: 0.3 });
   const [entered, setEntered] = useState(false);
   const [fine, setFine] = useState(false);
-  const [wide, setWide] = useState(false);
-  const highMotion = true; // the lab's toggle is gone; the section keeps its motion
 
   useEffect(() => {
     /* dev-only: ?touch=1 forces the touch path for desktop testing */
     const forceTouch = import.meta.env.DEV && new URLSearchParams(window.location.search).has("touch");
     setFine(forceTouch ? false : window.matchMedia("(pointer: fine)").matches);
-    setWide(window.matchMedia("(min-width: 1024px)").matches);
   }, []);
   useEffect(() => {
     if (inView) setEntered(true);
@@ -687,137 +683,15 @@ export function ContactSection() {
   const dur = 400;
   const easeCss = `cubic-bezier(${ease.join(",")})`;
 
-  const interactive = fine && !reduce;
-  const scrollDrive = !fine && !reduce; // touch: scroll drives the diorama
-  const live = interactive || scrollDrive;
-  const tiltOn = (interactive && wide && highMotion) || (scrollDrive && highMotion);
-  const ambientOn = live && highMotion;
-
-  /* ── section tilt (the diorama) ── */
-  const rx = useMotionValue(0);
-  const ry = useMotionValue(0);
-  const srx = useSpring(rx, SPRING.tilt);
-  const sry = useSpring(ry, SPRING.tilt);
-
-  /* ── cursor spotlight ── */
-  const mx = useMotionValue(-400);
-  const my = useMotionValue(-400);
-  const smx = useSpring(mx, SPRING.magnetic);
-  const smy = useSpring(my, SPRING.magnetic);
-  const spotlight = useMotionTemplate`radial-gradient(320px circle at ${smx}px ${smy}px, rgba(91,140,255,0.13), transparent 70%)`;
-  const dotMask = useMotionTemplate`radial-gradient(260px circle at ${smx}px ${smy}px, black, transparent 75%)`;
-  const lastMove = useRef(0);
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !interactive) return;
-    let raf = 0;
-    let px = 0;
-    let py = 0;
-    let queued = false;
-    const update = () => {
-      queued = false;
-      const r = el.getBoundingClientRect();
-      const lx = px - r.left;
-      const ly = py - r.top;
-      mx.set(lx);
-      my.set(ly);
-      if (tiltOn) {
-        const nx = (lx / r.width - 0.5) * 2;
-        const ny = (ly / r.height - 0.5) * 2;
-        ry.set(Math.max(-5.5, Math.min(5.5, nx * 5.5)));
-        rx.set(Math.max(-4.5, Math.min(4.5, ny * -4.5)));
-      } else {
-        rx.set(0);
-        ry.set(0);
-      }
-      lastMove.current = performance.now();
-    };
-    const onMove = (e: PointerEvent) => {
-      px = e.clientX;
-      py = e.clientY;
-      if (!queued) {
-        queued = true;
-        raf = requestAnimationFrame(update);
-      }
-    };
-    const onLeave = () => {
-      rx.set(0);
-      ry.set(0);
-    };
-    el.addEventListener("pointermove", onMove, { passive: true });
-    el.addEventListener("pointerleave", onLeave);
-    return () => {
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerleave", onLeave);
-      cancelAnimationFrame(raf);
-    };
-  }, [interactive, tiltOn, mx, my, rx, ry]);
-
-  /* idle drift (cursor mode): after 4s without movement, the spotlight wanders */
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !ambientOn || !interactive) return;
-    let raf = 0;
-    const drift = (t: number) => {
-      if (performance.now() - lastMove.current > 4000) {
-        const r = el.getBoundingClientRect();
-        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.28);
-        my.set(r.height / 2 + Math.cos(t / 3100) * r.height * 0.22);
-      }
-      raf = requestAnimationFrame(drift);
-    };
-    raf = requestAnimationFrame(drift);
-    return () => cancelAnimationFrame(raf);
-  }, [ambientOn, interactive, mx, my]);
-
-  /* scroll drive (touch): tilt follows the section through the viewport,
-     spotlight wanders — the mobile version is never static. Plain-rect
-     visibility check: IntersectionObserver misreports in some embedded
-     viewports (same workaround as the blocks playground). */
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !scrollDrive) return;
-    let raf = 0;
-    let alive = true;
-    let idle = 0;
-    let onScreen = true;
-    /* off-screen, sample the rect every 8th frame instead of every frame:
-       getBoundingClientRect forces layout and this is one of several loops
-       running together on the homepage. */
-    const loop = (t: number) => {
-      if (!alive) return;
-      if (!onScreen && ++idle < 8) {
-        raf = requestAnimationFrame(loop);
-        return;
-      }
-      idle = 0;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 800;
-      onScreen = r.bottom > -80 && r.top < vh + 80;
-      if (onScreen) {
-        const prog = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)));
-        if (tiltOn) {
-          rx.set(prog * 4.5 * 0.9);
-          ry.set(Math.sin(t / 2600) * 5.5 * 0.22);
-        }
-        mx.set(r.width / 2 + Math.sin(t / 2400) * r.width * 0.3);
-        my.set(r.height * 0.4 + Math.cos(t / 3100) * r.height * 0.22 - prog * r.height * 0.18);
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    const onVis = () => {
-      if (document.hidden) cancelAnimationFrame(raf);
-      else raf = requestAnimationFrame(loop);
-    };
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      alive = false;
-      cancelAnimationFrame(raf);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [scrollDrive, tiltOn, mx, my, rx, ry]);
+  /* This section used to carry its own copy of the diorama — the same tilt
+     springs, the same spotlight, the same three rAF loops as motionKit, about
+     130 lines duplicated. Keeping two copies in sync was already the stated
+     goal of motionKit ("one source of truth so Contact, About and How-I-Work
+     feel identical"), and the duplicate is what let the unguarded idle-drift
+     loop survive here after it was fixed there. Same tilt limits (4.5 / 5.5),
+     so this is a straight swap. */
+  const d = useDiorama(sectionRef);
+  const { interactive, live, tiltOn, ambientOn, srx, sry } = d;
 
   /* entrance variants */
   const enter = (i: number, dy = 24) => ({
@@ -825,11 +699,6 @@ export function ContactSection() {
     animate: entered ? { opacity: 1, y: 0 } : undefined,
     transition: reduce ? { duration: 0.2 } : { ...SPRING.snappy, delay: 0.28 + i * 0.07 },
   });
-
-  const dotGrid: CSSProperties = {
-    backgroundImage: "radial-gradient(rgba(106,116,136,0.35) 1px, transparent 1px)",
-    backgroundSize: "34px 34px",
-  };
 
   return (
     <section
@@ -847,31 +716,9 @@ export function ContactSection() {
            pointer-events: none is REQUIRED — these are full-bleed aria-hidden
            decorations, and without it they sit over the section's real
            controls (Email / copy / LinkedIn) and can swallow clicks. */}
-      <motion.div
-        aria-hidden="true"
-        className="absolute inset-0"
-        style={{ pointerEvents: "none" }}
-        initial={{ opacity: 0 }}
-        animate={entered ? { opacity: 1 } : undefined}
-        transition={{ duration: reduce ? 0.2 : 1.1, ease: EXPO }}
-      >
-        {/* base grid, very dim */}
-        <div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.12 }} />
-        {live ? (
-          <>
-            {/* brighter dots revealed near the light */}
-            <motion.div className="absolute inset-0" style={{ ...dotGrid, opacity: 0.5, maskImage: dotMask, WebkitMaskImage: dotMask }} />
-            {/* the pool of light itself */}
-            <motion.div className="absolute inset-0" style={{ background: spotlight }} />
-          </>
-        ) : (
-          /* touch / reduced motion: static soft glow */
-          <div
-            className="absolute inset-0"
-            style={{ background: "radial-gradient(420px circle at 60% 40%, rgba(91,140,255,0.08), transparent 70%)" }}
-          />
-        )}
-      </motion.div>
+      <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
+        <Ambience d={d} entered={entered} />
+      </div>
 
       {/* ── tilting diorama ── */}
       <motion.div

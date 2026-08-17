@@ -513,31 +513,14 @@ function Hero() {
             ))}
           </motion.h1>
 
-          {/* sub + CTA are gated on the assembly moment, not fixed clocks,
-              so they always land right after the headline does */}
-          <motion.p
-            className="md:mx-auto"
-            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
-            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
-            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.35 : 0.52 }}
-            style={{
-              fontFamily: V.body,
-              fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
-              lineHeight: 1.6,
-              color: V.text2,
-              marginTop: 28,
-              maxWidth: 460,
-            }}
-          >
-            I'm Jay. I design AI products and ship them as working code. HCI research at UMBC.
-          </motion.p>
-
+          {/* CTA is gated on the assembly moment, not a fixed clock, so it
+              always lands right after the headline does */}
           <motion.div
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
             animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
-            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.6 : 0.64 }}
+            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.45 : 0.52 }}
             className="flex flex-wrap items-center gap-4 md:justify-center"
-            style={{ marginTop: 30 }}
+            style={{ marginTop: 38 }}
           >
             <MagneticButton onClick={() => scrollToId("work")}>
               See the work <ArrowRight size={16} weight="bold" />
