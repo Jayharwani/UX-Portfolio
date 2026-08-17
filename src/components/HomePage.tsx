@@ -361,21 +361,28 @@ function Hero() {
   /* coarse pointer = tap mode for the blocks (no drag, page scroll wins) */
   const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
 
+  /* Line breaks are authored, not left to wrapping, because the particle
+     system samples each [data-line] span as its own text run — a reflowed line
+     would resample at a different width and the assembly would land crooked.
+     The <em> is the phrase the particle loop periodically dissolves, so it is
+     "out of the way." here: the words literally get out of the way. */
   const lines: ReactNode[] = [
-    "Designing AI",
-    "for the people",
+    "I design interfaces",
     <>
-      it{" "}
+      that get{" "}
       <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
-        forgets.
+        out of the way.
       </em>
     </>,
+    "Because the ultimate",
+    "user experience is",
+    "closing the laptop.",
   ];
 
   return (
     <section ref={heroRef} className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
       {/* the memory-particles layer: assembles the headline, then owns the
-          "forgets." dissolve loop. Skipped entirely under reduced motion. */}
+          "out of the way." dissolve loop. Skipped entirely under reduced motion. */}
       {particles && (
         <MemoryParticles
           heroRef={heroRef}
@@ -441,8 +448,12 @@ function Hero() {
             style={{
               fontFamily: V.display,
               fontWeight: 600,
-              fontSize: "clamp(3rem, 8.4vw, 6.6rem)",
-              lineHeight: 1.02,
+              /* Sized down from clamp(3rem, 8.4vw, 6.6rem): the headline went
+                 from three short lines to five longer ones, and the widest
+                 ("that get out of the way.") has to sit inside the 820px copy
+                 column at desktop and inside 360px minus gutters on a phone. */
+              fontSize: "clamp(1.75rem, 5.6vw, 3.8rem)",
+              lineHeight: 1.06,
               letterSpacing: "-0.02em",
               color: V.text,
               margin: 0,
@@ -562,7 +573,7 @@ function WhatIDo() {
               maxWidth: 520,
             }}
           >
-            I take products from research to shipped, working code. I do not stop at Figma.
+            Stopping at Figma is for cowards. I take products from raw research straight into shipped, front-end reality.
           </p>
         </Reveal>
         <Reveal delay={0.1}>
