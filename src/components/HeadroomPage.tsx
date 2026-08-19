@@ -1,12 +1,42 @@
-import { motion, useScroll, useSpring, useInView, useReducedMotion } from "motion/react";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useMotionValue,
+  useInView,
+  useReducedMotion,
+  type MotionValue,
+} from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { ArrowLeft, ArrowUpRight, ArrowDown, Plus } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ArrowDown } from "lucide-react";
 import { Footer } from "./Footer";
 
-/* ══════════════════════════════════════════════════════════ */
-/*  Tokens — Headroom editorial                               */
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   HEADROOM — case study, 60-second cut.
+
+   This page used to run fifteen sections. The argument was sound but it was
+   made repeatedly: "the problem" and "why another money app" both said that
+   rivals track the past and nobody answers the forward question, and the
+   restraint thesis ("what I left out", "constraints", iteration 04, "what I
+   learned") appeared four separate times in four different layouts. Three
+   phone showcases ran before the study even started.
+
+   It is six sections now, and the strongest material — six redesigns, told
+   honestly — is promoted from a static list at position four into the
+   centrepiece: a pinned sequence you scrub through.
+
+   MOTION BUDGET. This site has had three rounds of performance work, so the
+   rule here is that everything animates transform and opacity only. No
+   animated gradients, no animated mask-image, no animated filters — those
+   repaint instead of composite, which is exactly what was making the rest of
+   the site heavy. Scroll-linked values come from useScroll/useTransform
+   (one scroll listener, no per-frame layout reads), will-change is set on the
+   two phones that genuinely move continuously and nowhere else, and every
+   effect collapses under prefers-reduced-motion.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 const C = {
   bg: "#FAFBFA",
   surface: "#FFFFFF",
@@ -22,21 +52,21 @@ const C = {
 };
 const EASE = [0.16, 1, 0.3, 1] as const;
 const LIVE_URL = "https://headroom-opal.vercel.app/";
+const DISPLAY = "Syne, sans-serif";
+const BODY = "DM Sans, sans-serif";
+const MONO = 'ui-monospace, "SF Mono", Menlo, monospace';
 
-/* Screenshot paths — real PNGs in /public/headroom/ */
 const SHOT = {
   todayHealthy: "/headroom/today-healthy.png",
   plan: "/headroom/plan.png",
   menu: "/headroom/menu.png",
   add: "/headroom/add-sheet.png",
   onboardClarity: "/headroom/onboard-clarity.png",
-  onboardConfidence: "/headroom/onboard-confidence.png",
-  onboardAlerts: "/headroom/onboard-alerts.png",
 };
 
-/* ══════════════════════════════════════════════════════════ */
-/*  Page                                                      */
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   Page
+   ══════════════════════════════════════════════════════════════════════════ */
 export function HeadroomPage() {
   useEffect(() => {
     const prevTitle = document.title;
@@ -46,7 +76,7 @@ export function HeadroomPage() {
     if (meta) {
       meta.setAttribute(
         "content",
-        "Headroom — a safe-to-spend money app. A self-initiated product design case study: the wedge, six redesigns, the design system, and a live installable PWA."
+        "Headroom — a safe-to-spend money app. Self-initiated product design: the wedge, six redesigns, and a live installable PWA."
       );
     }
     return () => {
@@ -56,49 +86,37 @@ export function HeadroomPage() {
   }, []);
 
   return (
-    <div style={{ backgroundColor: C.bg, color: C.ink }} className="relative w-full overflow-hidden">
+    <div style={{ backgroundColor: C.bg, color: C.ink }} className="relative w-full overflow-x-clip">
       <StickyProgress />
       <Nav />
-
       <main>
         <Hero />
-        <SplashMoment />
-        <OnboardingFlow />
         <ProblemSection />
-        <WedgeSection />
-        <DesignedSection />
-        <IterationsSection />
-        <ConstraintsCallout />
-        <AISection />
-        <SystemSection />
-        <LeftOutSection />
-        <VoiceSection />
+        <ProductSection />
+        <VersionsSection />
         <OutcomeSection />
         <FinalCTA />
       </main>
-
       <Footer />
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  Sticky scroll progress                                    */
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   Chrome
+   ══════════════════════════════════════════════════════════════════════════ */
 function StickyProgress() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
   return (
     <motion.div
+      aria-hidden="true"
       className="fixed top-0 left-0 right-0 z-[9999] origin-left"
       style={{ scaleX, height: 3, background: C.accent }}
     />
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  Navigation                                                */
-/* ══════════════════════════════════════════════════════════ */
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -111,26 +129,25 @@ function Nav() {
     <header
       className="fixed top-0 left-0 right-0 z-50"
       style={{
-        /* blur removed — fixed full-width bar, re-blurs every scroll frame */
+        /* no backdrop-filter: a full-width fixed bar re-blurs on every scroll frame */
         backgroundColor: scrolled ? "rgba(250,251,250,0.96)" : "transparent",
-        borderBottom: scrolled ? `1px solid ${C.hairline}` : "1px solid transparent",
-        transition: "background-color .3s, border-color .3s, backdrop-filter .3s",
+        borderBottom: `1px solid ${scrolled ? C.hairline : "transparent"}`,
+        transition: "background-color .3s, border-color .3s",
       }}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="group inline-flex items-center gap-2">
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" style={{ color: C.ink }} strokeWidth={2.5} />
-          <span className="text-[14px] font-semibold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>
+          <span className="text-[14px] font-semibold" style={{ color: C.ink, fontFamily: BODY }}>
             Back to work
           </span>
         </Link>
-
         <a
           href={LIVE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold px-4 py-2 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.97]"
-          style={{ backgroundColor: C.accent, color: "#FFFFFF", fontFamily: "DM Sans, sans-serif" }}
+          style={{ backgroundColor: C.accent, color: "#FFFFFF", fontFamily: BODY }}
         >
           Try the live app
           <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -140,24 +157,27 @@ function Nav() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  Shared primitives                                         */
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   Primitives
+   ══════════════════════════════════════════════════════════════════════════ */
 function Reveal({
   children,
   className,
   delay = 0,
-  y = 24,
+  y = 22,
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
   y?: number;
+  style?: React.CSSProperties;
 }) {
   const reduce = useReducedMotion();
   return (
     <motion.div
       className={className}
+      style={style}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
@@ -168,46 +188,28 @@ function Reveal({
   );
 }
 
-function SectionShell({
-  num,
-  label,
-  children,
-  bg,
-}: {
-  num: string;
-  label: string;
-  children: React.ReactNode;
-  bg?: string;
-}) {
+function Eyebrow({ num, children }: { num?: string; children: React.ReactNode }) {
   return (
-    <section className="relative py-24 sm:py-32" style={{ backgroundColor: bg }}>
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal>
-          <div className="flex items-center gap-3 mb-10 sm:mb-14">
-            <span
-              className="text-[13px]"
-              style={{ color: C.accent, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}
-            >
-              {num}
-            </span>
-            <span className="w-10 h-px" style={{ backgroundColor: C.hairline }} />
-            <span
-              className="text-[11px] uppercase tracking-[0.22em]"
-              style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}
-            >
-              {label}
-            </span>
-          </div>
-        </Reveal>
+    <div className="flex items-center gap-3 mb-7">
+      {num && (
+        <span
+          className="inline-flex items-center justify-center rounded-full text-[11px] font-bold"
+          style={{ width: 26, height: 26, backgroundColor: C.accentSoft, color: C.accentDeep, fontFamily: MONO }}
+        >
+          {num}
+        </span>
+      )}
+      <span className="text-[11px] uppercase tracking-[0.24em] font-semibold" style={{ color: C.accentDeep, fontFamily: MONO }}>
         {children}
-      </div>
-    </section>
+      </span>
+      <span className="h-px flex-1 max-w-[90px]" style={{ backgroundColor: C.hairline }} />
+    </div>
   );
 }
 
 function Display({
   children,
-  size = "clamp(34px, 5vw, 60px)",
+  size = "clamp(28px, 4.2vw, 52px)",
   className,
 }: {
   children: React.ReactNode;
@@ -218,12 +220,12 @@ function Display({
     <h2
       className={className}
       style={{
-        fontFamily: "Syne, sans-serif",
+        fontFamily: DISPLAY,
         fontWeight: 700,
-        letterSpacing: "-0.03em",
-        lineHeight: 1.04,
-        color: C.ink,
         fontSize: size,
+        lineHeight: 1.08,
+        letterSpacing: "-0.032em",
+        color: C.ink,
       }}
     >
       {children}
@@ -235,1465 +237,848 @@ function Body({ children, className }: { children: React.ReactNode; className?: 
   return (
     <p
       className={className}
-      style={{
-        fontFamily: "DM Sans, sans-serif",
-        fontSize: "clamp(16px, 1.4vw, 18.5px)",
-        lineHeight: 1.68,
-        color: C.inkSoft,
-        maxWidth: "62ch",
-      }}
+      style={{ fontFamily: BODY, fontSize: "clamp(15px, 1.25vw, 17.5px)", lineHeight: 1.62, color: C.inkSoft }}
     >
       {children}
     </p>
   );
 }
 
-/* Phone mockup with graceful placeholder fallback */
-function Phone({
+/* The phone shell. `depth` drives a real 3D rotation from a scroll-linked
+   MotionValue when one is supplied; without it the phone is simply static. */
+function PhoneShell({
   src,
   alt,
-  label,
-  tilt = 0,
   width = 260,
+  rotateY,
+  rotateX,
+  y,
+  className,
+  live = false,
 }: {
-  src: string;
+  src?: string;
   alt: string;
-  label: string;
-  tilt?: number;
   width?: number;
+  rotateY?: MotionValue<number> | number;
+  rotateX?: MotionValue<number> | number;
+  y?: MotionValue<number> | number;
+  className?: string;
+  live?: boolean;
+  children?: React.ReactNode;
 }) {
   const [failed, setFailed] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const reduce = useReducedMotion();
-
+  const moving = rotateY !== undefined || rotateX !== undefined || y !== undefined;
   return (
     <motion.div
-      ref={ref}
-      style={{ width, maxWidth: "100%" }}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 30, rotate: tilt * 1.4 }}
-      animate={inView ? { opacity: 1, y: 0, rotate: tilt } : {}}
-      transition={{ duration: 0.9, ease: EASE }}
+      className={className}
+      style={{
+        width,
+        maxWidth: "100%",
+        rotateY,
+        rotateX,
+        y,
+        transformStyle: "preserve-3d",
+        ...(moving ? { willChange: "transform" } : null),
+      }}
     >
       <div
         className="relative rounded-[2.4rem] p-2"
         style={{
           backgroundColor: "#0C120E",
-          boxShadow: "0 30px 60px -24px rgba(16,40,30,.35), 0 0 0 1px rgba(16,40,30,.05)",
+          boxShadow: "0 40px 80px -30px rgba(16,40,30,.45), 0 0 0 1px rgba(16,40,30,.06)",
         }}
       >
-        {/* notch */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-20 h-5 rounded-b-2xl" style={{ backgroundColor: "#0C120E" }} />
-        <div
-          className="relative overflow-hidden rounded-[1.9rem]"
-          style={{ aspectRatio: "393 / 852", backgroundColor: C.accentSoft }}
-        >
-          {!failed ? (
+        <div className="relative overflow-hidden rounded-[1.9rem]" style={{ aspectRatio: "393 / 852", backgroundColor: C.accentSoft }}>
+          {src && !failed ? (
             <img
               src={src}
               alt={alt}
               loading="lazy"
+              decoding="async"
               onError={() => setFailed(true)}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
-            <PhonePlaceholder label={label} />
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function PhonePlaceholder({ label }: { label: string }) {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center" style={{ backgroundColor: C.accentSoft }}>
-      <div
-        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-        style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}
-      >
-        <div className="w-5 h-5 rounded-full" style={{ backgroundColor: C.accent }} />
-      </div>
-      <span className="text-[13px] font-semibold" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif" }}>
-        {label}
-      </span>
-      <span className="text-[10.5px]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-        screenshot pending
-      </span>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  HERO                                                      */
-/* ══════════════════════════════════════════════════════════ */
-function Hero() {
-  return (
-    <section className="relative pt-32 sm:pt-40 pb-20 sm:pb-24">
-      {/* ambient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ backgroundImage: `radial-gradient(at 80% 0%, ${C.accentSoft} 0%, transparent 45%)` }}
-      />
-
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-        {/* Left — copy */}
-        <div className="lg:col-span-7">
-          <Reveal>
-            <span
-              className="inline-block text-[11px] uppercase tracking-[0.25em] mb-6"
-              style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}
-            >
-              Product Design · Self-Initiated
-            </span>
-          </Reveal>
-
-          <Reveal delay={0.08}>
-            <h1
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 700,
-                letterSpacing: "-0.035em",
-                lineHeight: 0.98,
-                color: C.ink,
-                fontSize: "clamp(38px, 6.2vw, 76px)",
-              }}
-            >
-              The world doesn't need another budgeting app.{" "}
-              <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>
-                So I didn't build one.
+            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: C.accentSoft }}>
+              <span className="text-[12px] font-semibold" style={{ color: C.accentDeep, fontFamily: BODY }}>
+                {alt}
               </span>
-            </h1>
-          </Reveal>
-
-          <Reveal delay={0.16}>
-            <p
-              className="mt-7"
-              style={{ fontFamily: "DM Sans, sans-serif", fontSize: "clamp(17px, 1.6vw, 20px)", lineHeight: 1.6, color: C.inkSoft, maxWidth: "54ch" }}
-            >
-              Headroom answers the one question budgeting apps ignore —{" "}
-              <span style={{ color: C.ink, fontWeight: 600 }}>can I spend this, right now?</span>
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.24}>
-            <div className="mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <a
-                href={LIVE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center justify-center gap-2 text-[14.5px] font-semibold px-7 py-4 rounded-full transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                style={{ backgroundColor: C.accent, color: "#FFFFFF", fontFamily: "DM Sans, sans-serif", boxShadow: "0 14px 28px -12px rgba(14,158,107,.6)" }}
-              >
-                Try the live app
-                <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={2.5} />
-              </a>
-              <button
-                onClick={() => document.getElementById("problem")?.scrollIntoView({ behavior: "smooth" })}
-                className="group inline-flex items-center justify-center gap-2 text-[14.5px] font-semibold px-7 py-4 rounded-full transition-colors"
-                style={{ color: C.ink, border: `1px solid ${C.hairline}`, backgroundColor: C.surface, fontFamily: "DM Sans, sans-serif" }}
-              >
-                See how I built it
-                <ArrowDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2.5} />
-              </button>
             </div>
-          </Reveal>
-
-          <Reveal delay={0.32}>
-            <p className="mt-6 text-[12.5px]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', letterSpacing: "0.04em" }}>
-              Self-initiated · shipped &amp; installable · seeking first users
-            </p>
-          </Reveal>
-        </div>
-
-        {/* Right — phone with the safe-to-spend hero number */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end">
-          <HeroPhone />
-        </div>
-      </div>
-
-      {/* By the numbers strip */}
-      <Reveal delay={0.2}>
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 mt-16 sm:mt-20">
-          <div
-            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 py-5 px-6 rounded-2xl"
-            style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}
-          >
-            {[
-              "1 number",
-              "3 tabs",
-              "0 categories",
-              "0 bank logins",
-              "~5-sec answer",
-              "100% on-device",
-              "installable PWA",
-              "Lighthouse 92/100/95",
-            ].map((stat, i) => (
-              <div key={stat} className="flex items-center gap-6">
-                {i > 0 && <span className="hidden sm:block w-px h-3" style={{ backgroundColor: C.hairline }} />}
-                <span className="text-[12.5px] font-medium" style={{ color: C.inkSoft, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-                  {stat}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Reveal>
-    </section>
-  );
-}
-
-function HeroPhone() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
-  const reduce = useReducedMotion();
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{ width: 280, maxWidth: "100%" }}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 40 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 1, ease: EASE }}
-    >
-      <div
-        className="relative rounded-[2.6rem] p-2.5"
-        style={{ backgroundColor: "#0C120E", boxShadow: "0 40px 80px -28px rgba(16,40,30,.4), 0 0 0 1px rgba(16,40,30,.06)" }}
-      >
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-10 w-24 h-6 rounded-b-2xl" style={{ backgroundColor: "#0C120E" }} />
-        <div className="relative overflow-hidden rounded-[2.1rem]" style={{ aspectRatio: "393 / 852" }}>
-          {!failed ? (
-            <img
-              src={SHOT.todayHealthy}
-              alt="Headroom Today screen showing safe-to-spend amount"
-              onError={() => setFailed(true)}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <SafeToSpendMock inView={inView} />
           )}
         </div>
+        {live && (
+          <span
+            className="absolute -top-2 -right-2 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.14em]"
+            style={{ backgroundColor: C.accent, color: "#fff", fontFamily: MONO }}
+          >
+            <span style={{ width: 5, height: 5, borderRadius: 999, backgroundColor: "#fff", display: "inline-block" }} />
+            Live
+          </span>
+        )}
       </div>
     </motion.div>
   );
 }
 
-/* Recreated 'Today' screen used as hero fallback until real PNG is dropped */
-function SafeToSpendMock({ inView }: { inView: boolean }) {
-  const count = useCountUp(1730, inView, 1.4);
-  return (
-    <div className="absolute inset-0 flex flex-col" style={{ backgroundColor: C.surface }}>
-      {/* status bar */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-2">
-        <span className="text-[11px] font-semibold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>9:41</span>
-        <span className="text-[10px]" style={{ color: C.inkFaint }}>●●● ▮</span>
-      </div>
-      {/* header */}
-      <div className="px-6 pt-6">
-        <span className="text-[12px] uppercase tracking-[0.16em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-          Safe to spend
-        </span>
-      </div>
-      {/* big number */}
-      <div className="px-6 pt-2 flex-1 flex flex-col justify-start">
-        <div className="flex items-start">
-          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 28, color: C.ink, marginTop: 8 }}>$</span>
-          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 72, lineHeight: 1, color: C.ink, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>
-            {count}
-          </span>
-        </div>
-        <span className="mt-2 text-[13px]" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>
-          ≈ $87/day · 20 days to payday
-        </span>
-
-        {/* progress */}
-        <div className="mt-6 h-2 rounded-full overflow-hidden" style={{ backgroundColor: C.accentSoft }}>
-          <motion.div className="h-full rounded-full" style={{ backgroundColor: C.accent }} initial={{ width: 0 }} animate={inView ? { width: "69%" } : {}} transition={{ duration: 1.4, delay: 0.3, ease: EASE }} />
-        </div>
-
-        {/* what's coming */}
-        <div className="mt-7">
-          <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-            What's coming
-          </span>
-          {[
-            { label: "Rent", val: "$650", days: "Jun 28" },
-            { label: "Wifi", val: "$120", days: "Jun 28" },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${C.hairline}` }}>
-              <div className="flex flex-col">
-                <span className="text-[13px] font-semibold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{row.label}</span>
-                <span className="text-[10.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{row.days}</span>
-              </div>
-              <span className="text-[13px] font-semibold" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", fontVariantNumeric: "tabular-nums" }}>{row.val}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* bottom tab bar */}
-      <div className="flex items-center justify-around px-6 py-4" style={{ borderTop: `1px solid ${C.hairline}` }}>
-        {["Today", "Plan", "Menu"].map((t, i) => (
-          <span key={t} className="text-[11px] font-semibold" style={{ color: i === 0 ? C.accent : C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function useCountUp(target: number, active: boolean, duration = 1.4) {
+/* Count a number up once, when it first comes into view. */
+function useCountUp(target: number, active: boolean, duration = 1500) {
   const [val, setVal] = useState(0);
   const reduce = useReducedMotion();
   useEffect(() => {
     if (!active) return;
-    if (reduce) { setVal(target); return; }
+    if (reduce) {
+      setVal(target);
+      return;
+    }
     let raf = 0;
-    let start: number | null = null;
-    const step = (t: number) => {
-      if (start === null) start = t;
-      const p = Math.min((t - start) / (duration * 1000), 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(eased * target));
-      if (p < 1) raf = requestAnimationFrame(step);
+    let start = 0;
+    const tick = (t: number) => {
+      if (!start) start = t;
+      const p = Math.min(1, (t - start) / duration);
+      /* out-expo, same curve as the page easing */
+      setVal(Math.round(target * (p === 1 ? 1 : 1 - Math.pow(2, -10 * p))));
+      if (p < 1) raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(step);
+    raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, target, duration, reduce]);
-  return val.toLocaleString();
+  }, [target, active, duration, reduce]);
+  return val;
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  SPLASH MOMENT — the thesis, in one motion                 */
-/*  Coins drain toward "empty"; a glowing emerald line        */
-/*  catches what's safe, leaving headroom above zero.         */
-/* ══════════════════════════════════════════════════════════ */
-function SplashMoment() {
+/* ══════════════════════════════════════════════════════════════════════════
+   01 — HERO
+   Absorbs the old Hero, HeroPhone and SplashMoment. One claim, one number,
+   one phone. The phone is genuinely in 3D and its rotation is tied to scroll.
+   ══════════════════════════════════════════════════════════════════════════ */
+function Hero() {
+  const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
 
-  // Stage geometry (viewBox-free, px within a fixed-height stage)
-  const STAGE_H = 300;
-  const LINE_Y = 150; // emerald "headroom" catch line
-  const EMPTY_Y = 262; // $0 baseline
+  const phoneRotY = useTransform(scrollYProgress, [0, 1], [-19, 6]);
+  const phoneRotX = useTransform(scrollYProgress, [0, 1], [7, -3]);
+  const phoneY = useTransform(scrollYProgress, [0, 1], [0, -70]);
+  const copyY = useTransform(scrollYProgress, [0, 1], [0, 58]);
+  const fade = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
 
-  // Coins: spread across x, each loops fall → caught → fade
-  const coins = [
-    { x: "12%", delay: 0.0, kind: "gold" },
-    { x: "26%", delay: 0.55, kind: "emerald" },
-    { x: "40%", delay: 1.1, kind: "gold" },
-    { x: "54%", delay: 0.3, kind: "gold" },
-    { x: "68%", delay: 0.85, kind: "emerald" },
-    { x: "82%", delay: 1.4, kind: "gold" },
-    { x: "19%", delay: 1.7, kind: "emerald" },
-    { x: "61%", delay: 2.0, kind: "gold" },
-  ];
+  const inView = useInView(ref, { once: true });
+  const amount = useCountUp(1730, inView);
 
   return (
-    <section ref={ref} className="relative py-20 sm:py-28 overflow-hidden" style={{ backgroundColor: C.ink }}>
-      {/* ambient emerald glow */}
+    <section ref={ref} className="relative pt-32 sm:pt-40 pb-16 sm:pb-24" style={{ perspective: 1400 }}>
       <div
+        aria-hidden="true"
         className="absolute inset-0 pointer-events-none"
-        style={{ backgroundImage: `radial-gradient(at 70% 60%, rgba(14,158,107,0.18) 0%, transparent 55%)` }}
+        style={{ backgroundImage: `radial-gradient(at 78% 4%, ${C.accentSoft} 0%, transparent 46%)` }}
       />
 
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* Caption */}
-        <div className="lg:col-span-5">
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 items-center">
+        <motion.div className="lg:col-span-7" style={reduce ? undefined : { y: copyY, opacity: fade }}>
           <Reveal>
-            <span className="text-[11px] uppercase tracking-[0.22em]" style={{ color: C.accent, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
-              The thesis, in one motion
+            <span className="inline-block text-[11px] uppercase tracking-[0.25em] mb-6 font-semibold" style={{ color: C.accentDeep, fontFamily: MONO }}>
+              Product design · Self-initiated · Shipped
             </span>
           </Reveal>
-          <Reveal delay={0.08}>
-            <p className="mt-5" style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(22px, 3vw, 36px)", lineHeight: 1.25, letterSpacing: "-0.025em", color: "#FFFFFF", maxWidth: "20ch" }}>
-              Money drains before payday. Headroom catches what's{" "}
-              <span style={{ color: C.accent }}>safe</span> — above empty.
-            </p>
-          </Reveal>
-          <Reveal delay={0.16}>
-            <p className="mt-4 text-[14.5px]" style={{ color: "rgba(255,255,255,0.55)", fontFamily: "DM Sans, sans-serif", lineHeight: 1.6, maxWidth: "44ch" }}>
-              The gap between the line and zero is the only number that matters.
-            </p>
-          </Reveal>
-        </div>
 
-        {/* Animation stage */}
-        <div className="lg:col-span-7">
-          <div
-            className="relative w-full rounded-3xl overflow-hidden"
-            style={{ height: STAGE_H, backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            {/* empty baseline */}
-            <div className="absolute left-0 right-0 flex items-center gap-3 px-5" style={{ top: EMPTY_Y }}>
-              <div className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.18)", borderTop: "1px dashed rgba(255,255,255,0.25)" }} />
-              <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-                $0 · empty
+          <Reveal delay={0.06}>
+            <h1
+              style={{
+                fontFamily: DISPLAY,
+                fontWeight: 700,
+                letterSpacing: "-0.038em",
+                lineHeight: 0.97,
+                color: C.ink,
+                fontSize: "clamp(40px, 6.4vw, 78px)",
+              }}
+            >
+              Your bank balance
+              <br />
+              is <span style={{ color: C.clay }}>lying</span> to you.
+            </h1>
+          </Reveal>
+
+          <Reveal delay={0.14}>
+            <p className="mt-7 max-w-[46ch]" style={{ fontFamily: BODY, fontSize: "clamp(16px, 1.4vw, 19px)", lineHeight: 1.6, color: C.inkSoft }}>
+              It shows a number that feels spendable — then rent lands and you're short.{" "}
+              <strong style={{ color: C.ink, fontWeight: 600 }}>Headroom</strong> answers the only question that
+              matters: what can I actually spend today?
+            </p>
+          </Reveal>
+
+          {/* the product's whole idea, as a number */}
+          <Reveal delay={0.2}>
+            <div
+              className="mt-9 inline-flex items-baseline gap-3 rounded-2xl px-6 py-4"
+              style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}`, boxShadow: "0 18px 40px -28px rgba(16,40,30,.4)" }}
+            >
+              <span className="text-[11px] uppercase tracking-[0.16em] font-semibold" style={{ color: C.inkFaint, fontFamily: MONO }}>
+                Safe to spend
+              </span>
+              <span
+                style={{
+                  fontFamily: DISPLAY,
+                  fontWeight: 800,
+                  fontSize: "clamp(30px, 3.6vw, 44px)",
+                  letterSpacing: "-0.04em",
+                  color: C.accent,
+                  fontVariantNumeric: "tabular-nums",
+                  lineHeight: 1,
+                }}
+              >
+                ${amount.toLocaleString()}
               </span>
             </div>
+          </Reveal>
 
-            {/* headroom catch line */}
-            <motion.div
-              className="absolute left-0 right-0"
-              style={{ top: LINE_Y }}
-              initial={reduce ? { opacity: 1 } : { opacity: 0, scaleX: 0 }}
-              animate={inView ? { opacity: 1, scaleX: 1 } : {}}
-              transition={{ duration: 0.9, ease: EASE }}
-            >
-              <div className="relative h-[3px] mx-5" style={{ backgroundColor: C.accent, boxShadow: `0 0 16px ${C.accent}, 0 0 40px rgba(14,158,107,0.5)`, borderRadius: 3 }}>
-                {/* shimmer */}
-                {!reduce && (
-                  <motion.div
-                    className="absolute top-0 h-full w-16 rounded-full"
-                    style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)" }}
-                    animate={{ x: ["-64px", "640px"] }}
-                    transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.8 }}
-                  />
-                )}
-              </div>
-              {/* headroom label + gap bracket */}
-              <div className="absolute right-5 flex flex-col items-end" style={{ top: 10 }}>
-                <span className="text-[11px] font-semibold" style={{ color: C.accent, fontFamily: "DM Sans, sans-serif" }}>
-                  ↑ headroom
-                </span>
-                <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: "#FFFFFF", letterSpacing: "-0.03em" }}>$1,730</span>
-              </div>
-            </motion.div>
+          <Reveal delay={0.26}>
+            <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-3">
+              {[
+                ["Role", "Sole designer + builder"],
+                ["Scope", "0 → shipped PWA"],
+                ["Stack", "Design → Claude Code"],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <div className="text-[10.5px] uppercase tracking-[0.15em] font-semibold" style={{ color: C.inkFaint, fontFamily: MONO }}>
+                    {k}
+                  </div>
+                  <div className="text-[14px] font-medium mt-1" style={{ color: C.ink, fontFamily: BODY }}>
+                    {v}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </motion.div>
 
-            {/* coins */}
-            {coins.map((coin, i) => (
-              <motion.div
-                key={i}
-                className="absolute"
-                style={{ left: coin.x, top: 0 }}
-                initial={{ y: -30, opacity: 0 }}
-                animate={
-                  reduce
-                    ? { y: LINE_Y - 20, opacity: 1 }
-                    : inView
-                    ? { y: [-30, LINE_Y - 14, LINE_Y - 20, LINE_Y - 20], opacity: [0, 1, 1, 0] }
-                    : {}
-                }
-                transition={
-                  reduce
-                    ? { duration: 0 }
-                    : { duration: 3.4, times: [0, 0.5, 0.62, 1], repeat: Infinity, delay: coin.delay, ease: "easeIn" }
-                }
-              >
-                <Coin kind={coin.kind} />
-              </motion.div>
-            ))}
-          </div>
+        <div className="lg:col-span-5 flex justify-center lg:justify-end">
+          <PhoneShell
+            src={SHOT.todayHealthy}
+            alt="Headroom — today"
+            width={278}
+            live
+            rotateY={reduce ? undefined : phoneRotY}
+            rotateX={reduce ? undefined : phoneRotX}
+            y={reduce ? undefined : phoneY}
+          />
         </div>
       </div>
+
+      <Reveal delay={0.4} className="relative mx-auto max-w-6xl px-5 sm:px-8 mt-16">
+        <span className="inline-flex items-center gap-2 text-[12px]" style={{ color: C.inkFaint, fontFamily: MONO }}>
+          <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.5} />
+          60-second read
+        </span>
+      </Reveal>
     </section>
   );
 }
 
-function Coin({ kind }: { kind: string }) {
-  const gold = kind === "gold";
-  return (
-    <div
-      className="rounded-full flex items-center justify-center"
-      style={{
-        width: 26,
-        height: 26,
-        background: gold
-          ? "radial-gradient(circle at 35% 30%, #FDE68A, #FBBF24 60%, #D97706)"
-          : "radial-gradient(circle at 35% 30%, #6EE7B7, #0E9E6B 60%, #0A7A52)",
-        boxShadow: gold ? "0 4px 12px rgba(251,191,36,0.4)" : "0 4px 12px rgba(14,158,107,0.4)",
-        border: gold ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.3)",
-      }}
-    >
-      <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 12, color: gold ? "#92400E" : "#053D2A" }}>$</span>
-    </div>
-  );
-}
+/* ══════════════════════════════════════════════════════════════════════════
+   02 — THE PROBLEM
+   The old page argued this twice: once as prose ("the problem worth solving")
+   and again as a comparison table ("why another money app"). Same claim, two
+   layouts. Merged into one: the stat, the maths, and the gap — where the
+   competitive point is a single line rather than a five-row matrix.
+   ══════════════════════════════════════════════════════════════════════════ */
+const EQUATION = [
+  { label: "Bank balance", val: 2500, note: "what the app shows you", tone: C.ink },
+  { label: "Bills before payday", val: -770, note: "rent, phone, subscriptions", tone: C.clay },
+];
 
-/* ══════════════════════════════════════════════════════════ */
-/*  ONBOARDING FLOW — the promise in three taps               */
-/* ══════════════════════════════════════════════════════════ */
-function OnboardingFlow() {
-  const screens = [
-    { src: SHOT.onboardClarity, label: "Clarity", caption: "See what's actually yours", alt: "Onboarding — Clarity: see what's actually yours" },
-    { src: SHOT.onboardConfidence, label: "Confidence", caption: "Never get caught short", alt: "Onboarding — Confidence: never get caught short" },
-    { src: SHOT.onboardAlerts, label: "Heads-up", caption: "Only pinged before you dip", alt: "Onboarding — notifications: a heads-up before you dip" },
-  ];
+function ProblemSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-90px" });
+  const safe = useCountUp(1730, inView, 1200);
+
   return (
-    <section className="relative py-20 sm:py-28" style={{ backgroundColor: C.bg }}>
+    <section className="relative py-24 sm:py-32" style={{ backgroundColor: C.surface }}>
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <div className="flex items-center gap-3 mb-8">
-            <span className="w-10 h-px" style={{ backgroundColor: C.hairline }} />
-            <span className="text-[11px] uppercase tracking-[0.22em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-              The first 30 seconds
-            </span>
-          </div>
+          <Eyebrow num="01">The problem</Eyebrow>
         </Reveal>
-        <Reveal delay={0.06}>
-          <Display size="clamp(26px, 3.6vw, 44px)" className="max-w-[20ch]">
-            Onboarding states the promise — <span style={{ color: C.accent }}>in three taps.</span>
+
+        <Reveal delay={0.05}>
+          <Display className="max-w-[19ch]" size="clamp(30px, 4.6vw, 58px)">
+            70% quit budgeting within two months. Not bad with money —{" "}
+            <span style={{ color: C.accent }}>badly served by software.</span>
           </Display>
         </Reveal>
 
-        <div className="mt-12 flex flex-wrap items-start justify-center gap-7 sm:gap-10">
-          {screens.map((s, i) => (
-            <div key={s.label} className="flex flex-col items-center gap-3">
-              <Phone src={s.src} alt={s.alt} label={s.label} tilt={i === 0 ? -2 : i === 2 ? 2 : 0} width={206} />
-              <div className="text-center">
-                <span className="text-[14px] font-semibold block" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{s.label}</span>
-                <span className="text-[11.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{s.caption}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  §1 — PROBLEM                                              */
-/* ══════════════════════════════════════════════════════════ */
-function ProblemSection() {
-  return (
-    <div id="problem">
-      <SectionShell num="01" label="The problem worth solving" bg={C.surface}>
-        <Reveal>
-          <Display size="clamp(28px, 4vw, 50px)" className="max-w-[18ch]">
-            70% of people who start a budget quit within two months — not because they're bad with money, but because the apps turn it into a{" "}
-            <span style={{ color: C.accent }}>part-time job.</span>
-          </Display>
-        </Reveal>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mt-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mt-14 items-center">
           <Reveal delay={0.1}>
             <div className="space-y-5">
               <Body>
-                Your bank balance lies. It shows a number that feels spendable, so you spend it — then rent and bills land and you're short.
+                The problem was never arithmetic. It's <strong style={{ color: C.ink, fontWeight: 600 }}>timing</strong> —
+                money disappearing between payday and the end of the month.
               </Body>
               <Body>
-                The real problem isn't math, it's <span style={{ color: C.ink, fontWeight: 600 }}>timing</span>: money vanishing between payday and the end of the month. People don't need another ledger of the past. They need to know what's safe to spend before the next paycheck.
+                Every rival optimises the same thing: a beautiful ledger of the past. YNAB, Monarch and Copilot all
+                ask for categories, rules and upkeep first. Mint simply shut down.{" "}
+                <strong style={{ color: C.ink, fontWeight: 600 }}>
+                  None of them lead with a single forward number.
+                </strong>
               </Body>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {["Categories to maintain", "Bank linking required", "Backward-looking"].map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium"
+                    style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}`, color: C.inkSoft, fontFamily: BODY }}
+                  >
+                    <span style={{ color: C.clay, fontWeight: 700 }}>✕</span>
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
           </Reveal>
 
-          <Reveal delay={0.18}>
-            <EquationDiagram />
-          </Reveal>
-        </div>
-      </SectionShell>
-    </div>
-  );
-}
-
-function EquationDiagram() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const rows = [
-    { label: "Balance", val: "$2,500", color: C.ink, sub: "what the bank shows" },
-    { label: "− Bills coming", val: "$770", color: C.clay, sub: "before next payday" },
-  ];
-  return (
-    <div ref={ref} className="rounded-3xl p-7 sm:p-9" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
-      {rows.map((r, i) => (
-        <motion.div
-          key={r.label}
-          className="flex items-end justify-between py-4"
-          style={{ borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.hairline}` }}
-          initial={{ opacity: 0, x: -12 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.1 + i * 0.15, ease: EASE }}
-        >
-          <div className="flex flex-col">
-            <span className="text-[14px] font-semibold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{r.label}</span>
-            <span className="text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{r.sub}</span>
-          </div>
-          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 26, color: r.color, fontVariantNumeric: "tabular-nums" }}>{r.val}</span>
-        </motion.div>
-      ))}
-
-      <motion.div
-        className="mt-3 pt-5 flex items-end justify-between"
-        style={{ borderTop: `2px solid ${C.ink}` }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, delay: 0.5, ease: EASE }}
-      >
-        <div className="flex flex-col">
-          <span className="text-[12px] uppercase tracking-[0.14em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
-            Safe to spend
-          </span>
-          <span className="text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>≈ $87/day · 20 days</span>
-        </div>
-        <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 40, color: C.accent, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>$1,730</span>
-      </motion.div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  §2 — WEDGE / COMPETITORS                                  */
-/* ══════════════════════════════════════════════════════════ */
-const RIVALS = [
-  { name: "YNAB", tag: "Heavy", note: "Powerful — categories, rules, upkeep." },
-  { name: "Monarch", tag: "Heavy", note: "Beautiful dashboards, bank-linking." },
-  { name: "Copilot", tag: "Heavy", note: "Slick tracking of the past." },
-  { name: "Mint", tag: "Gone", note: "Shut down. Millions left stranded." },
-];
-const CAPABILITIES = [
-  { label: "Leads with one forward “safe to spend” number", rivals: [false, false, false, false] },
-  { label: "Works with no spending categories", rivals: [false, false, false, false] },
-  { label: "No bank-account linking required", rivals: [false, false, false, false] },
-  { label: "Data stays fully on-device", rivals: [false, false, false, false] },
-  { label: "No setup or learning curve", rivals: [false, false, false, false] },
-];
-
-function WedgeSection() {
-  return (
-    <SectionShell num="02" label="Why another money app?">
-      <Reveal>
-        <Display className="max-w-[20ch]">
-          Every budgeting app optimizes the same thing — tracking the past.{" "}
-          <span style={{ color: C.accent }}>None answer the forward question simply.</span>
-        </Display>
-      </Reveal>
-
-      {/* Comparison matrix */}
-      <Reveal delay={0.1}>
-        <div className="mt-12 -mx-5 sm:mx-0 px-5 sm:px-0 overflow-x-auto">
-          <div
-            className="rounded-3xl overflow-hidden"
-            style={{ minWidth: 680, border: `1px solid ${C.hairline}`, backgroundColor: C.surface }}
-          >
-            {/* Header row */}
-            <div className="grid" style={{ gridTemplateColumns: "minmax(180px,1.6fr) repeat(4, 1fr) 1.15fr" }}>
-              <div className="p-4" />
-              {RIVALS.map((r) => (
-                <div key={r.name} className="p-4 text-center" style={{ borderLeft: `1px solid ${C.hairline}` }}>
-                  <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 16, color: C.ink }}>{r.name}</div>
-                  <span
-                    className="inline-block mt-1.5 text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full"
+          {/* the maths, as the product states it */}
+          <Reveal delay={0.16}>
+            <div
+              ref={ref}
+              className="rounded-3xl p-7 sm:p-9"
+              style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}
+            >
+              {EQUATION.map((row, i) => (
+                <motion.div
+                  key={row.label}
+                  className="flex items-baseline justify-between py-4"
+                  style={{ borderBottom: `1px solid ${C.hairline}` }}
+                  initial={{ opacity: 0, x: -14 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.55, delay: 0.1 + i * 0.12, ease: EASE }}
+                >
+                  <div>
+                    <div className="text-[14px] font-semibold" style={{ color: C.ink, fontFamily: BODY }}>
+                      {row.label}
+                    </div>
+                    <div className="text-[11.5px] mt-0.5" style={{ color: C.inkFaint, fontFamily: BODY }}>
+                      {row.note}
+                    </div>
+                  </div>
+                  <div
                     style={{
-                      color: r.tag === "Gone" ? C.clay : C.inkFaint,
-                      backgroundColor: r.tag === "Gone" ? "rgba(181,83,46,0.08)" : C.bg,
-                      border: `1px solid ${r.tag === "Gone" ? "rgba(181,83,46,0.22)" : C.hairline}`,
-                      fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                      fontFamily: DISPLAY,
+                      fontWeight: 700,
+                      fontSize: 24,
+                      color: row.tone,
+                      fontVariantNumeric: "tabular-nums",
+                      letterSpacing: "-0.03em",
                     }}
                   >
-                    {r.tag}
-                  </span>
-                </div>
-              ))}
-              {/* Headroom column header — highlighted */}
-              <div className="p-4 text-center relative" style={{ backgroundColor: C.accent }}>
-                <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 16, color: "#FFFFFF" }}>Headroom</div>
-                <span className="inline-block mt-1.5 text-[9px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full" style={{ color: "#FFFFFF", backgroundColor: "rgba(255,255,255,0.18)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-                  The wedge
-                </span>
-              </div>
-            </div>
-
-            {/* Capability rows */}
-            {CAPABILITIES.map((cap, ri) => (
-              <div
-                key={cap.label}
-                className="grid items-center"
-                style={{ gridTemplateColumns: "minmax(180px,1.6fr) repeat(4, 1fr) 1.15fr", borderTop: `1px solid ${C.hairline}` }}
-              >
-                <div className="p-4 text-[13.5px] font-medium" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>
-                  {cap.label}
-                </div>
-                {cap.rivals.map((has, ci) => (
-                  <div key={ci} className="p-4 flex items-center justify-center" style={{ borderLeft: `1px solid ${C.hairline}` }}>
-                    {has ? <Tick on /> : <Cross />}
+                    {row.val < 0 ? "−" : ""}${Math.abs(row.val).toLocaleString()}
                   </div>
-                ))}
-                <div className="p-4 flex items-center justify-center h-full" style={{ backgroundColor: ri % 2 === 0 ? "rgba(14,158,107,0.10)" : "rgba(14,158,107,0.06)" }}>
-                  <Tick on />
+                </motion.div>
+              ))}
+
+              <motion.div
+                className="flex items-baseline justify-between pt-6"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.42, ease: EASE }}
+              >
+                <div>
+                  <div className="text-[14px] font-bold" style={{ color: C.accentDeep, fontFamily: BODY }}>
+                    Actually yours
+                  </div>
+                  <div className="text-[11.5px] mt-0.5" style={{ color: C.inkFaint, fontFamily: BODY }}>
+                    the only number Headroom shows
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Reveal>
-
-      <Reveal delay={0.05}>
-        <p className="mt-4 text-[12.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", lineHeight: 1.55, maxWidth: "70ch" }}>
-          These aren't quality scores — they're positioning. YNAB, Monarch and Copilot are excellent, powerful tools; every ✓ above is something Headroom deliberately removed or refused, not a feature the others failed to build.
-        </p>
-      </Reveal>
-
-      {/* Wedge callout */}
-      <Reveal delay={0.1}>
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center rounded-3xl p-8 sm:p-10" style={{ backgroundColor: C.accentSoft }}>
-          <div className="lg:col-span-8">
-            <span className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
-              The wedge
-            </span>
-            <p className="mt-4" style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(20px, 2.6vw, 32px)", lineHeight: 1.22, letterSpacing: "-0.02em", color: C.ink, maxWidth: "24ch" }}>
-              The opportunity wasn't more features — it was <span style={{ color: C.accent }}>radical restraint.</span>
-            </p>
-          </div>
-          <div className="lg:col-span-4 flex flex-wrap gap-2">
-            {["One number", "No categories", "No bank login", "On-device"].map((chip) => (
-              <span key={chip} className="text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ color: C.accentDeep, backgroundColor: C.surface, border: `1px solid ${C.accent}33`, fontFamily: "DM Sans, sans-serif" }}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-      </Reveal>
-    </SectionShell>
-  );
-}
-
-function Tick({ on }: { on?: boolean }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center rounded-full"
-      style={{ width: 24, height: 24, backgroundColor: on ? C.accent : C.accentSoft }}
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? "#FFFFFF" : C.accent} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12l5 5L20 6" />
-      </svg>
-    </span>
-  );
-}
-function Cross() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9CFCB" strokeWidth="2.6" strokeLinecap="round">
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  §3 — WHAT I DESIGNED                                      */
-/* ══════════════════════════════════════════════════════════ */
-const PILLARS: { title: string; body: string; icon: React.ReactNode }[] = [
-  {
-    title: "Answers the real question in 5 seconds",
-    body: "Open the app, see one number. No setup ritual to get value.",
-    icon: <IconClock />,
-  },
-  {
-    title: "No chore — enter bills once",
-    body: "Set your money once. It does the forward math for you, every day.",
-    icon: <IconRepeat />,
-  },
-  {
-    title: "Private & on-device",
-    body: "No accounts, no bank login. Your data never leaves your phone.",
-    icon: <IconShield />,
-  },
-  {
-    title: "Calm, never shaming",
-    body: "No streaks, no red alarms, no guilt. Just a heads-up before you dip.",
-    icon: <IconLeaf />,
-  },
-];
-
-function DesignedSection() {
-  return (
-    <SectionShell num="03" label="What I designed" bg={C.surface}>
-      <Reveal>
-        <Display className="max-w-[20ch]">
-          One screen that answers the question. Two more that{" "}
-          <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>stay out of the way.</span>
-        </Display>
-      </Reveal>
-
-      {/* Phone tour */}
-      <div className="mt-14 flex flex-wrap items-start justify-center gap-7 sm:gap-9">
-        {[
-          { src: SHOT.todayHealthy, label: "Today", caption: "the number + what's coming", alt: "Today — the safe-to-spend number and what's coming", tilt: -2 },
-          { src: SHOT.plan, label: "Plan", caption: "edit your money, no graphs", alt: "Plan — edit your money, no graphs", tilt: 0 },
-          { src: SHOT.menu, label: "Menu", caption: "patterns, alerts, your data", alt: "Menu — spending patterns and your data", tilt: 0 },
-          { src: SHOT.add, label: "Add", caption: "log a spend in seconds", alt: "Add sheet — log a spend, bill, or income", tilt: 2 },
-        ].map((p) => (
-          <div key={p.label} className="flex flex-col items-center gap-3">
-            <Phone src={p.src} alt={p.alt} label={p.label} tilt={p.tilt} width={210} />
-            <div className="text-center">
-              <span className="text-[14px] font-semibold block" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>{p.label}</span>
-              <span className="text-[11.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{p.caption}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Benefit pillars */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-16">
-        {PILLARS.map((p, i) => (
-          <Reveal key={p.title} delay={i * 0.08}>
-            <div className="flex gap-4 p-6 rounded-2xl h-full" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
-              <div className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: C.accentSoft, color: C.accentDeep }}>
-                {p.icon}
-              </div>
-              <div>
-                <h3 className="text-[15.5px] font-bold mb-1" style={{ color: C.ink, fontFamily: "Syne, sans-serif", letterSpacing: "-0.01em" }}>{p.title}</h3>
-                <p className="text-[13.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>{p.body}</p>
-              </div>
+                <div
+                  style={{
+                    fontFamily: DISPLAY,
+                    fontWeight: 800,
+                    fontSize: 40,
+                    color: C.accent,
+                    fontVariantNumeric: "tabular-nums",
+                    letterSpacing: "-0.04em",
+                    lineHeight: 1,
+                  }}
+                >
+                  ${safe.toLocaleString()}
+                </div>
+              </motion.div>
             </div>
           </Reveal>
-        ))}
+        </div>
       </div>
-    </SectionShell>
+    </section>
   );
 }
 
-/* ── custom line icons (single weight) ── */
-function IconClock() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-function IconRepeat() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 2l3 3-3 3" /><path d="M3 11V9a4 4 0 0 1 4-4h13" /><path d="M7 22l-3-3 3-3" /><path d="M21 13v2a4 4 0 0 1-4 4H4" />
-    </svg>
-  );
-}
-function IconShield() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-function IconLeaf() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 16-9 0 9-4 13-9 13z" /><path d="M8 17c2-4 5-6 9-7" />
-    </svg>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  §4 — SIX REDESIGNS                                        */
-/* ══════════════════════════════════════════════════════════ */
-const ITERATIONS = [
-  { n: "01", title: "Glassmorphic neon", lesson: "Premium isn't decoration. Restraint reads as expensive.", swatch: "glass" },
-  { n: "02", title: "Candy-purple mesh + 3D orbs", lesson: "The default \"AI app\" purple looked unserious. Commit to one meaningful accent.", swatch: "purple" },
-  { n: "03", title: "Quiet-capital ink + jade", lesson: "Colour discipline: one accent + exactly two state colours.", swatch: "ink" },
-  { n: "04", title: "Forecast graphs everywhere", lesson: "If users can't read it, cut it. Removed every chart except one simple view.", swatch: "charts" },
-  { n: "05", title: "Felt like a website", lesson: "Native feel is structure, not skin: mobile shell, tab bar, sheets, gestures.", swatch: "web" },
-  { n: "06", title: "White + emerald, locked", lesson: "The last 20% — what you remove and make robust — is the design.", swatch: "final" },
+/* ══════════════════════════════════════════════════════════════════════════
+   03 — WHAT IT DOES
+   Was three sections (what I designed / onboarding / design system). The
+   pillars are now captions under the actual product rather than a prose grid,
+   because a screen argues the point faster than a paragraph about the screen.
+   ══════════════════════════════════════════════════════════════════════════ */
+const SCREENS = [
+  { src: SHOT.todayHealthy, title: "One number", body: "Open it, see what's safe. No setup ritual before you get value." },
+  { src: SHOT.plan, title: "Enter bills once", body: "Set your money once; it does the forward maths every day after." },
+  { src: SHOT.add, title: "Never shaming", body: "No streaks, no red alarms — just a heads-up before you dip." },
 ];
 
-function IterationsSection() {
-  return (
-    <SectionShell num="04" label="The part most case studies hide">
-      <Reveal>
-        <Display className="max-w-[20ch]">
-          I redesigned it{" "}
-          <span style={{ color: C.accent }}>six times.</span>
-        </Display>
-      </Reveal>
-      <Reveal delay={0.08}>
-        <Body className="mt-5">Getting to "simple" took six rebuilds. Each one taught me what to remove.</Body>
-      </Reveal>
+function ProductSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  /* a shallow shared parallax so the row reads as one object with depth */
+  const lift = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
-      {/* horizontal scroll-snap timeline */}
-      <div className="mt-12 -mx-5 sm:-mx-8 px-5 sm:px-8">
-        <div
-          className="flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory"
-          style={{ scrollbarWidth: "thin" }}
-        >
-          {ITERATIONS.map((it, i) => (
+  return (
+    <section className="relative py-24 sm:py-32" style={{ backgroundColor: C.bg }}>
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal>
+          <Eyebrow num="02">What it does</Eyebrow>
+        </Reveal>
+        <Reveal delay={0.05}>
+          <Display className="max-w-[22ch]" size="clamp(28px, 4.2vw, 52px)">
+            Three screens. <span style={{ color: C.accent }}>No categories, no bank login, no chore.</span>
+          </Display>
+        </Reveal>
+
+        <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6 mt-16" style={{ perspective: 1600 }}>
+          {SCREENS.map((s, i) => (
             <motion.div
-              key={it.n}
-              className="snap-start flex-shrink-0"
-              style={{ width: 260 }}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: EASE }}
+              key={s.title}
+              className="flex flex-col items-center text-center"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 40, rotateX: 10 }}
+              whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+              viewport={{ once: true, margin: "-70px" }}
+              transition={{ duration: 0.85, delay: i * 0.11, ease: EASE }}
+              style={{ transformStyle: "preserve-3d" }}
             >
-              <div className="rounded-2xl overflow-hidden h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-                <IterationVisual kind={it.swatch} isFinal={it.swatch === "final"} />
-                <div className="p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[12px]" style={{ color: it.swatch === "final" ? C.accent : C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{it.n}</span>
-                    <span className="text-[14px] font-bold" style={{ color: C.ink, fontFamily: "Syne, sans-serif", letterSpacing: "-0.01em" }}>{it.title}</span>
-                  </div>
-                  <p className="text-[13px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>
-                    <span style={{ color: C.accentDeep, fontWeight: 600 }}>→ </span>{it.lesson}
-                  </p>
-                </div>
-              </div>
+              <motion.div style={reduce ? undefined : { y: lift, rotateY: i === 0 ? 8 : i === 2 ? -8 : 0 }}>
+                <PhoneShell src={s.src} alt={s.title} width={228} />
+              </motion.div>
+              <h3 className="mt-8 text-[19px] font-bold" style={{ fontFamily: DISPLAY, color: C.ink, letterSpacing: "-0.02em" }}>
+                {s.title}
+              </h3>
+              <p className="mt-2 max-w-[30ch] text-[14.5px]" style={{ fontFamily: BODY, lineHeight: 1.55, color: C.inkSoft }}>
+                {s.body}
+              </p>
             </motion.div>
           ))}
         </div>
-        <p className="text-[11px] mt-1" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-          ← scroll the rebuilds →
-        </p>
-      </div>
-    </SectionShell>
-  );
-}
 
-/* Stylized recreations of each rejected direction */
-function IterationVisual({ kind, isFinal }: { kind: string; isFinal: boolean }) {
-  const base = "relative w-full overflow-hidden flex items-center justify-center";
-  const h = { height: 150 };
-
-  if (kind === "glass") {
-    return (
-      <div className={base} style={{ ...h, background: "radial-gradient(circle at 30% 30%, #0c2a24, #050c0a)" }}>
-        <div className="absolute w-20 h-20 rounded-full" style={{ background: "radial-gradient(circle, rgba(52,255,200,0.5), transparent 70%)", filter: "blur(8px)", top: 20, left: 30 }} />
-        <div className="absolute w-16 h-16 rounded-full" style={{ background: "radial-gradient(circle, rgba(52,255,200,0.4), transparent 70%)", filter: "blur(10px)", bottom: 16, right: 36 }} />
-        <div className="rounded-2xl px-5 py-3" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(6px)" }}>
-          <span style={{ color: "#5FFFD0", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, textShadow: "0 0 16px #34ffc8" }}>$885</span>
-        </div>
-        <span className="absolute top-2 right-3 text-[14px]">✦</span>
-        <span className="absolute bottom-3 left-4 text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>✦ ✦</span>
-      </div>
-    );
-  }
-  if (kind === "purple") {
-    return (
-      <div className={base} style={{ ...h, background: "linear-gradient(135deg, #4f1d96, #c026d3 60%, #f0abfc)" }}>
-        <div className="w-16 h-16 rounded-full" style={{ background: "radial-gradient(circle at 35% 30%, #fff, #a855f7 60%, #6d28d9)", boxShadow: "0 8px 24px rgba(168,85,247,0.6)" }} />
-        <div className="absolute w-8 h-8 rounded-full" style={{ background: "radial-gradient(circle at 35% 30%, #fff, #e879f9)", top: 24, right: 40 }} />
-        <span className="absolute bottom-3 text-[11px] font-bold" style={{ color: "#fff", fontFamily: "Syne, sans-serif", textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>candy gradient</span>
-      </div>
-    );
-  }
-  if (kind === "ink") {
-    return (
-      <div className={base} style={{ ...h, backgroundColor: "#0d1f1a" }}>
-        <div className="text-center">
-          <span style={{ color: "#34d399", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em" }}>$885</span>
-          <div className="mt-2 flex gap-1.5 justify-center">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#34d399" }} />
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ef4444" }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (kind === "charts") {
-    return (
-      <div className={base} style={{ ...h, backgroundColor: "#11161A" }}>
-        <svg width="180" height="110" viewBox="0 0 180 110">
-          {/* messy overlapping broken charts */}
-          <polyline points="10,90 40,40 70,70 100,20 130,80 170,30" fill="none" stroke="#ef4444" strokeWidth="2" opacity="0.8" />
-          <polyline points="10,60 40,75 70,30 100,85 130,45 170,70" fill="none" stroke="#38bdf8" strokeWidth="2" opacity="0.7" />
-          {[20, 50, 80, 110, 140].map((x) => (
-            <rect key={x} x={x} y={Math.random() > 0 ? 50 : 40} width="14" height={50} fill="#a855f7" opacity="0.4" />
+        <Reveal delay={0.1} className="mt-16 flex flex-wrap justify-center gap-3">
+          {["Fully on-device", "No accounts", "Installable PWA", "Works offline"].map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium"
+              style={{ backgroundColor: C.accentSoft, color: C.accentDeep, fontFamily: BODY }}
+            >
+              <span style={{ fontWeight: 800 }}>✓</span>
+              {t}
+            </span>
           ))}
-          <line x1="0" y1="100" x2="180" y2="100" stroke="#334155" strokeWidth="1" />
-        </svg>
-        <span className="absolute top-2 left-3 text-[9px]" style={{ color: "#ef4444", fontFamily: 'ui-monospace, monospace' }}>unreadable</span>
-      </div>
-    );
-  }
-  if (kind === "web") {
-    return (
-      <div className={base} style={{ ...h, backgroundColor: "#F1F0EC" }}>
-        {/* centered web layout look */}
-        <div className="w-full px-6">
-          <div className="mx-auto rounded-md" style={{ width: "70%", height: 12, backgroundColor: "#d4d4d8", marginBottom: 8 }} />
-          <div className="mx-auto rounded-md" style={{ width: "50%", height: 8, backgroundColor: "#e4e4e7", marginBottom: 14 }} />
-          <div className="mx-auto rounded-lg" style={{ width: "60%", height: 40, backgroundColor: "#fff", border: "1px solid #e4e4e7" }} />
-        </div>
-        <span className="absolute bottom-2 text-[9px]" style={{ color: "#a1a1aa", fontFamily: 'ui-monospace, monospace' }}>feels like a webpage</span>
-      </div>
-    );
-  }
-  // final
-  return (
-    <div className={base} style={{ ...h, backgroundColor: C.surface }}>
-      <div className="text-center">
-        <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, monospace' }}>Safe to spend</span>
-        <div style={{ color: C.ink, fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 34, letterSpacing: "-0.04em", marginTop: 2 }}>$885</div>
-        <div className="mt-2 mx-auto h-1.5 w-24 rounded-full overflow-hidden" style={{ backgroundColor: C.accentSoft }}>
-          <div className="h-full rounded-full" style={{ width: "62%", backgroundColor: C.accent }} />
-        </div>
-      </div>
-      <span className="absolute top-2 right-3 text-[9px] px-1.5 py-0.5 rounded" style={{ color: C.accentDeep, backgroundColor: C.accentSoft, fontFamily: 'ui-monospace, monospace' }}>shipped</span>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  CONSTRAINTS AS STRATEGY (sharpener)                       */
-/* ══════════════════════════════════════════════════════════ */
-function ConstraintsCallout() {
-  return (
-    <section className="relative py-20 sm:py-28" style={{ backgroundColor: C.ink }}>
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal>
-          <span className="text-[11px] uppercase tracking-[0.22em]" style={{ color: C.accent, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
-            Constraints as strategy
-          </span>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <p
-            className="mt-6"
-            style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: "clamp(24px, 3.4vw, 42px)", lineHeight: 1.2, letterSpacing: "-0.025em", color: "#FFFFFF", maxWidth: "24ch" }}
-          >
-            No bank linking, no backend — <span style={{ color: C.accent }}>on purpose.</span>
-          </p>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <p className="mt-6 text-[16px] sm:text-[18px]" style={{ color: "rgba(255,255,255,0.66)", fontFamily: "DM Sans, sans-serif", lineHeight: 1.65, maxWidth: "58ch" }}>
-            It sidesteps money-transmitter licensing, KYC/AML and PCI compliance, makes the app instantly buildable, and turns{" "}
-            <span style={{ color: "#FFFFFF", fontWeight: 600 }}>"your data never leaves your device"</span> into a feature instead of a footnote.
-          </p>
         </Reveal>
       </div>
     </section>
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  §5 — AI AS PARTNER (collapsible)                          */
-/* ══════════════════════════════════════════════════════════ */
-const AI_DECISIONS = [
-  "Rejected adding a database / backend → chose local-first for privacy and buildability.",
-  "Killed the forecast graphs after they tested as confusing.",
-  "Overruled the cartoonish neon / 3D and candy-purple directions toward restraint.",
-  "Caught a real bug AI introduced — a \"due day\" field that clamped every keystroke, so typing 25 became 31 — and specified the fix.",
-  "Repeatedly cut features to protect the one-number simplicity.",
+/* ══════════════════════════════════════════════════════════════════════════
+   04 — SIX VERSIONS  (the centrepiece)
+
+   This is the honest part, and on the old page it was a static list sitting at
+   position four, competing with three other sections that made the same
+   "restraint" point. It is now the spine of the study: the phone pins, and the
+   design inside it changes as you scrub. Each version is drawn in CSS rather
+   than screenshotted, which is the honest representation anyway — these are
+   directions that were killed, not shipped screens.
+   ══════════════════════════════════════════════════════════════════════════ */
+const VERSIONS = [
+  {
+    n: "01",
+    title: "Glassmorphic neon",
+    lesson: "Premium isn't decoration. Restraint reads as expensive.",
+    kind: "glass",
+  },
+  {
+    n: "02",
+    title: "Candy-purple mesh",
+    lesson: 'The default "AI app" purple looked unserious. Commit to one meaningful accent.',
+    kind: "purple",
+  },
+  {
+    n: "03",
+    title: "Ink + jade",
+    lesson: "Colour discipline: one accent, exactly two state colours.",
+    kind: "ink",
+  },
+  {
+    n: "04",
+    title: "Forecast graphs everywhere",
+    lesson: "If users can't read it, cut it. Every chart went but one.",
+    kind: "charts",
+  },
+  {
+    n: "05",
+    title: "Felt like a website",
+    lesson: "Native feel is structure, not skin: shell, tab bar, sheets, gestures.",
+    kind: "web",
+  },
+  {
+    n: "06",
+    title: "White + emerald, locked",
+    lesson: "The last 20% — what you remove and harden — is the design.",
+    kind: "final",
+  },
 ];
 
-function AISection() {
-  const [open, setOpen] = useState(false);
+function VersionsSection() {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const [idx, setIdx] = useState(0);
+  const rotY = useMotionValue(16);
+
+  /* Progress comes from the section's own rect in a passive scroll listener
+     rather than from useScroll(). Two reasons.
+
+     Cost: this is one rect read per scroll event, for a single element — not
+     the per-frame reads that were the problem elsewhere on this site. Scroll
+     events are already throttled to roughly frame rate and the index only
+     commits to state when it actually changes, so React re-renders six times
+     across the whole sequence rather than continuously.
+
+     Robustness: it does not depend on motion's internal frame loop. The
+     rotation rides the same measurement, so there is still only one read. */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let last = -1;
+    const onScroll = () => {
+      const r = el.getBoundingClientRect();
+      const travel = r.height - window.innerHeight;
+      if (travel <= 0) return;
+      const p = Math.max(0, Math.min(1, -r.top / travel));
+      const next = Math.max(0, Math.min(VERSIONS.length - 1, Math.floor(p * VERSIONS.length * 0.999)));
+      if (next !== last) {
+        last = next;
+        setIdx(next);
+      }
+      if (!reduce) rotY.set(16 - p * 32);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [reduce, rotY]);
+
+  const active = VERSIONS[idx];
+
   return (
-    <SectionShell num="05" label="Designing with AI as a partner" bg={C.surface}>
-      <Reveal>
-        <Display className="max-w-[22ch]">
-          I used AI as a fast, opinionated collaborator —{" "}
-          <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>but the decisions were mine.</span>
-        </Display>
-      </Reveal>
+    <section ref={ref} className="relative" style={{ backgroundColor: C.ink, height: `${VERSIONS.length * 78}vh` }}>
+      <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+        <div className="mx-auto max-w-6xl w-full px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+          {/* left — the count and the lesson */}
+          <div className="lg:col-span-6 order-2 lg:order-1">
+            <div className="flex items-center gap-3 mb-8">
+              <span className="text-[11px] uppercase tracking-[0.24em] font-semibold" style={{ color: C.accent, fontFamily: MONO }}>
+                03 — Six versions
+              </span>
+              <span className="h-px flex-1 max-w-[70px]" style={{ backgroundColor: "rgba(255,255,255,0.16)" }} />
+            </div>
 
-      <Reveal delay={0.1}>
-        <div className="mt-8 rounded-2xl p-6 sm:p-8" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
-          <p style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontSize: "clamp(18px, 2.2vw, 24px)", lineHeight: 1.45, color: C.ink, maxWidth: "44ch" }}>
-            "AI generated options at speed; the product judgment — what to remove, what to refuse, when it was done — was mine."
-          </p>
-        </div>
-      </Reveal>
+            <h2
+              className="max-w-[16ch]"
+              style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(26px, 3.4vw, 42px)", lineHeight: 1.1, letterSpacing: "-0.03em", color: "#fff" }}
+            >
+              I threw away five designs to find the sixth.
+            </h2>
 
-      {/* collapsible decisions list */}
-      <Reveal delay={0.16}>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="mt-8 inline-flex items-center gap-2 text-[13px] font-semibold px-5 py-3 rounded-full transition-colors"
-          style={{ color: C.accentDeep, backgroundColor: C.accentSoft, border: `1px solid ${C.accent}33`, fontFamily: "DM Sans, sans-serif" }}
-          aria-expanded={open}
-        >
-          {open ? "Hide" : "Show"} the decisions where I said "no"
-          <ArrowDown className="w-4 h-4 transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }} strokeWidth={2.5} />
-        </button>
-
-        <motion.div
-          initial={false}
-          animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
-          transition={{ duration: 0.4, ease: EASE }}
-          style={{ overflow: "hidden" }}
-        >
-          <ul className="mt-6 space-y-3 max-w-[60ch]">
-            {AI_DECISIONS.map((d, i) => (
-              <li key={i} className="flex gap-3 items-start">
-                <span className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: C.accent }} />
-                <span className="text-[14.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.55 }}>{d}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 text-[12px]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-            * curated chat snippets to be added here
-          </p>
-        </motion.div>
-      </Reveal>
-    </SectionShell>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  §6 — DESIGN SYSTEM                                        */
-/* ══════════════════════════════════════════════════════════ */
-function SystemSection() {
-  return (
-    <SectionShell num="06" label="The design system at a glance">
-      <Reveal>
-        <Display className="max-w-[20ch]">
-          A fixed identity so every screen feels like <span style={{ color: C.accent }}>one app.</span>
-        </Display>
-      </Reveal>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-12">
-        {/* Colour */}
-        <Reveal delay={0}>
-          <div className="rounded-2xl p-6 h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>Colour</span>
-            <div className="flex gap-2 mt-4">
-              {[
-                { c: C.bg, label: "canvas", border: true },
-                { c: C.accent, label: "accent" },
-                { c: C.amber, label: "tight" },
-                { c: C.clay, label: "over" },
-              ].map((s) => (
-                <div key={s.label} className="flex flex-col items-center gap-1.5">
-                  <div className="w-12 h-12 rounded-xl" style={{ backgroundColor: s.c, border: s.border ? `1px solid ${C.hairline}` : "none" }} />
-                  <span className="text-[9.5px]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, monospace' }}>{s.label}</span>
+            {/* the changing part */}
+            <div className="mt-6 sm:mt-10" style={{ minHeight: "clamp(126px, 20vh, 168px)" }}>
+              <motion.div
+                key={active.n}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: EASE }}
+              >
+                <div className="flex items-baseline gap-4">
+                  <span style={{ fontFamily: MONO, fontSize: 13, color: C.accent, fontWeight: 700 }}>{active.n}</span>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(20px, 2.2vw, 27px)", color: "#fff", letterSpacing: "-0.02em" }}>
+                    {active.title}
+                  </span>
                 </div>
+                <p
+                  className="mt-4 max-w-[40ch]"
+                  style={{ fontFamily: BODY, fontSize: "clamp(15px, 1.3vw, 17.5px)", lineHeight: 1.6, color: "rgba(255,255,255,0.72)" }}
+                >
+                  {active.lesson}
+                </p>
+              </motion.div>
+            </div>
+
+            {/* progress rail */}
+            <div className="flex items-center gap-2 mt-10" role="presentation">
+              {VERSIONS.map((v, i) => (
+                <span
+                  key={v.n}
+                  style={{
+                    height: 3,
+                    flex: 1,
+                    maxWidth: 46,
+                    borderRadius: 999,
+                    backgroundColor: i <= idx ? C.accent : "rgba(255,255,255,0.18)",
+                    transition: "background-color .35s ease",
+                  }}
+                />
               ))}
             </div>
-            <p className="mt-5 text-[13px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>
-              One accent, used with discipline. Plus exactly two state colours.
-            </p>
           </div>
-        </Reveal>
 
-        {/* Type */}
-        <Reveal delay={0.08}>
-          <div className="rounded-2xl p-6 h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>Type</span>
-            <div className="mt-3">
-              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 46, color: C.ink, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>$1,730</span>
-            </div>
-            <p className="mt-3 text-[13px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>
-              System / SF Pro. The safe-to-spend number is the hero — big, tabular, unmistakable. A clear hierarchy under it.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Motion */}
-        <Reveal delay={0.16}>
-          <div className="rounded-2xl p-6 h-full" style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}` }}>
-            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: C.inkFaint, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>Motion</span>
-            <div className="mt-4 h-12 flex items-center">
-              <motion.div
-                className="h-2 rounded-full"
-                style={{ backgroundColor: C.accent }}
-                initial={{ width: 8 }}
-                whileInView={{ width: "100%" }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.68, ease: EASE }}
-              />
-            </div>
-            <p className="mt-3 text-[13px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.5 }}>
-              Calm 200–680ms, soft ease-out. Count-up and self-drawing reveals. Reduced-motion fully respected.
-            </p>
-          </div>
-        </Reveal>
-      </div>
-    </SectionShell>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  WHAT I LEFT OUT (sharpener)                               */
-/* ══════════════════════════════════════════════════════════ */
-const LEFT_OUT = [
-  { item: "Transfers / payments", why: "That's a bank's job — and a licensing nightmare." },
-  { item: "Bank linking", why: "The #1 reason people quit budgeting apps." },
-  { item: "Spending categories", why: "Tagging every coffee is the chore. Cut." },
-  { item: "Multi-account juggling", why: "One honest number can't come from five places." },
-  { item: "Social / sharing", why: "Money isn't a leaderboard." },
-  { item: "Streaks & shame mechanics", why: "Calm, never shaming. No guilt loops." },
-  { item: "Every chart but one", why: "If you can't read it in a glance, it's gone." },
-];
-
-function LeftOutSection() {
-  return (
-    <SectionShell num="" label="A product is defined by its no's" bg={C.surface}>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
-        {/* Left — heading + count */}
-        <div className="lg:col-span-4">
-          <Reveal>
-            <Display className="max-w-[12ch]">
-              What I deliberately <span style={{ color: C.clay }}>left out.</span>
-            </Display>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mt-7 inline-flex items-baseline gap-2">
-              <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 52, color: C.clay, letterSpacing: "-0.04em" }}>7</span>
-              <span className="text-[14px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif" }}>features said no to —<br/>so one could be said yes to.</span>
-            </div>
-          </Reveal>
-        </div>
-
-        {/* Right — the no's, as a struck list with reasons */}
-        <div className="lg:col-span-8">
-          <div className="rounded-3xl overflow-hidden" style={{ border: `1px solid ${C.hairline}`, backgroundColor: C.bg }}>
-            {LEFT_OUT.map((row, i) => (
-              <Reveal key={row.item} delay={i * 0.05}>
-                <div
-                  className="group flex items-start gap-4 px-5 sm:px-7 py-4"
-                  style={{ borderTop: i === 0 ? "none" : `1px solid ${C.hairline}` }}
-                >
-                  {/* cross badge */}
-                  <span className="flex-shrink-0 inline-flex items-center justify-center rounded-full mt-0.5" style={{ width: 30, height: 30, backgroundColor: "rgba(181,83,46,0.10)" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.clay} strokeWidth="2.6" strokeLinecap="round">
-                      <path d="M6 6l12 12M18 6L6 18" />
-                    </svg>
-                  </span>
-                  {/* name + reason — stack on mobile, row on desktop */}
-                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                    <span
-                      className="text-[16px] sm:text-[19px]"
-                      style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: C.inkSoft, letterSpacing: "-0.01em", textDecoration: "line-through", textDecorationColor: `${C.clay}80`, textDecorationThickness: "2px" }}
-                    >
-                      {row.item}
-                    </span>
-                    <span className="sm:ml-auto sm:text-right text-[13px] sm:text-[13.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif", maxWidth: "34ch" }}>
-                      {row.why}
-                    </span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </div>
-    </SectionShell>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════ */
-/*  VOICE (sharpener)                                         */
-/* ══════════════════════════════════════════════════════════ */
-const VOICE = [
-  { state: "Healthy", line: "You've got $1,730 to spend before payday.", color: C.accent, when: "now", emoji: "check" },
-  { state: "Tight", line: "Getting tight — about $85 until payday. Easy does it.", color: C.amber, when: "9:02", emoji: "wave" },
-  { state: "Over", line: "Heads up — you'll be about $40 short. Want to adjust?", color: C.clay, when: "8:15", emoji: "alert" },
-  { state: "Payday", line: "New cycle — here's your room.", color: C.accentDeep, when: "Jul 1", emoji: "spark" },
-];
-
-function VoiceSection() {
-  return (
-    <SectionShell num="" label="Tone as a craft artifact" bg={C.bg}>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-        <div className="lg:col-span-4 lg:sticky lg:top-28">
-          <Reveal>
-            <Display className="max-w-[14ch]">
-              The same number, said <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>four ways.</span>
-            </Display>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mt-5 text-[15px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.6, maxWidth: "38ch" }}>
-              These are the real notification strings. Same forecast, four emotional states — and not one of them shames you.
-            </p>
-          </Reveal>
-          <Reveal delay={0.18}>
-            <div className="mt-6 inline-flex items-center gap-2 px-3.5 py-2 rounded-full" style={{ backgroundColor: C.accentSoft, border: `1px solid ${C.accent}33` }}>
-              <IconLeaf />
-              <span className="text-[12.5px] font-medium" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif" }}>Calm, never shaming</span>
-            </div>
-          </Reveal>
-        </div>
-
-        {/* Notification stack */}
-        <div className="lg:col-span-8 space-y-3.5">
-          {VOICE.map((v, i) => (
-            <Reveal key={v.state} delay={i * 0.08}>
+          {/* right — the pinned phone */}
+          <div className="lg:col-span-6 order-1 lg:order-2 flex justify-center" style={{ perspective: 1500 }}>
+            <motion.div style={reduce ? undefined : { rotateY: rotY, transformStyle: "preserve-3d", willChange: "transform" }}>
               <div
-                className="flex items-start gap-3.5 rounded-2xl p-4 sm:p-5"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.hairline}`, boxShadow: "0 10px 30px -18px rgba(16,40,30,.18)" }}
+                className="relative rounded-[2.4rem] p-2"
+                style={{ backgroundColor: "#050806", width: "clamp(168px, 44vw, 250px)", boxShadow: "0 50px 90px -30px rgba(0,0,0,.7)" }}
               >
-                {/* app icon */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${v.color}, ${v.color}cc)` }}>
-                  <VoiceGlyph kind={v.emoji} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[13px] font-bold" style={{ color: C.ink, fontFamily: "DM Sans, sans-serif" }}>Headroom</span>
-                    <span className="text-[10px] uppercase tracking-[0.14em] px-1.5 py-0.5 rounded" style={{ color: v.color, backgroundColor: `${v.color}14`, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{v.state}</span>
-                    <span className="ml-auto text-[11px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>{v.when}</span>
-                  </div>
-                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 15.5, lineHeight: 1.45, color: C.inkSoft }}>{v.line}</p>
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-20 h-5 rounded-b-2xl" style={{ backgroundColor: "#050806" }} />
+                <div className="relative overflow-hidden rounded-[1.9rem]" style={{ aspectRatio: "393 / 852" }}>
+                  <motion.div
+                    key={active.kind}
+                    className="absolute inset-0"
+                    initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: EASE }}
+                  >
+                    <VersionScreen kind={active.kind} />
+                  </motion.div>
                 </div>
               </div>
-            </Reveal>
-          ))}
+            </motion.div>
+          </div>
         </div>
       </div>
-    </SectionShell>
+    </section>
   );
 }
 
-function VoiceGlyph({ kind }: { kind: string }) {
-  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "#FFFFFF", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (kind === "check") return <svg {...common}><path d="M5 12l5 5L20 6" /></svg>;
-  if (kind === "wave") return <svg {...common}><path d="M3 12c3 0 3-4 6-4s3 8 6 8 3-4 6-4" /></svg>;
-  if (kind === "alert") return <svg {...common}><path d="M12 8v5" /><path d="M12 17h.01" /><path d="M10.3 3.6 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z" /></svg>;
-  return <svg {...common}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>;
+/* Each killed direction, drawn rather than screenshotted. Static gradients —
+   they never animate, so they cost one paint and then composite. */
+function VersionScreen({ kind }: { kind: string }) {
+  if (kind === "final") {
+    return <img src={SHOT.todayHealthy} alt="Final design" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />;
+  }
+
+  const skin: Record<string, { bg: string; card: string; accent: string; text: string }> = {
+    glass: { bg: "linear-gradient(160deg,#12203A 0%,#0A1020 100%)", card: "rgba(255,255,255,0.13)", accent: "#3BE8FF", text: "rgba(255,255,255,.9)" },
+    purple: { bg: "linear-gradient(160deg,#4B2AA8 0%,#8B36C9 55%,#C348A6 100%)", card: "rgba(255,255,255,0.16)", accent: "#F5D0FF", text: "#fff" },
+    ink: { bg: "linear-gradient(180deg,#0F1512 0%,#141C18 100%)", card: "rgba(255,255,255,0.07)", accent: C.accent, text: "rgba(255,255,255,.92)" },
+    charts: { bg: "#0E1512", card: "rgba(255,255,255,0.06)", accent: C.accent, text: "rgba(255,255,255,.9)" },
+    web: { bg: "#F4F6F5", card: "#FFFFFF", accent: C.accent, text: C.ink },
+  };
+  const s = skin[kind] ?? skin.ink;
+
+  return (
+    <div className="absolute inset-0 p-4 flex flex-col gap-3" style={{ background: s.bg }}>
+      {/* status strip */}
+      <div className="flex justify-between items-center pt-3 px-1">
+        <span style={{ fontFamily: MONO, fontSize: 8, color: s.text, opacity: 0.6 }}>9:41</span>
+        <span style={{ width: 26, height: 5, borderRadius: 3, backgroundColor: s.text, opacity: 0.3 }} />
+      </div>
+
+      {/* hero number card */}
+      <div
+        className="rounded-2xl p-4 mt-1"
+        style={{ backgroundColor: s.card, border: kind === "web" ? `1px solid ${C.hairline}` : "1px solid rgba(255,255,255,0.12)" }}
+      >
+        <div style={{ fontFamily: MONO, fontSize: 7.5, letterSpacing: "0.12em", color: s.text, opacity: 0.6, textTransform: "uppercase" }}>
+          Safe to spend
+        </div>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 30, color: s.accent, letterSpacing: "-0.04em", marginTop: 4 }}>
+          $1,730
+        </div>
+        {kind === "charts" && (
+          <div className="flex items-end gap-1 mt-3" style={{ height: 34 }}>
+            {[40, 68, 30, 84, 52, 74, 44, 90, 60].map((h, i) => (
+              <span key={i} style={{ flex: 1, height: `${h}%`, backgroundColor: s.accent, opacity: 0.55, borderRadius: 2 }} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* filler rows */}
+      {kind === "charts" ? (
+        <div className="rounded-2xl p-3" style={{ backgroundColor: s.card }}>
+          <svg viewBox="0 0 120 44" className="w-full" style={{ height: 44 }}>
+            <polyline points="0,34 15,26 30,30 45,16 60,22 75,10 90,18 105,8 120,14" fill="none" stroke={s.accent} strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+      ) : null}
+
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-xl px-3 py-2.5 flex items-center justify-between"
+          style={{ backgroundColor: s.card, border: kind === "web" ? `1px solid ${C.hairline}` : "none" }}
+        >
+          <span style={{ width: `${44 - i * 7}%`, height: 6, borderRadius: 3, backgroundColor: s.text, opacity: 0.34 }} />
+          <span style={{ width: 26, height: 6, borderRadius: 3, backgroundColor: s.accent, opacity: 0.7 }} />
+        </div>
+      ))}
+
+      <div className="flex-1" />
+
+      {/* tab bar — the thing version 05 was missing */}
+      {kind === "web" ? (
+        <div className="rounded-xl px-3 py-2 text-center" style={{ backgroundColor: "#fff", border: `1px solid ${C.hairline}` }}>
+          <span style={{ fontFamily: BODY, fontSize: 8, color: C.inkFaint }}>▸ scrolling web page</span>
+        </div>
+      ) : (
+        <div className="flex justify-around items-center pb-2 pt-1">
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: i === 0 ? s.accent : s.text, opacity: i === 0 ? 0.9 : 0.22 }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  §7 — OUTCOME                                              */
-/* ══════════════════════════════════════════════════════════ */
-const OUTCOMES = [
-  { tag: "Shipped", icon: "rocket", body: "A working PWA — deployed, installable, fully on-device. Designed and built end-to-end, design → Claude Code." },
-  { tag: "What I learned", icon: "bulb", body: "The hardest design work was deciding what to leave out. Simplicity is a series of refusals, not a coat of paint." },
-  { tag: "What I'd test next", icon: "flask", body: 'Real users on the core question — and whether the "heads-up before you dip" alert actually changes behaviour.' },
-];
+/* ══════════════════════════════════════════════════════════════════════════
+   05 — OUTCOME
+   ══════════════════════════════════════════════════════════════════════════ */
 const LIGHTHOUSE = [
   { label: "Performance", score: 92 },
-  { label: "Best Practices", score: 100 },
   { label: "Accessibility", score: 95 },
+  { label: "Best practices", score: 100 },
 ];
 
 function OutcomeSection() {
   return (
-    <SectionShell num="07" label="Outcome & what's next" bg={C.surface}>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-        <div className="lg:col-span-8">
-          <Reveal>
-            <Display className="max-w-[16ch]">
-              A real, installable app — <span style={{ fontFamily: "Playfair Display, serif", fontStyle: "italic", fontWeight: 500, color: C.accent }}>not a Figma file.</span>
-            </Display>
-          </Reveal>
-        </div>
-        <div className="lg:col-span-4 lg:text-right">
-          <Reveal delay={0.1}>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: C.accentSoft, border: `1px solid ${C.accent}33` }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: C.accent }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: C.accent }} />
-              </span>
-              <span className="text-[12px] font-medium" style={{ color: C.accentDeep, fontFamily: "DM Sans, sans-serif" }}>
-                Shipped &amp; installable · seeking first users
-              </span>
-            </span>
-          </Reveal>
-        </div>
-      </div>
+    <section className="relative py-24 sm:py-32" style={{ backgroundColor: C.surface }}>
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal>
+          <Eyebrow num="04">Outcome</Eyebrow>
+        </Reveal>
 
-      {/* Outcome cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-12">
-        {OUTCOMES.map((o, i) => (
-          <Reveal key={o.tag} delay={i * 0.08}>
-            <div className="h-full rounded-2xl p-6" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: C.accentSoft, color: C.accentDeep }}>
-                <OutcomeIcon kind={o.icon} />
-              </div>
-              <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: C.accentDeep, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{o.tag}</span>
-              <p className="mt-2.5 text-[14.5px]" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif", lineHeight: 1.6 }}>{o.body}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-
-      {/* Lighthouse + toolstack panel */}
-      <Reveal delay={0.15}>
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 rounded-3xl p-7 sm:p-9" style={{ backgroundColor: C.ink }}>
-          {/* Lighthouse gauges */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           <div className="lg:col-span-7">
-            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.5)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-              Lighthouse · clean run
-            </span>
-            <div className="flex flex-wrap gap-8 mt-5">
-              {LIGHTHOUSE.map((g, i) => (
-                <Gauge key={g.label} label={g.label} score={g.score} delay={i * 0.15} />
-              ))}
-            </div>
-            <p className="mt-5 text-[12px]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: "DM Sans, sans-serif" }}>
-              AA contrast · reduced-motion fallbacks · honest numbers, not rounded up.
-            </p>
+            <Reveal delay={0.05}>
+              <Display className="max-w-[17ch]" size="clamp(28px, 4.2vw, 52px)">
+                Shipped, installable, and <span style={{ color: C.accent }}>fully on-device.</span>
+              </Display>
+            </Reveal>
+            <Reveal delay={0.12}>
+              <div className="mt-8 space-y-5 max-w-[52ch]">
+                <Body>
+                  Designed and built end-to-end — design through Claude Code — into a working PWA you can install from
+                  the browser. No accounts, no bank linking, no server holding your money data.
+                </Body>
+                <Body>
+                  The hardest work wasn't the interface. It was deciding what to leave out: simplicity is a series of
+                  refusals, not a coat of paint.
+                </Body>
+              </div>
+            </Reveal>
+            <Reveal delay={0.18}>
+              <div className="mt-8 rounded-2xl p-5" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
+                <div className="text-[10.5px] uppercase tracking-[0.16em] font-semibold mb-2" style={{ color: C.inkFaint, fontFamily: MONO }}>
+                  What I'd test next
+                </div>
+                <Body>
+                  Whether the heads-up before you dip actually changes behaviour — the one claim I can't validate
+                  without real users.
+                </Body>
+              </div>
+            </Reveal>
           </div>
 
-          {/* Toolstack */}
-          <div className="lg:col-span-5 lg:border-l lg:pl-8" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
-            <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.5)", fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-              Toolstack
-            </span>
-            <div className="flex flex-wrap gap-2 mt-5">
-              {["Figma", "Claude Code", "Vercel", "React + Vite + TS", "Framer Motion", "IndexedDB", "PWA"].map((t) => (
-                <span key={t} className="text-[12px] px-3 py-1.5 rounded-full" style={{ color: "rgba(255,255,255,0.8)", backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "DM Sans, sans-serif" }}>{t}</span>
-              ))}
-            </div>
+          <div className="lg:col-span-5 w-full">
+            <Reveal delay={0.1}>
+              <div className="rounded-3xl p-7" style={{ backgroundColor: C.bg, border: `1px solid ${C.hairline}` }}>
+                <div className="text-[10.5px] uppercase tracking-[0.16em] font-semibold mb-6" style={{ color: C.inkFaint, fontFamily: MONO }}>
+                  Lighthouse · mobile
+                </div>
+                <div className="space-y-6">
+                  {LIGHTHOUSE.map((g, i) => (
+                    <Gauge key={g.label} label={g.label} score={g.score} delay={i * 0.12} />
+                  ))}
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
-      </Reveal>
-    </SectionShell>
+      </div>
+    </section>
   );
-}
-
-function OutcomeIcon({ kind }: { kind: string }) {
-  const c = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (kind === "rocket") return <svg {...c}><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8a2 2 0 0 0-3 0z" /><path d="M12 15l-3-3a22 22 0 0 1 8-10c2.5 0 5 .5 5 .5s.5 2.5.5 5a22 22 0 0 1-10 8z" /><path d="M9 12H4s.5-3 2-4 5-1 5-1" /><path d="M12 15v5s3-.5 4-2 1-5 1-5" /></svg>;
-  if (kind === "bulb") return <svg {...c}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>;
-  return <svg {...c}><path d="M9 3h6" /><path d="M10 3v6.5L5 18a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 18l-5-8.5V3" /><path d="M7.5 14h9" /></svg>;
 }
 
 function Gauge({ label, score, delay }: { label: string; score: number; delay: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
-  const reduce = useReducedMotion();
-  const R = 26;
-  const CIRC = 2 * Math.PI * R;
-  const display = useCountUp(score, inView, 1.2);
-  const ratio = score / 100;
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const val = useCountUp(score, inView, 1100);
   return (
-    <div ref={ref} className="flex flex-col items-center gap-2.5">
-      <div className="relative" style={{ width: 68, height: 68 }}>
-        <svg width="68" height="68" viewBox="0 0 68 68">
-          <circle cx="34" cy="34" r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5" />
-          <motion.circle
-            cx="34" cy="34" r={R} fill="none" stroke={C.accent} strokeWidth="5" strokeLinecap="round"
-            transform="rotate(-90 34 34)"
-            strokeDasharray={CIRC}
-            initial={{ strokeDashoffset: reduce ? CIRC * (1 - ratio) : CIRC }}
-            animate={inView ? { strokeDashoffset: CIRC * (1 - ratio) } : {}}
-            transition={{ duration: 1.2, delay, ease: EASE }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 18, color: "#FFFFFF", fontVariantNumeric: "tabular-nums" }}>{display}</span>
-        </div>
+    <div ref={ref}>
+      <div className="flex items-baseline justify-between mb-2">
+        <span className="text-[13.5px] font-medium" style={{ color: C.ink, fontFamily: BODY }}>
+          {label}
+        </span>
+        <span
+          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 19, color: C.accent, fontVariantNumeric: "tabular-nums" }}
+        >
+          {val}
+        </span>
       </div>
-      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "DM Sans, sans-serif" }}>{label}</span>
+      <div style={{ height: 5, borderRadius: 999, backgroundColor: C.hairline, overflow: "hidden" }}>
+        <motion.div
+          style={{ height: "100%", borderRadius: 999, backgroundColor: C.accent, transformOrigin: "left" }}
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: score / 100 } : { scaleX: 0 }}
+          transition={{ duration: 1, delay, ease: EASE }}
+        />
+      </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/*  FINAL CTA                                                 */
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   06 — CTA
+   ══════════════════════════════════════════════════════════════════════════ */
 function FinalCTA() {
   return (
     <section className="relative py-24 sm:py-36" style={{ backgroundColor: C.bg }}>
-      <div className="mx-auto max-w-4xl px-5 sm:px-8 text-center">
+      <div className="mx-auto max-w-3xl px-5 sm:px-8 text-center">
         <Reveal>
-          <Display size="clamp(30px, 5vw, 58px)" className="mx-auto">
-            Don't take my word for it —{" "}
-            <span style={{ color: C.accent }}>spend 30 seconds in it.</span>
+          <Display size="clamp(30px, 4.6vw, 56px)">
+            It's live. <span style={{ color: C.accent }}>Go and try it.</span>
           </Display>
         </Reveal>
-
-        <Reveal delay={0.1}>
-          <div className="mt-10 flex flex-col items-center gap-4">
-            <a
-              href={LIVE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center justify-center gap-2.5 text-[15px] font-semibold px-9 py-5 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
-              style={{ backgroundColor: C.accent, color: "#FFFFFF", fontFamily: "DM Sans, sans-serif", boxShadow: "0 18px 36px -14px rgba(14,158,107,.65)" }}
-            >
-              Try the live app
-              <ArrowUpRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={2.5} />
-            </a>
-            <span className="inline-flex items-center gap-1.5 text-[12.5px]" style={{ color: C.inkFaint, fontFamily: "DM Sans, sans-serif" }}>
-              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Tip: open on your phone and "Add to Home Screen" — it installs like a native app.
-            </span>
-          </div>
+        <Reveal delay={0.08}>
+          <Body className="mt-6 mx-auto max-w-[44ch]">
+            Open it on your phone and add it to your home screen — it installs like a native app.
+          </Body>
         </Reveal>
-
+        <Reveal delay={0.14}>
+          <a
+            href={LIVE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-10 px-8 py-4 rounded-full text-[15px] font-semibold transition-transform hover:scale-[1.03] active:scale-[0.98]"
+            style={{ backgroundColor: C.accent, color: "#fff", fontFamily: BODY, boxShadow: "0 20px 40px -18px rgba(14,158,107,.65)" }}
+          >
+            Open Headroom
+            <ArrowUpRight className="w-4 h-4" strokeWidth={2.5} />
+          </a>
+        </Reveal>
         <Reveal delay={0.2}>
-          <Link to="/" className="inline-block mt-12 text-[13px] font-medium transition-opacity hover:opacity-70" style={{ color: C.inkSoft, fontFamily: "DM Sans, sans-serif" }}>
+          <Link
+            to="/"
+            className="inline-block mt-12 text-[13px] font-medium transition-opacity hover:opacity-70"
+            style={{ color: C.inkSoft, fontFamily: BODY }}
+          >
             ← Back to work
           </Link>
         </Reveal>

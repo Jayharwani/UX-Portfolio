@@ -236,7 +236,13 @@ html {
 }
 
 body {
-  overflow-x: hidden;
+  /* `clip`, not `hidden`. Per spec, overflow-x:hidden forces overflow-y from
+     visible to auto, which — together with height:100% in index.css — turned
+     BODY into the scroll container. window.scrollY then sits at 0 forever, so
+     every useScroll()-driven effect on the site silently did nothing (the
+     reading-progress bar never filled on any page). `clip` is the one value
+     that clips without promoting the other axis to auto. */
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family: var(--font-body);
