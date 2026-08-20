@@ -80,6 +80,8 @@ export default function MemoryParticles({
 
     let disposed = false;
     let cleanupFns: (() => void)[] = [];
+    /* holds the dissolve timeline so the visibility observer can pause it */
+    const loopRef: { current: gsap.core.Timeline | null } = { current: null };
 
     /* failsafe: whatever happens (throttled ticker, background-tab load,
        font API weirdness), the real headline may never stay invisible.
@@ -430,13 +432,24 @@ export default function MemoryParticles({
       gsap.ticker.add(frame);
       cleanupFns.push(() => gsap.ticker.remove(frame));
 
-      /* pause offscreen / hidden tab */
+      /* Pause offscreen / hidden tab.
+         `state.running` stops the canvas work, but the dissolve timeline below
+         is repeat:-1 and kept ticking regardless — which held gsap.ticker open
+         for the life of the page even once the hero was long gone. Pause the
+         timeline itself here too, so scrolling away actually costs nothing. */
+      const setRunning = (on: boolean) => {
+        state.running = on;
+        const t = loopRef.current;
+        if (!t) return;
+        if (on) t.resume();
+        else t.pause();
+      };
       const io = new IntersectionObserver(([e]) => {
-        state.running = e.isIntersecting && !document.hidden;
+        setRunning(e.isIntersecting && !document.hidden);
       });
       io.observe(hero);
       const onVis = () => {
-        state.running = !document.hidden;
+        setRunning(!document.hidden);
       };
       document.addEventListener("visibilitychange", onVis);
       cleanupFns.push(() => {
@@ -455,8 +468,11 @@ export default function MemoryParticles({
         .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 
 
-      /* the forgetting loop — runs after assembly, forever, silently */
+      /* the forgetting loop — runs after assembly, forever, silently.
+         loopRef lets the visibility observer above pause it when the hero
+         leaves the screen; without that it ticked for the life of the page. */
       const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });
+      loopRef.current = loop;
       loop
         .add(() => {
           state.wordAlpha = 1;

@@ -19,6 +19,7 @@ import {
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
+import { usePerfTier, type Tier } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -157,11 +158,16 @@ const scrollToId = (id: string) => {
   else el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
-/* light, flicky wheel scrolling: instant response, short ease-out tail */
-function useSmoothScroll() {
+/* Light, flicky wheel scrolling: instant response, short ease-out tail.
+
+   Skipped entirely on the lite tier. Lenis holds a rAF loop open for the life
+   of the page and puts a lerp between the wheel and the pixels — on a machine
+   that is already dropping frames that reads as precisely the lag it exists to
+   smooth away. Native scrolling is both faster and more honest there. */
+function useSmoothScroll(tier: Tier) {
   const reduce = useReducedMotion();
   useEffect(() => {
-    if (reduce || !window.matchMedia("(pointer: fine)").matches) return;
+    if (tier === "lite" || reduce || !window.matchMedia("(pointer: fine)").matches) return;
     const lenis = new Lenis({
       duration: 0.72,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -179,7 +185,7 @@ function useSmoothScroll() {
       lenis.destroy();
       lenisRef = null;
     };
-  }, [reduce]);
+  }, [reduce, tier]);
 }
 
 /* accent hairline that fills with scroll progress */
@@ -334,6 +340,11 @@ function Hero() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
   const particles = !reduce;
+  /* The particle hero survives on the lite tier — it is the first thing anyone
+     sees and MemoryParticles already scales its own count and resolution down.
+     The blocks are a different case: matter-js is 86 KB and steps a physics
+     world every frame for a decoration below the fold. That one goes. */
+  const lite = usePerfTier() === "lite";
 
   /* gentle exit parallax: text drifts up faster than the page, playground lags */
   const { scrollY } = useScroll();
@@ -547,7 +558,7 @@ function Hero() {
           animate={{ opacity: showPlay ? 1 : 0 }}
           transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
         >
-          {showPlay && (
+          {showPlay && !lite && (
             <Suspense fallback={null}>
               <IconPlayground interactive={!reduce} tapOnly={coarse} />
             </Suspense>
@@ -1760,9 +1771,10 @@ function FlyerTrigger() {
 
 /* ── page ────────────────────────────────────────────────────────────────── */
 export function HomePage() {
-  useSmoothScroll();
+  const tier = usePerfTier();
+  useSmoothScroll(tier);
   return (
-    <div style={{ background: V.bg, minHeight: "100vh" }}>
+    <div style={{ background: V.bg, minHeight: "100vh" }} data-tier={tier}>
       <ScrollProgress />
       {/* grain overlay, whole page */}
       <div

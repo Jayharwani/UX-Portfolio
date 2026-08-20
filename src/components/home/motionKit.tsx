@@ -6,6 +6,7 @@ import {
   type MotionValue,
 } from "motion/react";
 import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react";
+import { usePerfTier } from "./perfTier";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Motion kit: the shared physics for the homepage's interactive sections.
@@ -88,8 +89,14 @@ export function useDiorama(
   { tilt = true, ambient = true, maxX = 4.5, maxY = 5.5 }: { tilt?: boolean; ambient?: boolean; maxX?: number; maxY?: number } = {}
 ): Diorama {
   const { reduce, fine, wide } = useMediaFlags();
-  const interactive = fine && !reduce;
-  const scrollDrive = !fine && !reduce;
+  /* On the lite tier the diorama collapses to its static form: no pointer
+     loop, no idle drift, no scroll drive, and <Ambience> falls through to the
+     fixed glow instead of the two layers that follow the cursor. Three of
+     these run on the homepage at once, so this is the largest single saving
+     available without changing the layout. */
+  const lite = usePerfTier() === "lite";
+  const interactive = fine && !reduce && !lite;
+  const scrollDrive = !fine && !reduce && !lite;
   const live = interactive || scrollDrive;
   const tiltOn = (interactive && wide && tilt) || (scrollDrive && tilt);
   const ambientOn = live && ambient;
