@@ -127,9 +127,31 @@ export default function MemoryParticles({
          for — would still take the full desktop particle budget here. */
       const lowPower =
         getPerfTier() === "lite" || coarse || cores <= 6 || memGB <= 4 || window.innerWidth < 900;
-      const dpr = Math.min(lowPower ? 1.5 : 2, window.devicePixelRatio || 1);
-      canvas.width = Math.round(heroRect.width * dpr);
-      canvas.height = Math.round(heroRect.height * dpr);
+      /* Budget the BACKING STORE, not the DPR.
+         Capping devicePixelRatio is the standard advice and it is incomplete,
+         because it ignores viewport size entirely. The same 1.5x cap produces
+         0.66M pixels on a phone and 3.62M on a 1664px desktop window — measured,
+         not estimated — and roughly 14M on a 27" display at DPR 2. That is a
+         20x spread from a number that looks bounded.
+
+         The bisect settled it: ?perf=noLenis moved p95 from 33.0ms to 33.7ms
+         (nothing), while ?perf=noParticles moved it to 17.1ms. The canvas is
+         the cost, and with the simulation at ~1,384 particles of spring maths
+         the cost is fill rate, not CPU. So bound the absolute pixel count and
+         let the compositor upscale; the number then stays flat across every
+         display instead of scaling with it. */
+      const cssW = Math.max(1, heroRect.width);
+      const cssH = Math.max(1, heroRect.height);
+      const MAX_BACKING_PX = lowPower ? 1_200_000 : 2_200_000;
+      const deviceDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1.5 : 2);
+      const fit = Math.sqrt(MAX_BACKING_PX / (cssW * cssH));
+      /* Floor at 1.0: the usual advice floors lower on the grounds that
+         particles are soft radial blobs that upscale invisibly. These are
+         1.6-2.4px hard-edged fillRects, so going sub-native would be visible.
+         Trading a little of the saving for not degrading the thing on screen. */
+      const dpr = Math.max(1, Math.min(deviceDpr, fit));
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
       canvas.style.width = `${heroRect.width}px`;
       canvas.style.height = `${heroRect.height}px`;
       const ctx = canvas.getContext("2d");
@@ -408,8 +430,24 @@ export default function MemoryParticles({
 
       /* ── the frame ── */
       const REPULSE = 72;
+      let tickParity = 0;
       const frame = () => {
         if (!state.running) return;
+
+        /* Full rate for the intro, half rate once it has resolved.
+
+           The intro is choreographed and has to be smooth. What follows it is a
+           sparse constellation of slowly drifting blobs, and nobody perceives
+           30fps on those — but the clearRect underneath them is the FULL
+           surface every frame regardless of how few particles remain, which is
+           the single most expensive operation in this loop. Skipping alternate
+           ticks in the settled state halves it.
+
+           This is where the scroll cost lives, incidentally: scrolling past the
+           hero happens long after the intro, so the settled state is the one
+           being paid for during the reported jank, not the cinematic one. */
+        if (state.intro >= 1 && state.dissolve <= 0.01 && (tickParity ^= 1)) return;
+
         state.time += gsap.ticker.deltaRatio(60) / 60;
         const t = state.time;
         ctx.clearRect(0, 0, heroRect.width, heroRect.height);
