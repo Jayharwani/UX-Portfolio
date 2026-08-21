@@ -204,3 +204,40 @@
   .proof-dot { animation: none; }
   .proof-row::before { transition: none; }
 }
+
+/* One easing curve across the page (§8). */
+:root { --ease-ui: cubic-bezier(0.16, 1, 0.3, 1); }
+
+.cta-secondary:hover { border-color: rgb(232 236 243 / 0.40); color: var(--text); }
+.cta-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* §9 / F10: scroll affordance. A rule that grows and retreats on a slow loop.
+   Transform only, and it stops for reduced motion. */
+.scroll-tick {
+  width: 1px; height: 22px; display: inline-block;
+  background: rgb(232 236 243 / 0.30);
+  transform-origin: top;
+  animation: scroll-tick 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes scroll-tick {
+  0%, 100% { transform: scaleY(0.25); opacity: 0.4; }
+  50%      { transform: scaleY(1);    opacity: 1; }
+}
+
+/* §6.3: grain.
+   Not decoration. Dark radial gradients band visibly on 8-bit panels, and a
+   noise layer is the standard fix. It also gives a flat vector dark theme some
+   material quality. One static tile, no animation, never hit-tested. */
+.hero-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-tick { animation: none; transform: scaleY(1); }
+}

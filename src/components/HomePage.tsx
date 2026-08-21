@@ -158,8 +158,9 @@ function MagneticButton({ children, onClick }: { children: ReactNode; onClick: (
       whileTap={{ scale: 0.98 }}
       className="inline-flex items-center gap-2.5"
       style={{
-        padding: "14px 26px",
-        borderRadius: 8,
+        padding: "0 26px",
+        height: 46,
+        borderRadius: 999,
         background: V.accent,
         color: "#0A0E16",
         fontFamily: V.body,
@@ -272,6 +273,14 @@ function Nav() {
           <span style={{ fontFamily: V.display, fontSize: 16, fontWeight: 600, color: V.text }}>Jay Harwani</span>
           <span className="hidden sm:inline" style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, letterSpacing: "0.08em" }}>
             2026 / v4.0
+          </span>
+          {/* §11: the role, so nobody has to scroll to find out what the
+              name above it actually does. */}
+          <span
+            className="hidden lg:inline"
+            style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, letterSpacing: "0.10em", textTransform: "uppercase" }}
+          >
+            Product designer · Design engineer
           </span>
         </div>
         <nav className="flex items-center gap-1">
@@ -508,6 +517,8 @@ function Hero() {
           }}
         />
       )}
+      <div className="hero-grain" aria-hidden="true" />
+
       {/* soft accent glows */}
       <div
         className="absolute pointer-events-none"
@@ -618,13 +629,21 @@ function Hero() {
                 want the person before the projects. */}
             <a
               href="/about"
-              className="link-draw"
+              className="cta-secondary"
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 46,
+                padding: "0 22px",
+                borderRadius: 999,
+                border: "1px solid rgb(232 236 243 / 0.15)",
+                background: "transparent",
                 fontFamily: V.body,
                 fontSize: 14.5,
                 fontWeight: 500,
                 color: V.text2,
                 textDecoration: "none",
+                transition: "border-color 180ms var(--ease-ui), color 180ms var(--ease-ui)",
               }}
             >
               How I work
@@ -758,10 +777,17 @@ function Hero() {
               width: 120,
               height: 1,
               opacity: 0,
-              background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
+              background: "linear-gradient(90deg, transparent, rgb(232 236 243 / 0.9), transparent)",
               willChange: "transform, opacity",
             }}
           />
+        </div>
+        {/* §9 / F10: the scroll affordance. */}
+        <div className="flex items-center gap-3" style={{ paddingTop: 14 }}>
+          <span className="scroll-tick" aria-hidden="true" />
+          <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", color: V.text3 }}>
+            SCROLL
+          </span>
         </div>
       </div>
     </section>
@@ -883,7 +909,9 @@ function SignalPreview({ active }: { active: boolean }) {
               borderRadius: 6,
               background: "#16181C",
               boxShadow: active ? `0 0 0 2px ${ring[p.fit]}, 0 4px 10px rgba(0,0,0,0.5)` : "0 4px 10px rgba(0,0,0,0.5)",
-              transition: "box-shadow 0.4s ease",
+              /* box-shadow is deliberately NOT transitioned: animating it repaints
+                 the whole card each frame. The border carries the hover instead. */
+              transition: "border-color 0.25s var(--ease-ui)",
             }}
           >
             <span style={{ width: 7, height: 7, borderRadius: 2, background: p.c }} />
@@ -1672,12 +1700,12 @@ function About() {
                   decoding="async"
                   width={900}
                   height={1200}
-                  style={{ filter: "grayscale(1) contrast(1.06) brightness(0.88)", display: "block", transition: "filter 0.45s, transform 0.6s" }}
+                  style={{ filter: "grayscale(1) contrast(1.06) brightness(0.88)", display: "block", transition: "transform 0.6s var(--ease-ui)" }}
                   onMouseEnter={(e) => {
-                    if (!reduce) (e.currentTarget as HTMLImageElement).style.filter = "grayscale(0.55) contrast(1.05) brightness(0.94)";
+                    /* filter is not animated any more (§12); the hover reads through transform alone */
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.filter = "grayscale(1) contrast(1.06) brightness(0.88)";
+                    /* no filter reset needed: it is never changed */
                   }}
                 />
                 {/* cool tint */}

@@ -407,7 +407,7 @@ function MagicVault({ reduce, fine, entered }: { reduce: boolean; fine: boolean;
           boxShadow: open
             ? "0 50px 110px -50px rgba(0,0,0,0.95), 0 0 90px -30px rgba(91,140,255,0.55), inset 0 1px 0 rgba(255,255,255,0.07)"
             : "0 34px 80px -44px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)",
-          transition: "box-shadow .6s ease",
+          /* not transitioned: animating box-shadow repaints rather than composites */
         }}
       >
       <motion.div
