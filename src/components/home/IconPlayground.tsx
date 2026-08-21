@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Icon playground: the hero signature. Ten dark tech blocks with real
+   Icon playground: the hero signature. Eleven dark tool blocks with real
    physics (matter-js). They drop in on load, you can drag and throw them,
    they collide and scatter. Desktop gets physics; pass interactive={false}
    for a static scatter (mobile, reduced motion).
@@ -71,29 +71,61 @@ function AntigravityIcon({ size }: { size: number }) {
   );
 }
 
-/* concept glyphs, kept in the accent so the set stays disciplined */
-function UXIcon({ size }: { size: number }) {
+/* ── real product marks ──────────────────────────────────────────────────
+   These replaced three placeholder glyphs (a teardrop, a chevron pair and a
+   sparkle) that stood in for "UX", "Coding" and "AI Design". A concept
+   glyph says nothing a visitor can verify; a tool they recognise does. Every
+   mark below is drawn from primitives rather than lifted artwork, and only
+   brands whose logos are unambiguously geometric are included — a
+   half-remembered logo reads worse than no logo.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Vercel — the platform behind v0 */
+function VercelIcon({ size }: { size: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 2.5 17 9c1.4 1.9 2.2 3.5 2.2 5.2A7.2 7.2 0 0 1 12 21.5 7.2 7.2 0 0 1 4.8 14.2C4.8 12.5 5.6 10.9 7 9l5-6.5z" stroke="#5B8CFF" strokeWidth="1.7" strokeLinejoin="round" />
-      <circle cx="12" cy="14.2" r="2.1" stroke="#5B8CFF" strokeWidth="1.7" />
-      <path d="M12 2.5v9.6" stroke="#5B8CFF" strokeWidth="1.7" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M24 22.525H0l12-21.05 12 21.05z" fill="#E8ECF3" />
     </svg>
   );
 }
-function CodeIcon({ size }: { size: number }) {
+
+/* VS Code */
+function VSCodeIcon({ size }: { size: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m8 6-6 6 6 6M16 6l6 6-6 6" stroke="#5B8CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m13.5 4-3 16" stroke="#5B8CFF" strokeWidth="2" strokeLinecap="round" opacity="0.55" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M23.15 2.587 18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zM17.5 6.75 10.6 12l6.9 5.25V6.75z"
+        fill="#2AABEE"
+      />
     </svg>
   );
 }
-function AIDesignIcon({ size }: { size: number }) {
+
+/* Notion */
+function NotionIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2.6" y="2.6" width="18.8" height="18.8" rx="3.2" fill="#F5F5F3" />
+      <path
+        d="M8.4 16.6V8.1l7.2 7.9V7.4"
+        fill="none"
+        stroke="#12100E"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* The pen nib: the one non-brand mark, kept because the craft predates every
+   tool above it and the set would otherwise read as a logo wall. */
+function PenIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3.5c.9 4.4 3.1 6.6 8.5 8.5-5.4 1.9-7.6 4.1-8.5 8.5-.9-4.4-3.1-6.6-8.5-8.5 5.4-1.9 7.6-4.1 8.5-8.5z" fill="rgba(91,140,255,0.2)" stroke="#5B8CFF" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M19 2.6c.35 1.7 1.2 2.55 3 3.4-1.8.85-2.65 1.7-3 3.4-.35-1.7-1.2-2.55-3-3.4 1.8-.85 2.65-1.7 3-3.4z" fill="#5B8CFF" />
+      <path d="M12 2.2 19.4 15A8.6 8.6 0 0 1 12 21.8 8.6 8.6 0 0 1 4.6 15L12 2.2z" stroke="#C9D2E4" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M12 6.4v9.2" stroke="#C9D2E4" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="16.9" r="1.9" fill="#C9D2E4" />
     </svg>
   );
 }
@@ -111,11 +143,12 @@ const TILES: Tile[] = [
   { id: "chatgpt", label: "ChatGPT", size: 86, icon: (s) => <Simple d={P.openai} fill="#E8ECF3" size={s} /> },
   { id: "antigravity", label: "Google Antigravity", size: 86, icon: (s) => <AntigravityIcon size={s} /> },
   { id: "gemini", label: "Google Gemini", size: 86, icon: (s) => <GeminiIcon size={s} /> },
-  { id: "ux", label: "UX Design", size: 78, icon: (s) => <UXIcon size={s} /> },
-  { id: "code", label: "Coding", size: 78, icon: (s) => <CodeIcon size={s} /> },
   { id: "cursor", label: "Cursor", size: 86, icon: (s) => <Simple d={P.cursor} fill="#E8ECF3" size={s} /> },
+  { id: "vscode", label: "VS Code", size: 78, icon: (s) => <VSCodeIcon size={s} /> },
   { id: "adobe", label: "Adobe", size: 78, icon: (s) => <Simple d={P.adobe} fill="#FA0F00" size={s} /> },
-  { id: "aidesign", label: "AI Design", size: 78, icon: (s) => <AIDesignIcon size={s} /> },
+  { id: "vercel", label: "Vercel · v0", size: 78, icon: (s) => <VercelIcon size={s} /> },
+  { id: "notion", label: "Notion", size: 78, icon: (s) => <NotionIcon size={s} /> },
+  { id: "pen", label: "Craft", size: 72, icon: (s) => <PenIcon size={s} /> },
 ];
 
 const tileStyle = (size: number): React.CSSProperties => ({
