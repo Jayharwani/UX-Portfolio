@@ -39,8 +39,11 @@ const SETTLE_SPEED = 0.4;
 export default function Sandbox({
   interactive,
   onImpact,
+  highlight,
 }: {
   interactive: boolean;
+  /** project id of the hovered proof-rail row; that card outlines to match */
+  highlight?: string | null;
   /** fires when a card lands, so the fold rule can flash at the contact x */
   onImpact?: (x: number) => void;
 }) {
@@ -235,6 +238,7 @@ export default function Sandbox({
             }}
             data-sandbox-card
             data-project={s.project}
+            data-linked={highlight && s.project === highlight ? "true" : undefined}
             className="sbx-card-wrap"
             style={{
               position: "absolute",

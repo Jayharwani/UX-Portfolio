@@ -6,6 +6,7 @@ import {
   Flask,
   Code,
   ArrowRight,
+  ArrowUpRight,
 
   List,
   X,
@@ -29,6 +30,14 @@ const FlyerGame = lazy(() => import("./home/FlyerGame"));
    ────────────────────────────────────────────────────────────────────────── */
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+
+/* The proof rail. Three products, two of them running. Named, so a founder can
+   check them, rather than described. */
+const PROOF = [
+  { id: "headroom", name: "Headroom", status: "Live · installable", live: true, href: "https://headroom-opal.vercel.app/", external: true },
+  { id: "signal", name: "Signal", status: "Live · DMV event map", live: true, href: "https://jayharwani.github.io/dmv-map/", external: true },
+  { id: "cards", name: "Cards Lab", status: "UMBC · robotics telemetry", live: false, href: "/about", external: false },
+] as const;
 
 /* The headline morphs between two COMPLETE sentences. The old loop dissolved
    "out of the way." and reassembled the same words, which meant the sentence
@@ -343,6 +352,9 @@ function Hero() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
   const ruleRef = useRef<HTMLDivElement>(null);
+  /* §4.8: one system, two views. Hovering a rail row outlines its card and the
+     reverse, so the sandbox and the rail are legibly the same set of things. */
+  const [hoveredProof, setHoveredProof] = useState<string | null>(null);
 
   /* The fold rule flashes where a card lands. It is the detail that confirms
      the rule is a real surface rather than a line the cards happen to stop
@@ -518,14 +530,20 @@ function Hero() {
         }}
       />
 
-      <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
+      <motion.div
+        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6 grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-x-8 items-start"
+        style={reduce ? undefined : { y: textY, opacity: heroFade }}
+      >
         {/* copy centered on every breakpoint */}
         {/* Left-aligned, not centred. A centred headline over a centred kicker
             over a centred button is the shape of every startup landing page,
             and it was the single thing making this hero read as a template.
             Ranging left also gives the type a spine to hang off and lets the
             line lengths differ on purpose rather than by accident. */}
-        <div className="max-w-[880px] flex flex-col items-start text-left">
+        {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
+            sides anchored it reads as a decision rather than as the gap it was
+            when only the left side had content. */}
+        <div className="lg:col-span-6 flex flex-col items-start text-left">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
@@ -613,37 +631,95 @@ function Hero() {
             </a>
           </motion.div>
 
-          {/* The evidence line. The hero previously asserted taste and offered
-              nothing to check it against; a founder left knowing a slogan.
-              Deliberately NOT a stats row of big numbers with small labels —
-              that template is the most tired shape on the web. It is one line
-              of plain type, specific enough to be falsifiable, with the two
-              live links sitting inside it so the claim and the proof are the
-              same sentence. */}
+          {/* §5.3: the mono paragraph is gone. It was body prose set in a
+              monospace face (F6), and the product claims it carried now live in
+              the proof rail where they can be scanned instead of read. What is
+              left is one quiet line of credential. */}
           <motion.p
             initial={{ opacity: 0, y: reduce ? 0 : 10 }}
             animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 10) : 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: particles ? 0.62 : 0.68 }}
             style={{
-              marginTop: 30,
-              fontFamily: V.mono,
-              fontSize: 12.5,
-              lineHeight: 1.85,
-              letterSpacing: "0.01em",
+              marginTop: 20,
+              fontFamily: V.body,
+              fontSize: 15,
+              lineHeight: 1.5,
               color: V.text3,
-              maxWidth: "62ch",
             }}
           >
-            Four products taken from research to running code.{" "}
-            <a href={LINKS.signalLive} target="_blank" rel="noopener noreferrer" style={{ color: V.text2 }} className="link-draw">
-              Two
-            </a>{" "}
-            <a href={LINKS.headroomLive} target="_blank" rel="noopener noreferrer" style={{ color: V.text2 }} className="link-draw">
-              are live
-            </a>{" "}
-            and installable right now. HCI research at UMBC · Baltimore.
+            Master&rsquo;s in Human-Centered Computing, UMBC · Baltimore.
           </motion.p>
         </div>
+
+        {/* ── proof rail (§5.2) ───────────────────────────────────────────
+            The right sixty percent of the viewport was unresolved (F2) and
+            there was no product evidence above the fold (F5). Both are the same
+            hole, and three rows close it: a founder gets three named products
+            and two live deployments in under two seconds.
+
+            One line each, no cards. Cards here would be the lazy answer — the
+            content is a list, and a list of three things that each fit on one
+            line does not need a container apiece. The hierarchy is carried by
+            face and weight: General Sans for the name, mono for the status,
+            which is what mono is actually for. */}
+        <motion.div
+          className="lg:col-start-8 lg:col-span-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
+          transition={{ duration: 0.6, ease: EASE, delay: particles ? 0.7 : 0.75 }}
+          style={{ paddingTop: 10 }}
+        >
+          {PROOF.map((p, i) => (
+            <motion.a
+              key={p.name}
+              href={p.href}
+              target={p.external ? "_blank" : undefined}
+              rel={p.external ? "noopener noreferrer" : undefined}
+              className="proof-row"
+              data-proof={p.id}
+              initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+              animate={particles ? (assembled ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }) : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: (particles ? 0.78 : 0.82) + i * 0.06 }}
+              onMouseEnter={() => setHoveredProof(p.id)}
+              onMouseLeave={() => setHoveredProof(null)}
+              onFocus={() => setHoveredProof(p.id)}
+              onBlur={() => setHoveredProof(null)}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0,auto) 1fr auto",
+                alignItems: "baseline",
+                gap: 14,
+                padding: "14px 0 14px 14px",
+                borderTop: i === 0 ? `1px solid rgb(232 236 243 / 0.08)` : undefined,
+                borderBottom: `1px solid rgb(232 236 243 / 0.08)`,
+                textDecoration: "none",
+                position: "relative",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: V.body,
+                  fontWeight: 500,
+                  fontSize: 13,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: V.text,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {p.name}
+              </span>
+              <span
+                className="inline-flex items-center gap-2"
+                style={{ fontFamily: V.mono, fontSize: 12, color: V.text3, whiteSpace: "nowrap" }}
+              >
+                {p.live && <span className="proof-dot" aria-hidden="true" />}
+                {p.status}
+              </span>
+              <ArrowUpRight size={14} weight="bold" color={V.text3} style={{ flexShrink: 0 }} />
+            </motion.a>
+          ))}
+        </motion.div>
       </motion.div>
 
       {/* ── the component sandbox ────────────────────────────────────────
@@ -664,7 +740,7 @@ function Hero() {
         <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
           {showPlay && !lite && (
             <Suspense fallback={null}>
-              <Sandbox interactive={!reduce} onImpact={flashRule} />
+              <Sandbox interactive={!reduce} onImpact={flashRule} highlight={hoveredProof} />
             </Suspense>
           )}
         </div>
