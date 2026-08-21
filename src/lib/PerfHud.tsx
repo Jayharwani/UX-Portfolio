@@ -23,8 +23,15 @@ function pct(sorted: number[], p: number) {
 
 export function PerfHud() {
   const [show, setShow] = useState(false);
-  const [stats, setStats] = useState({ p50: 0, p95: 0, slow: 0, n: 0, fps: 0 });
+  const [stats, setStats] = useState({ p50: 0, p95: 0, slow: 0, n: 0, fps: 0, tbt: 0 });
   const frames = useRef<number[]>([]);
+  /* Frame interval is quantised to vsync multiples: 16.7, 33.3, 50. It can only
+     say over-budget or under-budget, never how far over, which is why six
+     single-flag runs all read 33. Long-task blocking time is continuous, so it
+     shows partial progress and tells us whether the main thread is the problem
+     at all. */
+  const blocking = useRef(0);
+  const since = useRef(performance.now());
 
   useEffect(() => {
     let hud = false;
@@ -36,6 +43,15 @@ export function PerfHud() {
     if (!hud) return;
     setShow(true);
 
+    let po: PerformanceObserver | null = null;
+    try {
+      po = new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) blocking.current += Math.max(0, e.duration - 50);
+      });
+      po.observe({ entryTypes: ["longtask"] });
+    } catch {
+      /* Safari: no longtask support, the field simply reads n/a */
+    }
     let raf = 0;
     let last = performance.now();
     let warm = 12; // skip mount / font-swap frames
@@ -56,7 +72,9 @@ export function PerfHud() {
         lastPaint = now;
         const sorted = [...frames.current].sort((a, b) => a - b);
         const n = sorted.length;
+        const secs = Math.max(0.001, (now - since.current) / 1000);
         setStats({
+          tbt: blocking.current / secs,
           p50: pct(sorted, 50),
           p95: pct(sorted, 95),
           slow: n ? (frames.current.filter((d) => d > 22).length / n) * 100 : 0,
@@ -66,7 +84,7 @@ export function PerfHud() {
       }
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); po?.disconnect(); };
   }, []);
 
   if (!show) return null;
@@ -74,7 +92,7 @@ export function PerfHud() {
   const bad = stats.p95 > 22;
   const reset = () => {
     frames.current = [];
-    setStats({ p50: 0, p95: 0, slow: 0, n: 0, fps: 0 });
+    blocking.current = 0; since.current = performance.now(); setStats({ p50: 0, p95: 0, slow: 0, n: 0, fps: 0, tbt: 0 });
   };
 
   return (
@@ -112,6 +130,9 @@ export function PerfHud() {
       </div>
       <div style={{ fontVariantNumeric: "tabular-nums", color: "#99A4B6" }}>
         slow {stats.slow.toFixed(0)}% · n={stats.n}
+      </div>
+      <div style={{ fontVariantNumeric: "tabular-nums", color: stats.tbt > 120 ? "#FF6B6E" : "#99A4B6" }}>
+        blocked <strong>{stats.tbt.toFixed(0)}</strong> ms/s
       </div>
       <button
         onClick={reset}
