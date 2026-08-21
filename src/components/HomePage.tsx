@@ -20,6 +20,7 @@ import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
 import { usePerfTier, type Tier } from "./home/perfTier";
+import { PERF } from "../lib/perfFlags";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -167,7 +168,7 @@ const scrollToId = (id: string) => {
 function useSmoothScroll(tier: Tier) {
   const reduce = useReducedMotion();
   useEffect(() => {
-    if (tier === "lite" || reduce || !window.matchMedia("(pointer: fine)").matches) return;
+    if (PERF.noLenis || tier === "lite" || reduce || !window.matchMedia("(pointer: fine)").matches) return;
     const lenis = new Lenis({
       duration: 0.72,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -339,18 +340,21 @@ function Hero() {
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
-  const particles = !reduce;
+  const particles = !reduce && !PERF.noParticles;
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
      world every frame for a decoration below the fold. That one goes. */
   const lite = usePerfTier() === "lite";
 
-  /* gentle exit parallax: text drifts up faster than the page, playground lags */
+  /* gentle exit parallax: text drifts up faster than the page, playground lags.
+     PERF.noMotion pins these so nothing scroll-linked writes styles — with
+     Lenis running, its easing tail keeps every one of these chains updating for
+     the full duration of the ease after the wheel has already stopped. */
   const { scrollY } = useScroll();
-  const textY = useTransform(scrollY, [0, 640], [0, -84]);
-  const playY = useTransform(scrollY, [0, 640], [0, -30]);
-  const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
+  const textY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -84]);
+  const playY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -30]);
+  const heroFade = useTransform(scrollY, [0, 560], PERF.noMotion ? [1, 1] : [1, 0.28]);
 
   useEffect(() => {
     // the blocks band is a desktop signature (≥768px) — phones skip the
@@ -487,11 +491,23 @@ function Hero() {
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
+          {/* PERF.noBlur drops the animated filter and textShadow, leaving an
+              opacity-only crossfade. Both of those re-rasterise this layer on
+              every frame of the transition — and the layer is the full width of
+              the headline, so the cost scales with the display. This fires at
+              exactly the moment the intro is reported to stutter, which is why
+              it gets its own bisect flag rather than being assumed innocent. */}
           <motion.h1
             ref={h1Ref}
-            initial={{ opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }}
+            initial={
+              PERF.noBlur
+                ? { opacity: 0 }
+                : { opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }
+            }
             animate={
-              !particles
+              PERF.noBlur
+                ? { opacity: !particles || assembled ? 1 : 0 }
+                : !particles
                 ? { opacity: 1, filter: "blur(0px)" }
                 : assembled
                 ? {
@@ -506,9 +522,9 @@ function Hero() {
                 : { opacity: 0, filter: "blur(12px)" }
             }
             transition={
-              assembled
+              assembled && !PERF.noBlur
                 ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
-                : { duration: 0.8, ease: EASE }
+                : { duration: assembled ? 1.1 : 0.8, ease: EASE }
             }
             /* type now lives per line (leadLine / kickerLine) so the two tiers
                can differ; the h1 only carries what they share */
@@ -558,7 +574,7 @@ function Hero() {
           animate={{ opacity: showPlay ? 1 : 0 }}
           transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
         >
-          {showPlay && !lite && (
+          {showPlay && !lite && !PERF.noMatter && (
             <Suspense fallback={null}>
               <IconPlayground interactive={!reduce} tapOnly={coarse} />
             </Suspense>
