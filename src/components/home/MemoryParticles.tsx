@@ -644,9 +644,15 @@ export default function MemoryParticles({
       const tl = gsap.timeline();
       tl.to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
         .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
+        /* §10.2: HOLD the assembled particle text before handing over.
+           This fired at -=0.4, which crossfaded the real h1 in 0.4s BEFORE
+           the particles had finished converging — so the one moment the
+           whole system exists to produce, the letterforms resolving out of
+           a cloud, was being spent rather than shown. +=0.45 lets it land,
+           hold for a beat, and only then hand over to crisp text. */
         .add(() => {
           assembledCb.current(); // real text fades in over the particles
-        }, "-=0.4")
+        }, "+=0.45")
         .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
         .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
 

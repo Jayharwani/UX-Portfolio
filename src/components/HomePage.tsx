@@ -413,7 +413,16 @@ function Hero() {
     let t = 0;
     const arm = () => {
       window.clearTimeout(t);
-      t = window.setTimeout(() => setShowPlay(true), 250);
+      /* §4.7: the single most important timing in the hero. The cards used
+         to mount at 250ms, which put them on the floor and settled long
+         before the headline resolved at ~2.9s — two features loading in
+         parallel rather than one event. They now begin falling at 2.6s, so
+         the drop is already underway when the real h1 crossfades over the
+         particles. Sequential choreography feels slow; interleaved
+         choreography feels alive, and the difference is entirely in the
+         overlap. Reduced motion and the no-particle path keep the old
+         immediate mount, since there is no intro to interleave with. */
+      t = window.setTimeout(() => setShowPlay(true), particles ? 2600 : 250);
     };
     const onChange = (e: MediaQueryListEvent) => {
       if (e.matches) arm();
@@ -424,7 +433,7 @@ function Hero() {
       mql.removeEventListener("change", onChange);
       window.clearTimeout(t);
     };
-  }, []);
+  }, [particles]);
 
 
   /* Line breaks are authored, not left to wrapping, because the particle
@@ -542,7 +551,7 @@ function Hero() {
       />
 
       <motion.div
-        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6 grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-x-8 items-start"
+        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6 grid grid-cols-1 xl:grid-cols-12 gap-y-12 xl:gap-x-8 items-start"
         style={reduce ? undefined : { y: textY, opacity: heroFade }}
       >
         {/* copy centered on every breakpoint */}
@@ -554,7 +563,7 @@ function Hero() {
         {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
             sides anchored it reads as a decision rather than as the gap it was
             when only the left side had content. */}
-        <div className="lg:col-span-6 flex flex-col items-start text-left">
+        <div className="xl:col-span-6 flex flex-col items-start text-left">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
@@ -587,7 +596,16 @@ function Hero() {
             }
             /* the h1 carries only what its lines share; the subhead sits outside it
                can differ; the h1 only carries what they share */
-            style={{ color: V.text, margin: 0 }}
+            /* width:100% matters more than it looks. The copy column is a flex
+               column with align-items:flex-start, which makes every child
+               shrink-to-fit — so the h1 sized itself to its FIRST line (515px)
+               and then forced the second line, which needs 628px, to wrap
+               inside that width. Since the particle sampler measures each
+               [data-line] as one run, a wrapped line resamples at the wrong
+               geometry and the assembly lands crooked. Stretching the h1 to the
+               column removes the constraint without changing the ranged-left
+               appearance. */
+            style={{ color: V.text, margin: 0, width: "100%" }}
           >
             {lines.map((line, i) => (
               <span
@@ -682,7 +700,7 @@ function Hero() {
             face and weight: General Sans for the name, mono for the status,
             which is what mono is actually for. */}
         <motion.div
-          className="lg:col-start-8 lg:col-span-5"
+          className="xl:col-start-8 xl:col-span-5"
           initial={{ opacity: 0 }}
           animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
           transition={{ duration: 0.6, ease: EASE, delay: particles ? 0.7 : 0.75 }}
@@ -783,10 +801,21 @@ function Hero() {
           />
         </div>
         {/* §9 / F10: the scroll affordance. */}
-        <div className="flex items-center gap-3" style={{ paddingTop: 14 }}>
-          <span className="scroll-tick" aria-hidden="true" />
-          <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", color: V.text3 }}>
-            SCROLL
+        <div className="flex items-center justify-between gap-6" style={{ paddingTop: 14 }}>
+          <div className="flex items-center gap-3">
+            <span className="scroll-tick" aria-hidden="true" />
+            <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", color: V.text3 }}>
+              SCROLL
+            </span>
+          </div>
+          {/* §10.4: the particles are sampled from the live DOM, which is the
+              whole reason the headline can morph between two sentences at all.
+              Stated once, quietly, and never explained. */}
+          <span
+            className="hidden lg:inline"
+            style={{ fontFamily: V.mono, fontSize: 10, letterSpacing: "0.16em", color: V.text3, opacity: 0.55 }}
+          >
+            PARTICLES SAMPLED FROM LIVE DOM TEXT
           </span>
         </div>
       </div>
