@@ -51,6 +51,11 @@ interface P {
   /* ambient survivors: after assembly they drift to the hero's flanks and
      stay alive — the memories that didn't make it into the words */
   ambient: boolean;
+  /* second-state target; word particles only */
+  bx: number;
+  by: number;
+  /* per-particle window into the morph, so A disperses while B converges */
+  mp: number;
   ax: number;
   ay: number;
 }
@@ -58,11 +63,15 @@ interface P {
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
 export default function MemoryParticles({
+  stateB,
   heroRef,
   h1Ref,
   wordRef,
   onAssembled,
 }: {
+  /** The alternate headline tail. The em morphs between whatever the DOM holds
+   *  and this, sampled once at setup. Omit it and the morph is skipped. */
+  stateB?: string;
   heroRef: React.RefObject<HTMLElement | null>;
   h1Ref: React.RefObject<HTMLHeadingElement | null>;
   wordRef: React.RefObject<HTMLElement | null>;
@@ -268,6 +277,36 @@ export default function MemoryParticles({
       const restPtsRaw = sample("rest");
       const wordPtsRaw = sample("word");
 
+      /* ── the second headline state ──────────────────────────────────────
+         Sample the SAME em element a second time with the other tail in it.
+         Swapping the text changes the run's width, so the run has to be
+         re-measured rather than reused: the tail is right-of-centre in a
+         left-ranged headline, and a stale width would land every B particle
+         off by the delta.
+
+         One layout flush, once, at setup. The DOM is restored immediately, so
+         nothing outside this block ever observes state B in the document. */
+      const wordRunIndex = runs.findIndex((r) => r.isWord);
+      let wordPtsBRaw: { x: number; y: number }[] = [];
+      if (wordRunIndex >= 0 && stateB) {
+        const wr = runs[wordRunIndex];
+        const originalText = wordEl.textContent ?? "";
+        wordEl.textContent = stateB;
+        void wordEl.offsetWidth; // force the reflow before measuring
+        const rb = wordEl.getBoundingClientRect();
+        const savedText = wr.text;
+        const savedX = wr.x;
+        const savedY = wr.y;
+        wr.text = stateB;
+        wr.x = rb.left - heroRect.left;
+        wr.y = rb.top - heroRect.top;
+        wordPtsBRaw = sample("word");
+        wr.text = savedText;
+        wr.x = savedX;
+        wr.y = savedY;
+        wordEl.textContent = originalText;
+      }
+
       /* Hard ceiling on the particle count.
          The stride above adapts to hero size but has no upper bound, so a wide
          desktop hero was producing on the order of 7,000 particles — and every
@@ -316,11 +355,33 @@ export default function MemoryParticles({
           bucket: word ? 3 + Math.floor(Math.random() * 3) : Math.floor(Math.random() * 3),
           word,
           ambient: false,
+          bx: pt.x,
+          by: pt.y,
+          mp: Math.random() * 0.4,
           ax: 0,
           ay: 0,
         };
       };
-      const parts: P[] = [...restPts.map((p) => mk(p, false)), ...wordPts.map((p) => mk(p, true))];
+      /* Word particles carry a target in BOTH states. The two phrases sample to
+         different counts ("out of the way." is longer than "shipped."), so B
+         targets are assigned by cycling rather than by index. Cycling keeps
+         every particle addressed in both states — no particle is left without
+         a home and needing to be faded out — at the cost of the shorter phrase
+         being slightly denser, which reads as emphasis rather than as error. */
+      const wordPtsB = wordPtsBRaw.length ? thin(wordPtsBRaw, wordKeep) : [];
+      const parts: P[] = [
+        ...restPts.map((p) => mk(p, false)),
+        ...wordPts.map((p, i) => {
+          const q = mk(p, true);
+          if (wordPtsB.length) {
+            const b = wordPtsB[i % wordPtsB.length];
+            q.bx = b.x;
+            q.by = b.y;
+          }
+          return q;
+        }),
+      ];
+      const canMorph = wordPtsB.length > 0;
 
       /* Setup runs synchronously on the main thread during page load, so its
          cost is felt directly as the intro "hitching" on arrival. Surfaced in
@@ -384,6 +445,10 @@ export default function MemoryParticles({
       /* ── animation state ── */
       const state = {
         intro: 0, // 0 scattered → 1 assembled
+        /* 0 = state A, 1 = state B. Word particles interpolate between their
+           two sampled targets along a bowed path, each on its own staggered
+           window, so the phrase never slides as a block. */
+        morph: 0,
         dissolve: 0, // word only: 0 home → 1 dispersed
         restAlpha: 1, // non-word particles fade out after the crossfade
         wordAlpha: 0, // word particles visible only during the dissolve loop
@@ -490,11 +555,30 @@ export default function MemoryParticles({
             hx = p.ax + Math.sin(t * 0.32 + p.drift) * 18 + Math.sin(t * 0.13 + p.drift * 2.4) * 10;
             hy = p.ay + Math.cos(t * 0.27 + p.drift * 1.7) * 16 + Math.cos(t * 0.11 + p.drift) * 9;
           }
-          if (p.word && state.dissolve > 0) {
-            const d = state.dissolve;
-            const wander = Math.sin(t * 1.7 + p.drift) * 26 + Math.sin(t * 0.9 + p.drift * 2.3) * 18;
-            hx = p.tx + wander * d + (p.drift - Math.PI) * 14 * d;
-            hy = p.ty - d * (46 + ((p.drift * 37) % 40)) + Math.cos(t * 1.3 + p.drift) * 12 * d;
+          if (p.word && state.morph > 0) {
+            /* A → B along a bowed path, on a per-particle window.
+
+               Each particle owns [mp, mp + 0.6] out of the 0..1 morph. Because
+               mp is spread across 0..0.4, particles that have already left
+               state A are still in flight while later ones have not started,
+               which is what produces the required overlap: peak dispersion of A
+               happens after convergence of B has begun. A straight lerp across
+               all particles at once would read as the phrase sliding sideways.
+
+               The perpendicular bow peaks mid-window and returns to zero, so
+               every particle arrives exactly on its B target with no drift. */
+            const local = Math.max(0, Math.min(1, (state.morph - p.mp) / 0.6));
+            const e = local < 0.5 ? 2 * local * local : 1 - Math.pow(-2 * local + 2, 2) / 2;
+            const dx = p.bx - p.tx;
+            const dy = p.by - p.ty;
+            const bow = Math.sin(local * Math.PI); // 0 → 1 → 0
+            const len = Math.hypot(dx, dy) || 1;
+            /* perpendicular to the travel, signed per particle so the cloud
+               splits rather than arcing as one body */
+            const px = (-dy / len) * bow * (18 + ((p.drift * 23) % 26)) * (p.drift > Math.PI ? 1 : -1);
+            const py = (dx / len) * bow * (12 + ((p.drift * 17) % 18)) * (p.drift > Math.PI ? 1 : -1);
+            hx = p.tx + dx * e + px + Math.sin(t * 1.7 + p.drift) * 5 * bow;
+            hy = p.ty + dy * e + py + Math.cos(t * 1.3 + p.drift) * 5 * bow;
           }
 
           /* spring toward home + cursor repulsion */
@@ -570,23 +654,69 @@ export default function MemoryParticles({
       /* the forgetting loop — runs after assembly, forever, silently.
          loopRef lets the visibility observer above pause it when the hero
          leaves the screen; without that it ticked for the life of the page. */
-      const loop = gsap.timeline({ repeat: -1, repeatDelay: 5.4, delay: 4.2, paused: true });
-      loopRef.current = loop;
-      loop
-        .add(() => {
-          state.wordAlpha = 1;
-          gsap.set(wordEl, { opacity: 0 }); // canvas takes over the word
-        })
-        .to(state, { dissolve: 1, duration: 1.9, ease: "power2.in" })
-        .to(state, { dissolve: 0, duration: 2.0, ease: "expo.inOut" }, "+=1.1")
-        .add(() => {
-          state.wordAlpha = 0;
-          gsap.to(wordEl, { opacity: 1, duration: 0.25, ease: "power1.out" }); // DOM word returns
+      /* ── the morph loop ─────────────────────────────────────────────────
+         The old loop dissolved the tail and rebuilt the same words, which
+         spent a third of its cycle showing an unfinished sentence for no
+         gain. This travels between two complete sentences instead.
+
+         The DOM text is swapped at the midpoint, while the real em is faded
+         out and the particles are carrying the phrase. So the document holds
+         exactly one of the two sentences at all times and never a fragment —
+         which is what makes the textContent assertion in the test possible.
+
+         Skipped entirely when there is no second state to travel to. */
+      if (canMorph) {
+        const tailA = wordEl.textContent ?? "";
+        const tailB = stateB as string;
+        let atB = false;
+
+        const loop = gsap.timeline({
+          repeat: -1,
+          /* §3.3: static and readable the overwhelming majority of the time.
+             At 8s + 1.2s of travel the headline is still for ~87% of its
+             cycle, which is the difference between a detail and a distraction. */
+          repeatDelay: 8,
+          delay: 4.2,
+          paused: true,
         });
-      tl.add(() => loop.play());
+        loopRef.current = loop;
+        loop
+          .add(() => {
+            state.wordAlpha = 1;
+            gsap.set(wordEl, { opacity: 0 }); // canvas takes the phrase
+          })
+          /* §3.2: ≤1.4s. Longer and it stops reading as a change of mind and
+             starts reading as a loading state. */
+          .to(state, { morph: 1, duration: 1.2, ease: "power2.inOut" })
+          .add(() => {
+            /* atomic swap at the far end, still invisible */
+            atB = !atB;
+            wordEl.textContent = atB ? tailB : tailA;
+            /* the particles' A and B targets swap roles with the DOM, so the
+               next run travels back the other way rather than teleporting */
+            for (const p of parts) {
+              if (!p.word) continue;
+              const sx2 = p.tx;
+              const sy2 = p.ty;
+              p.tx = p.bx;
+              p.ty = p.by;
+              p.bx = sx2;
+              p.by = sy2;
+            }
+            state.morph = 0;
+            state.wordAlpha = 0;
+            gsap.to(wordEl, { opacity: 1, duration: 0.28, ease: "power1.out" });
+          });
+        tl.add(() => loop.play());
+        cleanupFns.push(() => {
+          loop.kill();
+          /* §3.6: leave the DOM on a complete sentence, never mid-travel */
+          wordEl.textContent = atB ? tailB : tailA;
+          state.morph = 0;
+        });
+      }
       cleanupFns.push(() => {
         tl.kill();
-        loop.kill();
         gsap.set(wordEl, { opacity: 1 });
       });
     };

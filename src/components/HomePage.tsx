@@ -30,6 +30,23 @@ const FlyerGame = lazy(() => import("./home/FlyerGame"));
    ────────────────────────────────────────────────────────────────────────── */
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+
+/* The headline morphs between two COMPLETE sentences. The old loop dissolved
+   "out of the way." and reassembled the same words, which meant the sentence
+   spent part of its cycle grammatically unfinished for a comprehension cost and
+   no payoff. Two real states justify the DOM-sampling architecture: the
+   technique finally produces something only it could produce.
+
+   A speaks to designers, B to founders. Both are true.
+
+   The DOM only ever holds one of these, swapped atomically at the midpoint of
+   the particle morph while the real text is faded out, so h1.textContent is
+   never a fragment. HERO_HEADLINES is exported so the test can assert exactly
+   that. */
+export const HEADLINE_STATES = [
+  { tail: "out of the way.", full: "I design interfaces that get out of the way." },
+  { tail: "shipped.", full: "I design interfaces that get shipped." },
+] as const;
 const V = {
   bg: "var(--bg)",
   bg2: "var(--bg-2)",
@@ -391,56 +408,63 @@ function Hero() {
      own size, and keeping the kicker as a bare text node (not a wrapper
      element) keeps it in the sampler's white text branch rather than the blue
      accent branch reserved for the em. */
-  type HeroLine = { node: ReactNode; kicker?: boolean; gap?: boolean };
+  type HeroLine = { node: ReactNode };
+  /* The h1 now holds the headline and nothing else. The kicker moved out to a
+     real subhead below (F9: it was set in the display face, competing with the
+     headline it was meant to qualify), and that move is also what lets the
+     morph be verifiable — h1.textContent can now equal exactly one of the two
+     sentences in HEADLINE_STATES, which is the assertion the spec asks for. */
   const lines: HeroLine[] = [
-    { node: "I design interfaces" },
+    /* trailing space is deliberate: [data-line] spans are display:block, and
+       block boundaries contribute nothing to textContent, so without it the h1
+       reads "I design interfacesthat get..." to a screen reader and the
+       completeness assertion cannot pass. The particle sampler trimEnd()s its
+       runs, so it costs nothing there. */
+    { node: "I design interfaces " },
     {
       node: (
         <>
           that get{" "}
           <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
-            out of the way.
+            {HEADLINE_STATES[0].tail}
           </em>
         </>
       ),
     },
-    { node: "Because the ultimate user experience", kicker: true, gap: true },
-    { node: "is closing the laptop.", kicker: true },
   ];
 
   const leadLine: React.CSSProperties = {
     fontFamily: V.display,
     fontWeight: 600,
-    fontSize: "clamp(1.5rem, 5.2vw, 3.4rem)",
-    lineHeight: 1.06,
+    /* §7.2: display line-height 0.95, not the 1.06 it was set at. Two lines at
+       1.06 read as two separate objects; at 0.95 they lock into one mass, which
+       is the whole point of a two-line headline. */
+    fontSize: "clamp(1.75rem, 5.6vw, 3.9rem)",
+    lineHeight: 0.95,
     /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
        track plus a touch of word-spacing separates the words again. */
     letterSpacing: "-0.015em",
     wordSpacing: "0.04em",
     color: V.text,
+    /* §7.3 optical alignment. The first glyph is a capital I, whose sidebearing
+       is wide relative to its stem, so ranging the BOX left leaves the stem
+       visibly inset from everything below it. Measured against the CTA edge at
+       display size rather than guessed. */
+    marginLeft: "-0.035em",
   };
-  /* The kicker stays in the display face rather than dropping to muted body
-     type: the bio line directly beneath it is already General Sans in --text-2,
-     so a muted body kicker produced two near-identical grey blocks in a row and
-     the punchline read as just another paragraph. Same family and colour as the
-     lead, roughly half the size and a step lighter — subordinate, but still
-     clearly the end of the sentence rather than the start of the bio. */
-  const kickerLine: React.CSSProperties = {
-    fontFamily: V.display,
-    fontWeight: 500,
-    /* Upper bound keeps the widest kicker line narrower than the widest lead
-       line; a subordinate tier that measures wider than the one above it makes
-       centred text look like it is falling over.
-       Lower bound matters for a different reason: "Because the ultimate user
-       experience" is the longest string in the headline, and at 1.05rem it left
-       only 11px of slack in a 360px column. Because the breaks are authored for
-       the particle sampler, a wrap here would not just look wrong, it would
-       resample that line at the wrong width. 0.95rem buys ~40px of slack. */
-    fontSize: "clamp(0.95rem, 2.4vw, 1.6rem)",
-    lineHeight: 1.28,
-    letterSpacing: "-0.01em",
-    wordSpacing: "0.03em",
-    color: V.text,
+  /* F9: the subhead was set in Clash Display, the same face as the headline,
+     so it competed with the thing it exists to qualify. General Sans changes
+     the voice from statement to aside, which is what a subhead is for. It also
+     no longer lives inside the h1 — see the note on lines above. */
+  const subheadStyle: React.CSSProperties = {
+    fontFamily: V.body,
+    fontWeight: 400,
+    fontSize: "clamp(1.05rem, 1.6vw, 1.375rem)",
+    lineHeight: 1.45,
+    letterSpacing: "0",
+    color: V.text2,
+    maxWidth: "34ch",
+    marginTop: 24,
   };
 
   return (
@@ -450,6 +474,7 @@ function Hero() {
       {particles && (
         <MemoryParticles
           heroRef={heroRef}
+          stateB={HEADLINE_STATES[1].tail}
           h1Ref={h1Ref}
           wordRef={wordRef}
           onAssembled={() => {
@@ -518,7 +543,7 @@ function Hero() {
                 ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
                 : { duration: assembled ? 1.1 : 0.8, ease: EASE }
             }
-            /* type now lives per line (leadLine / kickerLine) so the two tiers
+            /* the h1 carries only what its lines share; the subhead sits outside it
                can differ; the h1 only carries what they share */
             style={{ color: V.text, margin: 0 }}
           >
@@ -527,15 +552,22 @@ function Hero() {
                 key={i}
                 data-line
                 className="block"
-                style={{
-                  ...(line.kicker ? kickerLine : leadLine),
-                  ...(line.gap ? { marginTop: "0.85em" } : null),
-                }}
+                style={leadLine}
               >
                 {line.node}
               </span>
             ))}
           </motion.h1>
+
+          {/* the subhead, now a real element outside the headline */}
+          <motion.p
+            initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 10) : 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: particles ? 0.3 : 0.4 }}
+            style={subheadStyle}
+          >
+            Because the ultimate user experience is closing the laptop.
+          </motion.p>
 
           {/* CTA is gated on the assembly moment, not a fixed clock, so it
               always lands right after the headline does */}
