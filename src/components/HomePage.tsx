@@ -51,6 +51,9 @@ const V = {
 const LINKS = {
   email: "harwanijay9498@gmail.com",
   linkedin: "https://www.linkedin.com/in/jay-harwani/",
+  /* the two that are actually running, linked from the hero's evidence line */
+  signalLive: "https://jayharwani.github.io/dmv-map/",
+  headroomLive: "https://headroom-opal.vercel.app/",
 };
 
 /* ── shared bits ─────────────────────────────────────────────────────────── */
@@ -441,7 +444,7 @@ function Hero() {
   };
 
   return (
-    <section ref={heroRef} className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden" style={{ background: V.bg }}>
+    <section ref={heroRef} className="relative min-h-[100svh] flex flex-col justify-center overflow-hidden" style={{ background: V.bg }}>
       {/* the memory-particles layer: assembles the headline, then owns the
           "out of the way." dissolve loop. Skipped entirely under reduced motion. */}
       {particles && (
@@ -479,7 +482,12 @@ function Hero() {
 
       <motion.div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6" style={reduce ? undefined : { y: textY, opacity: heroFade }}>
         {/* copy centered on every breakpoint */}
-        <div className="max-w-[820px] mx-auto text-center flex flex-col items-center">
+        {/* Left-aligned, not centred. A centred headline over a centred kicker
+            over a centred button is the shape of every startup landing page,
+            and it was the single thing making this hero read as a template.
+            Ranging left also gives the type a spine to hang off and lets the
+            line lengths differ on purpose rather than by accident. */}
+        <div className="max-w-[880px] flex flex-col items-start text-left">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
@@ -535,20 +543,95 @@ function Hero() {
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
             animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
             transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.45 : 0.52 }}
-            className="flex flex-wrap items-center gap-4 md:justify-center"
+            className="flex flex-wrap items-center gap-x-7 gap-y-4"
             style={{ marginTop: 38 }}
           >
             <MagneticButton onClick={() => scrollToId("work")}>
               See the work <ArrowRight size={16} weight="bold" />
             </MagneticButton>
+            {/* A second, quieter route. One lone button in the middle of a
+                viewport is a conversion pattern, not a portfolio: it assumes a
+                single thing you want from the visitor. A founder skimming may
+                want the person before the projects. */}
+            <a
+              href="/about"
+              className="link-draw"
+              style={{
+                fontFamily: V.body,
+                fontSize: 14.5,
+                fontWeight: 500,
+                color: V.text2,
+                textDecoration: "none",
+              }}
+            >
+              How I work
+            </a>
           </motion.div>
+
+          {/* The evidence line. The hero previously asserted taste and offered
+              nothing to check it against; a founder left knowing a slogan.
+              Deliberately NOT a stats row of big numbers with small labels —
+              that template is the most tired shape on the web. It is one line
+              of plain type, specific enough to be falsifiable, with the two
+              live links sitting inside it so the claim and the proof are the
+              same sentence. */}
+          <motion.p
+            initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 10) : 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: particles ? 0.62 : 0.68 }}
+            style={{
+              marginTop: 30,
+              fontFamily: V.mono,
+              fontSize: 12.5,
+              lineHeight: 1.85,
+              letterSpacing: "0.01em",
+              color: V.text3,
+              maxWidth: "62ch",
+            }}
+          >
+            Four products taken from research to running code.{" "}
+            <a href={LINKS.signalLive} target="_blank" rel="noopener noreferrer" style={{ color: V.text2 }} className="link-draw">
+              Two
+            </a>{" "}
+            <a href={LINKS.headroomLive} target="_blank" rel="noopener noreferrer" style={{ color: V.text2 }} className="link-draw">
+              are live
+            </a>{" "}
+            and installable right now. HCI research at UMBC · Baltimore.
+          </motion.p>
         </div>
       </motion.div>
 
-      {/* the blocks playground: a full-width band tucked right under the CTA.
-          Desktop-only — on phones the particle intro IS the hero */}
+      {/* The blocks playground. It used to float unlabelled at the bottom edge
+          with ~300px of nothing above it, reading as a separate strip that had
+          drifted off the page rather than part of the hero. Two changes tie it
+          in: a ruled label that names what the blocks ARE, so they carry
+          meaning instead of decoration, and the rule itself, which gives the
+          composition a floor to sit on. */}
       <motion.div
-        className="relative z-20 w-full hidden md:block md:h-[36vh]"
+        className="relative z-20 w-full hidden md:block mx-auto max-w-6xl px-6 md:px-10 lg:px-16"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showPlay ? 1 : 0 }}
+        transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
+      >
+        <div className="flex items-center gap-4" style={{ paddingBottom: 6 }}>
+          <span
+            style={{
+              fontFamily: V.mono,
+              fontSize: 10.5,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: V.text3,
+              whiteSpace: "nowrap",
+            }}
+          >
+            What I build with
+          </span>
+          <span className="flex-1" style={{ height: 1, background: V.border }} />
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="relative z-20 w-full hidden md:block md:h-[30vh]"
         style={reduce ? undefined : { y: playY, opacity: heroFade }}
         onPointerDownCapture={() => setHintGone(true)}
       >
