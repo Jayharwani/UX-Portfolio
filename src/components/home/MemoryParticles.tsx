@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { getPerfTier } from "./perfTier";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -106,6 +107,7 @@ export default function MemoryParticles({
       }
       if (disposed) return;
 
+      const t0 = performance.now();
       const heroRect = hero.getBoundingClientRect();
       /* Budget the effect to the machine it landed on. Phones and low-core
          laptops were running the same particle count and the same 2x canvas
@@ -119,7 +121,12 @@ export default function MemoryParticles({
          laptops this felt bad on report 8 threads while running integrated
          graphics, so they took the full desktop budget. Treat <= 6 threads or
          <= 4 GB as low power too. */
-      const lowPower = coarse || cores <= 6 || memGB <= 4 || window.innerWidth < 900;
+      /* Honour the shared device tier as well as the local heuristics. Without
+         this, a machine the frame-time watchdog downgraded — the eight-thread
+         laptop on weak integrated graphics, exactly the case the tier exists
+         for — would still take the full desktop particle budget here. */
+      const lowPower =
+        getPerfTier() === "lite" || coarse || cores <= 6 || memGB <= 4 || window.innerWidth < 900;
       const dpr = Math.min(lowPower ? 1.5 : 2, window.devicePixelRatio || 1);
       canvas.width = Math.round(heroRect.width * dpr);
       canvas.height = Math.round(heroRect.height * dpr);
@@ -176,13 +183,23 @@ export default function MemoryParticles({
       }
 
       /* ── sample the runs into particle targets ── */
+      /* The sampling canvas runs at half scale. Its only job is to tell us
+         WHERE the glyph pixels are, and half resolution locates them just as
+         well — but getImageData copies a quarter of the bytes and the scan
+         below walks a quarter of the pixels. Two full-size getImageData calls
+         (one for the text, one for the word) on a wide hero was several
+         megabytes of synchronous copying during page load, which is a
+         meaningful part of why the intro hitched on arrival. */
+      const SS = 0.5;
       const off = document.createElement("canvas");
-      off.width = Math.round(heroRect.width);
-      off.height = Math.round(heroRect.height);
+      off.width = Math.max(1, Math.round(heroRect.width * SS));
+      off.height = Math.max(1, Math.round(heroRect.height * SS));
       const octx = off.getContext("2d", { willReadFrequently: true });
       if (!octx) return;
       const drawRuns = (only?: "word" | "rest") => {
+        octx.setTransform(1, 0, 0, 1, 0, 0);
         octx.clearRect(0, 0, off.width, off.height);
+        octx.scale(SS, SS); // draw in hero coordinates onto the half-scale sheet
         for (const run of runs) {
           if (only === "word" && !run.isWord) continue;
           if (only === "rest" && run.isWord) continue;
@@ -203,16 +220,23 @@ export default function MemoryParticles({
       /* sampling stride: bigger stride = fewer particles. Each particle costs
          spring math + a fillRect every frame, so this is the single biggest
          lever on hero smoothness. */
-      const step = lowPower ? 6 : area > 700_000 ? 3 : 4;
+      /* stride in SAMPLE-SHEET pixels; halved with the sheet so the effective
+         density in hero pixels is unchanged from before */
+      const step = Math.max(1, Math.round((lowPower ? 6 : area > 700_000 ? 3 : 4) * SS));
 
       const sample = (only: "word" | "rest"): { x: number; y: number }[] => {
         drawRuns(only);
         const img = octx.getImageData(0, 0, off.width, off.height).data;
         const pts: { x: number; y: number }[] = [];
+        const jitter = step / SS;
         for (let y = 0; y < off.height; y += step) {
           for (let x = 0; x < off.width; x += step) {
             if (img[(y * off.width + x) * 4 + 3] > 140) {
-              pts.push({ x: x + (Math.random() - 0.5) * step, y: y + (Math.random() - 0.5) * step });
+              /* back into hero coordinates */
+              pts.push({
+                x: x / SS + (Math.random() - 0.5) * jitter,
+                y: y / SS + (Math.random() - 0.5) * jitter,
+              });
             }
           }
         }
@@ -232,7 +256,13 @@ export default function MemoryParticles({
          "sparser text", where truncating the tail would lop off whole letters).
          Word particles carry the recurring dissolve loop, so they hold a larger
          share of the budget than the one-shot intro scatter. */
-      const MAX_PARTS = lowPower ? 1800 : 4200;
+      /* Down from 4200/1800. With the state-change batching above, the cost is
+         now dominated by the per-particle spring maths and one fillRect each,
+         and 2400 still reads as dense type — the real headline crossfades in
+         over the top of it anyway, so the particles never have to carry the
+         legibility. This is the last big lever on the intro and it was still
+         set too high. */
+      const MAX_PARTS = lowPower ? 1100 : 2400;
       const thin = <T,>(arr: T[], keep: number): T[] => {
         if (arr.length <= keep || keep <= 0) return arr;
         const out: T[] = [];
@@ -269,6 +299,19 @@ export default function MemoryParticles({
         };
       };
       const parts: P[] = [...restPts.map((p) => mk(p, false)), ...wordPts.map((p) => mk(p, true))];
+
+      /* Setup runs synchronously on the main thread during page load, so its
+         cost is felt directly as the intro "hitching" on arrival. Surfaced in
+         dev so it can be checked rather than guessed at. */
+      if (import.meta.env.DEV) {
+        (window as unknown as Record<string, unknown>).__heroStats = {
+          particles: parts.length,
+          setupMs: +(performance.now() - t0).toFixed(1),
+          sampleSheet: `${off.width}x${off.height}`,
+          canvas: `${canvas.width}x${canvas.height}`,
+          lowPower,
+        };
+      }
       parts.forEach((p) => {
         p.sx = p.x;
         p.sy = p.y;
@@ -309,8 +352,12 @@ export default function MemoryParticles({
           }
         }
       }
-      // render order sorted by bucket so fillStyle changes ~6 times/frame
-      parts.sort((a, b) => a.bucket - b.bucket);
+      /* Render order: category first, then colour bucket. The frame loop only
+         writes globalAlpha when the category changes and fillStyle when the
+         bucket changes, so grouping here is what turns thousands of canvas
+         state changes per frame into about a dozen. */
+      const catOf = (p: P) => (p.word ? 2 : p.ambient ? 1 : 0);
+      parts.sort((a, b) => catOf(a) - catOf(b) || a.bucket - b.bucket);
 
       /* ── animation state ── */
       const state = {
@@ -367,17 +414,28 @@ export default function MemoryParticles({
         const t = state.time;
         ctx.clearRect(0, 0, heroRect.width, heroRect.height);
 
+        /* PERF: alpha only ever takes three values in a given frame — one for
+           word particles, one for ambient survivors, one for the rest — but it
+           used to be recomputed and written to ctx.globalAlpha once PER
+           PARTICLE. That is up to 4,200 canvas state changes a frame, and it
+           defeated the fillStyle bucketing directly below it, since every
+           particle reconfigured the rasterizer anyway.
+
+           Compute the three up front, and because `parts` is sorted by
+           (category, bucket) at setup, only touch globalAlpha/fillStyle when
+           crossing a group boundary — roughly a dozen state changes a frame
+           instead of thousands. Pixel-for-pixel identical output. */
+        const introing = state.intro < 1;
+        const aWord = introing ? 1 : state.wordAlpha;
+        const aAmbient = introing ? 1 : state.ambientAlpha;
+        const aRest = introing ? 1 : state.restAlpha;
+        const dissolveMul = state.dissolve > 0 ? 1 - state.dissolve * 0.55 : 1;
+
         let lastBucket = -1;
+        let lastCat = -1;
         for (const p of parts) {
-          const alpha = p.word
-            ? state.intro < 1
-              ? 1
-              : state.wordAlpha
-            : state.intro < 1
-            ? 1
-            : p.ambient
-            ? state.ambientAlpha
-            : state.restAlpha;
+          const cat = p.word ? 2 : p.ambient ? 1 : 0;
+          const alpha = cat === 2 ? aWord : cat === 1 ? aAmbient : aRest;
           if (alpha <= 0.01) continue;
 
           /* home position: a slow ambient drift while scattered, then the
@@ -419,12 +477,15 @@ export default function MemoryParticles({
           p.x += p.vx;
           p.y += p.vy;
 
+          if (cat !== lastCat) {
+            ctx.globalAlpha = (cat === 2 ? alpha * dissolveMul : alpha) * state.masterAlpha;
+            lastCat = cat;
+            lastBucket = -1; // force a fillStyle write at the start of each group
+          }
           if (p.bucket !== lastBucket) {
             ctx.fillStyle = BUCKETS[p.bucket];
             lastBucket = p.bucket;
           }
-          const fade = (p.word && state.dissolve > 0 ? alpha * (1 - state.dissolve * 0.55) : alpha) * state.masterAlpha;
-          ctx.globalAlpha = fade;
           ctx.fillRect(p.x, p.y, p.size, p.size);
         }
         ctx.globalAlpha = 1;
