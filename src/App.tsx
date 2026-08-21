@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { lazy, Suspense } from "react";
 import { HomePage } from "./components/HomePage";
 import { ScrollToTop } from "./components/ScrollToTop";
-import { PerfHud } from "./lib/PerfHud";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
 const SignalCasePage = lazy(() => import("./components/SignalCasePage").then((m) => ({ default: m.SignalCasePage })));
@@ -33,7 +32,6 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <PerfHud />
       <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>

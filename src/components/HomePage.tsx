@@ -19,7 +19,6 @@ import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
 import { usePerfTier } from "./home/perfTier";
-import { PERF } from "../lib/perfFlags";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -325,7 +324,7 @@ function Hero() {
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
-  /* `particles` = is the canvas mounted. `heroChoreo` = does the headline run
+  /* `particles` = is the canvas mounted. `particles` = does the headline run
      its blur-to-sharp crossfade and glow pulse.
 
      These were the same flag, which made ?perf=noParticles disable BOTH the
@@ -336,26 +335,18 @@ function Hero() {
 
      Split so the flag isolates the canvas alone. Reduced motion still turns off
      both, which is correct: that is a preference, not a measurement. */
-  const particles = !reduce && !PERF.noParticles;
-  const heroChoreo = !reduce;
-  /* No canvas means nothing will ever call onAssembled, so run the same
-     choreography on its own clock — otherwise the headline would sit invisible
-     under ?perf=noParticles and the run would measure a blank hero. */
-  useEffect(() => {
-    if (!particles && heroChoreo) setAssembled(true);
-  }, [particles, heroChoreo]);
+  const particles = !reduce;
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
      world every frame for a decoration below the fold. That one goes. */
   const lite = usePerfTier() === "lite";
 
-  /* gentle exit parallax: text drifts up faster than the page, playground lags.
-     PERF.noMotion pins these so nothing scroll-linked writes styles. */
+  /* gentle exit parallax: text drifts up faster than the page, playground lags. */
   const { scrollY } = useScroll();
-  const textY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -84]);
-  const playY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -30]);
-  const heroFade = useTransform(scrollY, [0, 560], PERF.noMotion ? [1, 1] : [1, 0.28]);
+  const textY = useTransform(scrollY, [0, 640], [0, -84]);
+  const playY = useTransform(scrollY, [0, 640], [0, -30]);
+  const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
   useEffect(() => {
     // the blocks band is a desktop signature (≥768px) — phones skip the
@@ -492,23 +483,15 @@ function Hero() {
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
-          {/* PERF.noBlur drops the animated filter and textShadow, leaving an
-              opacity-only crossfade. Both of those re-rasterise this layer on
-              every frame of the transition — and the layer is the full width of
-              the headline, so the cost scales with the display. This fires at
-              exactly the moment the intro is reported to stutter, which is why
-              it gets its own bisect flag rather than being assumed innocent. */}
+          {/* The animated filter and textShadow here were measured in isolation
+              (?perf=noBlur) and cost nothing: 33.2ms against a 33.0ms baseline.
+              They run once, at assembly, and the page is idle either side of
+              it. Kept. */}
           <motion.h1
             ref={h1Ref}
-            initial={
-              PERF.noBlur
-                ? { opacity: 0 }
-                : { opacity: 0, filter: heroChoreo ? "blur(12px)" : "blur(0px)" }
-            }
+            initial={{ opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }}
             animate={
-              PERF.noBlur
-                ? { opacity: !heroChoreo || assembled ? 1 : 0 }
-                : !heroChoreo
+              !particles
                 ? { opacity: 1, filter: "blur(0px)" }
                 : assembled
                 ? {
@@ -523,7 +506,7 @@ function Hero() {
                 : { opacity: 0, filter: "blur(12px)" }
             }
             transition={
-              assembled && !PERF.noBlur
+              assembled
                 ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
                 : { duration: assembled ? 1.1 : 0.8, ease: EASE }
             }
@@ -575,7 +558,7 @@ function Hero() {
           animate={{ opacity: showPlay ? 1 : 0 }}
           transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
         >
-          {showPlay && !lite && !PERF.noMatter && (
+          {showPlay && !lite && (
             <Suspense fallback={null}>
               <IconPlayground interactive={!reduce} tapOnly={coarse} />
             </Suspense>

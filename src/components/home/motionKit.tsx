@@ -7,7 +7,6 @@ import {
 } from "motion/react";
 import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react";
 import { usePerfTier } from "./perfTier";
-import { PERF } from "../../lib/perfFlags";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Motion kit: the shared physics for the homepage's interactive sections.
@@ -95,7 +94,7 @@ export function useDiorama(
      fixed glow instead of the two layers that follow the cursor. Three of
      these run on the homepage at once, so this is the largest single saving
      available without changing the layout. */
-  const lite = usePerfTier() === "lite" || PERF.noDiorama;
+  const lite = usePerfTier() === "lite";
   const interactive = fine && !reduce && !lite;
   const scrollDrive = !fine && !reduce && !lite;
   const live = interactive || scrollDrive;
