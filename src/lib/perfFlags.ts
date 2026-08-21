@@ -46,6 +46,7 @@ export const PERF = {
 } as const;
 
 export const PERF_ACTIVE = q.length > 0;
+export const PERF_QUERY = q;
 
 /** Announce the active flags once, so a recording is never mislabelled. */
 if (typeof window !== "undefined" && PERF_ACTIVE) {
