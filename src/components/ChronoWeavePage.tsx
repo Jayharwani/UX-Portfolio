@@ -6,35 +6,14 @@ import {
   ArrowRight,
   ExternalLink,
   Clock,
-  Target,
-  Zap,
-  Users,
   Lightbulb,
-  Brain,
-  Activity,
   Vibrate,
   Volume2,
   Sun,
-  TrendingUp,
   AlertCircle,
-  Timer,
-  Search,
-  Layers,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
   Smartphone,
-  PenTool,
-  TestTube,
-  CircleDot,
   Sparkles,
-  GitBranch,
-  Check,
-  X,
   Accessibility,
-  Heart,
-  BarChart3,
-  Palette,
 } from "lucide-react";
 import { Footer } from "./Footer";
 import { ChronoWeaveHeroAnimation } from "./ChronoWeaveHeroAnimation";
@@ -46,7 +25,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }
   }
 };
 
@@ -93,54 +72,6 @@ function AnimatedCounter({ target, duration = 2, suffix = "" }: { target: number
 }
 
 export function ChronoWeavePage() {
-  const [currentStage, setCurrentStage] = useState(0);
-
-  const stages = [
-    {
-      stage: "Stage 1",
-      title: "Calibration & Onboarding",
-      icon: Target,
-      items: ["Time Feel Assessment", "Perception Baseline", "Sensory Preferences", "Nudge Intensity Setup"],
-      output: "Personalized Time Profile",
-      rationale: "Users with time blindness don't know how off their perception is. Calibration creates awareness and builds trust in the system's accuracy."
-    },
-    {
-      stage: "Stage 2",
-      title: "Today's Rhythm Dashboard",
-      icon: Activity,
-      items: ["Time Block View", "Drift Score", "Upcoming Transitions", "Nudge Schedule"],
-      output: "Daily Time Awareness",
-      rationale: "Showing time as visual blocks rather than numbers makes abstract time tangible — critical for users who can't 'feel' clock time."
-    },
-    {
-      stage: "Stage 3",
-      title: "Live Nudge System",
-      icon: Vibrate,
-      items: ["Haptic Patterns", "Audio Cues", "Light Signals", "Adaptive Intensity"],
-      output: "Multi-sensory Time Anchors",
-      rationale: "Single-modality alerts (like phone buzzes) are easily ignored. Combining haptics + audio + light creates unavoidable but non-intrusive time markers."
-    },
-    {
-      stage: "Stage 4",
-      title: "Drift Map & Tracking",
-      icon: TrendingUp,
-      items: ["Weekly Drift Patterns", "Time Perception Score", "Trigger Identification", "Trend Analysis"],
-      output: "Behavioral Insights",
-      rationale: "Self-reflection through data helps users identify their worst drift triggers — enabling proactive behavior change rather than reactive corrections."
-    },
-    {
-      stage: "Stage 5",
-      title: "Weekly Insights & Adaptation",
-      icon: BarChart3,
-      items: ["Progress Report", "Pattern Recognition", "Nudge Effectiveness", "Recommendation Engine"],
-      output: "Continuous Improvement Loop",
-      rationale: "The system learns which nudge types work best for each user — a quiet person may respond to light changes while a kinesthetic learner needs haptic feedback."
-    }
-  ];
-
-  const handlePrevStage = () => setCurrentStage((prev) => (prev > 0 ? prev - 1 : stages.length - 1));
-  const handleNextStage = () => setCurrentStage((prev) => (prev < stages.length - 1 ? prev + 1 : 0));
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
       {/* ─── Fixed Navigation ─── */}
@@ -189,7 +120,7 @@ export function ChronoWeavePage() {
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
               className="relative flex justify-center items-center min-h-[280px] sm:min-h-[400px] lg:min-h-[560px]"
             >
               <ChronoWeaveHeroAnimation />
@@ -199,7 +130,7 @@ export function ChronoWeavePage() {
             <motion.div
               initial={{ opacity: 0, x: 60 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay: 0.2 }}
               className="space-y-8 lg:pr-8"
             >
               <motion.div

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { ShoppingCart, CreditCard, Plane, Heart, TrendingUp, Pause, DollarSign } from "lucide-react";
+import { ShoppingCart, CreditCard, Plane, TrendingUp, Pause, DollarSign } from "lucide-react";
 
 export function BumperHeroAnimation() {
   const [phase, setPhase] = useState(0);

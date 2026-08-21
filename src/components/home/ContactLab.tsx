@@ -683,7 +683,6 @@ export function ContactSection() {
 
   const ease = EXPO; // out-expo, the section's one curve
   const dur = 400;
-  const easeCss = `cubic-bezier(${ease.join(",")})`;
 
   /* This section used to carry its own copy of the diorama — the same tilt
      springs, the same spotlight, the same three rAF loops as motionKit, about
@@ -693,7 +692,7 @@ export function ContactSection() {
      loop survive here after it was fixed there. Same tilt limits (4.5 / 5.5),
      so this is a straight swap. */
   const d = useDiorama(sectionRef);
-  const { interactive, live, tiltOn, ambientOn, srx, sry } = d;
+  const { interactive, tiltOn, ambientOn, srx, sry } = d;
   const visible = useOnScreen(sectionRef);
 
   /* entrance variants */

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { CheckCircle2, TrendingUp, Plane, ArrowRight, Calendar, MapPin, Sparkles, Award } from "lucide-react";
+import { CheckCircle2, TrendingUp, Plane, ArrowRight, Calendar, MapPin, Sparkles } from "lucide-react";
 
 export function BumperSuccessScreen() {
   return (

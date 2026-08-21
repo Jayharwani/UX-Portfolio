@@ -7,7 +7,7 @@ import {
   Flask,
   Code,
   ArrowRight,
-  ArrowUpRight,
+
   List,
   X,
   HandGrabbing,
@@ -1010,9 +1010,6 @@ function WorkCard({ project, featured = false }: { project: Project; featured?: 
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { margin: "-35% 0px -35% 0px" });
-  /* `inView` is deliberately narrow (it drives the touch "active" state near the
-     centre of the screen). The looping dot needs plain visibility. */
-  const visible = useOnScreen(ref);
   const [coarse, setCoarse] = useState(false);
   useEffect(() => {
     setCoarse(window.matchMedia("(pointer: coarse)").matches);

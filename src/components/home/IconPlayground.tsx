@@ -221,9 +221,12 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
         m.element.removeEventListener("DOMMouseScroll", m.mousewheel as EventListener);
 
         // wake everything when grabbed
-        Matter.Events.on(mc, "startdrag", (e: { body?: Matter.Body }) => {
+        /* matter-js types `startdrag` as the generic IEvent, which does not
+           carry `body`; the runtime event does. Narrow it explicitly rather
+           than widening the handler signature. */
+        Matter.Events.on(mc, "startdrag", ((e: { body?: Matter.Body }) => {
           if (e.body) Sleeping.set(e.body, false);
-        });
+        }) as (e: Matter.IEvent<Matter.MouseConstraint>) => void);
       } else {
         // touch: no drag constraint (page scroll stays free) — a tap on a
         // block pops it with an upward kick and a spin
