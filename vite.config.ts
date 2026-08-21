@@ -50,7 +50,7 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-router'],
           motion: ['motion'],
-          scroll: ['gsap', 'lenis'],
+          gsap: ['gsap'],
         },
       },
     },

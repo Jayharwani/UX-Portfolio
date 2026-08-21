@@ -1,7 +1,6 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
 import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link } from "react-router";
-import Lenis from "lenis";
 import {
   PenNib,
   Flask,
@@ -19,7 +18,7 @@ import {
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
-import { usePerfTier, type Tier } from "./home/perfTier";
+import { usePerfTier } from "./home/perfTier";
 import { PERF } from "../lib/perfFlags";
 import MemoryParticles from "./home/MemoryParticles";
 
@@ -149,45 +148,31 @@ function MagneticButton({ children, onClick }: { children: ReactNode; onClick: (
   );
 }
 
-/* one Lenis instance for the page; anchors route through it so easing matches */
-let lenisRef: Lenis | null = null;
+/* Page scroll lock, for when a modal owns the screen. Applied to <html>, not
+   <body>: body carries overflow-x: clip, and an inline overflow:hidden there
+   would override both axes and make body a scroll container again. */
+function lockScroll(on: boolean) {
+  document.documentElement.style.overflow = on ? "hidden" : "";
+}
 
 const scrollToId = (id: string) => {
   const el = document.getElementById(id);
   if (!el) return;
-  if (lenisRef) lenisRef.scrollTo(el, { offset: -64, duration: 0.9 });
-  else el.scrollIntoView({ behavior: "smooth", block: "start" });
+  /* Native. The fixed-nav offset comes from scroll-margin-top: 70 on every
+     anchor target, and html { scroll-behavior: smooth } supplies the easing —
+     which applies to this deliberate jump without putting a lerp between the
+     wheel and the page. */
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
-/* Light, flicky wheel scrolling: instant response, short ease-out tail.
+/* Smooth scrolling (Lenis) was removed here.
 
-   Skipped entirely on the lite tier. Lenis holds a rAF loop open for the life
-   of the page and puts a lerp between the wheel and the pixels — on a machine
-   that is already dropping frames that reads as precisely the lag it exists to
-   smooth away. Native scrolling is both faster and more honest there. */
-function useSmoothScroll(tier: Tier) {
-  const reduce = useReducedMotion();
-  useEffect(() => {
-    if (PERF.noLenis || tier === "lite" || reduce || !window.matchMedia("(pointer: fine)").matches) return;
-    const lenis = new Lenis({
-      duration: 0.72,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      wheelMultiplier: 1.18,
-    });
-    lenisRef = lenis;
-    let raf = 0;
-    const loop = (t: number) => {
-      lenis.raf(t);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(raf);
-      lenis.destroy();
-      lenisRef = null;
-    };
-  }, [reduce, tier]);
-}
+   Six measured runs said the page was never slow: p50 16.7ms, 57fps, 94% of
+   frames perfect, and zero long-task blocking. What read as lag was latency,
+   not throughput — Lenis eases the page toward where you asked over ~0.7s, so
+   every frame is a flawless 16.7ms frame while your hand and the pixels
+   disagree. Frame-time metrics cannot see that, which is why ?perf=noLenis
+   measured no change and felt better. Native scrolling is the fix. */
 
 /* accent hairline that fills with scroll progress */
 function ScrollProgress() {
@@ -366,9 +351,7 @@ function Hero() {
   const lite = usePerfTier() === "lite";
 
   /* gentle exit parallax: text drifts up faster than the page, playground lags.
-     PERF.noMotion pins these so nothing scroll-linked writes styles — with
-     Lenis running, its easing tail keeps every one of these chains updating for
-     the full duration of the ease after the wheel has already stopped. */
+     PERF.noMotion pins these so nothing scroll-linked writes styles. */
   const { scrollY } = useScroll();
   const textY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -84]);
   const playY = useTransform(scrollY, [0, 640], PERF.noMotion ? [0, 0] : [0, -30]);
@@ -1717,10 +1700,10 @@ function FlyerTrigger() {
   useEffect(() => {
     if (open) {
       setMounted(true);
-      lenisRef?.stop();
+      lockScroll(true);
       return;
     }
-    lenisRef?.start();
+    lockScroll(false);
     if (!mounted) return;
     const t = setTimeout(() => setMounted(false), 200);
     return () => clearTimeout(t);
@@ -1803,7 +1786,6 @@ function FlyerTrigger() {
 /* ── page ────────────────────────────────────────────────────────────────── */
 export function HomePage() {
   const tier = usePerfTier();
-  useSmoothScroll(tier);
   return (
     <div style={{ background: V.bg, minHeight: "100vh" }} data-tier={tier}>
       <ScrollProgress />
