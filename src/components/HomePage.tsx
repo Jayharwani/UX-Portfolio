@@ -1,5 +1,5 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
-import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, type ReactNode } from "react";
 import { Link } from "react-router";
 import {
   PenNib,
@@ -9,7 +9,6 @@ import {
 
   List,
   X,
-  HandGrabbing,
   TerminalWindow,
   Cursor as CursorIcon,
   MagicWand,
@@ -21,7 +20,7 @@ import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motion
 import { usePerfTier } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
-const IconPlayground = lazy(() => import("./home/IconPlayground"));
+const Sandbox = lazy(() => import("./home/sandbox/Sandbox"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -337,13 +336,30 @@ function Nav() {
 function Hero() {
   const reduce = useReducedMotion();
   const [showPlay, setShowPlay] = useState(false);
-  const [hintGone, setHintGone] = useState(false);
   /* memory-particles choreography: the DOM headline stays invisible until
      the particles have assembled it, then crossfades in (crisp text wins) */
   const [assembled, setAssembled] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
+  const ruleRef = useRef<HTMLDivElement>(null);
+
+  /* The fold rule flashes where a card lands. It is the detail that confirms
+     the rule is a real surface rather than a line the cards happen to stop
+     near, and it costs one compositor-only property: a pre-existing 120px
+     gradient sliver is translated to the contact point and its opacity is
+     animated. Nothing is created per impact and nothing paints. */
+  const flashRule = useCallback((x: number) => {
+    const rule = ruleRef.current;
+    if (!rule) return;
+    const spark = rule.firstElementChild as HTMLElement | null;
+    if (!spark) return;
+    spark.style.transform = `translateX(${Math.round(x - 60)}px)`;
+    spark.animate(
+      [{ opacity: 0 }, { opacity: 0.5 }, { opacity: 0 }],
+      { duration: 400, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }
+    );
+  }, []);
   /* `particles` = is the canvas mounted. `particles` = does the headline run
      its blur-to-sharp crossfade and glow pulse.
 
@@ -365,7 +381,6 @@ function Hero() {
   /* gentle exit parallax: text drifts up faster than the page, playground lags. */
   const { scrollY } = useScroll();
   const textY = useTransform(scrollY, [0, 640], [0, -84]);
-  const playY = useTransform(scrollY, [0, 640], [0, -30]);
   const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
   useEffect(() => {
@@ -390,8 +405,6 @@ function Hero() {
     };
   }, []);
 
-  /* coarse pointer = tap mode for the blocks (no drag, page scroll wins) */
-  const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
 
   /* Line breaks are authored, not left to wrapping, because the particle
      system samples each [data-line] span as its own text run — a reflowed line
@@ -633,81 +646,48 @@ function Hero() {
         </div>
       </motion.div>
 
-      {/* The blocks playground. It used to float unlabelled at the bottom edge
-          with ~300px of nothing above it, reading as a separate strip that had
-          drifted off the page rather than part of the hero. Two changes tie it
-          in: a ruled label that names what the blocks ARE, so they carry
-          meaning instead of decoration, and the rule itself, which gives the
-          composition a floor to sit on. */}
-      <motion.div
-        className="relative z-20 w-full hidden md:block mx-auto max-w-6xl px-6 md:px-10 lg:px-16"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showPlay ? 1 : 0 }}
-        transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
-      >
-        <div className="flex items-center gap-4" style={{ paddingBottom: 6 }}>
-          <span
-            style={{
-              fontFamily: V.mono,
-              fontSize: 10.5,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: V.text3,
-              whiteSpace: "nowrap",
-            }}
-          >
-            What I build with
-          </span>
-          <span className="flex-1" style={{ height: 1, background: V.border }} />
-        </div>
-      </motion.div>
+      {/* ── the component sandbox ────────────────────────────────────────
+          Six working controls, lifted from four shipped products and restyled
+          into this palette, resting on the fold rule.
 
-      <motion.div
-        className="relative z-20 w-full hidden md:block md:h-[30vh]"
-        style={reduce ? undefined : { y: playY, opacity: heroFade }}
-        onPointerDownCapture={() => setHintGone(true)}
-      >
-        <motion.div
-          className="w-full h-full"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: showPlay ? 1 : 0 }}
-          transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
-        >
+          Deliberately unlabelled and uncaptioned. The previous version carried
+          a heading naming the row and a tooltip that read "Drag the blocks",
+          and both are gone: an instruction converts a discovery into a chore,
+          and the entire value here is a visitor working out on their own that
+          the number moves. If it needs a caption it has failed.
+
+          The floor is the hairline below, not an arbitrary bottom edge. The
+          rule IS the surface these rest on, which is the detail that makes the
+          whole thing read as authored rather than as objects placed near a
+          line. */}
+      <div className="relative z-20 w-full hidden md:block" style={{ height: "clamp(190px, 26vh, 260px)" }}>
+        <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
           {showPlay && !lite && (
             <Suspense fallback={null}>
-              <IconPlayground interactive={!reduce} tapOnly={coarse} />
+              <Sandbox interactive={!reduce} onImpact={flashRule} />
             </Suspense>
           )}
-        </motion.div>
+        </div>
+      </div>
 
-        {/* how-to hint: appears after the blocks settle, leaves on first grab */}
-        <motion.div
-          className="absolute flex items-center gap-2"
-          style={{
-            right: 28,
-            bottom: 26,
-            padding: "8px 14px",
-            borderRadius: 999,
-            background: "rgba(22,29,46,0.94)",
-            border: `1px solid ${V.borderStrong}`,
-            pointerEvents: "none",
-          }}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: hintGone ? 0 : 1, y: hintGone ? 6 : 0 }}
-          transition={{ duration: 0.5, ease: EASE, delay: hintGone ? 0 : 2.4 }}
-        >
-          <motion.span
-            animate={reduce ? {} : { x: [0, 5, 0], rotate: [0, -8, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            style={{ display: "inline-flex" }}
-          >
-            <HandGrabbing size={16} weight="duotone" color="#5B8CFF" />
-          </motion.span>
-          <span style={{ fontFamily: V.mono, fontSize: 11, letterSpacing: "0.08em", color: V.text2 }}>
-            {coarse ? "Tap the blocks." : "Drag the blocks. Give them a toss."}
-          </span>
-        </motion.div>
-      </motion.div>
+      {/* the fold rule: the hero's boundary and the sandbox's ground */}
+      <div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
+        <div ref={ruleRef} className="relative" style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }}>
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 120,
+              height: 1,
+              opacity: 0,
+              background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
+              willChange: "transform, opacity",
+            }}
+          />
+        </div>
+      </div>
     </section>
   );
 }
