@@ -340,7 +340,25 @@ function Hero() {
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
+  /* `particles` = is the canvas mounted. `heroChoreo` = does the headline run
+     its blur-to-sharp crossfade and glow pulse.
+
+     These were the same flag, which made ?perf=noParticles disable BOTH the
+     canvas and the headline's animated filter and textShadow — two variables in
+     one switch, in the very harness built to avoid that. The first bisect
+     therefore could not tell the canvas apart from the headline, and the
+     fill-rate fix that followed from it moved p95 by nothing.
+
+     Split so the flag isolates the canvas alone. Reduced motion still turns off
+     both, which is correct: that is a preference, not a measurement. */
   const particles = !reduce && !PERF.noParticles;
+  const heroChoreo = !reduce;
+  /* No canvas means nothing will ever call onAssembled, so run the same
+     choreography on its own clock — otherwise the headline would sit invisible
+     under ?perf=noParticles and the run would measure a blank hero. */
+  useEffect(() => {
+    if (!particles && heroChoreo) setAssembled(true);
+  }, [particles, heroChoreo]);
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
@@ -502,12 +520,12 @@ function Hero() {
             initial={
               PERF.noBlur
                 ? { opacity: 0 }
-                : { opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }
+                : { opacity: 0, filter: heroChoreo ? "blur(12px)" : "blur(0px)" }
             }
             animate={
               PERF.noBlur
-                ? { opacity: !particles || assembled ? 1 : 0 }
-                : !particles
+                ? { opacity: !heroChoreo || assembled ? 1 : 0 }
+                : !heroChoreo
                 ? { opacity: 1, filter: "blur(0px)" }
                 : assembled
                 ? {
