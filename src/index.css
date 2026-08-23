@@ -241,3 +241,13 @@
 @media (prefers-reduced-motion: reduce) {
   .scroll-tick { animation: none; transform: scaleY(1); }
 }
+
+/* §2.1 status strip. Reads as a system status bar, not a nav: the whole cell
+   is the target, hover fills it rather than lifting it, and there is no shadow
+   anywhere. */
+.status-cell {
+  transition: background-color 160ms var(--ease-ui), border-color 160ms var(--ease-ui);
+  min-width: 0;
+}
+.status-cell:hover { background: var(--surface); }
+.status-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

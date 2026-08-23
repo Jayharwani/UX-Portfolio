@@ -6,7 +6,6 @@ import {
   Flask,
   Code,
   ArrowRight,
-  ArrowUpRight,
 
   List,
   X,
@@ -485,11 +484,10 @@ function Hero() {
        reads "I design interfacesthat get..." to a screen reader and the
        completeness assertion cannot pass. The particle sampler trimEnd()s its
        runs, so it costs nothing there. */
-    { node: "I design interfaces " },
+    { node: "I design interfaces that get " },
     {
       node: (
         <>
-          that get{" "}
           <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
             {HEADLINE_STATES[0].tail}
           </em>
@@ -504,18 +502,29 @@ function Hero() {
     /* §7.2: display line-height 0.95, not the 1.06 it was set at. Two lines at
        1.06 read as two separate objects; at 0.95 they lock into one mass, which
        is the whole point of a two-line headline. */
-    fontSize: "clamp(1.75rem, 5.6vw, 3.9rem)",
-    lineHeight: 0.95,
+    /* §2.2 asks for clamp(3.75rem, 7.5vw, 8rem). That assumes a shorter
+       headline than this one: at 8rem the longest authored line
+       ("I design interfaces that get") measures ~1500px against a 1024px
+       copy column, so it would wrap — and a wrapped line resamples at the
+       wrong geometry and lands the particle assembly crooked. Capped at the
+       largest size that provably fits, verified by measurement rather than
+       taken from the spec unchecked. */
+    fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
+    lineHeight: 0.94,
     /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
        track plus a touch of word-spacing separates the words again. */
-    letterSpacing: "-0.015em",
+    letterSpacing: "-0.025em",
     wordSpacing: "0.04em",
     color: V.text,
-    /* §7.3 optical alignment. The first glyph is a capital I, whose sidebearing
+    /* §9: with the headline centred this becomes optical CENTRING, not a
+       left inset. The line begins on a capital I and ends on a full stop,
+       both of which carry more sidebearing than the glyphs between them, so
+       metric centring reads a touch left. A small positive nudge corrects it.
+       Previous note, kept because the reasoning still applies:
        is wide relative to its stem, so ranging the BOX left leaves the stem
        visibly inset from everything below it. Measured against the CTA edge at
        display size rather than guessed. */
-    marginLeft: "-0.035em",
+    marginLeft: "0.012em",
   };
   /* F9: the subhead was set in Clash Display, the same face as the headline,
      so it competed with the thing it exists to qualify. General Sans changes
@@ -528,8 +537,8 @@ function Hero() {
     lineHeight: 1.45,
     letterSpacing: "0",
     color: V.text2,
-    maxWidth: "34ch",
-    marginTop: 24,
+    maxWidth: "42ch",
+    marginTop: 28,
   };
 
   return (
@@ -549,6 +558,81 @@ function Hero() {
         />
       )}
       <div className="hero-grain" aria-hidden="true" />
+
+      {/* ── §2.1 status strip ───────────────────────────────────────────
+          The proof rail, moved out of the right column and up under the
+          header. A reviewer scanning for two seconds now meets three product
+          names and two live deployments before reaching the headline, which
+          is strictly better than meeting them beside it.
+
+          Reads as a system status bar rather than a nav: 44px, hairlines
+          above and below, vertical dividers, whole cell is the link. Hover
+          fills the cell rather than lifting it. */}
+      <motion.div
+        className="relative z-30 w-full hidden md:block"
+        style={{ marginTop: 64 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
+        transition={{ duration: 0.5, ease: EASE, delay: particles ? 1.5 : 0.2 }}
+      >
+        <div
+          className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16"
+          style={{
+            borderTop: "1px solid rgb(232 236 243 / 0.08)",
+            borderBottom: "1px solid rgb(232 236 243 / 0.08)",
+          }}
+        >
+          <div className="grid grid-cols-3">
+            {PROOF.map((p, i) => (
+              <motion.a
+                key={p.name}
+                href={p.href}
+                target={p.external ? "_blank" : undefined}
+                rel={p.external ? "noopener noreferrer" : undefined}
+                className="status-cell"
+                data-proof={p.id}
+                initial={{ opacity: 0, y: reduce ? 0 : 6 }}
+                animate={particles ? (assembled ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }) : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: EASE, delay: (particles ? 1.55 : 0.25) + i * 0.06 }}
+                onMouseEnter={() => setHoveredProof(p.id)}
+                onMouseLeave={() => setHoveredProof(null)}
+                onFocus={() => setHoveredProof(p.id)}
+                onBlur={() => setHoveredProof(null)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  height: 44,
+                  padding: "0 16px",
+                  textDecoration: "none",
+                  borderLeft: i === 0 ? undefined : "1px solid rgb(232 236 243 / 0.08)",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: V.body,
+                    fontWeight: 500,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.09em",
+                    color: V.text,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {p.name}
+                </span>
+                <span
+                  className="inline-flex items-center gap-2"
+                  style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                >
+                  {p.live && <span className="proof-dot" aria-hidden="true" />}
+                  {p.status}
+                </span>
+              </motion.a>
+            ))}
+          </div>
+        </div>
+      </motion.div>
 
       {/* soft accent glows */}
       <div
@@ -573,7 +657,7 @@ function Hero() {
       />
 
       <motion.div
-        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-24 pb-8 md:pb-6 grid grid-cols-1 xl:grid-cols-12 gap-y-12 xl:gap-x-8 items-start"
+        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-8 pb-8 md:pb-6 flex flex-col items-center"
         style={reduce ? undefined : { y: textY, opacity: heroFade }}
       >
         {/* copy centered on every breakpoint */}
@@ -585,7 +669,7 @@ function Hero() {
         {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
             sides anchored it reads as a decision rather than as the gap it was
             when only the left side had content. */}
-        <div ref={copyRef} className="xl:col-span-6 flex flex-col items-start text-left">
+        <div ref={copyRef} className="flex flex-col items-center text-center w-full">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
@@ -658,7 +742,7 @@ function Hero() {
             animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
             transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.45 : 0.52 }}
             className="flex flex-wrap items-center gap-x-7 gap-y-4"
-            style={{ marginTop: 38 }}
+            style={{ marginTop: 44 }}
           >
             <MagneticButton onClick={() => scrollToId("work")}>
               See the work <ArrowRight size={16} weight="bold" />
@@ -710,75 +794,6 @@ function Hero() {
           </motion.p>
         </div>
 
-        {/* ── proof rail (§5.2) ───────────────────────────────────────────
-            The right sixty percent of the viewport was unresolved (F2) and
-            there was no product evidence above the fold (F5). Both are the same
-            hole, and three rows close it: a founder gets three named products
-            and two live deployments in under two seconds.
-
-            One line each, no cards. Cards here would be the lazy answer — the
-            content is a list, and a list of three things that each fit on one
-            line does not need a container apiece. The hierarchy is carried by
-            face and weight: General Sans for the name, mono for the status,
-            which is what mono is actually for. */}
-        <motion.div
-          className="xl:col-start-8 xl:col-span-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
-          transition={{ duration: 0.6, ease: EASE, delay: particles ? 0.7 : 0.75 }}
-          style={{ paddingTop: 10 }}
-        >
-          {PROOF.map((p, i) => (
-            <motion.a
-              key={p.name}
-              href={p.href}
-              target={p.external ? "_blank" : undefined}
-              rel={p.external ? "noopener noreferrer" : undefined}
-              className="proof-row"
-              data-proof={p.id}
-              initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-              animate={particles ? (assembled ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }) : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: (particles ? 0.78 : 0.82) + i * 0.06 }}
-              onMouseEnter={() => setHoveredProof(p.id)}
-              onMouseLeave={() => setHoveredProof(null)}
-              onFocus={() => setHoveredProof(p.id)}
-              onBlur={() => setHoveredProof(null)}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0,auto) 1fr auto",
-                alignItems: "baseline",
-                gap: 14,
-                padding: "14px 0 14px 14px",
-                borderTop: i === 0 ? `1px solid rgb(232 236 243 / 0.08)` : undefined,
-                borderBottom: `1px solid rgb(232 236 243 / 0.08)`,
-                textDecoration: "none",
-                position: "relative",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: V.body,
-                  fontWeight: 500,
-                  fontSize: 13,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: V.text,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {p.name}
-              </span>
-              <span
-                className="inline-flex items-center gap-2"
-                style={{ fontFamily: V.mono, fontSize: 12, color: V.text3, whiteSpace: "nowrap" }}
-              >
-                {p.live && <span className="proof-dot" aria-hidden="true" />}
-                {p.status}
-              </span>
-              <ArrowUpRight size={14} weight="bold" color={V.text3} style={{ flexShrink: 0 }} />
-            </motion.a>
-          ))}
-        </motion.div>
       </motion.div>
 
       {/* ── the component sandbox ────────────────────────────────────────
