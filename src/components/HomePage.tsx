@@ -443,7 +443,11 @@ function Hero() {
          choreography feels alive, and the difference is entirely in the
          overlap. Reduced motion and the no-particle path keep the old
          immediate mount, since there is no intro to interleave with. */
-      t = window.setTimeout(() => setShowPlay(true), particles ? 2600 : 250);
+      /* §6 at 2.10s. The cards start falling BEFORE the headline resolves
+         at 2.90, so the two systems interleave rather than queue. That
+         overlap is the difference between a scene that feels alive and
+         one that feels like a loading sequence. */
+      t = window.setTimeout(() => setShowPlay(true), particles ? 2100 : 250);
     };
     const onChange = (e: MediaQueryListEvent) => {
       if (e.matches) arm();
@@ -577,7 +581,7 @@ function Hero() {
         style={{ marginTop: 64 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
-        transition={{ duration: 0.5, ease: EASE, delay: particles ? 1.5 : 0.2 }}
+        transition={{ duration: 0.5, ease: EASE, delay: particles ? 4.1 : 0.2 }}
       >
         <div
           className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16"
@@ -597,7 +601,7 @@ function Hero() {
                 data-proof={p.id}
                 initial={{ opacity: 0, y: reduce ? 0 : 6 }}
                 animate={particles ? (assembled ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }) : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: EASE, delay: (particles ? 1.55 : 0.25) + i * 0.06 }}
+                transition={{ duration: 0.45, ease: EASE, delay: (particles ? 4.15 : 0.25) + i * 0.06 }}
                 onMouseEnter={() => setHoveredProof(p.id)}
                 onMouseLeave={() => setHoveredProof(null)}
                 onFocus={() => setHoveredProof(p.id)}

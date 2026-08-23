@@ -806,32 +806,45 @@ export default function MemoryParticles({
         document.removeEventListener("visibilitychange", onVis);
       });
 
-      /* ── choreography (cinematic: emerge → drift → converge → land) ── */
+      /* ── §6 choreography ─────────────────────────────────────────────
+         One continuous event, not three systems finishing whenever they
+         happen to finish. Every position below is ABSOLUTE rather than
+         relative, because the schedule is the spec and relative offsets
+         drift the moment any duration changes.
+
+           0.00  field materialises at 15% — the medium exists first
+           0.30  particles migrate toward headline targets
+           1.90  headline legible in particle form, held
+           2.10  cards begin falling (owned by the Hero, see showPlay)
+           2.50  real h1 crossfades over the particle text
+           2.90  headline resolved; first cards contact the floor
+           3.80  the release: headline particles rejoin the field
+           4.40  the light comes up
+
+         Two of these carry the concept rather than the pacing. The release
+         at 3.80 is what makes the letterforms BECOME the atmosphere rather
+         than fading out and being replaced. The light last, at 4.40, is
+         what makes the lighting read as a property of the world rather
+         than as a hover effect: the scene assembles unlit, then lights. */
       const tl = gsap.timeline();
-      tl.to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
-        .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
-        /* §10.2: HOLD the assembled particle text before handing over.
-           This fired at -=0.4, which crossfaded the real h1 in 0.4s BEFORE
-           the particles had finished converging — so the one moment the
-           whole system exists to produce, the letterforms resolving out of
-           a cloud, was being spent rather than shown. +=0.45 lets it land,
-           hold for a beat, and only then hand over to crisp text. */
+      /* the medium, before anything is in it */
+      tl.to(state, { masterAlpha: 0.15, duration: 0.3, ease: "power1.out" }, 0)
+        .to(state, { masterAlpha: 1, duration: 1.2, ease: "power1.inOut" }, 0.3)
+        /* migration: field homes -> headline targets */
+        .to(state, { intro: 1, duration: 1.6, ease: "none" }, 0.3)
+        /* 1.90 -> 2.50 is the HOLD. The letterforms resolving out of a
+           cloud is the one moment this whole system exists to produce, so
+           it gets 600ms of stillness rather than being handed straight
+           over to crisp text. */
         .add(() => {
-          assembledCb.current(); // real text fades in over the particles
-        }, "+=0.45")
-        .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
-        .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4")
-        /* §6, 3.80s — the release. The headline particles are not faded out
-           and replaced by an ambient set; they are the SAME particles, given
-           their field homes back. The letterforms become the atmosphere,
-           which is what makes the field and the text read as one material
-           rather than as two effects that happen to share a viewport. */
-        .to(state, { released: 1, duration: 2.2, ease: "power1.inOut" }, "-=1.2");
-
-
-      /* the forgetting loop — runs after assembly, forever, silently.
-         loopRef lets the visibility observer above pause it when the hero
-         leaves the screen; without that it ticked for the life of the page. */
+          assembledCb.current();
+        }, 2.5)
+        .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, 2.9)
+        .to(state, { ambientAlpha: 0.55, duration: 1.4, ease: "power1.inOut" }, 2.9)
+        /* 3.80 — the release */
+        .to(state, { released: 1, duration: 2.2, ease: "power1.inOut" }, 3.8)
+        /* 4.40 — the light comes up last */
+        .to(bus, { lightUp: 1, duration: 0.6, ease: "power1.inOut" }, 4.4);
       /* ── the morph loop ─────────────────────────────────────────────────
          The old loop dissolved the tail and rebuilt the same words, which
          spent a third of its cycle showing an unfinished sentence for no
@@ -854,7 +867,9 @@ export default function MemoryParticles({
              At 8s + 1.2s of travel the headline is still for ~87% of its
              cycle, which is the difference between a detail and a distraction. */
           repeatDelay: 8,
-          delay: 4.2,
+          /* the parent timeline decides WHEN this starts (5.2s, after the
+             release has settled), so the loop carries no delay of its own —
+             stacking the two would push the first morph out past nine seconds */
           paused: true,
         });
         loopRef.current = loop;
@@ -885,11 +900,7 @@ export default function MemoryParticles({
             state.wordAlpha = 0;
             gsap.to(wordEl, { opacity: 1, duration: 0.28, ease: "power1.out" });
           });
-        /* §6, 4.40s: the scene assembles UNLIT and then lights. That ordering
-         is what makes the lighting read as a property of the world rather
-         than as a hover effect bolted on. */
-      tl.to(bus, { lightUp: 1, duration: 0.6, ease: "power1.inOut" }, ">-0.2");
-      tl.add(() => loop.play());
+          tl.add(() => loop.play(), 5.2);
         cleanupFns.push(() => {
           loop.kill();
           /* §3.6: leave the DOM on a complete sentence, never mid-travel */

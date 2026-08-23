@@ -98,8 +98,16 @@ export default function Sandbox({
          wrapper is absolutely positioned and the arena does not clip.
          Three cards were resting up there in the shipped build. */
       const INSET = 24;
+      /* stepped floor: one invisible segment per slot, each up to 32px
+         higher than the base. Real ledges, so the cards genuinely come to
+         rest at different heights rather than being nudged afterwards. */
+      const LEDGE = [0, 22, 9, 31, 14, 26];
+      const segW = W / SANDBOX.length;
+      const ledges = SANDBOX.map((_, i) =>
+        Bodies.rectangle(segW * (i + 0.5), H + 40 - LEDGE[i % LEDGE.length], segW + 2, 80, wall)
+      );
       const walls = [
-        Bodies.rectangle(W / 2, H + 40, W + 400, 80, wall), // floor
+        ...ledges,
         Bodies.rectangle(INSET - 40, H / 2, 80, H * 4, wall), // left
         Bodies.rectangle(W - INSET + 40, H / 2, 80, H * 4, wall), // right
         /* the ceiling sits just above the arena: high enough for the intro
@@ -112,7 +120,7 @@ export default function Sandbox({
          gallery; a loose scatter reads as objects someone left on a desk. */
       const bodies = els.map((el, i) => {
         const { w, h } = sizes[i];
-        const slot = (i + 0.5) / els.length;
+        const slot = SANDBOX[i]?.slot ?? (i + 0.5) / els.length;
         /* clamped inside the inset walls, so the widest card cannot begin
            or end up hanging over an edge */
         const x = Math.max(
@@ -127,7 +135,7 @@ export default function Sandbox({
           frictionAir: 0.022,
           density: 0.0016,
         });
-        Body.setAngle(b, (((i * 53) % 9) - 4) * 0.0125); // ±4°
+        Body.setAngle(b, (((i * 53) % 7) - 3) * 0.0175); // ±3° (§5.2)
         return b;
       });
       Composite.add(engine.world, bodies);
@@ -155,7 +163,7 @@ export default function Sandbox({
         for (const pair of evt.pairs) {
           const b = bodies.indexOf(pair.bodyA as any) >= 0 ? pair.bodyA : pair.bodyB;
           const idx = bodies.indexOf(b as any);
-          if (idx >= 0 && !landed.has(idx) && (pair.bodyA === walls[0] || pair.bodyB === walls[0])) {
+          if (idx >= 0 && !landed.has(idx) && (ledges.includes(pair.bodyA as any) || ledges.includes(pair.bodyB as any))) {
             landed.add(idx);
             onImpact?.(b.position.x);
             /* §3.4: the same landing that flashes the rule also pushes a

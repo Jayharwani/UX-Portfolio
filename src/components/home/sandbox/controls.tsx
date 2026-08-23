@@ -445,11 +445,17 @@ export function CheckboxCard() {
   );
 }
 
+/* `slot` is the resting position across the arena, 0 = left edge, 1 = right.
+   It is deliberately independent of array order, because array order is DOM
+   order and DOM order is TAB order (§4.5). Headroom must be first for a
+   keyboard user — it is the anchor and it carries the changing number — but
+   §5.2 wants it left-of-CENTRE rather than jammed against the left edge.
+   Decoupling the two lets both be true. */
 export const SANDBOX = [
-  { id: "safe", Component: SafeToSpendCard, project: "headroom" },
-  { id: "fit", Component: FitChipCard, project: "signal" },
-  { id: "toggle", Component: ToggleCard, project: "bumper" },
-  { id: "segment", Component: SegmentedCard, project: "intent" },
-  { id: "stepper", Component: StepperCard, project: "chronoweave" },
-  { id: "check", Component: CheckboxCard, project: "intent" },
+  { id: "safe", Component: SafeToSpendCard, project: "headroom", slot: 0.40 },
+  { id: "fit", Component: FitChipCard, project: "signal", slot: 0.09 },
+  { id: "toggle", Component: ToggleCard, project: "bumper", slot: 0.245 },
+  { id: "segment", Component: SegmentedCard, project: "intent", slot: 0.60 },
+  { id: "stepper", Component: StepperCard, project: "chronoweave", slot: 0.775 },
+  { id: "check", Component: CheckboxCard, project: "intent", slot: 0.925 },
 ] as const;
