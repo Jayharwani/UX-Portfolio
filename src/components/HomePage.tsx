@@ -557,6 +557,10 @@ function Hero() {
           }}
         />
       )}
+      {/* §4.2: the background wash — one pre-rendered radial translated to the
+          light position. 3% maximum and 1200px across, so it reads as the room
+          being lit rather than as a blob following the cursor. */}
+      <div className="hero-wash" aria-hidden="true" />
       <div className="hero-grain" aria-hidden="true" />
 
       {/* ── §2.1 status strip ───────────────────────────────────────────
