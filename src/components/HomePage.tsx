@@ -20,7 +20,7 @@ import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motion
 import { usePerfTier } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
-const Sandbox = lazy(() => import("./home/sandbox/Sandbox"));
+const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const WebStage = lazy(() => import("./home/web/WebStage"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
@@ -348,6 +348,9 @@ function Hero() {
   /* memory-particles choreography: the DOM headline stays invisible until
      the particles have assembled it, then crossfades in (crisp text wins) */
   const [assembled, setAssembled] = useState(false);
+  /* the blocks drop in after the headline resolves, so the hero reads as
+     one event rather than two things loading at once */
+  const [showBlocks, setShowBlocks] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
@@ -383,6 +386,14 @@ function Hero() {
      Split so the flag isolates the canvas alone. Reduced motion still turns off
      both, which is correct: that is a preference, not a measurement. */
   const particles = !reduce;
+  /* the blocks are the heaviest optional thing in the hero, so they respect the
+     device tier the same way the rest of the site does */
+  const lite = usePerfTier() === "lite";
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setShowBlocks(true), particles ? 2100 : 250);
+    return () => window.clearTimeout(t);
+  }, [particles]);
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
@@ -643,6 +654,21 @@ function Hero() {
 
       </motion.div>
 
+      {/* ── the tool blocks ──────────────────────────────────────────────
+          Back in the hero, under the CTA, where they were before the six
+          component cards displaced them. Eleven draggable blocks with real
+          matter-js physics.
+
+          Desktop only: on a phone the particle intro carries the hero on its
+          own and the physics chunk never loads. Still no caption — the same
+          rule that applied to the cards applies here. */}
+      <div className="relative z-20 w-full hidden md:block" style={{ height: "clamp(180px, 24vh, 250px)" }}>
+        {showBlocks && !lite && (
+          <Suspense fallback={null}>
+            <IconPlayground interactive={!reduce} tapOnly={false} />
+          </Suspense>
+        )}
+      </div>
       {/* the fold rule: the hero's lower boundary. The impact flash that used
           to live here went with the sandbox — nothing lands on it any more,
           and the unused 120px sliver was still holding a compositor layer
@@ -668,51 +694,6 @@ function Hero() {
             PARTICLES SAMPLED FROM LIVE DOM TEXT
           </span>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── components (§9) ──────────────────────────────────────────────────────
-   The six physics cards, moved out of the hero into a section of their own.
-   They are good work and they were competing with the web for attention in a
-   fold that can only carry one expressive system.
-
-   Mono label, no explanatory copy, no instructions — the whole value is a
-   visitor discovering on their own that the number moves. matter-js
-   lazy-mounts on intersection so it never loads with the hero. */
-function Components() {
-  const reduce = useReducedMotion();
-  const ref = useRef<HTMLElement>(null);
-  const near = useOnScreen(ref, "320px");
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (near) setMounted(true);
-  }, [near]);
-
-  return (
-    <section
-      ref={ref}
-      id="components"
-      className="relative"
-      style={{ background: V.bg, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
-    >
-      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-20">
-        <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: V.text3 }}>
-          Components
-        </span>
-      </div>
-      <div className="relative w-full hidden md:block" style={{ height: "clamp(240px, 32vh, 320px)" }}>
-        <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
-          {mounted && (
-            <Suspense fallback={null}>
-              <Sandbox interactive={!reduce} />
-            </Suspense>
-          )}
-        </div>
-      </div>
-      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
-        <div style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }} />
       </div>
     </section>
   );
@@ -1909,7 +1890,6 @@ export function HomePage() {
         <Hero />
         <WhatIDo />
         <SelectedWork />
-        <Components />
         <ContactSection />
         <HowIWork />
         <About />
