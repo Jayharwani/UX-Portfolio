@@ -20,10 +20,19 @@ import { buildWeb } from "./geometry";
 
 export type WebDepth = "primary" | "secondary" | "tertiary";
 
+/* Roughly 2.5x what these were.
+
+   At 0.22 / 0.13 / 0.08 the webs were too timid to be a feature and too
+   visible to be nothing: they read as smudges on the glass rather than as
+   intent, and they were paying the cost of both. Refusing to commit is
+   what made them look like dirt.
+
+   The ratios between the planes are unchanged, because atmospheric
+   perspective is what sells the depth. Only the overall commitment moves. */
 const OPACITY: Record<WebDepth, number> = {
-  primary: 0.22,
-  secondary: 0.13,
-  tertiary: 0.08,
+  primary: 0.55,
+  secondary: 0.32,
+  tertiary: 0.2,
 };
 
 export function Web({

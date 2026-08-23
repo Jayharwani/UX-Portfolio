@@ -348,9 +348,6 @@ function Hero() {
   /* memory-particles choreography: the DOM headline stays invisible until
      the particles have assembled it, then crossfades in (crisp text wins) */
   const [assembled, setAssembled] = useState(false);
-  /* the blocks drop in after the headline resolves, so the hero reads as
-     one event rather than two things loading at once */
-  const [showBlocks, setShowBlocks] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
@@ -386,14 +383,7 @@ function Hero() {
      Split so the flag isolates the canvas alone. Reduced motion still turns off
      both, which is correct: that is a preference, not a measurement. */
   const particles = !reduce;
-  /* the blocks are the heaviest optional thing in the hero, so they respect the
-     device tier the same way the rest of the site does */
-  const lite = usePerfTier() === "lite";
 
-  useEffect(() => {
-    const t = window.setTimeout(() => setShowBlocks(true), particles ? 2100 : 250);
-    return () => window.clearTimeout(t);
-  }, [particles]);
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
@@ -654,21 +644,6 @@ function Hero() {
 
       </motion.div>
 
-      {/* ── the tool blocks ──────────────────────────────────────────────
-          Back in the hero, under the CTA, where they were before the six
-          component cards displaced them. Eleven draggable blocks with real
-          matter-js physics.
-
-          Desktop only: on a phone the particle intro carries the hero on its
-          own and the physics chunk never loads. Still no caption — the same
-          rule that applied to the cards applies here. */}
-      <div className="relative z-20 w-full hidden md:block" style={{ height: "clamp(180px, 24vh, 250px)" }}>
-        {showBlocks && !lite && (
-          <Suspense fallback={null}>
-            <IconPlayground interactive={!reduce} tapOnly={false} />
-          </Suspense>
-        )}
-      </div>
       {/* the fold rule: the hero's lower boundary. The impact flash that used
           to live here went with the sandbox — nothing lands on it any more,
           and the unused 120px sliver was still holding a compositor layer
@@ -699,6 +674,51 @@ function Hero() {
   );
 }
 
+
+/* ── the toolchain ────────────────────────────────────────────────────────
+   The eleven draggable tool blocks, moved out of the hero.
+
+   They were the second expressive system in a fold that can only carry one.
+   With the web there, the blocks and the web were competing and neither was
+   winning — and the busiest band on the page sat directly under the emptiest
+   one, which is what made a hero with very little in it feel cluttered.
+
+   Down here they get room and they stop arguing with the headline. Same
+   physics, same drag, same lazy mount on approach. Still no caption. */
+function Toolchain() {
+  const reduce = useReducedMotion();
+  const lite = usePerfTier() === "lite";
+  const ref = useRef<HTMLElement>(null);
+  const near = useOnScreen(ref, "320px");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (near) setMounted(true);
+  }, [near]);
+
+  return (
+    <section
+      ref={ref}
+      className="relative"
+      style={{ background: V.bg, borderTop: `1px solid ${V.border}` }}
+    >
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-20">
+        <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: V.text3 }}>
+          What I build with
+        </span>
+      </div>
+      <div className="relative w-full hidden md:block" style={{ height: "clamp(220px, 30vh, 300px)" }}>
+        {mounted && !lite && (
+          <Suspense fallback={null}>
+            <IconPlayground interactive={!reduce} tapOnly={false} />
+          </Suspense>
+        )}
+      </div>
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
+        <div style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }} />
+      </div>
+    </section>
+  );
+}
 /* ── what I do band ──────────────────────────────────────────────────────── */
 function WhatIDo() {
   const markers = [
@@ -1888,6 +1908,7 @@ export function HomePage() {
       <Nav />
       <main className="relative z-10">
         <Hero />
+        <Toolchain />
         <WhatIDo />
         <SelectedWork />
         <ContactSection />

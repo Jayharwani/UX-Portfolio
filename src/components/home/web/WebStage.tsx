@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Web } from "./Web";
+import Spider from "./Spider";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Three webs on three planes inside one perspective container.
@@ -89,6 +90,14 @@ export default function WebStage({ interactive }: { interactive: boolean }) {
           <Web size={180} seed={51} depth="tertiary" />
         </div>
       </div>
+
+      {/* The spider hangs OUTSIDE the parallax stage, on its own flat layer.
+          Inside it, the perspective transform would skew the body and soften
+          its 1px strokes, and a spider that leans with the parallax reads as a
+          sticker on glass rather than as something hanging in the room. It is
+          anchored under the primary web so the dragline reads as coming from
+          it. */}
+      <Spider anchorX={0.86} restLength={190} interactive={interactive} />
     </div>
   );
 }

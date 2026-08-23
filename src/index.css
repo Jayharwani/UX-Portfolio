@@ -315,3 +315,14 @@
 @media (prefers-reduced-motion: reduce) {
   .web-glint path { animation: none; }
 }
+
+/* The hanging spider. Positioned from the top of the hero, outside the 3D
+   stage so its strokes stay crisp. Pointer-events off: it is decorative and it
+   must never intercept a click meant for the page. */
+.spider {
+  position: absolute;
+  top: 0;
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 600ms var(--ease-ui);
+}
