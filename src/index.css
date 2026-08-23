@@ -243,3 +243,71 @@
 
 
 
+
+/* ══ the web stage (v4 §4) ════════════════════════════════════════════════
+   Three planes in one perspective container. The differential motion comes
+   from the perspective divide over different translateZ values, so the
+   parallax is one transform on the inner wrapper rather than three.
+
+   Exactly three elements carry will-change here — the three planes — and
+   nothing else in the hero does. */
+.web-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 1200px;
+  z-index: 1;
+}
+.web-stage__inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.web-plane {
+  position: absolute;
+  will-change: transform;
+}
+/* Top right, tucked under the nav.
+   Separated from the headline HORIZONTALLY rather than vertically. §0 is
+   explicit that the web stays in the corners and never approaches the type,
+   and measured at 1440 the centred headline ink reaches x=1161 while the web
+   began at x=1049 — they genuinely met.
+
+   Raising it instead would have worked, but only by pushing the hub up under
+   the nav, and the hub is where the spider settles. Cropping against the RIGHT
+   edge keeps the hub on screen and puts the web in the true corner, which is
+   what the concept asks for. */
+.web--primary {
+  top: -62px;
+  right: -198px;
+  transform: translateZ(-120px) rotateY(-14deg) rotateX(6deg);
+}
+/* bottom left, deeper */
+.web--secondary {
+  bottom: 4px;
+  left: -58px;
+  transform: translateZ(-320px) rotateY(10deg) rotateX(-4deg);
+}
+/* bottom right, deepest */
+.web--tertiary {
+  bottom: 22px;
+  right: 6%;
+  transform: translateZ(-480px) rotateY(18deg);
+}
+
+/* Silk glint: a slow crawl of dashes along the same paths. Real silk catches
+   light in glints down its length; this is the detail that makes the web read
+   as material rather than as a diagram. 40s, primary only. */
+.web-glint path {
+  stroke-dasharray: 3 190;
+  animation: web-glint 40s linear infinite;
+}
+@keyframes web-glint {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -772; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .web-glint path { animation: none; }
+}

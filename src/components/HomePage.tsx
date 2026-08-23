@@ -21,6 +21,7 @@ import { usePerfTier } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
 const Sandbox = lazy(() => import("./home/sandbox/Sandbox"));
+const WebStage = lazy(() => import("./home/web/WebStage"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -496,6 +497,13 @@ function Hero() {
         />
       )}
 
+      {/* §4: three webs on three planes. Behind everything, pointer-events
+          none, and strictly outside the text layer — a headline inside a
+          perspective container skews and its rasterisation goes soft. */}
+      <Suspense fallback={null}>
+        <WebStage interactive={!reduce} />
+      </Suspense>
+
       <div className="hero-grain" aria-hidden="true" />
 
       {/* soft accent glows */}
@@ -635,23 +643,13 @@ function Hero() {
 
       </motion.div>
 
-      {/* the fold rule: the hero's boundary and the sandbox's ground */}
+      {/* the fold rule: the hero's lower boundary. The impact flash that used
+          to live here went with the sandbox — nothing lands on it any more,
+          and the unused 120px sliver was still holding a compositor layer
+          open for an animation that can no longer fire. §14 wants exactly
+          three will-change declarations in the hero and this was the fourth. */}
       <div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
-        <div ref={ruleRef} className="relative" style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }}>
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: 120,
-              height: 1,
-              opacity: 0,
-              background: "linear-gradient(90deg, transparent, rgb(232 236 243 / 0.9), transparent)",
-              willChange: "transform, opacity",
-            }}
-          />
-        </div>
+        <div ref={ruleRef} style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }} />
         {/* §9 / F10: the scroll affordance. */}
         <div className="flex items-center justify-between gap-6" style={{ paddingTop: 14 }}>
           <div className="flex items-center gap-3">
