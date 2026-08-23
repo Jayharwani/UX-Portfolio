@@ -1,32 +1,36 @@
 import { Canvas } from "@react-three/fiber";
 import { useReducedMotion } from "motion/react";
+import * as THREE from "three";
 import NodeWeb from "./NodeWeb";
-import RoboSpider from "./RoboSpider";
 
 /* ──────────────────────────────────────────────────────────────────────────
    The hero's 3D layer.
 
-   This is the heaviest thing this page has ever carried — three plus R3F is
-   roughly 600KB before anything renders — and this site has been through
-   several rounds of performance work, so the mitigations are not optional:
+   One large rotating lattice, and nothing else. The robo-spider was removed:
+   its motion was too fast and too continuous, and a small object moving
+   quickly in the corner of a page you are trying to read is an irritant no
+   matter how well it is modelled. It also split attention with the lattice,
+   and the brief for this pass is that the lattice IS the highlight.
 
-   · Lazy chunk. Nothing here is in the homepage bundle; it arrives after the
-     hero has already painted, so first paint is unaffected.
-   · Tier-gated. The device tier that governs the rest of the site governs this
-     too. A weak machine never downloads it.
-   · dpr capped at [1, 1.6]. A 3D canvas at DPR 2 on a 27" display is the same
-     fill-rate trap the particle canvas fell into earlier; the budget is
-     backing-store pixels, not device pixels.
-   · No shadows, no post-processing, no environment map. Every one of those is
-     a per-frame cost for something that sits behind text at low opacity.
+   What makes the scene read as three-dimensional, in order of how much each
+   contributes:
 
-   The one rule this DOES break, stated plainly rather than hidden: R3F runs
-   its own render loop, so the page now has two rAF drivers rather than one.
-   That was a hard constraint through the performance work. It is broken here
-   because the alternative is driving three's renderer manually from
-   gsap.ticker, which fights the library at every version bump for a saving of
-   one scheduler. Worth knowing it is a deliberate exception rather than an
-   oversight.
+   1. The rotation. A ring turning shows one side approaching and the other
+      receding. Nothing else here comes close to that as a depth cue.
+   2. The fog. The far side of the ring dissolves into the exact background
+      colour, so distance reads as atmosphere rather than as scale. This is
+      also what stops the back of the lattice competing with the headline.
+   3. Perspective. A 42-degree camera at z=11 gives real convergence: nodes
+      nearer the camera are visibly larger and further apart.
+
+   Lighting is gone entirely. Everything here is additive and unlit by design,
+   so the ambient and spot lights that existed for the spider were paying for
+   nothing. Removing them takes real per-frame work out of the renderer.
+
+   Performance notes as before: lazy chunk, tier-gated, dpr capped at 1.6, no
+   shadows, no post-processing, no environment map. R3F still runs its own
+   render loop, which remains this page's one deliberate exception to the
+   single-rAF-driver rule.
    ────────────────────────────────────────────────────────────────────────── */
 
 export default function HeroScene({ interactive }: { interactive: boolean }) {
@@ -38,54 +42,23 @@ export default function HeroScene({ interactive }: { interactive: boolean }) {
       <Canvas
         dpr={[1, 1.6]}
         gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
-        camera={{ position: [0, 0, 9], fov: 42 }}
+        camera={{ position: [0, 0, 11], fov: 42 }}
         style={{ pointerEvents: "none" }}
+        onCreated={({ scene }) => {
+          /* Fog in the page's exact background colour. The far side of the
+             lattice does not fade to grey, it fades to the page — which is why
+             it reads as distance rather than as transparency. */
+          scene.fog = new THREE.Fog("#0A0E16", 9, 26);
+        }}
       >
-        {/* Enough light to give the spider volume and no more. The webs are
-            additive and unlit by design, so all of this is for the spider. */}
-        <ambientLight intensity={0.5} />
-        <spotLight
-          position={[4, 5, 6]}
-          angle={0.5}
-          penumbra={1}
-          intensity={28}
-          color="#DCE6FF"
-        />
-        <pointLight position={[-5, -3, 3]} intensity={7} color="#5B8CFF" />
-
-        {/* Corners only, so the centre stays a clean vignette for the text.
-            Three clusters at different depths: the intensity falloff is what
-            reads as distance, more than the z position does. */}
         <NodeWeb
-          origin={[6.1, 3.0, -1.2]}
-          spread={2.5}
-          count={46}
-          linkDist={1.35}
-          intensity={1}
+          majorRadius={8.2}
+          minorRadius={2.4}
+          count={260}
+          linkDist={1.5}
           seed={7}
           interactive={live}
         />
-        <NodeWeb
-          origin={[-6.6, -2.7, -3.4]}
-          spread={2.3}
-          count={34}
-          linkDist={1.3}
-          intensity={0.62}
-          seed={23}
-          interactive={live}
-        />
-        <NodeWeb
-          origin={[6.4, -3.1, -5.0]}
-          spread={1.8}
-          count={24}
-          linkDist={1.25}
-          intensity={0.4}
-          seed={51}
-          interactive={live}
-        />
-
-        {/* top-right quadrant, hanging off the primary cluster */}
-        <RoboSpider anchor={[4.5, 4.4, 0.3]} drop={2.5} interactive={live} />
       </Canvas>
     </div>
   );
