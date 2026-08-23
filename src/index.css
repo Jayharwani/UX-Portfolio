@@ -283,16 +283,20 @@
   right: -198px;
   transform: translateZ(-120px) rotateY(-14deg) rotateX(6deg);
 }
-/* bottom left, deeper */
+/* Bottom left, deeper.
+   Was at bottom:4px, which is the bottom of the hero SECTION — below the
+   fold rule, in the dark band under it. Both lower webs read as stray
+   clutter down there rather than as corners of this composition. Raised
+   above the rule so they sit in the hero proper. */
 .web--secondary {
-  bottom: 4px;
-  left: -58px;
+  bottom: 238px;
+  left: -126px;
   transform: translateZ(-320px) rotateY(10deg) rotateX(-4deg);
 }
 /* bottom right, deepest */
 .web--tertiary {
-  bottom: 22px;
-  right: 6%;
+  bottom: 244px;
+  right: 4%;
   transform: translateZ(-480px) rotateY(18deg);
 }
 

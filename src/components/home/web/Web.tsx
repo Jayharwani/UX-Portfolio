@@ -60,18 +60,20 @@ export function Web({
         strokeLinecap="round"
         opacity={OPACITY[depth]}
       >
-        {/* frame and bridge carry very slightly more weight, as they do in a
-            real web — they are the structural threads and everything else
-            hangs off them */}
-        <path d={g.bridge} opacity={0.9} />
+        {/* The frame RECEDES. Drawn at full weight it becomes a hard
+            polygon outline and the whole thing reads as a geodesic dome or
+            a radar display rather than a web. In a real web the frame is
+            structural but visually subordinate: what you actually see is
+            the capture spiral catching light. */}
+        <path d={g.bridge} opacity={0.4} />
         {g.frame.map((d, i) => (
-          <path key={`f${i}`} d={d} opacity={0.9} />
+          <path key={`f${i}`} d={d} opacity={0.4} />
         ))}
         {g.radials.map((d, i) => (
-          <path key={`r${i}`} d={d} opacity={0.72} />
+          <path key={`r${i}`} d={d} opacity={0.55} />
         ))}
-        <path d={g.hubSpiral} opacity={0.8} />
-        <path d={g.captureSpiral} opacity={0.66} />
+        <path d={g.hubSpiral} opacity={0.6} />
+        <path d={g.captureSpiral} opacity={0.85} />
       </g>
 
       {depth === "primary" && (

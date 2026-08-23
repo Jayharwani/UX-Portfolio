@@ -126,10 +126,10 @@ export function buildWeb(size: number, seed: number): WebGeometry {
   );
 
   /* ── hub spiral: tight, 3–4 turns ────────────────────────────────────── */
-  const hubTurns = 3 + Math.floor(rand() * 2);
-  const hubR = r * 0.1;
+  const hubTurns = 2 + Math.floor(rand() * 2);
+  const hubR = r * 0.085;
   let d = `M ${P(cx + hubR * 0.15, cy)}`;
-  const HUB_STEPS = hubTurns * 18;
+  const HUB_STEPS = hubTurns * 14;
   for (let i = 1; i <= HUB_STEPS; i++) {
     const t = i / HUB_STEPS;
     const a = t * hubTurns * Math.PI * 2;
@@ -158,15 +158,15 @@ export function buildWeb(size: number, seed: number): WebGeometry {
   }
 
   /* auxiliary: wide spacing, drawn OUTWARD. Temporary scaffolding. */
-  const aux = spiral(hubR * 1.2, r * 0.95, r * 0.16, 0.06);
+  const aux = spiral(hubR * 1.4, r * 0.8, r * 0.26, 0.06);
   /* capture: fine spacing, drawn INWARD, erasing the auxiliary behind it */
-  const cap = spiral(r * 0.95, hubR * 1.6, r * 0.062, 0.08); // ±8% (§3.2)
+  const cap = spiral(r * 0.8, hubR * 2.2, r * 0.115, 0.08); // ±8% (§3.2)
 
   /* ── nodes: radial × capture-spiral intersections ────────────────────── */
   const nodes: { x: number; y: number; radial: number; ring: number }[] = [];
   const RINGS = 6;
   for (let ring = 1; ring <= RINGS; ring++) {
-    const rr = hubR * 1.6 + ((r * 0.95 - hubR * 1.6) * ring) / RINGS;
+    const rr = hubR * 2.2 + ((r * 0.8 - hubR * 2.2) * ring) / RINGS;
     for (let i = 0; i < angles.length; i += 2) {
       const a = angles[i];
       if (rr > radialLen[i] * 0.98) continue;
