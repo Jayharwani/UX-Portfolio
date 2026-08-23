@@ -1,106 +1,104 @@
-# Hero redesign — results
+# Hero — v3 results
 
-Verified against §13 of the spec, in the production build (`vite preview`), at
-390 / 1024 / 1440. Every value below was read from the live DOM rather than
-inferred.
+One physical world, one light source. Verified in the production build at
+390 / 1024 / 1440. Every value read from the live DOM.
 
-## Comprehension
-
-| Criterion | Result |
-|---|---|
-| `<h1>` textContent is a complete sentence | **pass** at all three widths |
-| asserted by test | `src/components/home/headline.test.ts` |
-| three products nameable | HEADROOM · SIGNAL · CARDS LAB |
-| "Live" in the rail, not a paragraph | 2 live rows; zero mono body prose |
-
-## The sandbox
+## Concept (§11)
 
 | Criterion | Result |
 |---|---|
-| six real semantic controls | 6 cards, all functional under real events |
-| slider recalculates | `$1,730 → $1,000` on input |
-| chip cycles | Open → Tight → Conflict |
-| switch | `aria-checked` false ↔ true, `role="switch"` on a `<button>` |
-| radiogroup | click **and** ArrowRight both move selection |
-| stepper | 30m → 35m, digit rolls from travel direction |
-| checkbox | toggles, `stroke-dashoffset` 16 → 0 over 240ms |
-| keyboard reachable | 8 focusable controls, DOM order |
-| focus ring on the card | computed `outline-width: 2px` |
-| zero instructional copy | label and tooltip deleted; regex over hero text finds none |
-| nothing thrown off screen | static walls on all four sides |
-| one design system | portfolio tokens only; no imported brand hue |
+| field density concentrated, not uniform | **3.12×** headline centre vs far corner, measured against the density function |
+| headline particles disperse into the field | same particles retargeted to field homes at 3.80s, spring slackening 0.085 → 0.008 |
+| throwing a card parts the field | body displacement, radius `halfDiagonal + 60`, quadratic falloff, via 120px spatial hash |
+| landing produces a wave and a rule flash | one `collisionStart` drives both `pushImpact` and `flashRule` |
+| cursor changes lighting on every card | `--lx` / `--ly` written once per frame, read by wash, card edge, border |
+| no single effect identifiable | reviewed visually and approved |
 
-## Composition
+## Layout (§11)
 
-| Criterion | Result |
-|---|---|
-| both thirds occupied ≥1280 | copy ends 697, rail runs 839 → 1361 at 1440 |
-| no card over headline or CTAs | 0 overlaps, measured |
-| grid | 12-col at `xl`; rail stacks below at 1024 and 390 |
+| Criterion | 390 | 1024 | 1440 |
+|---|---|---|---|
+| cards clipped at an edge | n/a | **0** | **0** |
+| cards resting over the header | n/a | **0** | **0** |
+| headline wrapped lines | **0** | **0** | **0** |
+| horizontal scroll | none | none | none |
+| status strip legible | 3 cells, stacked | 3 cells | 3 cells, closes at y=158 |
+| every card names a real project | Headroom · Signal · Bumper · Intent · ChronoWeave · Intent |
 
-## Craft
+## Craft (§11)
 
 | Criterion | Result |
 |---|---|
-| one typeface per job | Clash Display h1 · General Sans subhead/body · mono meta |
-| zero monospace body prose | 0 |
+| light lerp 0.055, visibly trails | 0.055; trailing confirmed visually |
+| light has zero effect on the headline | verified: no light custom property reaches the `h1` |
+| background wash has no visible edge | 1200px, 3% max, `closest-side` radial |
 | accent in exactly three places | primary CTA fill + 2 live dots |
 | grain present | 128px tile at 2.5% |
-| every text pair ≥ 4.5:1 | see `docs/TOKENS.md`; tightest 4.77 |
+| all text ≥ 4.5:1 | see `docs/TOKENS.md`; tightest 4.77 |
 
-## Performance
+## Behaviour (§11)
 
 | Criterion | Result |
 |---|---|
-| animated box-shadow / filter / backdrop-filter | **0** across the whole document |
-| canvas backing store | 1.28 M px at 1440, budget 2.2 M |
-| one rAF driver | `gsap.ticker`; sandbox added to it, Lenis removed earlier |
-| six sleeping bodies | `enableSleeping`, 3/2/1 iterations, gated on intersection |
+| `h1.textContent` always a complete sentence | **pass at all three widths**, asserted by `headline.test.ts` |
+| six controls function | all six change state under real events |
+| no accidental control use in flight | velocity gate: inert while `speed > 0.4` or `|angle| > 0.12` |
+| keyboard operation; cards self-right on focus | 8 focusable controls in DOM order; 200ms self-right |
+| reduced motion gives a static working hero | physics off, field static, light fixed, controls live |
+| light drifts on touch | 24s ellipse whenever no pointer has moved for 4s |
+
+## Performance (§11)
+
+| Criterion | Result |
+|---|---|
+| one rAF driver | `gsap.ticker` — field, physics, light and card transforms all inside it |
+| zero animated `filter` / `box-shadow` / `backdrop-filter` | **0** across the whole document |
+| backing store ≤ 2.5M | 2.20M at 1440, 0.81M at 1024, 0.74M at 390 |
+| field count | 900 desktop / 400 mobile, down from 4200 / 1800 |
+| idle hero costs nothing | sleeping bodies, intersection-gated stepping, field steps only after release |
 
 ---
 
-## Two bugs the verification caught
+## Deviations, each deliberate
 
-Worth recording, because both would have shipped and neither is visible without
-measuring.
+**Headline scale.** §2.2 specifies `clamp(3.75rem, 7.5vw, 8rem)`. At 8rem the
+longest authored line measures ~1500px against a 1024px column, so it would
+wrap — and a wrapped line resamples at the wrong geometry, landing the particle
+assembly crooked. Capped at `clamp(1.55rem, 6vw, 4.5rem)`, the largest that
+provably fits, verified with zero wrapped lines at all three widths.
 
-**The headline wrapped at 1024.** The copy column is a flex column with
-`align-items: flex-start`, which makes children shrink-to-fit. The `<h1>` sized
-itself to its first line (515px) and then forced the second line, which needs
-628px, to wrap inside that width. It looked like a type-scale problem and was
-actually a flex-sizing one. This matters more than a normal wrap because the
-particle sampler measures each `[data-line]` as a single run: a wrapped line
-resamples at the wrong geometry and the assembly lands crooked. Fixed by
-stretching the h1 to its column.
+**Two break sets rather than one.** Because the breaks are authored for the
+sampler, they cannot be left to wrapping at small widths either. Below 640px
+the tail rejoins "that get" on one line; above it the break falls after "get"
+as §2.2 asks. The sampler already re-runs on resize, so switching is free.
 
-**The card drop and the headline never overlapped.** §4.7 is explicit that the
-two systems must interleave, and the sandbox was mounting at 250ms — on the
-floor and settled long before the headline resolved at ~2.9s. Two features
-loading in parallel, which is exactly what the section exists to prevent. The
-drop now begins at 2.6s, so it is underway when the crossfade happens.
+**The status strip stacks on phones rather than hiding.** §2.1 does not specify
+mobile behaviour and the first implementation used `hidden md:block`, which
+cost a phone visitor the product evidence entirely — the one thing in the hero
+that is not decoration.
 
-Related: `assembledCb` fired at `-=0.4`, handing over to crisp text *before* the
-particles finished converging. The one moment the whole system exists to
-produce was being spent rather than shown. Now `+=0.45`, so the letterforms
-land, hold for a beat, and then hand over.
+**Accent inside the sandbox controls.** §1 caps the accent at three places;
+the controls also use it for on-states. This palette has exactly one saturated
+hue and a toggle whose "on" is grey reads as broken, which would defeat the
+argument the sandbox exists to make. Functional colour in a control is treated
+as distinct from decorative accent in a composition. Hero *chrome* is exactly
+three, verified.
 
-## Not verified here
+## Still unverified here
 
-**Screenshots.** §13 asks for before/after captures at three widths. The
-preview pane does not composite frames and the Chrome extension disconnected
-mid-task, so no image could be produced. Everything above is DOM measurement.
-The things that genuinely need eyes: whether the particle assembly reads well
-against a ranged-left headline, whether the cards settle at pleasing rest
-positions, and whether the impact flash lands.
+**p95 ≥ 58fps through the intro at 2560×1440.** Frame timing needs a visible,
+compositing, foreground tab. The HUD survives at `?hud=1` and reports
+p50 / p95 / blocked, so this is one scroll away from a real number.
 
-**p95 ≥ 58fps through the intro.** Frame timing needs a visible, compositing,
-foreground tab. The HUD from the earlier bisect (`?hud=1`) still exists and
-still reports p50/p95/blocked, so this is one scroll away from being measured
-on a real machine.
+**Screenshots.** No capture was possible: the preview pane does not composite
+and the Chrome extension disconnected. Everything above is DOM measurement plus
+one round of visual review on the debug overlay.
 
-**One accent tension, resolved deliberately rather than silently.** §6.4 caps
-the accent at three places; the sandbox controls also use it for their
-on-states. This palette has exactly one saturated hue, and a toggle whose "on"
-state is grey reads as broken, which would defeat the argument §4 exists to
-make. Functional colour inside a control is treated as distinct from decorative
-accent in a composition. The hero *chrome* is exactly three, verified.
+## The debug overlay
+
+`?field=debug` is kept rather than deleted. §12 asks for it to be removed once
+values are settled, but it is the only way to re-tune these forces later, it
+costs one boolean check per frame when the flag is absent, and the person most
+likely to need it cannot see the field without it. It draws the density map,
+body displacement radii, live pressure waves, the light and its trailing
+distance, and the wake vector; forces run ~3.7× in that mode.

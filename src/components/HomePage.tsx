@@ -366,6 +366,22 @@ function Hero() {
      reverse, so the sandbox and the rail are legibly the same set of things. */
   const [hoveredProof, setHoveredProof] = useState<string | null>(null);
 
+  /* The headline's line breaks are AUTHORED, because the particle sampler
+     measures each [data-line] as one text run and a reflowed line resamples
+     at the wrong geometry. That means the breaks cannot be left to wrapping
+     at small widths either — they have to be chosen. Below 640px the tail
+     rejoins "that get" on one line, which fits where the v3 desktop break
+     does not. The sampler already re-runs on resize, so switching between
+     them is free. */
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   /* §2.3: the no-settle rectangle, in the arena's own coordinate space.
      Measured from the live text column plus 48px of padding rather than
      hard-coded, so it tracks the real block at every breakpoint and after
@@ -488,10 +504,11 @@ function Hero() {
        reads "I design interfacesthat get..." to a screen reader and the
        completeness assertion cannot pass. The particle sampler trimEnd()s its
        runs, so it costs nothing there. */
-    { node: "I design interfaces that get " },
+    { node: narrow ? "I design interfaces " : "I design interfaces that get " },
     {
       node: (
         <>
+          {narrow ? "that get " : ""}
           <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
             {HEADLINE_STATES[0].tail}
           </em>
@@ -513,7 +530,7 @@ function Hero() {
        wrong geometry and lands the particle assembly crooked. Capped at the
        largest size that provably fits, verified by measurement rather than
        taken from the spec unchecked. */
-    fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
+    fontSize: "clamp(1.55rem, 6vw, 4.5rem)",
     lineHeight: 0.94,
     /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
        track plus a touch of word-spacing separates the words again. */
@@ -577,7 +594,7 @@ function Hero() {
           above and below, vertical dividers, whole cell is the link. Hover
           fills the cell rather than lifting it. */}
       <motion.div
-        className="relative z-30 w-full hidden md:block"
+        className="relative z-30 w-full"
         style={{ marginTop: 64 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
@@ -590,7 +607,10 @@ function Hero() {
             borderBottom: "1px solid rgb(232 236 243 / 0.08)",
           }}
         >
-          <div className="grid grid-cols-3">
+          {/* stacks on phones rather than hiding. Hiding it would cost a
+              mobile visitor the product evidence entirely, which is the one
+              thing in the hero that is not decoration. */}
+          <div className="grid grid-cols-1 sm:grid-cols-3">
             {PROOF.map((p, i) => (
               <motion.a
                 key={p.name}
@@ -611,9 +631,13 @@ function Hero() {
                   alignItems: "center",
                   gap: 12,
                   height: 44,
+                  minWidth: 0,
                   padding: "0 16px",
                   textDecoration: "none",
-                  borderLeft: i === 0 ? undefined : "1px solid rgb(232 236 243 / 0.08)",
+                  /* dividers live in CSS, not here: they need to switch from
+                     horizontal (stacked) to vertical (3-up) at the breakpoint,
+                     and an inline border would win over the media query and
+                     force an !important to undo. */
                 }}
               >
                 <span

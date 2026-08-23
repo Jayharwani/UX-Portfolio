@@ -305,3 +305,15 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-wash { transform: translate3d(50%, 40%, 0); }
 }
+
+/* The strip stacks on phones and goes 3-up from sm, so the divider has to turn
+   with it: a rule between rows becomes a rule between columns. Kept entirely in
+   CSS — an inline border would beat the media query and need !important to
+   undo. */
+.status-cell + .status-cell { border-top: 1px solid rgb(232 236 243 / 0.08); }
+@media (min-width: 640px) {
+  .status-cell + .status-cell {
+    border-top: 0;
+    border-left: 1px solid rgb(232 236 243 / 0.08);
+  }
+}
