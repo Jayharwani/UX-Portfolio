@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { getPerfTier } from "./perfTier";
-import { bus } from "./fieldBus";
-import { Grid, sampleHomes, densityAt, stepField } from "./field";
-import { updateLight, notePointer, resetLight } from "./light";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Memory particles — the hero signature.
@@ -54,10 +51,6 @@ interface P {
   /* ambient survivors: after assembly they drift to the hero's flanks and
      stay alive — the memories that didn't make it into the words */
   ambient: boolean;
-  /* §3.2: where this particle lives in the FIELD, from the density sample.
-     Distinct from tx/ty, which is where it goes to form the headline. */
-  hx: number;
-  hy: number;
   /* second-state target; word particles only */
   bx: number;
   by: number;
@@ -68,31 +61,6 @@ interface P {
 }
 
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
-
-/* ?field=debug renders the density map, the body repulsion radii, the impact
-   waves and the light position on top of the field, and drives every force
-   at exaggerated strength. The spec asks for this explicitly: build it
-   visible first, then dial down, because dialling down from something you
-   can see is far more reliable than dialling up from nothing. Delete the
-   flag once the values are settled. */
-function readDebug() {
-  if (typeof window === "undefined") return false;
-  try {
-    return new URLSearchParams(window.location.search).get("field") === "debug";
-  } catch {
-    return false;
-  }
-}
-const DEBUG = readDebug();
-
-/* Tuned values, and the exaggerated ones used under ?field=debug. Every
-   §4.2 range is narrow on purpose: if a reviewer can point at one effect and
-   name it, it is too strong. The sum should be felt, never seen. */
-const FORCES = {
-  bodyStrength: DEBUG ? 3.2 : 0.85,
-  wakeStrength: DEBUG ? 2.6 : 0.7,
-  waveStrength: DEBUG ? 9.0 : 2.4,
-};
 
 export default function MemoryParticles({
   stateB,
@@ -387,8 +355,6 @@ export default function MemoryParticles({
           bucket: word ? 3 + Math.floor(Math.random() * 3) : Math.floor(Math.random() * 3),
           word,
           ambient: false,
-          hx: pt.x,
-          hy: pt.y,
           bx: pt.x,
           by: pt.y,
           mp: Math.random() * 0.4,
@@ -403,11 +369,6 @@ export default function MemoryParticles({
          a home and needing to be faded out — at the cost of the shorter phrase
          being slightly denser, which reads as emphasis rather than as error. */
       const wordPtsB = wordPtsBRaw.length ? thin(wordPtsBRaw, wordKeep) : [];
-      /* Every particle belongs to the field. The ones that also form the
-         headline carry a target as well, and §6 releases them back to their
-         field home once the real text has taken over — the letterforms
-         BECOME the atmosphere rather than fading out, which is what makes
-         the two systems read as one material. */
       const parts: P[] = [
         ...restPts.map((p) => mk(p, false)),
         ...wordPts.map((p, i) => {
@@ -422,22 +383,6 @@ export default function MemoryParticles({
       ];
       const canMorph = wordPtsB.length > 0;
 
-      /* §3.1: the field. Homes are rejection-sampled against a gaussian
-         concentration around the headline, so the material is densest
-         exactly where the page previously read as empty. Emptiness becomes
-         atmosphere. An even spread here would be a starfield and would waste
-         the whole idea.
-
-         Counts are LOWER than the previous build (900/400 against
-         4200/1800): concentration beats spread, and it costs less. */
-      const headBox = (() => {
-        const r = h1.getBoundingClientRect();
-        return { x: r.left - heroRect.left, y: r.top - heroRect.top, w: r.width, h: r.height };
-      })();
-      const FIELD_COUNT = lowPower ? 400 : 900;
-      const homes = sampleHomes(FIELD_COUNT, { w: heroRect.width, h: heroRect.height }, headBox);
-      const grid = new Grid();
-
       /* Setup runs synchronously on the main thread during page load, so its
          cost is felt directly as the intro "hitching" on arrival. Surfaced in
          dev so it can be checked rather than guessed at. */
@@ -450,12 +395,9 @@ export default function MemoryParticles({
           lowPower,
         };
       }
-      parts.forEach((p, i) => {
+      parts.forEach((p) => {
         p.sx = p.x;
         p.sy = p.y;
-        const h = homes[i % homes.length];
-        p.hx = h.x;
-        p.hy = h.y;
       });
 
       /* ambient survivors (every breakpoint): a sparse constellation stays
@@ -506,10 +448,6 @@ export default function MemoryParticles({
         /* 0 = state A, 1 = state B. Word particles interpolate between their
            two sampled targets along a bowed path, each on its own staggered
            window, so the phrase never slides as a block. */
-        /* §6 at 3.80s: 0 while the particles are forming the headline, 1
-           once they have been handed back to the field. Drives both the
-           retarget and the slackening of the spring. */
-        released: 0,
         morph: 0,
         dissolve: 0, // word only: 0 home → 1 dispersed
         restAlpha: 1, // non-word particles fade out after the crossfade
@@ -534,27 +472,13 @@ export default function MemoryParticles({
         heroTop = r.top;
       };
       readHeroOffset();
-      let lastPx = 0;
-      let lastPy = 0;
       const onMove = (e: PointerEvent) => {
-        const nx = e.clientX - heroLeft;
-        const ny = e.clientY - heroTop;
-        /* the wake needs a direction of travel, not just a position */
-        bus.pvx = nx - lastPx;
-        bus.pvy = ny - lastPy;
-        lastPx = nx;
-        lastPy = ny;
-        pointer.x = nx;
-        pointer.y = ny;
+        pointer.x = e.clientX - heroLeft;
+        pointer.y = e.clientY - heroTop;
         pointer.active = true;
-        bus.pointerActive = true;
-        notePointer(nx, ny);
       };
       const onLeave = () => {
         pointer.active = false;
-        bus.pointerActive = false;
-        bus.pvx = 0;
-        bus.pvy = 0;
         pointer.x = -9999;
         pointer.y = -9999;
       };
@@ -570,6 +494,7 @@ export default function MemoryParticles({
       });
 
       /* ── the frame ── */
+      const REPULSE = 72;
       let tickParity = 0;
       const frame = () => {
         if (!state.running) return;
@@ -603,16 +528,6 @@ export default function MemoryParticles({
            (category, bucket) at setup, only touch globalAlpha/fillStyle when
            crossing a group boundary — roughly a dozen state changes a frame
            instead of thousands. Pixel-for-pixel identical output. */
-        /* §3.3-3.5 + §4, once per frame for the whole field rather than
-           per particle: body displacement, impact waves and the directional
-           cursor wake all run through one spatial-hash pass, then the light
-           writes its two custom properties. Everything below this line is
-           just drawing. */
-        updateLight(t, { w: heroRect.width, h: heroRect.height }, document.documentElement);
-        if (state.released > 0.001) {
-          stepField(parts as unknown as import("./field").FieldParticle[], grid, heroRect.width, 1 / 60, FORCES);
-        }
-
         const introing = state.intro < 1;
         const aWord = introing ? 1 : state.wordAlpha;
         const aAmbient = introing ? 1 : state.ambientAlpha;
@@ -666,24 +581,21 @@ export default function MemoryParticles({
             hy = p.ty + dy * e + py + Math.cos(t * 1.3 + p.drift) * 5 * bow;
           }
 
-          /* Pull toward whatever this particle's home currently IS. During
-             the intro that is its headline target; after the release (§6) it
-             is its field home, so the letterforms do not fade out — they
-             disperse and BECOME the ambient field. Same particles, same
-             loop, one retarget.
-
-             The spring is stiff while forming text, because letterforms have
-             to be crisp, and slack once released, because a medium should
-             take two to three seconds to settle rather than snapping. */
-          const k = state.released > 0 ? 0.085 * (1 - state.released) + 0.008 * state.released : 0.085;
-          const homeX = state.released > 0 ? hx + (p.hx - hx) * state.released : hx;
-          const homeY = state.released > 0 ? hy + (p.hy - hy) * state.released : hy;
-          p.vx += (homeX - p.x) * k;
-          p.vy += (homeY - p.y) * k;
-          /* damping likewise slackens as the field takes over */
-          const damp = 0.82 + 0.12 * state.released;
-          p.vx *= damp;
-          p.vy *= damp;
+          /* spring toward home + cursor repulsion */
+          p.vx += (hx - p.x) * 0.085;
+          p.vy += (hy - p.y) * 0.085;
+          if (pointer.active) {
+            const dx = p.x - pointer.x;
+            const dy = p.y - pointer.y;
+            const dd = dx * dx + dy * dy;
+            if (dd < REPULSE * REPULSE && dd > 0.01) {
+              const f = (1 - Math.sqrt(dd) / REPULSE) * 3.4;
+              p.vx += (dx / Math.sqrt(dd)) * f;
+              p.vy += (dy / Math.sqrt(dd)) * f;
+            }
+          }
+          p.vx *= 0.82;
+          p.vy *= 0.82;
           p.x += p.vx;
           p.y += p.vy;
 
@@ -699,84 +611,6 @@ export default function MemoryParticles({
           ctx.fillRect(p.x, p.y, p.size, p.size);
         }
         ctx.globalAlpha = 1;
-
-        /* ── ?field=debug ────────────────────────────────────────────────
-           Draws the things that are otherwise only inferable: where the
-           density function actually puts material, how far each body's
-           displacement reaches, where the impact waves are, and where the
-           light has trailed to. Forces run exaggerated in this mode.
-
-           The point is to make the invisible checkable before the values
-           are dialled down — dialling down from something visible is far
-           more reliable than dialling up from nothing. */
-        if (DEBUG) {
-          ctx.save();
-
-          /* density map, as a coarse heat grid */
-          const STEP = 26;
-          for (let gy = 0; gy < heroRect.height; gy += STEP) {
-            for (let gx = 0; gx < heroRect.width; gx += STEP) {
-              const d = densityAt(gx, gy, { w: heroRect.width, h: heroRect.height }, headBox);
-              ctx.fillStyle = `rgba(91,140,255,${(d * 0.16).toFixed(3)})`;
-              ctx.fillRect(gx, gy, STEP - 2, STEP - 2);
-            }
-          }
-
-          /* the headline box the density is built around */
-          ctx.strokeStyle = 'rgba(91,140,255,0.5)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(headBox.x, headBox.y, headBox.w, headBox.h);
-
-          /* body displacement radii */
-          ctx.strokeStyle = 'rgba(232,236,243,0.45)';
-          for (const b of bus.bodies) {
-            const r = Math.hypot(b.hw, b.hh) + 60;
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.strokeRect(b.x - b.hw, b.y - b.hh, b.hw * 2, b.hh * 2);
-          }
-
-          /* live pressure waves */
-          for (const im of bus.impacts) {
-            ctx.strokeStyle = `rgba(255,120,120,${im.life.toFixed(2)})`;
-            ctx.beginPath();
-            ctx.arc(im.x, im.y, 220 * (1 - im.life) + 20, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-
-          /* the light, and how far it trails the pointer */
-          ctx.fillStyle = 'rgba(255,220,120,0.9)';
-          ctx.beginPath();
-          ctx.arc(bus.lx, bus.ly, 7, 0, Math.PI * 2);
-          ctx.fill();
-          if (bus.pointerActive) {
-            ctx.strokeStyle = 'rgba(255,220,120,0.45)';
-            ctx.beginPath();
-            ctx.moveTo(bus.lx, bus.ly);
-            ctx.lineTo(pointer.x, pointer.y);
-            ctx.stroke();
-            /* the wake vector */
-            ctx.strokeStyle = 'rgba(120,255,180,0.8)';
-            ctx.beginPath();
-            ctx.moveTo(pointer.x, pointer.y);
-            ctx.lineTo(pointer.x + bus.pvx * 6, pointer.y + bus.pvy * 6);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(pointer.x, pointer.y, 150, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(120,255,180,0.25)';
-            ctx.stroke();
-          }
-
-          ctx.fillStyle = 'rgba(232,236,243,0.85)';
-          ctx.font = '11px ui-monospace, monospace';
-          ctx.fillText(
-            `field ${parts.length}  bodies ${bus.bodies.length}  waves ${bus.impacts.length}  released ${state.released.toFixed(2)}  lit ${bus.lightUp.toFixed(2)}`,
-            14,
-            18
-          );
-          ctx.restore();
-        }
       };
       gsap.ticker.add(frame);
       cleanupFns.push(() => gsap.ticker.remove(frame));
@@ -806,45 +640,26 @@ export default function MemoryParticles({
         document.removeEventListener("visibilitychange", onVis);
       });
 
-      /* ── §6 choreography ─────────────────────────────────────────────
-         One continuous event, not three systems finishing whenever they
-         happen to finish. Every position below is ABSOLUTE rather than
-         relative, because the schedule is the spec and relative offsets
-         drift the moment any duration changes.
-
-           0.00  field materialises at 15% — the medium exists first
-           0.30  particles migrate toward headline targets
-           1.90  headline legible in particle form, held
-           2.10  cards begin falling (owned by the Hero, see showPlay)
-           2.50  real h1 crossfades over the particle text
-           2.90  headline resolved; first cards contact the floor
-           3.80  the release: headline particles rejoin the field
-           4.40  the light comes up
-
-         Two of these carry the concept rather than the pacing. The release
-         at 3.80 is what makes the letterforms BECOME the atmosphere rather
-         than fading out and being replaced. The light last, at 4.40, is
-         what makes the lighting read as a property of the world rather
-         than as a hover effect: the scene assembles unlit, then lights. */
+      /* ── choreography (cinematic: emerge → drift → converge → land) ── */
       const tl = gsap.timeline();
-      /* the medium, before anything is in it */
-      tl.to(state, { masterAlpha: 0.15, duration: 0.3, ease: "power1.out" }, 0)
-        .to(state, { masterAlpha: 1, duration: 1.2, ease: "power1.inOut" }, 0.3)
-        /* migration: field homes -> headline targets */
-        .to(state, { intro: 1, duration: 1.6, ease: "none" }, 0.3)
-        /* 1.90 -> 2.50 is the HOLD. The letterforms resolving out of a
-           cloud is the one moment this whole system exists to produce, so
-           it gets 600ms of stillness rather than being handed straight
-           over to crisp text. */
+      tl.to(state, { masterAlpha: 1, duration: 0.9, ease: "power1.inOut" }, 0) // emerge from black
+        .to(state, { intro: 1, duration: 3.3, ease: "none" }, 0.15) // per-particle easing handles the feel
+        /* §10.2: HOLD the assembled particle text before handing over.
+           This fired at -=0.4, which crossfaded the real h1 in 0.4s BEFORE
+           the particles had finished converging — so the one moment the
+           whole system exists to produce, the letterforms resolving out of
+           a cloud, was being spent rather than shown. +=0.45 lets it land,
+           hold for a beat, and only then hand over to crisp text. */
         .add(() => {
-          assembledCb.current();
-        }, 2.5)
-        .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, 2.9)
-        .to(state, { ambientAlpha: 0.55, duration: 1.4, ease: "power1.inOut" }, 2.9)
-        /* 3.80 — the release */
-        .to(state, { released: 1, duration: 2.2, ease: "power1.inOut" }, 3.8)
-        /* 4.40 — the light comes up last */
-        .to(bus, { lightUp: 1, duration: 0.6, ease: "power1.inOut" }, 4.4);
+          assembledCb.current(); // real text fades in over the particles
+        }, "+=0.45")
+        .to(state, { restAlpha: 0, duration: 0.9, ease: "power2.out" }, "-=0.1")
+        .to(state, { ambientAlpha: 0.55, duration: 1.8, ease: "power1.inOut" }, "-=0.4");
+
+
+      /* the forgetting loop — runs after assembly, forever, silently.
+         loopRef lets the visibility observer above pause it when the hero
+         leaves the screen; without that it ticked for the life of the page. */
       /* ── the morph loop ─────────────────────────────────────────────────
          The old loop dissolved the tail and rebuilt the same words, which
          spent a third of its cycle showing an unfinished sentence for no
@@ -867,9 +682,7 @@ export default function MemoryParticles({
              At 8s + 1.2s of travel the headline is still for ~87% of its
              cycle, which is the difference between a detail and a distraction. */
           repeatDelay: 8,
-          /* the parent timeline decides WHEN this starts (5.2s, after the
-             release has settled), so the loop carries no delay of its own —
-             stacking the two would push the first morph out past nine seconds */
+          delay: 4.2,
           paused: true,
         });
         loopRef.current = loop;
@@ -900,7 +713,7 @@ export default function MemoryParticles({
             state.wordAlpha = 0;
             gsap.to(wordEl, { opacity: 1, duration: 0.28, ease: "power1.out" });
           });
-          tl.add(() => loop.play(), 5.2);
+        tl.add(() => loop.play());
         cleanupFns.push(() => {
           loop.kill();
           /* §3.6: leave the DOM on a complete sentence, never mid-travel */
@@ -909,8 +722,6 @@ export default function MemoryParticles({
         });
       }
       cleanupFns.push(() => {
-        resetLight();
-        bus.lightUp = 0;
         tl.kill();
         gsap.set(wordEl, { opacity: 1 });
       });

@@ -208,8 +208,6 @@
 /* One easing curve across the page (§8). */
 :root { --ease-ui: cubic-bezier(0.16, 1, 0.3, 1); }
 
-.cta-secondary:hover { border-color: rgb(232 236 243 / 0.40); color: var(--text); }
-.cta-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* §9 / F10: scroll affordance. A rule that grows and retreats on a slow loop.
    Transform only, and it stops for reduced motion. */
@@ -242,78 +240,6 @@
   .scroll-tick { animation: none; transform: scaleY(1); }
 }
 
-/* §2.1 status strip. Reads as a system status bar, not a nav: the whole cell
-   is the target, hover fills it rather than lifting it, and there is no shadow
-   anywhere. */
-.status-cell {
-  transition: background-color 160ms var(--ease-ui), border-color 160ms var(--ease-ui);
-  min-width: 0;
-}
-.status-cell:hover { background: var(--surface); }
-.status-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* ══ §4.2 light consumers ═════════════════════════════════════════════════
-   Every one reads the same --lx/--ly written once per frame. Ranges are
-   deliberately narrow: if a reviewer can point at one effect and name it, it
-   is too strong. The sum is meant to be felt, never seen.
 
-   The headline is absent from this list on purpose. Light playing across type
-   is exactly the move that turns this from expensive to tacky. */
 
-:root { --lx: 0.5; --ly: 0.4; --lxpx: 50%; --lypx: 40%; --lit: 0; }
-
-/* The background wash. A pre-rendered radial TRANSLATED into place — never an
-   animated background-position or a recomputed radial-gradient(), both of
-   which repaint. Enormous and 3% at most: if you can see its edge it is
-   wrong. */
-.hero-wash {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1200px;
-  height: 1200px;
-  margin: -600px 0 0 -600px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: calc(var(--lit) * 0.03);
-  background: radial-gradient(circle closest-side, rgb(232 236 243 / 1), transparent 70%);
-  transform: translate3d(var(--lxpx), var(--lypx), 0);
-  will-change: transform;
-}
-
-/* Card relighting. The top-edge highlight brightens as the light aligns with
-   the card, and the border follows it. Both stay inside 0.06–0.14 and
-   0.08–0.13 respectively, per §4.2. */
-.sbx-card {
-  --card-lit: calc(var(--lit) * 0.5);
-}
-.sbx-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    rgb(232 236 243 / 0.04),
-    rgb(232 236 243 / calc(0.06 + var(--card-lit) * 0.16)) calc(var(--lx) * 100%),
-    rgb(232 236 243 / 0.04)
-  );
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-wash { transform: translate3d(50%, 40%, 0); }
-}
-
-/* The strip stacks on phones and goes 3-up from sm, so the divider has to turn
-   with it: a rule between rows becomes a rule between columns. Kept entirely in
-   CSS — an inline border would beat the media query and need !important to
-   undo. */
-.status-cell + .status-cell { border-top: 1px solid rgb(232 236 243 / 0.08); }
-@media (min-width: 640px) {
-  .status-cell + .status-cell {
-    border-top: 0;
-    border-left: 1px solid rgb(232 236 243 / 0.08);
-  }
-}

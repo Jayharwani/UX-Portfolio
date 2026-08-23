@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { SANDBOX } from "./controls";
-import { bus, pushImpact } from "../fieldBus";
 
 /* ──────────────────────────────────────────────────────────────────────────
    The sandbox arena.
@@ -166,10 +165,6 @@ export default function Sandbox({
           if (idx >= 0 && !landed.has(idx) && (ledges.includes(pair.bodyA as any) || ledges.includes(pair.bodyB as any))) {
             landed.add(idx);
             onImpact?.(b.position.x);
-            /* §3.4: the same landing that flashes the rule also pushes a
-               pressure wave out through the field. One event, two systems
-               responding, which is the entire v3 argument in miniature. */
-            pushImpact(b.position.x + offX, b.position.y + offY, Math.min(1, b.speed / 12));
           }
         }
       });
@@ -213,36 +208,11 @@ export default function Sandbox({
       const io = new IntersectionObserver(([en]) => (onScreen = en.isIntersecting), { rootMargin: "120px" });
       io.observe(arena);
 
-      /* The field reasons in hero-local coordinates and the arena is a child
-         of the hero, so every published position needs the offset between
-         them. Measured once per frame rather than per body. */
-      const heroEl = arena.closest("section");
-      let offX = 0;
-      let offY = 0;
 
       const tick = () => {
         if (!onScreen || document.hidden) return;
         Engine.update(engine, 1000 / 60);
 
-        if (heroEl) {
-          const ab = arena.getBoundingClientRect();
-          const hb = heroEl.getBoundingClientRect();
-          offX = ab.left - hb.left;
-          offY = ab.top - hb.top;
-        }
-
-        /* publish to the field. Rewriting in place rather than allocating a
-           new array per frame — this runs 60 times a second. */
-        if (bus.bodies.length !== bodies.length) bus.bodies = bodies.map(() => ({ x: 0, y: 0, hw: 0, hh: 0, speed: 0 }));
-        for (let i = 0; i < bodies.length; i++) {
-          const bb = bodies[i];
-          const fb = bus.bodies[i];
-          fb.x = bb.position.x + offX;
-          fb.y = bb.position.y + offY;
-          fb.hw = sizes[i].w / 2;
-          fb.hh = sizes[i].h / 2;
-          fb.speed = bb.speed;
-        }
         for (let i = 0; i < bodies.length; i++) {
           const b = bodies[i];
           const el = els[i];
@@ -301,8 +271,6 @@ export default function Sandbox({
         arena.removeEventListener("focusout", onFocusOut);
         arena.removeEventListener("pointermove", onMove);
         arena.removeEventListener("pointerleave", onLeave);
-        bus.bodies = [];
-        bus.impacts = [];
         Composite.clear(engine.world, false);
         Engine.clear(engine);
       };

@@ -1,5 +1,5 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform, useSpring } from "motion/react";
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, type ReactNode } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link } from "react-router";
 import {
   PenNib,
@@ -29,14 +29,6 @@ const FlyerGame = lazy(() => import("./home/FlyerGame"));
    ────────────────────────────────────────────────────────────────────────── */
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-
-/* The proof rail. Three products, two of them running. Named, so a founder can
-   check them, rather than described. */
-const PROOF = [
-  { id: "headroom", name: "Headroom", status: "Live · installable", live: true, href: "https://headroom-opal.vercel.app/", external: true },
-  { id: "signal", name: "Signal", status: "Live · DMV event map", live: true, href: "https://jayharwani.github.io/dmv-map/", external: true },
-  { id: "cards", name: "Cards Lab", status: "UMBC · robotics telemetry", live: false, href: "/about", external: false },
-] as const;
 
 /* The headline morphs between two COMPLETE sentences. The old loop dissolved
    "out of the way." and reassembled the same words, which meant the sentence
@@ -352,7 +344,6 @@ function Nav() {
 /* ── hero ────────────────────────────────────────────────────────────────── */
 function Hero() {
   const reduce = useReducedMotion();
-  const [showPlay, setShowPlay] = useState(false);
   /* memory-particles choreography: the DOM headline stays invisible until
      the particles have assembled it, then crossfades in (crisp text wins) */
   const [assembled, setAssembled] = useState(false);
@@ -361,10 +352,6 @@ function Hero() {
   const wordRef = useRef<HTMLElement>(null);
   const ruleRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  const arenaWrapRef = useRef<HTMLDivElement>(null);
-  /* §4.8: one system, two views. Hovering a rail row outlines its card and the
-     reverse, so the sandbox and the rail are legibly the same set of things. */
-  const [hoveredProof, setHoveredProof] = useState<string | null>(null);
 
   /* The headline's line breaks are AUTHORED, because the particle sampler
      measures each [data-line] as one text run and a reflowed line resamples
@@ -382,42 +369,7 @@ function Hero() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  /* §2.3: the no-settle rectangle, in the arena's own coordinate space.
-     Measured from the live text column plus 48px of padding rather than
-     hard-coded, so it tracks the real block at every breakpoint and after
-     any copy change. Returns null when either element is missing, which the
-     sandbox reads as no constraint rather than as an empty rectangle. */
-  const excludeZone = useCallback(() => {
-    const copy = copyRef.current;
-    const arena = arenaWrapRef.current;
-    if (!copy || !arena) return null;
-    const c = copy.getBoundingClientRect();
-    const a = arena.getBoundingClientRect();
-    const PAD = 48;
-    return {
-      x: c.left - a.left - PAD,
-      y: c.top - a.top - PAD,
-      w: c.width + PAD * 2,
-      h: c.height + PAD * 2,
-    };
-  }, []);
 
-  /* The fold rule flashes where a card lands. It is the detail that confirms
-     the rule is a real surface rather than a line the cards happen to stop
-     near, and it costs one compositor-only property: a pre-existing 120px
-     gradient sliver is translated to the contact point and its opacity is
-     animated. Nothing is created per impact and nothing paints. */
-  const flashRule = useCallback((x: number) => {
-    const rule = ruleRef.current;
-    if (!rule) return;
-    const spark = rule.firstElementChild as HTMLElement | null;
-    if (!spark) return;
-    spark.style.transform = `translateX(${Math.round(x - 60)}px)`;
-    spark.animate(
-      [{ opacity: 0 }, { opacity: 0.5 }, { opacity: 0 }],
-      { duration: 400, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }
-    );
-  }, []);
   /* `particles` = is the canvas mounted. `particles` = does the headline run
      its blur-to-sharp crossfade and glow pulse.
 
@@ -434,47 +386,12 @@ function Hero() {
      sees and MemoryParticles already scales its own count and resolution down.
      The blocks are a different case: matter-js is 86 KB and steps a physics
      world every frame for a decoration below the fold. That one goes. */
-  const lite = usePerfTier() === "lite";
 
   /* gentle exit parallax: text drifts up faster than the page, playground lags. */
   const { scrollY } = useScroll();
   const textY = useTransform(scrollY, [0, 640], [0, -84]);
   const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
 
-  useEffect(() => {
-    // the blocks band is a desktop signature (≥768px) — phones skip the
-    // physics chunk entirely; the particle intro carries the mobile hero.
-    // Watch the breakpoint instead of sampling once: windows that START
-    // narrow and widen later still get their blocks.
-    const mql = window.matchMedia("(min-width: 768px)");
-    let t = 0;
-    const arm = () => {
-      window.clearTimeout(t);
-      /* §4.7: the single most important timing in the hero. The cards used
-         to mount at 250ms, which put them on the floor and settled long
-         before the headline resolved at ~2.9s — two features loading in
-         parallel rather than one event. They now begin falling at 2.6s, so
-         the drop is already underway when the real h1 crossfades over the
-         particles. Sequential choreography feels slow; interleaved
-         choreography feels alive, and the difference is entirely in the
-         overlap. Reduced motion and the no-particle path keep the old
-         immediate mount, since there is no intro to interleave with. */
-      /* §6 at 2.10s. The cards start falling BEFORE the headline resolves
-         at 2.90, so the two systems interleave rather than queue. That
-         overlap is the difference between a scene that feels alive and
-         one that feels like a loading sequence. */
-      t = window.setTimeout(() => setShowPlay(true), particles ? 2100 : 250);
-    };
-    const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) arm();
-    };
-    if (mql.matches) arm();
-    mql.addEventListener("change", onChange);
-    return () => {
-      mql.removeEventListener("change", onChange);
-      window.clearTimeout(t);
-    };
-  }, [particles]);
 
 
   /* Line breaks are authored, not left to wrapping, because the particle
@@ -578,93 +495,8 @@ function Hero() {
           }}
         />
       )}
-      {/* §4.2: the background wash — one pre-rendered radial translated to the
-          light position. 3% maximum and 1200px across, so it reads as the room
-          being lit rather than as a blob following the cursor. */}
-      <div className="hero-wash" aria-hidden="true" />
+
       <div className="hero-grain" aria-hidden="true" />
-
-      {/* ── §2.1 status strip ───────────────────────────────────────────
-          The proof rail, moved out of the right column and up under the
-          header. A reviewer scanning for two seconds now meets three product
-          names and two live deployments before reaching the headline, which
-          is strictly better than meeting them beside it.
-
-          Reads as a system status bar rather than a nav: 44px, hairlines
-          above and below, vertical dividers, whole cell is the link. Hover
-          fills the cell rather than lifting it. */}
-      <motion.div
-        className="relative z-30 w-full"
-        style={{ marginTop: 64 }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: particles ? (assembled ? 1 : 0) : 1 }}
-        transition={{ duration: 0.5, ease: EASE, delay: particles ? 4.1 : 0.2 }}
-      >
-        <div
-          className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16"
-          style={{
-            borderTop: "1px solid rgb(232 236 243 / 0.08)",
-            borderBottom: "1px solid rgb(232 236 243 / 0.08)",
-          }}
-        >
-          {/* stacks on phones rather than hiding. Hiding it would cost a
-              mobile visitor the product evidence entirely, which is the one
-              thing in the hero that is not decoration. */}
-          <div className="grid grid-cols-1 sm:grid-cols-3">
-            {PROOF.map((p, i) => (
-              <motion.a
-                key={p.name}
-                href={p.href}
-                target={p.external ? "_blank" : undefined}
-                rel={p.external ? "noopener noreferrer" : undefined}
-                className="status-cell"
-                data-proof={p.id}
-                initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-                animate={particles ? (assembled ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }) : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: EASE, delay: (particles ? 4.15 : 0.25) + i * 0.06 }}
-                onMouseEnter={() => setHoveredProof(p.id)}
-                onMouseLeave={() => setHoveredProof(null)}
-                onFocus={() => setHoveredProof(p.id)}
-                onBlur={() => setHoveredProof(null)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  height: 44,
-                  minWidth: 0,
-                  padding: "0 16px",
-                  textDecoration: "none",
-                  /* dividers live in CSS, not here: they need to switch from
-                     horizontal (stacked) to vertical (3-up) at the breakpoint,
-                     and an inline border would win over the media query and
-                     force an !important to undo. */
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: V.body,
-                    fontWeight: 500,
-                    fontSize: 12,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.09em",
-                    color: V.text,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {p.name}
-                </span>
-                <span
-                  className="inline-flex items-center gap-2"
-                  style={{ fontFamily: V.mono, fontSize: 11, color: V.text3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                >
-                  {p.live && <span className="proof-dot" aria-hidden="true" />}
-                  {p.status}
-                </span>
-              </motion.a>
-            ))}
-          </div>
-        </div>
-      </motion.div>
 
       {/* soft accent glows */}
       <div
@@ -779,31 +611,6 @@ function Hero() {
             <MagneticButton onClick={() => scrollToId("work")}>
               See the work <ArrowRight size={16} weight="bold" />
             </MagneticButton>
-            {/* A second, quieter route. One lone button in the middle of a
-                viewport is a conversion pattern, not a portfolio: it assumes a
-                single thing you want from the visitor. A founder skimming may
-                want the person before the projects. */}
-            <a
-              href="/about"
-              className="cta-secondary"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                height: 46,
-                padding: "0 22px",
-                borderRadius: 999,
-                border: "1px solid rgb(232 236 243 / 0.15)",
-                background: "transparent",
-                fontFamily: V.body,
-                fontSize: 14.5,
-                fontWeight: 500,
-                color: V.text2,
-                textDecoration: "none",
-                transition: "border-color 180ms var(--ease-ui), color 180ms var(--ease-ui)",
-              }}
-            >
-              How I work
-            </a>
           </motion.div>
 
           {/* §5.3: the mono paragraph is gone. It was body prose set in a
@@ -827,35 +634,6 @@ function Hero() {
         </div>
 
       </motion.div>
-
-      {/* ── the component sandbox ────────────────────────────────────────
-          Six working controls, lifted from four shipped products and restyled
-          into this palette, resting on the fold rule.
-
-          Deliberately unlabelled and uncaptioned. The previous version carried
-          a heading naming the row and a tooltip that read "Drag the blocks",
-          and both are gone: an instruction converts a discovery into a chore,
-          and the entire value here is a visitor working out on their own that
-          the number moves. If it needs a caption it has failed.
-
-          The floor is the hairline below, not an arbitrary bottom edge. The
-          rule IS the surface these rest on, which is the detail that makes the
-          whole thing read as authored rather than as objects placed near a
-          line. */}
-      <div ref={arenaWrapRef} className="relative z-20 w-full hidden md:block" style={{ height: "clamp(230px, 30vh, 300px)" }}>
-        <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
-          {showPlay && !lite && (
-            <Suspense fallback={null}>
-              <Sandbox
-                interactive={!reduce}
-                onImpact={flashRule}
-                highlight={hoveredProof}
-                exclude={excludeZone}
-              />
-            </Suspense>
-          )}
-        </div>
-      </div>
 
       {/* the fold rule: the hero's boundary and the sandbox's ground */}
       <div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
@@ -892,6 +670,51 @@ function Hero() {
             PARTICLES SAMPLED FROM LIVE DOM TEXT
           </span>
         </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── components (§9) ──────────────────────────────────────────────────────
+   The six physics cards, moved out of the hero into a section of their own.
+   They are good work and they were competing with the web for attention in a
+   fold that can only carry one expressive system.
+
+   Mono label, no explanatory copy, no instructions — the whole value is a
+   visitor discovering on their own that the number moves. matter-js
+   lazy-mounts on intersection so it never loads with the hero. */
+function Components() {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
+  const near = useOnScreen(ref, "320px");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (near) setMounted(true);
+  }, [near]);
+
+  return (
+    <section
+      ref={ref}
+      id="components"
+      className="relative"
+      style={{ background: V.bg, borderTop: `1px solid ${V.border}`, scrollMarginTop: 70 }}
+    >
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-20">
+        <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: V.text3 }}>
+          Components
+        </span>
+      </div>
+      <div className="relative w-full hidden md:block" style={{ height: "clamp(240px, 32vh, 320px)" }}>
+        <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
+          {mounted && (
+            <Suspense fallback={null}>
+              <Sandbox interactive={!reduce} />
+            </Suspense>
+          )}
+        </div>
+      </div>
+      <div className="mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
+        <div style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }} />
       </div>
     </section>
   );
@@ -2088,6 +1911,7 @@ export function HomePage() {
         <Hero />
         <WhatIDo />
         <SelectedWork />
+        <Components />
         <ContactSection />
         <HowIWork />
         <About />
