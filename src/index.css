@@ -251,82 +251,18 @@
 
    Exactly three elements carry will-change here — the three planes — and
    nothing else in the hero does. */
-.web-stage {
+/* ── the hero 3D layer ────────────────────────────────────────────────────
+   Replaces the 2D SVG web stage. The canvas fills the hero and sits BEHIND the
+   text, never intercepting a pointer: the scene reads state.pointer directly
+   from the window, so it needs no hit testing of its own and can stay inert to
+   the page. */
+.hero-scene {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  z-index: 0;
   pointer-events: none;
-  perspective: 1200px;
-  z-index: 1;
 }
-.web-stage__inner {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-}
-.web-plane {
-  position: absolute;
-  will-change: transform;
-}
-/* Top right, tucked under the nav.
-   Separated from the headline HORIZONTALLY rather than vertically. §0 is
-   explicit that the web stays in the corners and never approaches the type,
-   and measured at 1440 the centred headline ink reaches x=1161 while the web
-   began at x=1049 — they genuinely met.
-
-   Raising it instead would have worked, but only by pushing the hub up under
-   the nav, and the hub is where the spider settles. Cropping against the RIGHT
-   edge keeps the hub on screen and puts the web in the true corner, which is
-   what the concept asks for. */
-.web--primary {
-  top: -62px;
-  right: -198px;
-  transform: translateZ(-120px) rotateY(-14deg) rotateX(6deg);
-}
-/* Bottom left, deeper.
-   Was at bottom:4px, which is the bottom of the hero SECTION — below the
-   fold rule, in the dark band under it. Both lower webs read as stray
-   clutter down there rather than as corners of this composition. Raised
-   above the rule so they sit in the hero proper. */
-.web--secondary {
-  bottom: 238px;
-  /* Pushed hard off the left edge. A web reads as a web when it is ANCHORED to
-     something; a complete circle floating in open space reads as a doily or a
-     wheel. The top-right one works precisely because the viewport crops 44% of
-     it. These two were at 0% cropped, which is why they looked like clip art.
-
-     The number is larger than it looks it should be because deeper planes are
-     pulled toward the vanishing point by the perspective divide — at
-     translateZ(-320px) this one renders at ~0.79 scale and drifts centre-ward,
-     so it has to start further out to land in the corner. */
-  left: -250px;
-  transform: translateZ(-320px) rotateY(10deg) rotateX(-4deg);
-}
-/* bottom right, deepest */
-.web--tertiary {
-  bottom: 244px;
-  /* Same correction, more of it: at translateZ(-480px) this renders at ~0.71
-     scale and is pulled centre-ward hardest of the three. right:4% was landing
-     it at 72% across, nowhere near a corner. */
-  right: -27%;
-  transform: translateZ(-480px) rotateY(18deg);
-}
-
-/* Silk glint: a slow crawl of dashes along the same paths. Real silk catches
-   light in glints down its length; this is the detail that makes the web read
-   as material rather than as a diagram. 40s, primary only. */
-.web-glint path {
-  stroke-dasharray: 3 190;
-  animation: web-glint 40s linear infinite;
-}
-@keyframes web-glint {
-  from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -772; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .web-glint path { animation: none; }
-}
+.hero-scene canvas { display: block; }
 
 /* The hanging spider. Positioned from the top of the hero, outside the 3D
    stage so its strokes stay crisp. Pointer-events off: it is decorative and it

@@ -21,7 +21,7 @@ import { usePerfTier } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
-const WebStage = lazy(() => import("./home/web/WebStage"));
+const HeroScene = lazy(() => import("./home/scene/HeroScene"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -383,6 +383,13 @@ function Hero() {
      Split so the flag isolates the canvas alone. Reduced motion still turns off
      both, which is correct: that is a preference, not a measurement. */
   const particles = !reduce;
+  const lite = usePerfTier() === "lite";
+  const [sceneOn, setSceneOn] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setSceneOn(true), reduce ? 0 : 900);
+    return () => window.clearTimeout(t);
+  }, [reduce]);
 
   /* The particle hero survives on the lite tier — it is the first thing anyone
      sees and MemoryParticles already scales its own count and resolution down.
@@ -498,12 +505,21 @@ function Hero() {
         />
       )}
 
-      {/* §4: three webs on three planes. Behind everything, pointer-events
-          none, and strictly outside the text layer — a headline inside a
-          perspective container skews and its rasterisation goes soft. */}
-      <Suspense fallback={null}>
-        <WebStage interactive={!reduce} />
-      </Suspense>
+      {/* The 3D layer: three node clusters in the corners plus the robo-spider.
+          Sits behind the text at z-index 0 with pointer-events none, so it can
+          never intercept a click, and the text layer above it stays plain DOM
+          rather than being drawn into the canvas — WebGL text would lose
+          selection, screen-reader access and subpixel rendering all at once. */}
+      {/* Tier-gated. three plus R3F is ~223KB gzipped, which is the single
+          largest asset on the site, so a machine the frame-time watchdog has
+          already downgraded never downloads it at all. Mounted a beat after
+          load so it arrives behind the headline rather than competing with it
+          for the first paint. */}
+      {sceneOn && !lite && (
+        <Suspense fallback={null}>
+          <HeroScene interactive={!reduce} />
+        </Suspense>
+      )}
 
       <div className="hero-grain" aria-hidden="true" />
 
