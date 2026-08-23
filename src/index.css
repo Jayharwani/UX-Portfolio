@@ -292,3 +292,178 @@
   .web--primary { top: -150px; right: -232px; }
   .web--tertiary { display: none; }
 }
+
+/* ── the constellation ────────────────────────────────────────────────────
+   Three facts as a small network, in the hero's language but built from DOM
+   and SVG so the text stays real. One perspective container; each node sits
+   at its own translateZ inside it, so the depth is a genuine perspective
+   divide rather than three hand-tuned offsets pretending to be one. The
+   thread endpoints are pre-divided in Constellation.tsx to match. */
+.constellation {
+  position: relative;
+  width: 100%;
+  height: clamp(340px, 44vh, 400px);
+  perspective: 900px;
+}
+
+.constellation__threads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.thread {
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.2;
+  transition: opacity 300ms var(--ease-ui);
+}
+.thread--on { opacity: 0.65; }
+
+/* A node's box is the dot plus its label — nothing else. The detail panel
+   below is absolutely positioned, so opening it cannot shift the label, and
+   translate(-50%) here stays a stable half-of-one-row. */
+.cnode {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
+  /* the dot's centre, so scaling a node never moves the point its threads
+     meet */
+  transform-origin: 5.5px 50%;
+  opacity: var(--dim, 1);
+  animation: cnode-drift 14s ease-in-out infinite alternate;
+  transition: opacity 300ms var(--ease-ui);
+}
+/* `translate` rather than `transform`: the depth placement owns `transform`,
+   and these compose instead of overwriting each other. Neither is a layout
+   property, so the drift stays on the compositor. */
+@keyframes cnode-drift {
+  0%   { translate: 0 0; }
+  50%  { translate: 5px -4px; }
+  100% { translate: -4px 3px; }
+}
+
+/* one open node dims the others, so an open panel crossing a distant label
+   reads as focus rather than as collision */
+.constellation--focus .cnode { opacity: calc(var(--dim, 1) * 0.38); }
+.constellation--focus .cnode--on { opacity: 1; z-index: 5; }
+
+.cnode__dot {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgb(91 140 255 / 0.12), 0 0 14px 2px rgb(91 140 255 / 0.5);
+  transition: transform 300ms var(--ease-ui);
+}
+.cnode--on .cnode__dot { transform: scale(1.5); }
+
+.cnode__label { display: flex; flex-direction: column; gap: 3px; }
+.cnode__kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.cnode__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* grid-template-rows 0fr -> 1fr opens to the content's own height without a
+   hard-coded one. Exactly one child, or the extra ones land in an implicit
+   auto row and never collapse. */
+.cnode__detail {
+  position: absolute;
+  /* Offsets are calc(100% ± …) against the NODE box, so the panel clears the
+     label instead of opening on top of it. The width is explicit for the same
+     reason: an auto-width absolute box is shrink-to-fit against its containing
+     block, which here is a button only as wide as its own title — that clamp
+     was cropping the 104px thumbnails to 83px. */
+  width: 150px;
+  /* opting out of the global `* { max-width: 100% }` overflow guard, which
+     would otherwise clamp this back to the button width and re-crop the
+     thumbnails. Scoped to this one box; the guard stays for everything else. */
+  max-width: none;
+  left: 23px;
+  top: calc(100% + 10px);
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition: grid-template-rows 340ms var(--ease-ui), opacity 240ms var(--ease-ui);
+}
+/* the right-hand node opens leftward and the lowest one opens upward, so no
+   panel ever leaves the field */
+.cnode__detail--left { left: auto; right: 0; text-align: right; }
+.cnode__detail--up { top: auto; bottom: calc(100% + 10px); }
+.cnode--on .cnode__detail { grid-template-rows: 1fr; opacity: 1; }
+.cnode__detailInner { min-height: 0; overflow: hidden; }
+
+.cnode__media {
+  display: block;
+  width: 104px;
+  height: 66px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgb(232 236 243 / 0.1);
+  /* the photograph is the one full-colour thing in this section; pulling it
+     back keeps the palette honest without hiding the place */
+  filter: grayscale(0.5) brightness(0.92);
+}
+.cnode__detail--left .cnode__media { margin-left: auto; }
+.cnode__media--logo {
+  background-size: 62% auto;
+  background-repeat: no-repeat;
+  background-color: rgb(232 236 243 / 0.05);
+  filter: none;
+}
+.cnode__media--film {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  color: var(--accent);
+  background: rgb(91 140 255 / 0.07);
+  filter: none;
+}
+.cnode__sub {
+  display: block;
+  margin-top: 8px;
+  max-width: 150px;
+  white-space: normal;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.cnode__detail--left .cnode__sub { margin-left: auto; }
+
+/* The deepest node is drawn at 0.88 scale and then divided again by
+   perspective, so its 44px box renders as a 34px tap target. This overlay
+   gives back the difference in local units — it is generated content, so a tap
+   on it is still a tap on the button. */
+.cnode::after { content: ""; position: absolute; inset: -11px -10px; }
+
+.cnode:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cnode { animation: none; }
+  .cnode, .cnode__detail, .cnode__dot, .thread { transition: none; }
+}
