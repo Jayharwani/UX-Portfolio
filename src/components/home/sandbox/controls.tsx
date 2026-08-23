@@ -201,14 +201,20 @@ export function FitChipCard() {
   );
 }
 
-/* ── 3. Toggle — design system ─────────────────────────────────────────────
+/* ── 3. Toggle — Bumper ───────────────────────────────────────────────────
+   Relabelled from "System". A source label that reads SYSTEM carries no
+   information sitting next to HEADROOM and SIGNAL, which do: it tells a
+   reviewer the component came from nowhere in particular. Every card names
+   a real project now, and if one genuinely had no home it would be cut
+   rather than labelled generically.
+
    role="switch" rather than a checkbox, so assistive tech announces on/off
    rather than checked/unchecked. Space and Enter both operate it natively
    because it is a real button. */
 export function ToggleCard() {
   const [on, setOn] = useState(true);
   return (
-    <SandboxCard label="Toggle" from="System" width={140}>
+    <SandboxCard label="Toggle" from="Bumper" width={140}>
       <button
         type="button"
         role="switch"
@@ -377,7 +383,7 @@ export function StepperCard() {
   );
 }
 
-/* ── 6. Checkbox — design system ───────────────────────────────────────────
+/* ── 6. Checkbox — Intent ─────────────────────────────────────────────────
    The check draws on over 240ms via stroke-dashoffset. It is the one place
    here that animates a paint property rather than a transform, and it is worth
    it: the path is 24px across, so the raster cost is trivial, and a check that
@@ -385,7 +391,7 @@ export function StepperCard() {
 export function CheckboxCard() {
   const [on, setOn] = useState(false);
   return (
-    <SandboxCard label="Checkbox" from="System" width={132}>
+    <SandboxCard label="Checkbox" from="Intent" width={132}>
       <button
         type="button"
         role="checkbox"
@@ -442,8 +448,8 @@ export function CheckboxCard() {
 export const SANDBOX = [
   { id: "safe", Component: SafeToSpendCard, project: "headroom" },
   { id: "fit", Component: FitChipCard, project: "signal" },
-  { id: "toggle", Component: ToggleCard, project: "system" },
+  { id: "toggle", Component: ToggleCard, project: "bumper" },
   { id: "segment", Component: SegmentedCard, project: "intent" },
   { id: "stepper", Component: StepperCard, project: "chronoweave" },
-  { id: "check", Component: CheckboxCard, project: "system" },
+  { id: "check", Component: CheckboxCard, project: "intent" },
 ] as const;

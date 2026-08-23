@@ -361,9 +361,31 @@ function Hero() {
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const wordRef = useRef<HTMLElement>(null);
   const ruleRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
+  const arenaWrapRef = useRef<HTMLDivElement>(null);
   /* §4.8: one system, two views. Hovering a rail row outlines its card and the
      reverse, so the sandbox and the rail are legibly the same set of things. */
   const [hoveredProof, setHoveredProof] = useState<string | null>(null);
+
+  /* §2.3: the no-settle rectangle, in the arena's own coordinate space.
+     Measured from the live text column plus 48px of padding rather than
+     hard-coded, so it tracks the real block at every breakpoint and after
+     any copy change. Returns null when either element is missing, which the
+     sandbox reads as no constraint rather than as an empty rectangle. */
+  const excludeZone = useCallback(() => {
+    const copy = copyRef.current;
+    const arena = arenaWrapRef.current;
+    if (!copy || !arena) return null;
+    const c = copy.getBoundingClientRect();
+    const a = arena.getBoundingClientRect();
+    const PAD = 48;
+    return {
+      x: c.left - a.left - PAD,
+      y: c.top - a.top - PAD,
+      w: c.width + PAD * 2,
+      h: c.height + PAD * 2,
+    };
+  }, []);
 
   /* The fold rule flashes where a card lands. It is the detail that confirms
      the rule is a real surface rather than a line the cards happen to stop
@@ -563,7 +585,7 @@ function Hero() {
         {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
             sides anchored it reads as a decision rather than as the gap it was
             when only the left side had content. */}
-        <div className="xl:col-span-6 flex flex-col items-start text-left">
+        <div ref={copyRef} className="xl:col-span-6 flex flex-col items-start text-left">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}
@@ -773,11 +795,16 @@ function Hero() {
           rule IS the surface these rest on, which is the detail that makes the
           whole thing read as authored rather than as objects placed near a
           line. */}
-      <div className="relative z-20 w-full hidden md:block" style={{ height: "clamp(190px, 26vh, 260px)" }}>
+      <div ref={arenaWrapRef} className="relative z-20 w-full hidden md:block" style={{ height: "clamp(230px, 30vh, 300px)" }}>
         <div className="mx-auto max-w-6xl h-full px-6 md:px-10 lg:px-16">
           {showPlay && !lite && (
             <Suspense fallback={null}>
-              <Sandbox interactive={!reduce} onImpact={flashRule} highlight={hoveredProof} />
+              <Sandbox
+                interactive={!reduce}
+                onImpact={flashRule}
+                highlight={hoveredProof}
+                exclude={excludeZone}
+              />
             </Suspense>
           )}
         </div>

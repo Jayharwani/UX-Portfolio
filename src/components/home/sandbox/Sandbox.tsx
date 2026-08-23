@@ -33,6 +33,9 @@ import { SANDBOX } from "./controls";
    ────────────────────────────────────────────────────────────────────────── */
 
 const CARD_H = 118; // approximate; refined from the real element at mount
+/* how far above the arena the ceiling sits. Big enough for the staggered
+   drop to clear, small enough that a body cannot rest over the header. */
+const CEIL_GAP = 210;
 const SETTLE_ANGLE = 0.12;
 const SETTLE_SPEED = 0.4;
 
@@ -40,16 +43,25 @@ export default function Sandbox({
   interactive,
   onImpact,
   highlight,
+  exclude,
 }: {
   interactive: boolean;
   /** project id of the hovered proof-rail row; that card outlines to match */
   highlight?: string | null;
+  /** §2.3: a rectangle, in arena coordinates, that no body may come to rest
+   *  inside. Bodies may pass through it in flight. Supplied by the hero so
+   *  the zone tracks the real text block rather than a guessed constant. */
+  exclude?: () => { x: number; y: number; w: number; h: number } | null;
   /** fires when a card lands, so the fold rule can flash at the contact x */
   onImpact?: (x: number) => void;
 }) {
   const arenaRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [ready, setReady] = useState(false);
+  /* held in a ref so a new closure from the parent never tears down and
+     rebuilds the whole world mid-scene */
+  const excludeRef = useRef(exclude);
+  excludeRef.current = exclude;
 
   useEffect(() => {
     const arena = arenaRef.current;
@@ -78,11 +90,20 @@ export default function Sandbox({
          away and lost. The floor is the arena's bottom edge, which is where
          the fold rule sits — the rule is the ground, not decoration near it. */
       const wall = { isStatic: true, render: { visible: false }, friction: 0.4 };
+      /* §8. Walls inset 24px from the arena so nothing can be clipped by a
+         viewport edge, and a real ceiling rather than the old one at
+         -1.6 * H. That was not a ceiling: it let a body travel most of a
+         viewport above the arena and render over the header, because the
+         wrapper is absolutely positioned and the arena does not clip.
+         Three cards were resting up there in the shipped build. */
+      const INSET = 24;
       const walls = [
         Bodies.rectangle(W / 2, H + 40, W + 400, 80, wall), // floor
-        Bodies.rectangle(-40, H / 2, 80, H * 3, wall), // left
-        Bodies.rectangle(W + 40, H / 2, 80, H * 3, wall), // right
-        Bodies.rectangle(W / 2, -H * 1.6, W + 400, 80, wall), // high ceiling
+        Bodies.rectangle(INSET - 40, H / 2, 80, H * 4, wall), // left
+        Bodies.rectangle(W - INSET + 40, H / 2, 80, H * 4, wall), // right
+        /* the ceiling sits just above the arena: high enough for the intro
+           drop to clear it, low enough that nothing can come to rest above */
+        Bodies.rectangle(W / 2, -CEIL_GAP, W + 400, 80, wall),
       ];
       Composite.add(engine.world, walls);
 
@@ -91,8 +112,13 @@ export default function Sandbox({
       const bodies = els.map((el, i) => {
         const { w, h } = sizes[i];
         const slot = (i + 0.5) / els.length;
-        const x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, W * slot + (((i * 37) % 11) - 5) * 4));
-        const y = -140 - i * 90; // start above the arena, fall in
+        /* clamped inside the inset walls, so the widest card cannot begin
+           or end up hanging over an edge */
+        const x = Math.max(
+          INSET + w / 2 + 4,
+          Math.min(W - INSET - w / 2 - 4, W * slot + (((i * 37) % 11) - 5) * 4)
+        );
+        const y = -(CARD_H / 2) - 30 - i * 26; // just above the ceiling, staggered
         const b = Bodies.rectangle(x, y, w, h, {
           chamfer: { radius: 14 },
           restitution: 0.18,
@@ -182,6 +208,31 @@ export default function Sandbox({
           const el = els[i];
           if (!el) continue;
           const { w, h } = sizes[i];
+
+          /* §2.3 exclusion zone. A body is allowed to fly through the text
+             block — blocking it outright would read as an invisible wall and
+             look broken — but it may not come to REST there. While a body is
+             inside the zone and has nearly stopped, it gets a gentle push
+             toward the nearer horizontal edge. It drifts out over a beat
+             rather than being teleported, which stays inside the physics
+             rather than fighting it.
+
+             This is the fix for the most visible defect in the shipped build:
+             cards settling on top of the headline and the CTAs. */
+          const zone = excludeRef.current?.();
+          if (zone && i !== frozen) {
+            const inside =
+              b.position.x > zone.x - w / 2 &&
+              b.position.x < zone.x + zone.w + w / 2 &&
+              b.position.y > zone.y - h / 2 &&
+              b.position.y < zone.y + zone.h + h / 2;
+            if (inside && b.speed < 1.2) {
+              Sleeping.set(b, false);
+              const zoneMid = zone.x + zone.w / 2;
+              const dir = b.position.x < zoneMid ? -1 : 1;
+              Body.applyForce(b, b.position, { x: dir * 0.00028 * b.mass, y: 0 });
+            }
+          }
 
           /* Weak self-righting. Thrown cards tumble, then settle upright over
              roughly 800ms. Without it a card can rest at 40° with a slider
