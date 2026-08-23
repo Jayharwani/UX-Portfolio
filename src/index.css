@@ -290,13 +290,25 @@
    above the rule so they sit in the hero proper. */
 .web--secondary {
   bottom: 238px;
-  left: -126px;
+  /* Pushed hard off the left edge. A web reads as a web when it is ANCHORED to
+     something; a complete circle floating in open space reads as a doily or a
+     wheel. The top-right one works precisely because the viewport crops 44% of
+     it. These two were at 0% cropped, which is why they looked like clip art.
+
+     The number is larger than it looks it should be because deeper planes are
+     pulled toward the vanishing point by the perspective divide — at
+     translateZ(-320px) this one renders at ~0.79 scale and drifts centre-ward,
+     so it has to start further out to land in the corner. */
+  left: -250px;
   transform: translateZ(-320px) rotateY(10deg) rotateX(-4deg);
 }
 /* bottom right, deepest */
 .web--tertiary {
   bottom: 244px;
-  right: 4%;
+  /* Same correction, more of it: at translateZ(-480px) this renders at ~0.71
+     scale and is pulled centre-ward hardest of the three. right:4% was landing
+     it at 72% across, nowhere near a corner. */
+  right: -27%;
   transform: translateZ(-480px) rotateY(18deg);
 }
 
@@ -325,4 +337,22 @@
   z-index: 3;
   pointer-events: none;
   transition: opacity 600ms var(--ease-ui);
+}
+
+/* Below ~1440px the headline widens into the top-right corner. At 1280 the
+   line runs to 94% of the viewport, so the web and the type share space.
+
+   Raising the web far enough to fully clear it left only 12% of the web on
+   screen, which trades the whole feature away to satisfy a rule. The web is
+   line art BEHIND the type at 0.55, so a thread passing behind a 76px white
+   letterform reads as depth, the same way the nav overlap does. Modest lift:
+   less overlap, web still legible. Full separation returns above 1440 where
+   the headline stops reaching that far. */
+@media (max-width: 1440px) {
+  .web--primary { top: -118px; }
+}
+@media (max-width: 1100px) {
+  /* one web is enough on a small screen; three is clutter */
+  .web--primary { top: -150px; right: -232px; }
+  .web--tertiary { display: none; }
 }
