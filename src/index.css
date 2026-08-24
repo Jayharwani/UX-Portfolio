@@ -294,16 +294,46 @@
 }
 
 /* ── the constellation ────────────────────────────────────────────────────
-   Three facts as a small network, in the hero's language but built from DOM
-   and SVG so the text stays real. One perspective container; each node sits
-   at its own translateZ inside it, so the depth is a genuine perspective
-   divide rather than three hand-tuned offsets pretending to be one. The
-   thread endpoints are pre-divided in Constellation.tsx to match. */
+   Three facts among many points of light, in the hero's language but built
+   from DOM and SVG so the text stays real. One perspective container; every
+   point sits at its own translateZ inside it, so the depth is a genuine
+   perspective divide rather than hand-tuned offsets pretending to be one. The
+   SVG endpoints are pre-divided in Constellation.tsx to match. */
 .constellation {
   position: relative;
   width: 100%;
-  height: clamp(340px, 44vh, 400px);
+  height: clamp(470px, 58vh, 600px);
   perspective: 900px;
+}
+
+/* ── the unnamed points ── */
+.constellation__stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  /* one element drifting carries forty: a shared parallax costs a single
+     compositor layer, where forty independent drifts cost forty */
+  animation: star-drift 44s ease-in-out infinite alternate;
+}
+@keyframes star-drift {
+  from { translate: -7px 4px; }
+  to   { translate: 7px -5px; }
+}
+.star {
+  position: absolute;
+  border-radius: 999px;
+  background: var(--accent);
+  /* --d is the depth of the point: further back is smaller and dimmer, which
+     is what makes forty flat dots read as a volume */
+  width: calc(4px - var(--d) * 1px);
+  height: calc(4px - var(--d) * 1px);
+  opacity: calc(0.42 - var(--d) * 0.13);
+  animation: star-twinkle 7s ease-in-out infinite alternate;
+}
+@keyframes star-twinkle {
+  from { opacity: calc(0.42 - var(--d) * 0.13); }
+  to   { opacity: calc(0.14 - var(--d) * 0.04); }
 }
 
 .constellation__threads {
@@ -317,19 +347,38 @@
 .thread {
   stroke: var(--accent);
   stroke-width: 1;
-  opacity: 0.2;
+  opacity: 0.22;
   transition: opacity 300ms var(--ease-ui);
 }
-.thread--on { opacity: 0.65; }
+.thread--faint { opacity: 0.085; }
+.thread--on { opacity: 0.7; }
 
-/* A node's box is the dot plus its label — nothing else. The detail panel
-   below is absolutely positioned, so opening it cannot shift the label, and
+/* the signal: a short bright dash running the length of a thread. pathLength
+   is normalised to 100 in the markup, so this one dasharray gives every
+   thread the same pulse regardless of its real length. */
+.thread__pulse {
+  stroke: #C3D4FF;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 5 95;
+  animation: thread-pulse 7s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes thread-pulse {
+  0%        { stroke-dashoffset: 100; opacity: 0; }
+  8%        { opacity: 0.85; }
+  38%       { opacity: 0.85; }
+  46%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* ── the named points ──
+   A node box is the dot plus its label — nothing else. The detail panel is
+   absolutely positioned, so opening it cannot shift the label and the
    translate(-50%) here stays a stable half-of-one-row. */
 .cnode {
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 13px;
   margin: 0;
   padding: 0;
   border: none;
@@ -337,9 +386,9 @@
   white-space: nowrap;
   text-align: left;
   cursor: pointer;
-  /* the dot's centre, so scaling a node never moves the point its threads
-     meet */
-  transform-origin: 5.5px 50%;
+  /* the centre of the dot, so scaling a node never moves the point its
+     threads meet */
+  transform-origin: 6px 50%;
   opacity: var(--dim, 1);
   animation: cnode-drift 14s ease-in-out infinite alternate;
   transition: opacity 300ms var(--ease-ui);
@@ -355,82 +404,114 @@
 
 /* one open node dims the others, so an open panel crossing a distant label
    reads as focus rather than as collision */
-.constellation--focus .cnode { opacity: calc(var(--dim, 1) * 0.38); }
+.constellation--focus .cnode { opacity: calc(var(--dim, 1) * 0.34); }
 .constellation--focus .cnode--on { opacity: 1; z-index: 5; }
+.constellation--focus .star { opacity: calc((0.42 - var(--d) * 0.13) * 0.4); animation: none; }
 
 .cnode__dot {
-  width: 11px;
-  height: 11px;
+  position: relative;
+  width: 12px;
+  height: 12px;
   flex: none;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 0 4px rgb(91 140 255 / 0.12), 0 0 14px 2px rgb(91 140 255 / 0.5);
-  transition: transform 300ms var(--ease-ui);
+  box-shadow: 0 0 0 5px rgb(91 140 255 / 0.11), 0 0 18px 3px rgb(91 140 255 / 0.55);
+  transition: transform 320ms var(--ease-ui);
 }
-.cnode--on .cnode__dot { transform: scale(1.5); }
+/* a ring that expands out of the dot when its fact is open: the one place in
+   this component worth spending animation on, because it is the only thing
+   that confirms which point you are reading */
+.cnode__dot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: transform 420ms var(--ease-ui), opacity 420ms var(--ease-ui);
+}
+.cnode--on .cnode__dot { transform: scale(1.35); }
+.cnode--on .cnode__dot::after { opacity: 0.5; transform: scale(1.5); }
 
-.cnode__label { display: flex; flex-direction: column; gap: 3px; }
+.cnode__label { display: flex; flex-direction: column; gap: 4px; }
+/* A halo in the page's own background colour, which is what cartography does
+   for a label over busy detail. The keep-out in Constellation.tsx thins the
+   starfield around each label, but it works in percentages while a label's
+   width in percent grows as the field narrows — so at phone widths a dot can
+   still land on a letter. This absorbs the residue at every width, and is
+   invisible everywhere else because it is the colour of what is behind it. */
+.cnode__kicker, .cnode__title { text-shadow: 0 0 9px var(--bg), 0 0 4px var(--bg); }
 .cnode__kicker {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text-3);
+  transition: color 300ms var(--ease-ui);
 }
+.cnode--on .cnode__kicker { color: var(--accent); }
 .cnode__title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 19px;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
   color: var(--text);
 }
 
-/* grid-template-rows 0fr -> 1fr opens to the content's own height without a
-   hard-coded one. Exactly one child, or the extra ones land in an implicit
-   auto row and never collapse. */
+/* ── the panel ──
+   Offsets are calc(100% ± …) against the NODE box, so it clears the label
+   instead of opening on top of it. The width is explicit because an
+   auto-width absolute box is shrink-to-fit against its containing block,
+   which here is a button only as wide as its own title. */
 .cnode__detail {
   position: absolute;
-  /* Offsets are calc(100% ± …) against the NODE box, so the panel clears the
-     label instead of opening on top of it. The width is explicit for the same
-     reason: an auto-width absolute box is shrink-to-fit against its containing
-     block, which here is a button only as wide as its own title — that clamp
-     was cropping the 104px thumbnails to 83px. */
-  width: 150px;
+  width: 212px;
   /* opting out of the global `* { max-width: 100% }` overflow guard, which
-     would otherwise clamp this back to the button width and re-crop the
-     thumbnails. Scoped to this one box; the guard stays for everything else. */
+     would otherwise clamp this back to the button width and crop the
+     thumbnail. Scoped to this one box; the guard stays for everything else. */
   max-width: none;
-  left: 23px;
-  top: calc(100% + 10px);
+  left: 25px;
+  top: calc(100% + 12px);
+  transform-origin: top left;
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   pointer-events: none;
-  transition: grid-template-rows 340ms var(--ease-ui), opacity 240ms var(--ease-ui);
+  transition: grid-template-rows 380ms var(--ease-ui), opacity 260ms var(--ease-ui);
 }
 /* the right-hand node opens leftward and the lowest one opens upward, so no
-   panel ever leaves the field */
-.cnode__detail--left { left: auto; right: 0; text-align: right; }
-.cnode__detail--up { top: auto; bottom: calc(100% + 10px); }
+   panel ever leaves the field. The origin follows, so each grows away from
+   its node rather than through it. */
+.cnode__detail--left {
+  left: auto;
+  right: 0;
+  text-align: right;
+  transform-origin: top right;
+}
+.cnode__detail--up {
+  top: auto;
+  bottom: calc(100% + 12px);
+  transform-origin: bottom left;
+}
 .cnode--on .cnode__detail { grid-template-rows: 1fr; opacity: 1; }
 .cnode__detailInner { min-height: 0; overflow: hidden; }
 
 .cnode__media {
   display: block;
-  width: 104px;
-  height: 66px;
-  border-radius: 8px;
+  width: 212px;
+  height: 132px;
+  border-radius: 10px;
   background-size: cover;
   background-position: center;
   border: 1px solid rgb(232 236 243 / 0.1);
   /* the photograph is the one full-colour thing in this section; pulling it
      back keeps the palette honest without hiding the place */
-  filter: grayscale(0.5) brightness(0.92);
+  filter: grayscale(0.45) brightness(0.94);
 }
-.cnode__detail--left .cnode__media { margin-left: auto; }
 .cnode__media--logo {
-  background-size: 62% auto;
+  background-size: 58% auto;
   background-repeat: no-repeat;
   background-color: rgb(232 236 243 / 0.05);
   filter: none;
@@ -438,32 +519,38 @@
 .cnode__media--film {
   display: grid;
   place-items: center;
-  padding: 14px;
+  padding: 26px;
   color: var(--accent);
   background: rgb(91 140 255 / 0.07);
   filter: none;
 }
 .cnode__sub {
   display: block;
-  margin-top: 8px;
-  max-width: 150px;
+  margin-top: 11px;
   white-space: normal;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.45;
   color: var(--text-2);
 }
-.cnode__detail--left .cnode__sub { margin-left: auto; }
 
 /* The deepest node is drawn at 0.88 scale and then divided again by
    perspective, so its 44px box renders as a 34px tap target. This overlay
-   gives back the difference in local units — it is generated content, so a tap
-   on it is still a tap on the button. */
-.cnode::after { content: ""; position: absolute; inset: -11px -10px; }
+   gives back the difference in local units — it is generated content, so a
+   tap on it is still a tap on the button. */
+.cnode::after { content: ""; position: absolute; inset: -12px -10px; }
 
-.cnode:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 6px; }
+.cnode:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; border-radius: 6px; }
+
+@media (max-width: 900px) {
+  .constellation { height: clamp(410px, 50vh, 500px); }
+  .cnode__title { font-size: 21px; }
+  .cnode__detail, .cnode__media { width: 178px; }
+  .cnode__media { height: 111px; }
+  .cnode__sub { font-size: 13px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .cnode { animation: none; }
-  .cnode, .cnode__detail, .cnode__dot, .thread { transition: none; }
+  .cnode, .star, .constellation__stars { animation: none; }
+  .cnode, .cnode__detail, .cnode__dot, .cnode__dot::after, .cnode__kicker, .thread { transition: none; }
 }

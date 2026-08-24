@@ -324,7 +324,7 @@ export function ContactSection() {
           transformStyle: "preserve-3d",
         }}
       >
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 lg:gap-20 items-start" style={{ transformStyle: "preserve-3d" }}>
+        <div className="grid lg:grid-cols-[0.92fr_1.08fr] gap-14 lg:gap-16 items-start" style={{ transformStyle: "preserve-3d" }}>
           {/* ── left: the real actions ── */}
           <div style={{ transform: tiltOn ? "translateZ(30px)" : undefined, transformStyle: "preserve-3d" }}>
             <motion.div
