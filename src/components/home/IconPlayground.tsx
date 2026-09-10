@@ -164,17 +164,31 @@ const tileStyle = (size: number): React.CSSProperties => ({
 });
 
 /* static scatter used on mobile and for reduced motion */
+/* Where the blocks rest when physics is not running: reduced motion, or the
+   lite performance tier. There must be one of these for EVERY tile — this list
+   was one short of TILES, so the last block read STATIC_POS[10] as undefined
+   and the static path threw on render rather than degrading. The lookup below
+   is also guarded, so adding a tile can never again turn a fallback into a
+   crash. */
+/* Each entry is the CENTRE of a block, as a percentage of the container.
+   Centre rather than top-left: the blocks differ in size, so anchoring by
+   corner let the tall ones hang out of the bottom of the band, and the amount
+   they hung out changed with the container height. Centred, a y of 78% keeps
+   even the 96px block inside a 270px band at any width. Measured safe band for
+   a centre is 20% to 80%; the two left-column entries also had to separate,
+   they were overlapping by 75x25px. */
 const STATIC_POS = [
-  { x: 22, y: 16, r: -8 },
-  { x: 62, y: 10, r: 6 },
-  { x: 44, y: 34, r: -3 },
-  { x: 13, y: 46, r: 7 },
-  { x: 74, y: 38, r: -6 },
-  { x: 30, y: 62, r: 4 },
+  { x: 22, y: 22, r: -8 },
+  { x: 62, y: 23, r: 6 },
+  { x: 44, y: 38, r: -3 },
+  { x: 13, y: 48, r: 7 },
+  { x: 74, y: 40, r: -6 },
+  { x: 30, y: 60, r: 4 },
   { x: 58, y: 58, r: -7 },
-  { x: 80, y: 68, r: 5 },
-  { x: 12, y: 76, r: -4 },
-  { x: 45, y: 82, r: 8 },
+  { x: 80, y: 66, r: 5 },
+  { x: 22, y: 76, r: -4 },
+  { x: 45, y: 78, r: 8 },
+  { x: 87, y: 20, r: -6 },
 ];
 
 export default function IconPlayground({ interactive = true, tapOnly = false }: { interactive?: boolean; tapOnly?: boolean }) {
@@ -362,7 +376,7 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
     >
       {TILES.map((t, i) => {
         const iconSize = Math.round(t.size * 0.46);
-        const sp = STATIC_POS[i];
+        const sp = STATIC_POS[i] ?? { x: 50, y: 50, r: 0 };
         return (
           <div
             key={t.id}
@@ -376,7 +390,7 @@ export default function IconPlayground({ interactive = true, tapOnly = false }: 
               cursor: !interactive ? "default" : tapOnly ? "pointer" : "grab",
               ...(interactive
                 ? { left: 0, top: 0, transform: "translate(-300px, -300px)" } /* offscreen until physics places it */
-                : { left: `${sp.x}%`, top: `${sp.y}%`, transform: `rotate(${sp.r}deg)` }),
+                : { left: `${sp.x}%`, top: `${sp.y}%`, transform: `translate(-50%, -50%) rotate(${sp.r}deg)` }),
             }}
           >
             {t.icon(iconSize)}

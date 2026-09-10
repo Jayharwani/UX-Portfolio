@@ -722,10 +722,16 @@ function Toolchain() {
           What I build with
         </span>
       </div>
+      {/* A performance tier degrades the ANIMATION, never the content. This
+          used to render nothing at all on the lite tier, and the lite tier is
+          reached by a runtime watchdog as well as by hard signals — so the
+          blocks could vanish mid-session on a machine that dropped frames,
+          which is exactly how they were reported missing. Physics off still
+          means eleven blocks laid out and labelled. */}
       <div className="relative w-full hidden md:block" style={{ height: "clamp(220px, 30vh, 300px)" }}>
-        {mounted && !lite && (
+        {mounted && (
           <Suspense fallback={null}>
-            <IconPlayground interactive={!reduce} tapOnly={false} />
+            <IconPlayground interactive={!reduce && !lite} tapOnly={false} />
           </Suspense>
         )}
       </div>
