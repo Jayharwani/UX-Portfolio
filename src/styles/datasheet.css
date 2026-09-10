@@ -1,0 +1,391 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   THE DATASHEET
+
+   The front door, rebuilt around the claim the site already makes: "I design
+   interfaces that get out of the way. Because the ultimate user experience is
+   closing the laptop."
+
+   The old front door contradicted that sentence in three ways at once. It was
+   a five-thousand-pixel scroll, which is the opposite of getting out of the
+   way. It was midnight-dark, which is the aesthetic of staying up coding
+   rather than of closing the laptop. And it spent its budget on decoration
+   that a visitor has to sit through before reaching anything they came for.
+
+   So: one screen, no scroll, everything a founder needs to decide, and an exit
+   offered rather than withheld. The form is a component datasheet, which is
+   the one document format whose entire job is to put the specifications on a
+   single page and let you leave.
+
+   ON NOT LOCKING THE EXIT. The reference that prompted this rebuild gates its
+   exit until you have viewed the work. That is a good mechanic for a portfolio
+   whose thesis is "stay and play". It is the wrong mechanic here, because
+   holding someone hostage to prove a point about respecting their time is
+   incoherent. The counter in the footer acknowledges what you have seen. It
+   never blocks.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.ds {
+  /* ── palette ──
+     Drafting film, not cream. The obvious escape from a dark-tech portfolio is
+     warm cream editorial, which is its own saturated category; a pale cool
+     paper with a faint green cast reads as a technical document instead, which
+     is what a design engineer's one-pager should read as.
+
+     Strategy is Restrained: tinted neutrals carry the whole surface and a
+     single signal vermilion appears on roughly five percent of it. Red is
+     avoided in interfaces because it means error; on paper, against rules and
+     tabular figures, it means the thing worth reading. */
+  --paper:    oklch(96.8% 0.006 140);
+  --paper-2:  oklch(94.2% 0.008 140);
+  --rule:     oklch(82% 0.013 140);
+  --rule-2:   oklch(88% 0.011 140);
+
+  --ink:      oklch(23% 0.012 250);
+  --ink-2:    oklch(47% 0.012 250);
+  /* 58% measured 3.9:1 on this paper, which fails AA for the mono labels,
+     tags and counter that all use it. 52% measures 4.9:1. */
+  --ink-3:    oklch(52% 0.012 220);
+
+  /* two weights of the accent: the lighter one is for large type and marks,
+     the darker one clears AA at small sizes */
+  --signal:   oklch(57% 0.196 32);
+  --signal-d: oklch(48% 0.176 32);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: fixed;
+  inset: 0;
+  /* the whole point: there is no scroll */
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the faint graticule of drafting film. One gradient pair, fixed, no elements */
+.ds::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, oklch(23% 0.012 250 / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(23% 0.012 250 / 0.028) 1px, transparent 1px);
+  background-size: 88px 88px;
+}
+
+/* registration marks in the corners: print language, near-zero cost, and the
+   one piece of pure ornament this page allows itself */
+.ds__reg {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+  color: var(--rule);
+}
+.ds__reg--tl { top: 13px; left: 13px; }
+.ds__reg--tr { top: 13px; right: 13px; }
+.ds__reg--bl { bottom: 13px; left: 13px; }
+.ds__reg--br { bottom: 13px; right: 13px; }
+
+/* ── the rules that structure the sheet ── */
+.ds__band {
+  position: relative;
+  padding: 0 clamp(20px, 4vw, 56px);
+}
+.ds__head {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 32px);
+  height: clamp(46px, 6vh, 60px);
+  border-bottom: 1px solid var(--rule);
+}
+.ds__foot {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  min-height: clamp(52px, 7vh, 68px);
+  border-top: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+
+.ds__mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: clamp(9.5px, 1.05vw, 11px);
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ds__name {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: clamp(11px, 1.15vw, 12.5px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.ds__spacer { margin-left: auto; }
+
+.ds__status { display: inline-flex; align-items: center; gap: 7px; color: var(--signal-d); }
+.ds__status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--signal);
+  animation: ds-blink 3.4s ease-in-out infinite;
+}
+@keyframes ds-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
+
+.ds__link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  /* The underline is a text decoration, not a border. globals.css gives every
+     link a 44px minimum box on coarse pointers, which is the right rule; a
+     border-bottom then draws under the TOUCH TARGET rather than under the
+     word, 15px adrift. Decorating the text is immune to the box. */
+  text-decoration: underline 1px transparent;
+  text-underline-offset: 4px;
+  transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease);
+}
+.ds__link:hover { color: var(--ink); text-decoration-color: var(--signal); }
+.ds__link:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+
+/* ── the body of the sheet ── */
+.ds__body {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  padding: 0 clamp(20px, 4vw, 56px);
+}
+
+.ds__claimWrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(24px, 5vw, 72px);
+  padding: clamp(18px, 4.2vh, 48px) 0 clamp(14px, 3vh, 32px);
+  border-bottom: 1px solid var(--rule-2);
+}
+.ds__claimMain { min-width: 0; }
+
+.ds__specs {
+  display: grid;
+  gap: clamp(7px, 1.2vh, 11px);
+  margin: 0;
+  padding-bottom: 3px;
+}
+.ds__spec {
+  display: grid;
+  grid-template-columns: clamp(52px, 6vw, 66px) auto;
+  gap: 14px;
+  align-items: baseline;
+}
+.ds__spec dt { margin: 0; }
+.ds__specVal {
+  margin: 0;
+  font-size: clamp(11.5px, 1.1vw, 13px);
+  line-height: 1.35;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+/* The claim is set in the body grotesk, tight and large, rather than in a
+   display face. A decorative headline would be the page arguing against its
+   own sentence: type that gets out of the way is the demonstration. */
+.ds__claim {
+  margin: 0;
+  max-width: 19ch;
+  font-size: clamp(30px, 4.6vw, 62px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.038em;
+  text-wrap: balance;
+}
+.ds__claim em { font-style: normal; color: var(--signal); }
+.ds__claimSub {
+  margin: clamp(10px, 1.6vh, 18px) 0 0;
+  max-width: 46ch;
+  font-size: clamp(13.5px, 1.35vw, 16.5px);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* ── the specification table: the work ── */
+.ds__table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.ds__tableHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(10px, 1.8vh, 18px) 0 8px;
+}
+.ds__rows {
+  display: grid;
+  /* inside a flex column, a grid needs to be told to take the slack; without
+     this the 1fr tracks collapse to the rows' min-height and the sheet leaves
+     a dead band above the footer */
+  flex: 1 1 auto;
+  /* the four rows share whatever height is left, so the sheet fits any
+     viewport without a scrollbar and without a magic number */
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--rule-2);
+  min-height: 0;
+}
+
+.ds__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(30px, 4vw, 46px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(10px, 2vw, 26px);
+  min-height: 44px;
+  padding: 0 clamp(8px, 1.4vw, 16px);
+  margin: 0 clamp(-8px, -1.4vw, -16px);
+  border-bottom: 1px solid var(--rule-2);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 220ms var(--ease);
+}
+.ds__row:hover, .ds__row:focus-visible { background: var(--paper-2); }
+.ds__row:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+
+.ds__idx {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: clamp(10px, 1.1vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  transition: color 220ms var(--ease);
+}
+.ds__row:hover .ds__idx, .ds__row:focus-visible .ds__idx { color: var(--signal); }
+.ds__row--seen .ds__idx { color: var(--signal-d); }
+
+/* these are spans so the whole row can stay a single <a>; without an explicit
+   block they flow inline and the summary runs straight into the name */
+.ds__rowMain { min-width: 0; display: block; }
+.ds__rowName {
+  display: block;
+  font-size: clamp(17px, 2.1vw, 27px);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+}
+.ds__rowLine {
+  display: block;
+  margin-top: 5px;
+  font-size: clamp(11.5px, 1.15vw, 13.5px);
+  line-height: 1.35;
+  color: var(--ink-2);
+  /* one line, clipped: a datasheet row is a summary, the page behind it is the
+     document */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds__rowEnd {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.6vw, 20px);
+}
+.ds__tags { display: flex; gap: 7px; }
+.ds__tag {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+.ds__arrow {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 15px;
+  color: var(--ink-3);
+  transition: transform 260ms var(--ease), color 260ms var(--ease);
+}
+.ds__row:hover .ds__arrow, .ds__row:focus-visible .ds__arrow {
+  transform: translateX(5px);
+  color: var(--signal);
+}
+
+/* ── the exit ── */
+.ds__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: clamp(10px, 1.05vw, 11.5px);
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 220ms var(--ease), border-color 220ms var(--ease);
+}
+.ds__exit:hover { background: var(--signal-d); border-color: var(--signal-d); }
+.ds__exit--done { background: var(--signal-d); border-color: var(--signal-d); }
+.ds__count {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: clamp(9.5px, 1.05vw, 11px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── narrow ──
+   The sheet stays one screen on a phone. The claim drops a step, the row
+   summaries and tags go, and the rows become name plus arrow: on a 390px
+   screen the name and the destination are the whole useful payload anyway. */
+@media (max-width: 720px) {
+  /* the desktop clamp bottoms out at 30px here, which under-uses a phone
+     screen that has room to spare once the row summaries are gone */
+  .ds__claim { max-width: none; font-size: clamp(28px, 8.5vw, 40px); }
+  .ds__claimWrap { grid-template-columns: minmax(0, 1fr); }
+  .ds__rowLine, .ds__tags { display: none; }
+  .ds__head { gap: 10px; }
+  /* Letting flex-wrap decide put the exit button in the bottom corner on top
+     of the registration marks. Two explicit rows instead: the mono line, then
+     the exit at full width where a thumb expects it. */
+  .ds__foot {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 10px 14px;
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
+  .ds__foot .ds__spacer { display: none; }
+  .ds__count { justify-self: end; }
+  .ds__exit { grid-column: 1 / -1; justify-content: center; }
+  /* the marks are print ornament and there is no room for them beside a
+     full-width button */
+  .ds__reg { display: none; }
+  .ds__hideNarrow { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds__status i { animation: none; }
+  .ds__row, .ds__arrow, .ds__idx, .ds__exit, .ds__link { transition: none; }
+}

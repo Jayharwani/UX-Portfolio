@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { lazy, Suspense } from "react";
-import { HomePage } from "./components/HomePage";
+import HomeDatasheet from "./components/HomeDatasheet";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
@@ -8,6 +8,9 @@ const SignalCasePage = lazy(() => import("./components/SignalCasePage").then((m)
 const BumperCasePage = lazy(() => import("./components/BumperCasePage").then((m) => ({ default: m.BumperCasePage })));
 const ChronoWeavePage = lazy(() => import("./components/ChronoWeavePage").then((m) => ({ default: m.ChronoWeavePage })));
 const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => ({ default: m.HeadroomPage })));
+/* the previous front door, kept reachable at /classic while the datasheet
+   settles. It is a large chunk, so it loads only if someone asks for it. */
+const HomePage = lazy(() => import("./components/HomePage").then((m) => ({ default: m.HomePage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
 function RouteFallback() {
@@ -35,7 +38,8 @@ export default function App() {
       <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<HomeDatasheet />} />
+            <Route path="/classic" element={<HomePage />} />
             <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
