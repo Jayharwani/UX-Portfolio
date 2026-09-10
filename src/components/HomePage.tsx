@@ -17,7 +17,7 @@ import {
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
-import { usePerfTier } from "./home/perfTier";
+import { usePerfTier, useTierReady } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
@@ -384,6 +384,11 @@ function Hero() {
      both, which is correct: that is a preference, not a measurement. */
   const particles = !reduce;
   const lite = usePerfTier() === "lite";
+  /* The watchdog needs ~82 frames to reach a verdict, which lands well after
+     the 900ms timer below. Waiting for it is the difference between a slow
+     machine skipping the WebGL chunk and a slow machine downloading it,
+     compiling it, creating a GL context and then discarding all of it. */
+  const tierReady = useTierReady();
   const [sceneOn, setSceneOn] = useState(false);
 
   useEffect(() => {
@@ -511,11 +516,12 @@ function Hero() {
           rather than being drawn into the canvas — WebGL text would lose
           selection, screen-reader access and subpixel rendering all at once. */}
       {/* Tier-gated. three plus R3F is ~223KB gzipped, which is the single
-          largest asset on the site, so a machine the frame-time watchdog has
-          already downgraded never downloads it at all. Mounted a beat after
+          largest asset on the site, so a machine the frame-time watchdog
+          downgrades never downloads it at all — which is why this waits for
+          the verdict (tierReady) and not just the timer. Mounted a beat after
           load so it arrives behind the headline rather than competing with it
           for the first paint. */}
-      {sceneOn && !lite && (
+      {sceneOn && tierReady && !lite && (
         <Suspense fallback={null}>
           <HeroScene interactive={!reduce} />
         </Suspense>

@@ -46,6 +46,47 @@ const SLOW_SHARE = 0.4;
 const WARMUP_FRAMES = 12;
 /** Frames to judge on. ~70 is a little over a second of healthy playback. */
 const SAMPLE_FRAMES = 70;
+/** Visible time after which an undecided watchdog settles to lite. */
+const UNDECIDED_MS = 10000;
+
+/* How long a remembered verdict stands before we re-test. A machine can get a
+   new browser, a driver fix, or an external GPU; punishing it forever for one
+   bad afternoon would be wrong. A month is long enough that a returning
+   visitor never pays the cost twice in a session-realistic window. */
+const MEMORY_KEY = "jh.tier.v1";
+const MEMORY_MS = 30 * 24 * 60 * 60 * 1000;
+
+function rememberedLite(): boolean {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY);
+    if (!raw) return false;
+    const at = Number(raw);
+    if (!Number.isFinite(at) || Date.now() - at > MEMORY_MS) {
+      localStorage.removeItem(MEMORY_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    /* private mode or storage disabled — just re-test this load */
+    return false;
+  }
+}
+
+function rememberLite() {
+  try {
+    localStorage.setItem(MEMORY_KEY, String(Date.now()));
+  } catch {
+    /* nothing to do; the watchdog will reach the same verdict next load */
+  }
+}
+
+function forgetLite() {
+  try {
+    localStorage.removeItem(MEMORY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 function hardSignalsSayLite(): boolean {
   if (typeof window === "undefined") return false;
@@ -56,7 +97,12 @@ function hardSignalsSayLite(): boolean {
   try {
     const q = new URLSearchParams(window.location.search);
     if (q.has("lite")) return true;
-    if (q.has("full")) return false;
+    if (q.has("full")) {
+      /* ?full is also the reset: a machine that has been remembered as slow
+         needs a way back without clearing site data by hand. */
+      forgetLite();
+      return false;
+    }
   } catch {
     /* URL unavailable — fall through to real signals */
   }
@@ -69,6 +115,10 @@ function hardSignalsSayLite(): boolean {
   } catch {
     /* matchMedia unavailable — fall through to the other signals */
   }
+  /* A verdict this machine already earned. Checked before the spec-sheet
+     signals because it is strictly better evidence: it came from real frames
+     on this exact hardware, not from a number the browser reports. */
+  if (rememberedLite()) return true;
   if (nav.connection?.saveData) return true;
   if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4) return true;
   if (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4) return true;
@@ -76,24 +126,68 @@ function hardSignalsSayLite(): boolean {
 }
 
 let current: Tier = typeof window === "undefined" ? "full" : hardSignalsSayLite() ? "lite" : "full";
+/* Whether the tier is final. Anything expensive enough to be worth gating —
+   the WebGL hero above all — waits for this rather than mounting on a timer
+   and being torn down a second later. Mounting first and asking afterwards is
+   the worst of both: the machine pays the full download, compile and context
+   creation, then throws the result away. */
+let decided = typeof window === "undefined" ? true : current === "lite";
 let watchdogStarted = false;
 const subscribers = new Set<(t: Tier) => void>();
+const readySubs = new Set<(r: boolean) => void>();
+
+function notifyReady() {
+  decided = true;
+  readySubs.forEach((fn) => fn(true));
+}
 
 function downgrade() {
   if (current === "lite") return;
   current = "lite";
+  rememberLite();
   subscribers.forEach((fn) => fn(current));
 }
 
 function startWatchdog() {
   if (watchdogStarted || typeof window === "undefined") return;
   watchdogStarted = true;
-  if (current === "lite") return; // nothing left to detect
+  if (current === "lite") {
+    notifyReady(); // nothing left to detect; the verdict is already final
+    return;
+  }
   try {
-    if (new URLSearchParams(window.location.search).has("full")) return; // pinned by hand
+    if (new URLSearchParams(window.location.search).has("full")) {
+      notifyReady(); // pinned by hand
+      return;
+    }
   } catch {
     /* ignore */
   }
+
+  /* Failsafe. Gating the hero on a verdict means no verdict would mean no
+     hero, forever, in any environment where rAF does not deliver. If we are
+     still undecided after this long we settle to LITE rather than full: an
+     environment that cannot produce 82 frames in ten visible seconds is not
+     one to hand a WebGL scene to. It is not persisted, because a verdict we
+     failed to measure is not evidence about the machine.
+
+     The timer only counts while the page is visible — a backgrounded tab
+     stalls rAF by design, and penalising it for that would mean anyone
+     opening the site in a new tab lands on the degraded version. */
+  let failsafe = 0;
+  const armFailsafe = () => {
+    failsafe = window.setTimeout(() => {
+      if (decided) return;
+      if (document.hidden) {
+        armFailsafe();
+        return;
+      }
+      current = "lite";
+      subscribers.forEach((fn) => fn(current));
+      notifyReady();
+    }, UNDECIDED_MS);
+  };
+  armFailsafe();
 
   let last = performance.now();
   let warmup = WARMUP_FRAMES;
@@ -114,7 +208,9 @@ function startWatchdog() {
     if (dt > SLOW_FRAME_MS) slow++;
 
     if (total >= SAMPLE_FRAMES) {
+      window.clearTimeout(failsafe);
       if (slow / total >= SLOW_SHARE) downgrade();
+      notifyReady();
       return; // finished — this is a probe, not a permanent loop
     }
     requestAnimationFrame(sample);
@@ -135,6 +231,25 @@ export function usePerfTier(): Tier {
     };
   }, [tier]);
   return tier;
+}
+
+/** Whether the watchdog has returned a final verdict.
+
+    Gate anything whose cost is not worth paying speculatively on this. The
+    hero's WebGL chunk is 216 KB gzipped and creates a GL context; mounting it
+    on a timer and unmounting it when the verdict lands means a slow machine
+    pays the entire bill and keeps none of the benefit — every load. */
+export function useTierReady(): boolean {
+  const [ready, setReady] = useState(decided);
+  useEffect(() => {
+    startWatchdog();
+    if (decided !== ready) setReady(decided);
+    readySubs.add(setReady);
+    return () => {
+      readySubs.delete(setReady);
+    };
+  }, [ready]);
+  return ready;
 }
 
 /** Non-reactive read, for code outside React. */

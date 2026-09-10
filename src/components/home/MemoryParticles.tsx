@@ -503,14 +503,19 @@ export default function MemoryParticles({
 
            The intro is choreographed and has to be smooth. What follows it is a
            sparse constellation of slowly drifting blobs, and nobody perceives
-           30fps on those — but the clearRect underneath them is the FULL
-           surface every frame regardless of how few particles remain, which is
-           the single most expensive operation in this loop. Skipping alternate
-           ticks in the settled state halves it.
+           30fps on those, so alternate ticks are skipped once it resolves.
 
-           This is where the scroll cost lives, incidentally: scrolling past the
-           hero happens long after the intro, so the settled state is the one
-           being paid for during the reported jank, not the cinematic one. */
+           MEASUREMENT, because this comment used to claim the opposite and sent
+           real optimisation work at the wrong target: the full-surface
+           clearRect is NOT expensive. On a 2.2M-pixel backing store it costs
+           0.11ms, and the whole frame — clear plus 2400 fillRects — costs
+           0.80ms, or 0.31ms on the lite tier's smaller canvas. Against a
+           16.7ms budget this loop is roughly 5% of a frame and is not where
+           any jank comes from. Halving the tick rate here is worth keeping
+           because it is free, not because it rescues anything.
+
+           If this loop ever needs attention again, measure before believing
+           any of the above. */
         if (state.intro >= 1 && state.dissolve <= 0.01 && (tickParity ^= 1)) return;
 
         state.time += gsap.ticker.deltaRatio(60) / 60;
