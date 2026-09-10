@@ -1,7 +1,6 @@
 @import 'tailwindcss' source(none);
 @source './**/*.{js,ts,jsx,tsx}';
 @import './styles/globals.css';
-@import './styles/datasheet.css';
 
 @layer base {
   html, body, #root { min-height: 100vh; height: 100%; margin: 0; }
