@@ -703,7 +703,6 @@ function Hero() {
    physics, same drag, same lazy mount on approach. Still no caption. */
 function Toolchain() {
   const reduce = useReducedMotion();
-  const lite = usePerfTier() === "lite";
   const ref = useRef<HTMLElement>(null);
   const near = useOnScreen(ref, "320px");
   const [mounted, setMounted] = useState(false);
@@ -727,11 +726,19 @@ function Toolchain() {
           reached by a runtime watchdog as well as by hard signals — so the
           blocks could vanish mid-session on a machine that dropped frames,
           which is exactly how they were reported missing. Physics off still
-          means eleven blocks laid out and labelled. */}
+          means eleven blocks laid out and labelled.
+
+          The tier no longer gates the physics either. It exists for the 216 KB
+          gzipped WebGL hero above, and it was spending that budget in the
+          wrong place: eleven matter bodies with sleeping enabled cost close to
+          nothing once they settle, and turning them off left the blocks frozen
+          on exactly the machines that most need the page to look alive. Only
+          prefers-reduced-motion stops them now, which is a stated preference
+          rather than a guess about the hardware. */}
       <div className="relative w-full hidden md:block" style={{ height: "clamp(220px, 30vh, 300px)" }}>
         {mounted && (
           <Suspense fallback={null}>
-            <IconPlayground interactive={!reduce && !lite} tapOnly={false} />
+            <IconPlayground interactive={!reduce} tapOnly={false} />
           </Suspense>
         )}
       </div>
