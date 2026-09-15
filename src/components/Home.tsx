@@ -1,131 +1,201 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  SignalPreview,
+  HeadroomPreview,
+  ChronoWeavePreview,
+  BumperPreview,
+} from "./home/previews";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   The homepage, rebuilt against a measured read of s32.com.
+   The homepage. Show the work, say almost nothing.
 
-   What was actually copied is the DISCIPLINE, not the look:
-     one typeface, five sizes, two weights
-     no images, no video, no canvas
-     full-bleed grounds that invert between sections
-     a 5.4x jump from display to body, carrying the contrast that glows and
-     particles used to be asked to carry
+   The previous version borrowed s32.com's structure including its rule of
+   having no imagery at all — which is the one rule that cannot transfer. s32
+   is a firm selling conviction and has no craft to show. A portfolio is the
+   opposite: the work IS the argument, and describing it in paragraphs is how
+   a portfolio ends up reading like a corporate site.
 
-   What was deliberately not copied:
+   So the text is cut to roughly a quarter, the three paragraphs of "how I
+   work" are gone entirely, and the middle of the page is now a pinned stage
+   where the four live previews play at size.
 
-   · s32 inverts to pure white. This inverts to warm stone, so the page gets
-     a real temperature clash — the old palette sat entirely between 260 and
-     268 degrees — without a white screen in the middle of a dark site.
+   THE PREVIEWS ARE THE POINT. They are not screenshots. They are hand-built,
+   animated recreations of four shipped products, which means the evidence
+   for "I build the front end" is itself front-end running in the page.
 
-   · s32 is completely still, which is available to a firm selling conviction
-     and not to someone whose claim is that they build the front end. So
-     there is exactly ONE moving thing: the work index is bound to a live
-     figure, both ways. It is the single interaction on the page and it is
-     the thing the reference does not have.
+   THE SCROLL. One pinned stage, scrubbed, that advances through four
+   projects. Per the ScrollTrigger guidance: the trigger is pinned and the
+   animation is a single top-level timeline, nothing animates the pinned
+   element itself, instances are killed through a gsap.context() on unmount,
+   and a refresh is issued once fonts settle because their metrics move the
+   start and end positions.
 
-   Everything that used to compete is gone: the particle headline, the WebGL
-   lattice, the physics tool blocks. The tools are now a line of words, which
-   is denser to read than eleven floating icons and does not cost 27 KB of
-   physics engine to hold up.
+   Progress drives React state only when the INDEX changes, not on every
+   scroll frame — four renders across the whole stage rather than several
+   hundred. That distinction is the difference between this being smooth and
+   it being the jank this site spent weeks removing.
+
+   prefers-reduced-motion skips the pin completely and renders the four
+   projects as a plain stacked list, which is a real layout and not a
+   degraded one.
    ────────────────────────────────────────────────────────────────────────── */
 
 const EMAIL = "harwanijay9498@gmail.com";
 const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
 
-interface Work {
-  n: string;
-  name: string;
-  line: string;
-  to: string;
-  x: number;
-  y: number;
-}
-
-const WORK: Work[] = [
-  {
-    n: "01",
-    name: "Signal",
-    line: "A live map of DMV tech events that reads your calendar and shows which ones you can actually make.",
-    to: "/signal",
-    x: 64, y: 18,
-  },
-  {
-    n: "02",
-    name: "Headroom",
-    line: "A money app that answers one question: can I spend this, right now. Local-first, no bank login.",
-    to: "/headroom",
-    x: 26, y: 40,
-  },
-  {
-    n: "03",
-    name: "ChronoWeave",
-    line: "Multi-sensory nudges that help people with ADHD feel time pass. Haptics, audio, light.",
-    to: "/chronoweave",
-    x: 76, y: 63,
-  },
-  {
-    n: "04",
-    name: "Bumper",
-    line: "An agentic Chrome extension that catches impulse buys before you regret them.",
-    to: "/bumper",
-    x: 38, y: 85,
-  },
+const WORK = [
+  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", Preview: SignalPreview },
+  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", Preview: HeadroomPreview },
+  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", Preview: ChronoWeavePreview },
+  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", Preview: BumperPreview },
 ];
 
-/* a shape, not a mesh: four points and four lines read as a figure, every
-   pair would read as a net */
-const LINKS: [number, number][] = [
-  [0, 1],
-  [1, 3],
-  [3, 2],
-  [2, 0],
-];
-
-const TOOLS = [
-  "Figma", "React", "TypeScript", "Claude", "Cursor", "Framer Motion",
-  "Three.js", "Tailwind", "Vite", "Adobe CC", "Git",
-];
-
-function Reveal({
-  children,
-  delay = 0,
-  className,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   const reduce = useReducedMotion();
   return (
     <motion.div
       className={className}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 22 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.35 }}
-      transition={
-        reduce
-          ? { duration: 0.3 }
-          : { duration: 0.85, delay, ease: [0.16, 1, 0.3, 1] }
-      }
+      viewport={{ once: true, amount: 0.4 }}
+      transition={reduce ? { duration: 0.3 } : { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
   );
 }
 
-export function Home() {
-  const [active, setActive] = useState<string | null>(null);
-  const activeIdx = WORK.findIndex((w) => w.name === active);
+/* ── the pinned stage ───────────────────────────────────────────────────── */
+function WorkStage() {
+  const reduce = useReducedMotion();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [i, setI] = useState(0);
+  const iRef = useRef(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const wrap = wrapRef.current;
+    const stage = stageRef.current;
+    if (!wrap || !stage) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+    /* Dev-only handle. ScrollTrigger updates through gsap.ticker, which is
+       requestAnimationFrame-driven, and rAF does not run in a backgrounded
+       tab — so automated checks can create the trigger but never see it
+       advance. Exposing it in DEV lets a test drive update() by hand and
+       verify the pin and the index for real instead of assuming. Stripped
+       from production by import.meta.env.DEV. */
+    if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ST = ScrollTrigger;
+
+    /* gsap.context() scopes every instance created inside it, so one revert()
+       on unmount kills the pin, the spacer and the trigger together. Without
+       it a client-side route change leaves a pinned spacer behind. */
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: wrap,
+        start: "top top",
+        end: "bottom bottom",
+        pin: stage,
+        pinSpacing: false, // the wrapper already reserves the scroll distance
+        scrub: true,
+        onUpdate: (self) => {
+          /* Index only. Writing state on every scroll frame would be a few
+             hundred React renders across this section; this is four. */
+          const next = Math.min(WORK.length - 1, Math.floor(self.progress * WORK.length));
+          if (next !== iRef.current) {
+            iRef.current = next;
+            setI(next);
+          }
+        },
+      });
+    }, wrap);
+
+    /* Font metrics move the start and end positions, and the page loads three
+       families. Refresh once they have settled. */
+    let cancelled = false;
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (!cancelled) ScrollTrigger.refresh();
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      ctx.revert();
+    };
+  }, [reduce]);
+
+  /* Reduced motion: a real stacked layout, not a broken pinned one. */
+  if (reduce) {
+    return (
+      <div className="stack">
+        {WORK.map((w) => (
+          <div className="stack__item" key={w.name}>
+            <div className="stage__copy">
+              <span className="micro">{w.n} / 04</span>
+              <h3 className="stage__name">{w.name}</h3>
+              <p className="stage__line">{w.line}</p>
+              <Link className="stage__go" to={w.to}>View case ↗</Link>
+            </div>
+            <div className="stage__screen">
+              <w.Preview active />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
+    <div ref={wrapRef} className="workwrap" style={{ height: `${WORK.length * 100}vh` }}>
+      <div ref={stageRef} className="stage">
+        <div className="stage__in">
+          <div className="stage__copy">
+            <span className="micro">{WORK[i].n} / 04</span>
+            {WORK.map((w, k) => (
+              <div key={w.name} className={`stage__text${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
+                <h3 className="stage__name">{w.name}</h3>
+                <p className="stage__line">{w.line}</p>
+                <Link className="stage__go" to={w.to} tabIndex={k === i ? 0 : -1}>
+                  View case ↗
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <div className="stage__screen">
+            {WORK.map((w, k) => (
+              <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
+                <w.Preview active={k === i} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="stage__bar" aria-hidden="true">
+          {WORK.map((w, k) => (
+            <span key={w.name} className={`stage__tick${k === i ? " is-on" : ""}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Home() {
+  return (
     <main className="s32">
-      {/* ── hero ───────────────────────────────────────────────────────── */}
+      {/* ── hero ── */}
       <section className="band band--ink band--hero">
         <div className="band__in">
           <Reveal className="hero__top">
             <span className="micro">Jay Harwani</span>
-            <span className="micro">Product Designer · Design Engineer</span>
+            <span className="micro">Baltimore, MD</span>
           </Reveal>
 
           <div className="hero__mid">
@@ -137,217 +207,56 @@ export function Home() {
               </h1>
             </Reveal>
             <Reveal delay={0.18}>
-              <p className="lead hero__lead">
-                Because the ultimate user experience is closing the laptop. I take products from raw
-                research into shipped, front-end reality — not a handoff, the actual thing.
-              </p>
+              <p className="lead hero__lead">Designer who ships the front end. Four products, all live.</p>
             </Reveal>
           </div>
 
           <Reveal delay={0.26} className="hero__bottom">
-            <span className="micro">Baltimore, MD · Open to full-time</span>
-            <span className="micro">Scroll ↓</span>
+            <span className="micro">Selected work ↓</span>
+            <span className="micro">Open to full-time</span>
           </Reveal>
         </div>
       </section>
 
-      {/* ── approach ───────────────────────────────────────────────────── */}
-      <section className="band band--slate">
-        <div className="band__in">
-          <Reveal>
-            <span className="micro">How I work</span>
-          </Reveal>
-          <Reveal delay={0.06}>
-            <h2 className="head" style={{ marginTop: 18, maxWidth: "18ch" }}>
-              Research, design, and the actual code.
-            </h2>
-          </Reveal>
-
-          <div className="threeup">
-            {[
-              {
-                n: "01",
-                t: "Research first",
-                b: "HCI research at UMBC. I start with people, not screens — interviews, diary studies, and the unglamorous work of finding out what the problem actually is before drawing anything.",
-              },
-              {
-                n: "02",
-                t: "Design with constraints",
-                b: "Every decision has a reason I can defend: contrast measured, motion budgeted, hierarchy argued. Taste is judgement under constraint, not decoration applied afterwards.",
-              },
-              {
-                n: "03",
-                t: "Ship it myself",
-                b: "React, TypeScript, real front-end. Four products live, not four prototypes. Stopping at Figma means someone else decides what your design actually becomes.",
-              },
-            ].map((c, i) => (
-              <Reveal key={c.n} delay={0.1 + i * 0.07}>
-                <span className="micro threeup__n">{c.n}</span>
-                <span className="threeup__t">{c.t}</span>
-                <p className="body">{c.b}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
+      {/* ── work: the whole point ── */}
+      <section id="work" aria-label="Selected work">
+        <WorkStage />
       </section>
 
-      {/* ── work: the one interaction ──────────────────────────────────── */}
-      <section className="band band--ink" id="work" style={{ scrollMarginTop: 0 }}>
-        <div className="band__in">
-          <Reveal>
-            <span className="micro">Selected work</span>
-          </Reveal>
-          <Reveal delay={0.06}>
-            <h2 className="head" style={{ marginTop: 18, maxWidth: "16ch" }}>
-              Four products, all shipped.
-            </h2>
-          </Reveal>
-
-          <div className="work">
-            <Reveal delay={0.1}>
-              <ul className="wlist">
-                {WORK.map((w) => {
-                  const on = active === w.name;
-                  return (
-                    <li key={w.name}>
-                      <Link
-                        to={w.to}
-                        className={`wrow${on ? " wrow--on" : ""}`}
-                        onMouseEnter={() => setActive(w.name)}
-                        onMouseLeave={() => setActive(null)}
-                        onFocus={() => setActive(w.name)}
-                        onBlur={() => setActive(null)}
-                      >
-                        <span className="wrow__n">{w.n}</span>
-                        <span>
-                          <span className="wrow__name">{w.name}</span>
-                          <span className="wrow__line">{w.line}</span>
-                        </span>
-                        <span className="wrow__go" aria-hidden="true">
-                          View ↗
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Reveal>
-
-            <Reveal delay={0.16}>
-              <div className="figbox">
-                <div className="figbox__fig">
-                  <svg
-                    className="figbox__svg"
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    {LINKS.map(([a, b], i) => {
-                      const on = activeIdx === a || activeIdx === b;
-                      return (
-                        <line
-                          key={i}
-                          x1={WORK[a].x}
-                          y1={WORK[a].y}
-                          x2={WORK[b].x}
-                          y2={WORK[b].y}
-                          vectorEffect="non-scaling-stroke"
-                          className={on ? "fline fline--on" : "fline"}
-                        />
-                      );
-                    })}
-                  </svg>
-
-                  {WORK.map((w) => {
-                    const on = active === w.name;
-                    return (
-                      <span
-                        key={w.name}
-                        className={`fstar${on ? " fstar--on" : ""}`}
-                        style={{ left: `${w.x}%`, top: `${w.y}%` }}
-                        onMouseEnter={() => setActive(w.name)}
-                        onMouseLeave={() => setActive(null)}
-                        aria-hidden="true"
-                      >
-                        <span className="fstar__d" />
-                        <span className="fstar__t">{w.name}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-                <div className="figbox__cap">
-                  <span className="micro">
-                    {active ? `Fig. 1 — ${active}` : "Fig. 1 — Hover a project"}
-                  </span>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ── stone: the inversion ───────────────────────────────────────── */}
+      {/* ── stone: one sentence ── */}
       <section className="band band--stone">
         <div className="band__in">
           <Reveal>
-            <span className="micro">About</span>
-          </Reveal>
-          <Reveal delay={0.06}>
-            <h2 className="head" style={{ marginTop: 18, maxWidth: "14ch" }}>
-              Ahmedabad to Baltimore.
+            <h2 className="head" style={{ maxWidth: "20ch" }}>
+              Ahmedabad to Baltimore, by way of a Master&rsquo;s in Human-Centered Computing.
             </h2>
           </Reveal>
           <Reveal delay={0.12}>
-            <p className="body" style={{ marginTop: 24, maxWidth: "58ch" }}>
-              I grew up in Ahmedabad and came to UMBC for a Master&rsquo;s in Human-Centered
-              Computing. I like problems where the research and the build are the same job, films
-              with a good third act, and interfaces that know when to get out of the way.
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.18}>
-            <div style={{ marginTop: 56 }}>
-              <span className="micro">What I build with</span>
-              <div className="tools">
-                {TOOLS.map((t, i) => (
-                  <span key={t}>
-                    <b>{t}</b>
-                    {i < TOOLS.length - 1 ? "" : ""}
-                  </span>
-                ))}
-              </div>
+            <div className="tools">
+              <span><b>Figma</b></span><span><b>React</b></span><span><b>TypeScript</b></span>
+              <span><b>Claude</b></span><span><b>Cursor</b></span><span><b>GSAP</b></span>
+              <span><b>Three.js</b></span><span><b>Tailwind</b></span><span><b>Adobe CC</b></span>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* ── contact ────────────────────────────────────────────────────── */}
+      {/* ── contact ── */}
       <section className="band band--ink" id="contact">
         <div className="band__in">
           <Reveal>
-            <span className="micro">Contact</span>
+            <h2 className="display" style={{ maxWidth: "12ch" }}>Let&rsquo;s build something.</h2>
           </Reveal>
-          <Reveal delay={0.06}>
-            <h2 className="display" style={{ marginTop: 20, maxWidth: "12ch" }}>
-              Let&rsquo;s build something.
-            </h2>
-          </Reveal>
-
           <Reveal delay={0.14}>
             <div className="contact__row">
-              <a className="big-link" href={`mailto:${EMAIL}`}>
-                Email
-              </a>
-              <a className="big-link" href={LINKEDIN} target="_blank" rel="noopener noreferrer">
-                LinkedIn ↗
-              </a>
+              <a className="big-link" href={`mailto:${EMAIL}`}>Email</a>
+              <a className="big-link" href={LINKEDIN} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
             </div>
           </Reveal>
-
           <Reveal delay={0.2}>
             <div className="foot">
-              <span className="micro">Master&rsquo;s in Human-Centered Computing, UMBC</span>
-              <span className="micro">Open to full-time · No sponsorship required</span>
+              <span className="micro">UMBC · Human-Centered Computing</span>
+              <span className="micro">No sponsorship required</span>
               <span className="micro">© 2026</span>
             </div>
           </Reveal>

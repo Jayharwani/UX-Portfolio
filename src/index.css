@@ -788,3 +788,148 @@
 @media (prefers-reduced-motion: reduce) {
   .wrow__name, .wrow__go, .fstar__d, .fstar__t, .fline, .big-link { transition: none; }
 }
+
+/* ── THE WORK STAGE ────────────────────────────────────────────────────────
+   One pinned stage that advances through four projects as you scroll. The
+   wrapper reserves the scroll distance (400vh) and the stage inside it is
+   what gets pinned, so nothing animates the pinned element itself.
+
+   pinSpacing is off because the wrapper IS the spacing — leaving it on would
+   add a second 400vh of empty page under the section. */
+.workwrap { position: relative; background: var(--ink); }
+
+.stage {
+  position: relative;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--ink);
+}
+.stage__in {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: clamp(26px, 4vw, 70px);
+  align-items: center;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(46px, 7vh, 92px) clamp(22px, 5vw, 80px) clamp(30px, 4vh, 56px);
+}
+
+/* ── copy column ──
+   All four sets are stacked in one grid cell and cross-faded, so the column
+   never reflows as the index changes and the eye has a fixed place to read. */
+.stage__copy { position: relative; display: grid; }
+.stage__copy > .micro { grid-area: 1 / 1; align-self: start; margin-bottom: 0; }
+.stage__text {
+  grid-area: 1 / 1;
+  align-self: center;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1), transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stage__text.is-on { opacity: 1; transform: none; pointer-events: auto; }
+
+.stage__name {
+  margin: 0;
+  font-size: var(--t-head);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+  color: var(--on-ink);
+}
+.stage__line {
+  margin: 14px 0 0;
+  max-width: 24ch;
+  font-size: var(--t-sub);
+  font-weight: 400;
+  line-height: 1.34;
+  letter-spacing: -0.012em;
+  color: var(--on-ink-2);
+}
+.stage__go {
+  display: inline-block;
+  margin-top: 26px;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--on-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair-dark);
+  padding-bottom: 5px;
+  transition: border-color 300ms ease;
+}
+.stage__go:hover { border-color: var(--on-ink); }
+.stage__go:focus-visible { outline: 2px solid var(--on-ink); outline-offset: 6px; }
+
+/* ── screen column ──
+   The previews are the argument, so they get the larger half and a real
+   frame. Everything is stacked in one cell and cross-faded for the same
+   reason as the copy: no reflow between projects. */
+.stage__screen {
+  position: relative;
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--hair-dark);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #070A0E;
+}
+.stage__slide {
+  grid-area: 1 / 1;
+  min-height: 0;
+  opacity: 0;
+  transform: scale(1.03);
+  pointer-events: none;
+  transition: opacity 660ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stage__slide.is-on { opacity: 1; transform: none; }
+.stage__slide > * { width: 100%; height: 100%; }
+
+/* ── progress ticks ── */
+.stage__bar {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(22px, 5vw, 80px) clamp(22px, 3vh, 38px);
+}
+.stage__tick {
+  flex: 1 1 0;
+  height: 2px;
+  background: var(--hair-dark);
+  transition: background 520ms ease;
+}
+.stage__tick.is-on { background: var(--on-ink); }
+
+/* ── reduced motion: a real stacked layout ── */
+.stack { background: var(--ink); }
+.stack__item {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: clamp(26px, 4vw, 70px);
+  align-items: center;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: clamp(50px, 8vh, 100px) clamp(22px, 5vw, 80px);
+  border-top: 1px solid var(--hair-dark);
+}
+.stack__item .stage__screen { min-height: 420px; }
+.stack__item .stage__text, .stack .stage__text { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .stage__in, .stack__item { grid-template-columns: 1fr; gap: 22px; }
+  .stage__screen { min-height: 300px; }
+  .stage__copy { display: block; }
+  .stage__text { position: static; opacity: 1; transform: none; pointer-events: auto; }
+  .stage__text:not(.is-on) { display: none; }
+}
