@@ -107,6 +107,7 @@ export function SignalPreview({ active }: { active: boolean }) {
 
       {/* the Fit card */}
       <div
+        data-region="FIT PANEL"
         className="absolute"
         style={{
           left: 16,
@@ -164,7 +165,7 @@ export function HeadroomPreview({ active }: { active: boolean }) {
       className="relative w-full h-full flex items-center justify-center"
       style={{ background: "radial-gradient(120% 120% at 70% 20%, #0D2A1F 0%, #081A12 60%, #06130D 100%)", minHeight: "inherit" }}
     >
-      <div style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #1E2A24", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
+      <div data-region="DEVICE" style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #1E2A24", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
         <div style={{ borderRadius: 21, background: "#FFFFFF", overflow: "hidden", padding: "16px 14px 12px" }}>
           <p style={{ fontFamily: V.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B6560" }}>
             Safe to spend
@@ -173,7 +174,7 @@ export function HeadroomPreview({ active }: { active: boolean }) {
             ${n.toLocaleString()}
           </p>
           <p style={{ fontFamily: V.body, fontSize: 9.5, fontWeight: 500, color: "#0A7A52", marginTop: 3 }}>≈ $87/day · 20 days</p>
-          <div style={{ marginTop: 10, height: 5, borderRadius: 999, background: "#E6F5EE", overflow: "hidden" }}>
+          <div data-region="RUNWAY" style={{ marginTop: 10, height: 5, borderRadius: 999, background: "#E6F5EE", overflow: "hidden" }}>
             <motion.div
               style={{ height: "100%", borderRadius: 999, background: "#34D399" }}
               animate={{ width: active ? "69%" : "12%" }}
@@ -202,13 +203,13 @@ export function ChronoWeavePreview({ active }: { active: boolean }) {
       className="relative w-full h-full flex items-center justify-center"
       style={{ background: "radial-gradient(120% 120% at 30% 20%, #1A1430 0%, #110D20 60%, #0C0916 100%)", minHeight: "inherit" }}
     >
-      <div style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #241E38", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
+      <div data-region="DEVICE" style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #241E38", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
         <div style={{ borderRadius: 21, background: "#120E22", overflow: "hidden", padding: "16px 14px 44px", position: "relative" }}>
           <p style={{ fontFamily: V.mono, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#A79FC9" }}>
             Focus block
           </p>
           {/* time ring */}
-          <div className="relative mx-auto" style={{ width: 92, height: 92, marginTop: 10 }}>
+          <div data-region="FOCUS TIMER" className="relative mx-auto" style={{ width: 92, height: 92, marginTop: 10 }}>
             <svg width="92" height="92" viewBox="0 0 92 92">
               <circle cx="46" cy="46" r="38" fill="none" stroke="#241E38" strokeWidth="6" />
               <motion.circle
@@ -282,7 +283,7 @@ export function BumperPreview({ active }: { active: boolean }) {
       style={{ background: "radial-gradient(120% 120% at 70% 25%, #0A2422 0%, #071A18 55%, #061211 100%)", minHeight: "inherit" }}
     >
       {/* browser frame */}
-      <div style={{ width: "100%", maxWidth: 300, borderRadius: 12, overflow: "hidden", border: "1px solid #16302D", background: "#0D1512", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
+      <div data-region="BROWSER" style={{ width: "100%", maxWidth: 300, borderRadius: 12, overflow: "hidden", border: "1px solid #16302D", background: "#0D1512", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
         {/* chrome bar */}
         <div className="flex items-center gap-2" style={{ padding: "7px 10px", background: "#101B18", borderBottom: "1px solid #16302D" }}>
           <div className="flex gap-1.5">
@@ -295,7 +296,7 @@ export function BumperPreview({ active }: { active: boolean }) {
           </span>
         </div>
         {/* page + intercept */}
-        <div className="relative" style={{ height: 150, padding: 12, overflow: "hidden" }}>
+        <div data-region="CHECKOUT" className="relative" style={{ height: 150, padding: 12, overflow: "hidden" }}>
           <div className="flex items-center gap-2.5">
             <div style={{ width: 34, height: 34, borderRadius: 8, background: "#14211E" }} />
             <div style={{ flex: 1 }}>

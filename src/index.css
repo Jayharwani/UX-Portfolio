@@ -1238,3 +1238,64 @@
    more, which is the whole of what "clean" has meant every time it was
    asked for. */
 .stage__screen:hover { translate: 0 -4px; }
+
+/* ── the detection pass ────────────────────────────────────────────────────
+   Robotics and AI, done as PERCEPTION rather than as neon circuitry: the
+   system showing what it found, where, and what it thinks it is.
+
+   Boxes are positioned from measured rects in Detect.tsx, so this file only
+   describes how they arrive. One-shot: each box snaps in, then the whole
+   layer settles to a resting opacity and stops. Nothing loops. */
+.det { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+
+.det__box {
+  position: absolute;
+  opacity: 0;
+  /* snapping in from slightly LARGER is what reads as acquisition — a box
+     growing into place reads as drawing, a box closing onto it reads as
+     locking on */
+  animation: det-lock 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes det-lock {
+  from { opacity: 0; transform: scale(1.07); }
+  60%  { opacity: 1; }
+  to   { opacity: 0.55; transform: scale(1); }
+}
+
+/* corner ticks rather than a full rectangle: a closed box hides the work
+   behind it, four corners read as a reticle and leave the UI visible */
+.det__c { position: absolute; width: 7px; height: 7px; }
+.det__c--tl { top: -1px; left: -1px; border-top: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
+.det__c--tr { top: -1px; right: -1px; border-top: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
+.det__c--bl { bottom: -1px; left: -1px; border-bottom: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
+.det__c--br { bottom: -1px; right: -1px; border-bottom: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
+
+.det__tag {
+  position: absolute;
+  left: -1px;
+  top: -17px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: var(--ac, #fff);
+}
+/* the readout is the element's real normalised centre, printed in a dimmer
+   weight so the label leads and the numbers support it */
+.det__tag i {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+  letter-spacing: 0.08em;
+}
+
+/* reduced motion: the boxes are simply there, no acquisition */
+.det--still .det__box { animation: none; opacity: 0.45; }
+
+@media (max-width: 900px) {
+  .det__tag { font-size: 7.5px; top: -14px; gap: 5px; }
+  .det__c { width: 5px; height: 5px; }
+}

@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
 import { sourceOf, Highlight, lineCount } from "./home/source";
+import Detect from "./home/Detect";
 import {
   SignalPreview,
   HeadroomPreview,
@@ -109,6 +110,7 @@ function WorkStage() {
      and nothing said so. Reset on project change, so arriving at a project
      always shows the running thing first and the code is a choice. */
   const [flipped, setFlipped] = useState(false);
+  const faceRef = useRef<HTMLDivElement>(null);
   useEffect(() => setFlipped(false), [i]);
   const code = sourceOf(WORK[i].Preview.name);
 
@@ -218,12 +220,16 @@ function WorkStage() {
             onMouseEnter={replayNow}
           >
             <div className={`flip${flipped ? " is-flipped" : ""}`}>
-              <div className="flip__face flip__face--front">
+              <div className="flip__face flip__face--front" ref={faceRef}>
                 {WORK.map((w, k) => (
                   <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
                     <w.Preview key={`${w.name}-${replay}`} active={k === i} />
                   </div>
                 ))}
+                {/* the detection pass — boxes measured off the running
+                    preview, so they follow it rather than sitting at
+                    hand-tuned coordinates */}
+                <Detect hostRef={faceRef} runKey={`${i}-${replay}`} reduce={!!reduce} />
               </div>
               <div className="flip__face flip__face--back" aria-hidden={!flipped}>
                 <pre className="src">
