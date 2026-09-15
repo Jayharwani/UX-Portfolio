@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { lazy, Suspense } from "react";
-import { HomePage } from "./components/HomePage";
+/* The previous homepage lives on in HomePage.tsx, unimported. Nothing
+   references it, so it and everything it pulled in — the particle canvas,
+   the WebGL hero, matter-js — tree-shake out of the bundle entirely, and it
+   is one import away if this direction is ever reversed. */
+import { Home } from "./components/Home";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
@@ -35,7 +39,7 @@ export default function App() {
       <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<Home />} />
             <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
