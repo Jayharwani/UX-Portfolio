@@ -1013,14 +1013,6 @@
   color: var(--on-ink);
 }
 
-/* ── the grid ──
-   Hairlines at 12 columns and 6 baselines. Non-scaling-stroke keeps them at
-   one device pixel no matter how the viewBox stretches, which is the whole
-   difference between a drawn grid and a blurry one. */
-.hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.hgrid svg { width: 100%; height: 100%; display: block; }
-.hgrid__v,
-.hgrid__h { stroke: var(--on-ink); stroke-width: 1; opacity: 0.075; }
 
 
 @media (max-width: 900px) {

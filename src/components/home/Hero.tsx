@@ -1,7 +1,15 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, lazy, Suspense } from "react";
 import { useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import MemoryParticles from "./MemoryParticles";
+import { usePerfTier, useTierReady } from "./perfTier";
+
+/* The 3D layer, lazily loaded and tier-gated. three plus fiber is 216 KB
+   gzipped and it is the largest asset on the site — but the watchdog built
+   for exactly this now PERSISTS its verdict, so a machine that cannot hold
+   60fps never downloads the chunk on this visit or any later one. That
+   system was built and then not used; this is what it was for. */
+const HeroScene = lazy(() => import("./scene/HeroScene"));
 
 /* ──────────────────────────────────────────────────────────────────────────
    The hero as a title sequence.
@@ -35,9 +43,6 @@ import MemoryParticles from "./MemoryParticles";
    at all, and the grid, type and index are simply there.
    ────────────────────────────────────────────────────────────────────────── */
 
-const COLS = 12;
-const ROWS = 6;
-
 const INDEX = [
   { n: "01", name: "Signal", accent: "#1F9D55" },
   { n: "02", name: "Headroom", accent: "#34D399" },
@@ -55,6 +60,12 @@ export default function Hero() {
      sub and the index land on the beat the words land rather than on a clock
      that might disagree with them. */
   const [assembled, setAssembled] = useState(reduce);
+  const lite = usePerfTier() === "lite";
+  /* Waits for the VERDICT, not a timer: mounting on a clock and unmounting
+     when the watchdog disagrees means a slow machine pays the whole download
+     and keeps none of it. */
+  const tierReady = useTierReady();
+  const scene3d = !reduce && !lite && tierReady;
 
   useEffect(() => {
     if (reduce) return;
@@ -71,13 +82,8 @@ export default function Hero() {
          lets a test drive progress(1) and confirm the type actually lands. */
       if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__introTl = tl;
 
-      tl.from(".hgrid__v", { scaleY: 0, duration: 0.95, stagger: 0.03, transformOrigin: "top center" }, 0)
-        .from(".hgrid__h", { scaleX: 0, duration: 0.95, stagger: 0.055, transformOrigin: "left center" }, 0.08)
-        .from(".hero2__rule", { scaleX: 0, duration: 1.05, transformOrigin: "left center" }, 0.22)
-        .from(".hero2__micro", { opacity: 0, y: 8, duration: 0.65, stagger: 0.08 }, 0.3)
-        /* the grid recedes once the type has landed, so it reads as structure
-           behind the words rather than as a pattern competing with them */
-        .to(".hgrid", { opacity: 0.4, duration: 1.2 }, 1.1);
+      tl.from(".hero2__rule", { scaleX: 0, duration: 1.05, transformOrigin: "left center" }, 0.22)
+        .from(".hero2__micro", { opacity: 0, y: 8, duration: 0.65, stagger: 0.08 }, 0.3);
     }, el);
 
     return () => ctx.revert();
@@ -103,33 +109,16 @@ export default function Hero() {
           onAssembled={() => setAssembled(true)}
         />
       )}
-      {/* the grid: structure, drawn */}
-      <div className="hgrid" aria-hidden="true">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-          {Array.from({ length: COLS - 1 }, (_, i) => (
-            <line
-              key={`v${i}`}
-              className="hgrid__v"
-              x1={((i + 1) * 100) / COLS}
-              y1="0"
-              x2={((i + 1) * 100) / COLS}
-              y2="100"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {Array.from({ length: ROWS - 1 }, (_, i) => (
-            <line
-              key={`h${i}`}
-              className="hgrid__h"
-              x1="0"
-              y1={((i + 1) * 100) / ROWS}
-              x2="100"
-              y2={((i + 1) * 100) / ROWS}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        </svg>
-      </div>
+      {/* The lattice. This is the one thing in the whole rebuild that was
+          called the best, and it had been sitting unimported on performance
+          grounds that the tier system already solved. It replaces the flat
+          SVG grid rather than joining it: two background systems plus the
+          particles is exactly the pile-up that kept reading as cluttered. */}
+      {scene3d && (
+        <Suspense fallback={null}>
+          <HeroScene interactive />
+        </Suspense>
+      )}
 
       <div className="hero2__in">
         <div className="hero2__top">
