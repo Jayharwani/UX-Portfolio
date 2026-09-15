@@ -41,6 +41,7 @@ export default function Hero() {
   const root = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
   const light = useRef<HTMLDivElement>(null);
+  const cloth = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
   const tierReady = useTierReady();
   const depth = !reduce && !lite && tierReady;
@@ -85,6 +86,11 @@ export default function Hero() {
          write, not a custom property, so it stays on the compositor and never
          invalidates a subtree */
       if (light.current) light.current.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
+      /* the fabric shifts slightly AGAINST the hand. Real cloth gives under
+         pressure, and without this the light reads as sliding over a photo
+         rather than over a surface. Deliberately tiny — at more than a few
+         pixels it stops being fabric and becomes a parallax layer. */
+      if (cloth.current) cloth.current.style.transform = `translate3d(${px * -9}px, ${py * -7}px, 0) scale(1.02)`;
     };
     const onMove = (e: PointerEvent) => {
       lx = e.clientX;
@@ -111,7 +117,7 @@ export default function Hero() {
           follows the pointer and brightens the dots it passes over; the grain
           keeps a large dark field from reading as a void. Both are cheap: one
           transform write per frame and one static texture. */}
-      <div className="entry__ground" aria-hidden="true" />
+      <div className="entry__ground" ref={cloth} aria-hidden="true" />
       {!reduce && <div className="entry__light" ref={light} aria-hidden="true" />}
       <div className="entry__grain" aria-hidden="true" />
 

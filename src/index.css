@@ -1260,15 +1260,15 @@
    read as a ground plane under a volume rather than as two competing fields. */
 .entry__ground {
   position: absolute;
-  inset: 0;
+  inset: -4%;
   z-index: 0;
-  background-image: radial-gradient(circle at center, rgba(242, 241, 236, 0.13) 1px, transparent 1.4px);
-  background-size: 28px 28px;
-  /* faded toward the edges so it reads as a surface catching light in the
-     middle of the frame, not as wallpaper running to the corners */
-  -webkit-mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
-  mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
-  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000'%3E%3Cfilter id='c' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0035 0.012' numOctaves='4' seed='11' result='n'/%3E%3CfeDiffuseLighting in='n' lighting-color='%23b4c2dc' surfaceScale='34' diffuseConstant='1.25' result='d'%3E%3CfeDistantLight azimuth='236' elevation='17'/%3E%3C/feDiffuseLighting%3E%3CfeSpecularLighting in='n' lighting-color='%23e8f0ff' surfaceScale='34' specularConstant='1.1' specularExponent='26' result='s'%3E%3CfeDistantLight azimuth='236' elevation='26'/%3E%3C/feSpecularLighting%3E%3CfeComposite in='s' in2='d' operator='arithmetic' k1='0' k2='1' k3='1' k4='0'/%3E%3C/filter%3E%3Crect width='1000' height='1000' filter='url(%23c)'/%3E%3C/svg%3E");
+  background-size: cover;
+  /* Near-black. The fabric must read as a dark surface the light finds, not
+     as a grey texture sitting on top of the page. */
+  opacity: 0.32;
+  filter: brightness(0.34) contrast(1.35) saturate(0.7);
+  will-change: transform;
 }
 
 /* the light. Positioned at the origin and moved by transform, so following
@@ -1284,12 +1284,27 @@
   margin: -380px 0 0 -380px;
   pointer-events: none;
   will-change: transform;
+  /* soft-light brightens folds that are already in the fabric and leaves the
+     flat areas alone, which is what makes this read as light raking a surface
+     rather than a lamp hanging in front of one. A plain additive glow looked
+     like a torch; this looks like cloth. */
+  mix-blend-mode: soft-light;
   background: radial-gradient(
     circle,
-    rgba(120, 160, 255, 0.16) 0%,
-    rgba(120, 160, 255, 0.07) 32%,
-    transparent 64%
+    rgba(214, 226, 255, 0.85) 0%,
+    rgba(170, 195, 245, 0.34) 30%,
+    transparent 66%
   );
+}
+
+/* a second, tighter core so the point under the hand is brighter than the
+   spill around it — one gradient alone reads flat */
+.entry__light::after {
+  content: "";
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 243, 255, 0.5) 0%, transparent 62%);
 }
 
 /* grain. One static texture at very low opacity — it is what keeps a large
