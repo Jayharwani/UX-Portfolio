@@ -17,10 +17,11 @@ import {
 import userPhoto from "../assets/hero-portrait.jpeg";
 import { ContactSection } from "./home/ContactLab";
 import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motionKit";
-import { usePerfTier } from "./home/perfTier";
-import Plate from "./home/Plate";
+import { usePerfTier, useTierReady } from "./home/perfTier";
+import MemoryParticles from "./home/MemoryParticles";
 
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
+const HeroScene = lazy(() => import("./home/scene/HeroScene"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -59,12 +60,6 @@ const V = {
   accent: "var(--accent)",
   accentSoft: "var(--accent-soft)",
   display: "var(--font-display)",
-  /* the atlas voice — homepage only, so the case studies keep their own */
-  plate: "var(--font-plate)",
-  bone: "var(--bone)",
-  bone2: "var(--bone-2)",
-  brass: "var(--brass)",
-  rule: "var(--rule)",
   body: "var(--font-body)",
   mono: "var(--font-mono)",
   serifIt: "var(--font-serif-it)",
@@ -135,9 +130,43 @@ function Reveal({
   );
 }
 
-/* MagneticButton went with the hero. The plate has no CTA button by design:
-   the index rows are the call to action, which is what an index is for. */
-
+/* magnetic primary button */
+function MagneticButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  const reduce = useReducedMotion();
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
+  return (
+    <motion.button
+      ref={ref}
+      onClick={onClick}
+      onMouseMove={(e) => {
+        if (reduce || !ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        setPos({ x: (e.clientX - r.left - r.width / 2) * 0.12, y: (e.clientY - r.top - r.height / 2) * 0.18 });
+      }}
+      onMouseLeave={() => setPos({ x: 0, y: 0 })}
+      animate={{ x: pos.x, y: pos.y }}
+      transition={{ type: "spring", stiffness: 120, damping: 18 }}
+      whileTap={{ scale: 0.98 }}
+      className="inline-flex items-center gap-2.5"
+      style={{
+        padding: "0 26px",
+        height: 46,
+        borderRadius: 999,
+        background: V.accent,
+        color: "#0A0E16",
+        fontFamily: V.body,
+        fontSize: 15,
+        fontWeight: 600,
+        border: "none",
+        cursor: "pointer",
+        boxShadow: "0 8px 30px -8px rgba(91,140,255,0.45)",
+      }}
+    >
+      {children}
+    </motion.button>
+  );
+}
 
 /* Page scroll lock, for when a modal owns the screen. Applied to <html>, not
    <body>: body carries overflow-x: clip, and an inline overflow:hidden there
@@ -313,13 +342,359 @@ function Nav() {
   );
 }
 
-/* The Hero() function is gone. It existed to choreograph the particle
-   assembly, the WebGL lattice mount and the tier gating for a hero that no
-   longer exists; Plate owns its own entrance. MemoryParticles.tsx and
-   HeroScene.tsx are left on disk and simply no longer imported, so they
-   tree-shake out of the bundle and stay one import away if the particle
-   headline is ever wanted back. */
+/* ── hero ────────────────────────────────────────────────────────────────── */
+function Hero() {
+  const reduce = useReducedMotion();
+  /* memory-particles choreography: the DOM headline stays invisible until
+     the particles have assembled it, then crossfades in (crisp text wins) */
+  const [assembled, setAssembled] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const wordRef = useRef<HTMLElement>(null);
+  const ruleRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
 
+  /* The headline's line breaks are AUTHORED, because the particle sampler
+     measures each [data-line] as one text run and a reflowed line resamples
+     at the wrong geometry. That means the breaks cannot be left to wrapping
+     at small widths either — they have to be chosen. Below 640px the tail
+     rejoins "that get" on one line, which fits where the v3 desktop break
+     does not. The sampler already re-runs on resize, so switching between
+     them is free. */
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+
+  /* `particles` = is the canvas mounted. `particles` = does the headline run
+     its blur-to-sharp crossfade and glow pulse.
+
+     These were the same flag, which made ?perf=noParticles disable BOTH the
+     canvas and the headline's animated filter and textShadow — two variables in
+     one switch, in the very harness built to avoid that. The first bisect
+     therefore could not tell the canvas apart from the headline, and the
+     fill-rate fix that followed from it moved p95 by nothing.
+
+     Split so the flag isolates the canvas alone. Reduced motion still turns off
+     both, which is correct: that is a preference, not a measurement. */
+  const particles = !reduce;
+  const lite = usePerfTier() === "lite";
+  /* The watchdog needs ~82 frames to reach a verdict, which lands well after
+     the 900ms timer below. Waiting for it is the difference between a slow
+     machine skipping the WebGL chunk and a slow machine downloading it,
+     compiling it, creating a GL context and then discarding all of it. */
+  const tierReady = useTierReady();
+  const [sceneOn, setSceneOn] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setSceneOn(true), reduce ? 0 : 900);
+    return () => window.clearTimeout(t);
+  }, [reduce]);
+
+  /* The particle hero survives on the lite tier — it is the first thing anyone
+     sees and MemoryParticles already scales its own count and resolution down.
+     The blocks are a different case: matter-js is 86 KB and steps a physics
+     world every frame for a decoration below the fold. That one goes. */
+
+  /* gentle exit parallax: text drifts up faster than the page, playground lags. */
+  const { scrollY } = useScroll();
+  const textY = useTransform(scrollY, [0, 640], [0, -84]);
+  const heroFade = useTransform(scrollY, [0, 560], [1, 0.28]);
+
+
+
+  /* Line breaks are authored, not left to wrapping, because the particle
+     system samples each [data-line] span as its own text run — a reflowed line
+     would resample at a different width and the assembly would land crooked.
+     The <em> is the phrase the particle loop periodically dissolves, so it is
+     "out of the way." here: the words literally get out of the way.
+
+     Two tiers, because the second sentence is a punchline and five lines at one
+     size delivered it at the same volume as the setup, which is what made the
+     block read as a wall. The lead states the position; the kicker drops to
+     quiet body type and lets the joke land deadpan. It also cuts the headline
+     block roughly in half. Per-line sizing is safe: MemoryParticles reads
+     getComputedStyle on each [data-line] span, so it samples each tier at its
+     own size, and keeping the kicker as a bare text node (not a wrapper
+     element) keeps it in the sampler's white text branch rather than the blue
+     accent branch reserved for the em. */
+  type HeroLine = { node: ReactNode };
+  /* The h1 now holds the headline and nothing else. The kicker moved out to a
+     real subhead below (F9: it was set in the display face, competing with the
+     headline it was meant to qualify), and that move is also what lets the
+     morph be verifiable — h1.textContent can now equal exactly one of the two
+     sentences in HEADLINE_STATES, which is the assertion the spec asks for. */
+  const lines: HeroLine[] = [
+    /* trailing space is deliberate: [data-line] spans are display:block, and
+       block boundaries contribute nothing to textContent, so without it the h1
+       reads "I design interfacesthat get..." to a screen reader and the
+       completeness assertion cannot pass. The particle sampler trimEnd()s its
+       runs, so it costs nothing there. */
+    { node: narrow ? "I design interfaces " : "I design interfaces that get " },
+    {
+      node: (
+        <>
+          {narrow ? "that get " : ""}
+          <em ref={wordRef} style={{ fontFamily: V.serifIt, fontStyle: "italic", fontWeight: 400, color: V.text }}>
+            {HEADLINE_STATES[0].tail}
+          </em>
+        </>
+      ),
+    },
+  ];
+
+  const leadLine: React.CSSProperties = {
+    fontFamily: V.display,
+    fontWeight: 600,
+    /* §7.2: display line-height 0.95, not the 1.06 it was set at. Two lines at
+       1.06 read as two separate objects; at 0.95 they lock into one mass, which
+       is the whole point of a two-line headline. */
+    /* §2.2 asks for clamp(3.75rem, 7.5vw, 8rem). That assumes a shorter
+       headline than this one: at 8rem the longest authored line
+       ("I design interfaces that get") measures ~1500px against a 1024px
+       copy column, so it would wrap — and a wrapped line resamples at the
+       wrong geometry and lands the particle assembly crooked. Capped at the
+       largest size that provably fits, verified by measurement rather than
+       taken from the spec unchecked. */
+    fontSize: "clamp(1.55rem, 6vw, 4.5rem)",
+    lineHeight: 0.94,
+    /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
+       track plus a touch of word-spacing separates the words again. */
+    letterSpacing: "-0.025em",
+    wordSpacing: "0.04em",
+    color: V.text,
+    /* §9: with the headline centred this becomes optical CENTRING, not a
+       left inset. The line begins on a capital I and ends on a full stop,
+       both of which carry more sidebearing than the glyphs between them, so
+       metric centring reads a touch left. A small positive nudge corrects it.
+       Previous note, kept because the reasoning still applies:
+       is wide relative to its stem, so ranging the BOX left leaves the stem
+       visibly inset from everything below it. Measured against the CTA edge at
+       display size rather than guessed. */
+    marginLeft: "0.012em",
+  };
+  /* F9: the subhead was set in Clash Display, the same face as the headline,
+     so it competed with the thing it exists to qualify. General Sans changes
+     the voice from statement to aside, which is what a subhead is for. It also
+     no longer lives inside the h1 — see the note on lines above. */
+  const subheadStyle: React.CSSProperties = {
+    fontFamily: V.body,
+    fontWeight: 400,
+    fontSize: "clamp(1.05rem, 1.6vw, 1.375rem)",
+    lineHeight: 1.45,
+    letterSpacing: "0",
+    color: V.text2,
+    maxWidth: "42ch",
+    marginTop: 28,
+  };
+
+  return (
+    <section ref={heroRef} className="relative min-h-[100svh] flex flex-col justify-center overflow-hidden" style={{ background: V.bg }}>
+      {/* the memory-particles layer: assembles the headline, then owns the
+          "out of the way." dissolve loop. Skipped entirely under reduced motion. */}
+      {particles && (
+        <MemoryParticles
+          heroRef={heroRef}
+          stateB={HEADLINE_STATES[1].tail}
+          h1Ref={h1Ref}
+          wordRef={wordRef}
+          onAssembled={() => {
+            setAssembled(true);
+            if (import.meta.env.DEV) (window as any).__heroAssembled = true;
+          }}
+        />
+      )}
+
+      {/* The 3D layer: three node clusters in the corners plus the robo-spider.
+          Sits behind the text at z-index 0 with pointer-events none, so it can
+          never intercept a click, and the text layer above it stays plain DOM
+          rather than being drawn into the canvas — WebGL text would lose
+          selection, screen-reader access and subpixel rendering all at once. */}
+      {/* Tier-gated. three plus R3F is ~223KB gzipped, which is the single
+          largest asset on the site, so a machine the frame-time watchdog
+          downgrades never downloads it at all — which is why this waits for
+          the verdict (tierReady) and not just the timer. Mounted a beat after
+          load so it arrives behind the headline rather than competing with it
+          for the first paint. */}
+      {sceneOn && tierReady && !lite && (
+        <Suspense fallback={null}>
+          <HeroScene interactive={!reduce} />
+        </Suspense>
+      )}
+
+      <div className="hero-grain" aria-hidden="true" />
+
+      {/* soft accent glows */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "-12%",
+          right: "-6%",
+          width: 720,
+          height: 720,
+          background: "radial-gradient(circle, rgba(91,140,255,0.09) 0%, transparent 62%)",
+        }}
+      />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          bottom: "-18%",
+          left: "-10%",
+          width: 640,
+          height: 640,
+          background: "radial-gradient(circle, rgba(91,140,255,0.06) 0%, transparent 60%)",
+        }}
+      />
+
+      <motion.div
+        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-8 pb-8 md:pb-6 flex flex-col items-center"
+        style={reduce ? undefined : { y: textY, opacity: heroFade }}
+      >
+        {/* copy centered on every breakpoint */}
+        {/* Left-aligned, not centred. A centred headline over a centred kicker
+            over a centred button is the shape of every startup landing page,
+            and it was the single thing making this hero read as a template.
+            Ranging left also gives the type a spine to hang off and lets the
+            line lengths differ on purpose rather than by accident. */}
+        {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
+            sides anchored it reads as a decision rather than as the gap it was
+            when only the left side had content. */}
+        <div ref={copyRef} className="flex flex-col items-center text-center w-full">
+          {/* H1: in particle mode the crisp text lands AFTER the particles
+              assemble it — a blur-to-sharp crossfade with one glow pulse,
+              like a memory clicking into focus. Reduced motion: plain reveal. */}
+          {/* The animated filter and textShadow here were measured in isolation
+              (?perf=noBlur) and cost nothing: 33.2ms against a 33.0ms baseline.
+              They run once, at assembly, and the page is idle either side of
+              it. Kept. */}
+          <motion.h1
+            ref={h1Ref}
+            initial={{ opacity: 0, filter: particles ? "blur(12px)" : "blur(0px)" }}
+            animate={
+              !particles
+                ? { opacity: 1, filter: "blur(0px)" }
+                : assembled
+                ? {
+                    opacity: 1,
+                    filter: "blur(0px)",
+                    textShadow: [
+                      "0 0 0px rgba(143,176,255,0)",
+                      "0 0 48px rgba(143,176,255,0.5)",
+                      "0 0 0px rgba(143,176,255,0)",
+                    ],
+                  }
+                : { opacity: 0, filter: "blur(12px)" }
+            }
+            transition={
+              assembled
+                ? { duration: 1.1, ease: EASE, textShadow: { duration: 2.0, times: [0, 0.32, 1], ease: "easeOut" } }
+                : { duration: assembled ? 1.1 : 0.8, ease: EASE }
+            }
+            /* the h1 carries only what its lines share; the subhead sits outside it
+               can differ; the h1 only carries what they share */
+            /* width:100% matters more than it looks. The copy column is a flex
+               column with align-items:flex-start, which makes every child
+               shrink-to-fit — so the h1 sized itself to its FIRST line (515px)
+               and then forced the second line, which needs 628px, to wrap
+               inside that width. Since the particle sampler measures each
+               [data-line] as one run, a wrapped line resamples at the wrong
+               geometry and the assembly lands crooked. Stretching the h1 to the
+               column removes the constraint without changing the ranged-left
+               appearance. */
+            style={{ color: V.text, margin: 0, width: "100%" }}
+          >
+            {lines.map((line, i) => (
+              <span
+                key={i}
+                data-line
+                className="block"
+                style={leadLine}
+              >
+                {line.node}
+              </span>
+            ))}
+          </motion.h1>
+
+          {/* the subhead, now a real element outside the headline */}
+          <motion.p
+            initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 10) : 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: particles ? 0.3 : 0.4 }}
+            style={subheadStyle}
+          >
+            Because the ultimate user experience is closing the laptop.
+          </motion.p>
+
+          {/* CTA is gated on the assembly moment, not a fixed clock, so it
+              always lands right after the headline does */}
+          <motion.div
+            initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 14) : 0 }}
+            transition={{ duration: 0.75, ease: EASE, delay: particles ? 0.45 : 0.52 }}
+            className="flex flex-wrap items-center gap-x-7 gap-y-4"
+            style={{ marginTop: 44 }}
+          >
+            <MagneticButton onClick={() => scrollToId("work")}>
+              See the work <ArrowRight size={16} weight="bold" />
+            </MagneticButton>
+          </motion.div>
+
+          {/* §5.3: the mono paragraph is gone. It was body prose set in a
+              monospace face (F6), and the product claims it carried now live in
+              the proof rail where they can be scanned instead of read. What is
+              left is one quiet line of credential. */}
+          <motion.p
+            initial={{ opacity: 0, y: reduce ? 0 : 10 }}
+            animate={{ opacity: particles ? (assembled ? 1 : 0) : 1, y: particles ? (assembled ? 0 : 10) : 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: particles ? 0.62 : 0.68 }}
+            style={{
+              marginTop: 20,
+              fontFamily: V.body,
+              fontSize: 15,
+              lineHeight: 1.5,
+              color: V.text3,
+            }}
+          >
+            Master&rsquo;s in Human-Centered Computing, UMBC · Baltimore.
+          </motion.p>
+        </div>
+
+      </motion.div>
+
+      {/* the fold rule: the hero's lower boundary. The impact flash that used
+          to live here went with the sandbox — nothing lands on it any more,
+          and the unused 120px sliver was still holding a compositor layer
+          open for an animation that can no longer fire. §14 wants exactly
+          three will-change declarations in the hero and this was the fourth. */}
+      <div className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16">
+        <div ref={ruleRef} style={{ height: 1, background: "rgb(232 236 243 / 0.08)" }} />
+        {/* §9 / F10: the scroll affordance. */}
+        <div className="flex items-center justify-between gap-6" style={{ paddingTop: 14 }}>
+          <div className="flex items-center gap-3">
+            <span className="scroll-tick" aria-hidden="true" />
+            <span style={{ fontFamily: V.mono, fontSize: 10.5, letterSpacing: "0.18em", color: V.text3 }}>
+              SCROLL
+            </span>
+          </div>
+          {/* §10.4: the particles are sampled from the live DOM, which is the
+              whole reason the headline can morph between two sentences at all.
+              Stated once, quietly, and never explained. */}
+          <span
+            className="hidden lg:inline"
+            style={{ fontFamily: V.mono, fontSize: 10, letterSpacing: "0.16em", color: V.text3, opacity: 0.55 }}
+          >
+            PARTICLES SAMPLED FROM LIVE DOM TEXT
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 
 /* ── the toolchain ────────────────────────────────────────────────────────
@@ -1567,7 +1942,7 @@ export function HomePage() {
       />
       <Nav />
       <main className="relative z-10">
-        <Plate />
+        <Hero />
         <Toolchain />
         <WhatIDo />
         <SelectedWork />
