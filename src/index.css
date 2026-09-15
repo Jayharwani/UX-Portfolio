@@ -934,97 +934,6 @@
   .stage__text:not(.is-on) { display: none; }
 }
 
-/* ── HERO: the title sequence ──────────────────────────────────────────────
-   The frame is composed top, middle and bottom rather than being a block of
-   type with four hundred empty pixels under it. The grid behind is the one
-   graphic, and it is a design grid on purpose: it is what the work is built
-   on, every designer reads it instantly, and the headline aligns to it. */
-.hero2 {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  overflow: hidden;
-  background: var(--ink);
-}
-.hero2__in {
-  position: relative;
-  z-index: 1;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  max-width: 1360px;
-  width: 100%;
-  margin: 0 auto;
-  padding: clamp(18px, 3vh, 34px) clamp(22px, 5vw, 80px) clamp(20px, 3vh, 36px);
-}
-
-.hero2__top,
-.hero2__foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 20px;
-}
-.hero2__rule { height: 1px; width: 100%; background: var(--hair-dark); margin: 13px 0 0; }
-
-/* the middle takes the slack, so the type sits optically centred and the
-   index is held to the bottom edge instead of floating */
-.hero2__mid {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: clamp(16px, 2.4vh, 30px);
-  padding: clamp(24px, 5vh, 62px) 0;
-  min-height: 0;
-}
-.hero2__head { margin: 0; }
-
-/* masked line reveal: the clip is the point — the line rises out of nothing
-   rather than fading, which is what makes it read as titling rather than as
-   a web animation */
-.hline { display: block; overflow: hidden; }
-.hline__in { display: block; will-change: transform; }
-
-.hero2__sub { max-width: 34ch; color: var(--on-ink-2); }
-
-/* ── the index fills what used to be dead space ── */
-.hero2__bottom { flex: none; }
-.hero2__index {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px clamp(22px, 4vw, 62px);
-  margin: 0;
-  padding: 16px 0 18px;
-}
-.hero2__ix { display: flex; align-items: baseline; gap: 9px; }
-.hero2__ixn {
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: 0.14em;
-  color: var(--on-ink-2);
-  font-variant-numeric: tabular-nums;
-}
-.hero2__ixname {
-  font-size: 1.0625rem;
-  font-weight: 500;
-  letter-spacing: -0.014em;
-  color: var(--on-ink);
-}
-
-
-
-@media (max-width: 900px) {
-  .hero2__index { gap: 8px 22px; }
-  .hero2__ixname { font-size: 0.95rem; }
-  .hero2__sub { max-width: 28ch; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hline__in { transform: none; }
-}
-
 /* ── hover, restored ───────────────────────────────────────────────────────
    The old work cards did four things the rebuild dropped: lift 4px on hover,
    take the project's accent on the border, drive the preview's own animation
@@ -1053,21 +962,10 @@
 .stage__go { border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 40%, transparent); }
 .stage__go:hover { border-color: var(--ac, var(--on-ink)); color: var(--ac, var(--on-ink)); }
 
-/* ── hero index: the same system, so the colours are introduced before the
-   work section rather than appearing from nowhere ── */
-.hero2__ix {
-  cursor: default;
-  transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.hero2__ixname { transition: color 300ms ease; }
-.hero2__ixn { transition: color 300ms ease; }
-.hero2__ix:hover { transform: translateY(-2px); }
-.hero2__ix:hover .hero2__ixname { color: var(--ac); }
-.hero2__ix:hover .hero2__ixn { color: var(--ac); }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage__screen, .stage__go, .hero2__ix, .hero2__ixname, .hero2__ixn { transition: none; }
-  .stage__screen:hover, .hero2__ix:hover { transform: none; }
+  .stage__screen, .stage__go { transition: none; }
+  .stage__screen:hover { transform: none; }
 }
 
 /* ── making the stage worth looking at ────────────────────────────────────
@@ -1237,51 +1135,103 @@
   .stage__slide, .stage__text { transition: opacity 200ms linear; transform: none; }
 }
 
-/* ── the hero hands over to the particles ──────────────────────────────────
-   The masked line reveal is gone: two systems cannot both introduce the
-   headline. The particles assemble it, hand over to real text, and keep a
-   sparse remainder alive that answers the cursor.
 
-   Everything downstream waits on that handover rather than on a clock, so
-   the sub and the index land on the beat the words land. */
-.hline { display: block; overflow: visible; }
-
-.hero2__head {
-  opacity: 0;
-  filter: blur(9px);
-  transition: opacity 950ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 950ms cubic-bezier(0.22, 1, 0.36, 1);
+/* ── HERO ──────────────────────────────────────────────────────────────────
+   Built from the page's own parts rather than resembling them: .band,
+   .band__in, .micro, .display, .lead, .hair and .stage__screen are the
+   identical rules the sections below use, so the two cannot drift when one is
+   edited. The anatomy is the work stage's — copy left, framed live surface
+   right — so the page teaches its layout once in the first screen and then
+   repeats it. */
+.herox { min-height: 100svh; display: flex; }
+.herox__in {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding-top: clamp(16px, 2.6vh, 30px);
+  padding-bottom: clamp(16px, 2.6vh, 30px);
 }
-.hero2.is-assembled .hero2__head { opacity: 1; filter: blur(0); }
+.herox__top,
+.herox__foot { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.herox .hair { margin: 13px 0; }
 
-/* the em is the one italic in the hero, on the half of the sentence that is
-   the actual claim */
-.hero2__head em { font-style: italic; }
-
-.hero2__sub,
-.hero2__ix {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+/* the same 0.85 / 1.15 split as the work stage */
+.herox__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: clamp(26px, 4vw, 70px);
+  align-items: center;
+  padding: clamp(16px, 2.6vh, 34px) 0;
 }
-.hero2.is-assembled .hero2__sub { opacity: 1; transform: none; transition-delay: 260ms; }
-.hero2.is-assembled .hero2__ix { opacity: 1; transform: none; }
-/* the index arrives left to right, one beat apart */
-.hero2.is-assembled .hero2__ix:nth-child(1) { transition-delay: 420ms; }
-.hero2.is-assembled .hero2__ix:nth-child(2) { transition-delay: 490ms; }
-.hero2.is-assembled .hero2__ix:nth-child(3) { transition-delay: 560ms; }
-.hero2.is-assembled .hero2__ix:nth-child(4) { transition-delay: 630ms; }
+.herox__copy { min-width: 0; align-self: center; }
+/* the headline spans the container, like every other band's head. Measured:
+   the longer line needs 10.79px of width per 1px of font size, so at display
+   size it wants 1122px — which the 492px left column could never give it. */
+.herox__head { margin: clamp(18px, 3vh, 40px) 0 0; }
+.herox__sub { margin-top: clamp(12px, 1.8vh, 20px); max-width: 46ch; color: var(--on-ink-2); }
 
-/* LAYERING. MemoryParticles sets z-index 5 on its canvas inline, so a rule
-   here can never move it — the component expects the text layer to sit above
-   5, which is what the hero it was written for did. The stack is therefore:
-   grid 0, particles 5, type 10. Trying to push the canvas down instead was
-   the bug: particles rendered over the headline. */
-.hero2__in { z-index: 10; }
+/* the index: the work stage's row, at hero scale. Hovering one swaps what is
+   running in the frame — the same binding, introduced here first. */
+.herox__index { list-style: none; margin: 0; padding: 0; }
+.hrow {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: clamp(10px, 1.4vh, 15px) 0;
+  border-top: 1px solid var(--hair-dark);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 380ms ease;
+}
+.herox__index li:last-child .hrow { border-bottom: 1px solid var(--hair-dark); }
+.hrow--on { border-color: color-mix(in oklab, var(--ac) 45%, transparent); }
+.hrow__n {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  color: var(--on-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition: color 380ms ease;
+}
+.hrow--on .hrow__n { color: var(--ac); }
+.hrow__name {
+  font-size: var(--t-sub);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--on-ink);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hrow--on .hrow__name { transform: translateX(8px); }
+.hrow__go {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--ac);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 340ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hrow--on .hrow__go { opacity: 1; transform: none; }
+.hrow:focus-visible { outline: 2px solid var(--ac); outline-offset: 6px; }
+
+/* the frame is .stage__screen verbatim; this only gives it a hero height */
+.herox__frame { min-width: 0; }
+.herox__screen { height: 100%; min-height: clamp(240px, 40vh, 440px); }
+
+@media (max-width: 900px) {
+  .herox__grid { grid-template-columns: 1fr; gap: 18px; align-items: start; padding: 14px 0; }
+  /* order belongs on the GRID ITEM, which is the motion wrapper — putting it
+     on the frame inside did nothing at all */
+  .herox__frame { order: -1; }
+  .herox__screen { min-height: 240px; }
+  .herox__head { margin-top: clamp(12px, 2vh, 22px); }
+  .herox__sub { max-width: 30ch; }
+  .hrow { grid-template-columns: 2rem 1fr auto; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .hero2__head, .hero2__sub, .hero2__ix {
-    opacity: 1; filter: none; transform: none; transition: none;
-  }
+  .hrow, .hrow__name, .hrow__go, .hrow__n { transition: none; }
+  .hrow--on .hrow__name { transform: none; }
 }
