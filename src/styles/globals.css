@@ -279,11 +279,22 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Optimize for mobile performance */
 @media (max-width: 768px) {
-  * {
-    animation-duration: 0.4s !important;
-    transition-duration: 0.25s !important;
-  }
-  
+  /* A blanket `* { transition-duration: 0.25s !important }` used to live here,
+     with a 0.4s cap on animations beside it. It was the single reason motion
+     on a phone felt cheap: every considered curve on the site — the work
+     cards' 1100ms settle, the 900ms flip, the entrance — was silently clamped
+     to a quarter of a second, and no amount of tuning at the call site could
+     get past an !important on the universal selector.
+
+     It was also not buying the performance it was named for. Duration is not
+     what costs a frame; what a property animates is. The transitions here are
+     opacity and transform, which stay on the compositor whether they run for
+     250ms or 1100ms.
+
+     Removed, so authored durations are the durations. Anything genuinely too
+     heavy for a phone is handled where it is written — by the tier system, by
+     prefers-reduced-motion, or by not being written. */
+
   /* Simplify blur effects on mobile */
   .blur-3xl {
     @apply blur-lg;

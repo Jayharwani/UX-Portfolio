@@ -911,27 +911,109 @@
 }
 .stage__tick.is-on { background: var(--on-ink); }
 
-/* ── reduced motion: a real stacked layout ── */
-.stack { background: var(--ink); }
-.stack__item {
-  display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: clamp(26px, 4vw, 70px);
-  align-items: center;
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: clamp(50px, 8vh, 100px) clamp(22px, 5vw, 80px);
-  border-top: 1px solid var(--hair-dark);
-}
-.stack__item .stage__screen { min-height: 420px; }
-.stack__item .stage__text, .stack .stage__text { opacity: 1; transform: none; }
+/* ── THE WORK LIST ─────────────────────────────────────────────────────────
+   What a phone gets instead of the pinned stage, and what reduced motion gets
+   instead of a degraded one. Four cards, in order, all of them on the page at
+   the same time and none of them taken away again when you scroll past.
 
-@media (max-width: 900px) {
-  .stage__in, .stack__item { grid-template-columns: 1fr; gap: 22px; }
-  .stage__screen { min-height: 300px; }
-  .stage__copy { display: block; }
-  .stage__text { position: static; opacity: 1; transform: none; pointer-events: auto; }
-  .stage__text:not(.is-on) { display: none; }
+   The satisfaction is in ARRIVAL, not in seizing the scroll. A phone that
+   scrolls at the speed the thumb moved it already feels right; a pinned,
+   scrubbed stage takes that away and hands back a slideshow you cannot look
+   back through. So nothing here pins, scrubs, or autoplays off screen.
+
+   Three things happen as a card comes up, on one shared curve so they read as
+   a single gesture: the card rises and settles, the rule under its name draws
+   out in the project's accent a beat later, and the preview drifts against
+   its own frame. That last one is in JS because it tracks POSITION rather
+   than time — it is the only part that has to know where the card is. */
+.wlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+}
+
+.wcard {
+  padding: clamp(30px, 6vw, 54px) clamp(22px, 5vw, 80px) clamp(38px, 7vw, 64px);
+  border-top: 1px solid var(--hair-dark);
+  opacity: 0;
+  transform: translate3d(0, 44px, 0);
+  transition: opacity 760ms var(--ease-ui), transform 1100ms var(--ease-ui);
+}
+.wcard.is-in { opacity: 1; transform: none; }
+
+/* aspect-ratio rather than a min-height, so a preview holds its proportion
+   from a 320 phone to a tablet instead of going squatter as the screen grows */
+.wcard__frame {
+  position: relative;
+  display: grid;
+  aspect-ratio: 4 / 3;
+  border: 1px solid color-mix(in oklab, var(--ac, var(--on-ink)) 28%, transparent);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #070A0E;
+  perspective: 1400px;
+  box-shadow: 0 26px 60px -36px color-mix(in oklab, var(--ac, #000) 70%, transparent);
+  will-change: transform;
+}
+.wcard__frame .flip { grid-area: 1 / 1; }
+.wcard__frame .src { font-size: 11px; }
+
+/* exactly the frame, never larger. The drift is on the frame itself, so the
+   preview is never rendered past an edge and never clipped — the first
+   version inset this by 20px to give the drift room and ate the bottom of
+   every preview to pay for it. */
+.wcard__art { position: absolute; inset: 0; }
+.wcard__art > * { width: 100%; height: 100%; }
+
+.wcard__meta { padding-top: clamp(18px, 4vw, 26px); }
+.wcard__n {
+  display: block;
+  color: color-mix(in oklab, var(--ac, var(--on-ink)) 72%, var(--on-ink));
+}
+.wcard__name {
+  margin: 10px 0 0;
+  font-size: clamp(1.7rem, 7.6vw, 2.4rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--on-ink);
+}
+.wcard__rule {
+  height: 1px;
+  margin: 16px 0 0;
+  background: linear-gradient(to right, var(--ac, var(--on-ink)), transparent 78%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1200ms var(--ease-ui) 140ms;
+}
+.wcard.is-in .wcard__rule { transform: scaleX(1); }
+.wcard__line {
+  margin: 16px 0 0;
+  max-width: 32ch;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.008em;
+  color: var(--on-ink-2);
+}
+/* globals.css puts a 44px floor on every button and link under a coarse
+   pointer. That is the right target size and the wrong mechanism for a link
+   that carries its own underline: min-height grew the BOX, so the rule ended
+   up stranded 21px below the words it belongs to. Measured 44px tall against
+   an 18px line.
+
+   So the box goes back to fitting its text, and the touch target is restored
+   as an overlay in the same units — the technique this codebase already uses
+   for the constellation nodes. Same 44px, nothing pushed out of place. */
+.wcard .stage__go {
+  position: relative;
+  min-height: 0;
+  margin-top: 22px;
+}
+.wcard .stage__go::after {
+  content: "";
+  position: absolute;
+  inset: -13px -10px;
 }
 
 /* ── hover, restored ───────────────────────────────────────────────────────
@@ -1343,18 +1425,8 @@
     margin-bottom: clamp(14px, 2.2vh, 22px);
   }
 
-  /* ── work stage ── */
-  /* the preview is the evidence, so it comes first and the caption reads
-     under it, the way a plate and its caption sit on a page */
-  .stage__screen { order: -1; }
-  .stage__name { font-size: 26px; }
-  .stage__line {
-    font-size: 15px;
-    line-height: 1.45;
-    max-width: 34ch;
-    margin-top: 9px;
-  }
-  .stage__go { margin-top: 18px; }
+  /* the work stage does not render at this width at all any more — the
+     section swaps to .wlist, which is styled once and not by breakpoint */
 
   /* ── stone ── */
   .tools { gap: 8px 18px; }
@@ -1363,4 +1435,22 @@
   /* ── contact ── */
   .contact__row { gap: 18px 28px; }
   .foot { gap: 8px 18px; }
+}
+
+/* The Source control gets the same treatment as the case link: globals.css
+   floors every button at 44px under a coarse pointer, which turned a quiet
+   corner pill into the loudest object inside the frame. The box goes back to
+   fitting its label and the 44px target is restored as an overlay. */
+.wcard__frame .flipbtn {
+  min-height: 0;
+  min-width: 0;
+  top: 12px;
+  right: 12px;
+  padding: 6px 11px;
+  font-size: 9.5px;
+}
+.wcard__frame .flipbtn::after {
+  content: "";
+  position: absolute;
+  inset: -12px -11px;
 }

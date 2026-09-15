@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
+import { useNarrow } from "./home/useNarrow";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -41,9 +42,11 @@ import {
    hundred. That distinction is the difference between this being smooth and
    it being the jank this site spent weeks removing.
 
-   prefers-reduced-motion skips the pin completely and renders the four
-   projects as a plain stacked list, which is a real layout and not a
-   degraded one.
+   THE PIN IS NOT UNIVERSAL. A phone, and anyone who asked for reduced
+   motion, gets a vertical list instead — a second real layout, not a
+   degraded one. A pinned stage needs room for the copy beside the work and
+   a pointer that can hover it; on a phone it is 400vh of scrubbed scroll
+   showing one project at a time with no way back to the last one.
    ────────────────────────────────────────────────────────────────────────── */
 
 const EMAIL = "harwanijay9498@gmail.com";
@@ -72,6 +75,189 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ── the work section picks its structure ────────────────────────────────
+   Two layouts, not one layout with mobile CSS on top. The pinned stage is a
+   good use of scroll on a wide screen and a bad one on a phone, where it
+   becomes 400vh of scrubbed scroll showing one project at a time with no way
+   to look back at the one you just passed. See useNarrow.ts. */
+function Work() {
+  const reduce = !!useReducedMotion();
+  const narrow = useNarrow();
+  return reduce || narrow ? <WorkList reduce={reduce} /> : <WorkStage />;
+}
+
+/* ── phone: a vertical list you can just read ─────────────────────────────
+   Every project is on the page at once, in order, and scrolling past one
+   does not take it away. Nothing is pinned and nothing is scrubbed, so the
+   page scrolls at the speed the thumb moved it — which is most of what
+   "satisfying" means on a phone.
+
+   What is left to design, then, is arrival. Each card rises and settles on a
+   long exponential curve, its rule draws out under the accent, and the
+   preview inside the frame drifts against the frame as the card crosses the
+   screen, so the work has a plane of its own behind the border. The preview
+   also PLAYS when it arrives and resets when it leaves, which is the same
+   contract the stage used — so scrolling back up runs the animation again
+   rather than showing you a finished still.
+
+   This is also the shorter page: four full-height pinned screens came to
+   3248px on a 390 phone, and the list comes to about 2100px with all four
+   projects actually visible in it. */
+function WorkList({ reduce }: { reduce: boolean }) {
+  const listRef = useRef<HTMLOListElement>(null);
+
+  /* The drift. The FRAME moves, not the art inside it, and that distinction
+     was worth a rebuild: drifting the art meant rendering it taller than its
+     frame and clipping the overhang, which quietly ate the bottom of every
+     preview — Signal's "12 you can make" card was cut in half by it. The
+     frame carries its contents with it and nothing is cropped at all.
+
+     What you see instead is the frame moving against the caption under it,
+     which is the same parallax read: two layers of one card at two depths.
+
+     One passive listener for the whole list, throttled to a frame, writing a
+     transform on at most four elements and only on the ones near the
+     viewport. A transform rather than a custom property — a custom property
+     on this page measured 12.9ms to invalidate, a transform stays on the
+     compositor. */
+  useEffect(() => {
+    if (reduce) return;
+    const list = listRef.current;
+    if (!list) return;
+    const frames = Array.from(list.querySelectorAll<HTMLElement>(".wcard__frame"));
+    if (!frames.length) return;
+    let queued = false;
+    const write = () => {
+      queued = false;
+      const vh = window.innerHeight;
+      for (const frame of frames) {
+        const b = frame.getBoundingClientRect();
+        if (b.bottom < -120 || b.top > vh + 120) continue;
+        /* -1 when the frame's middle is at the top of the screen, +1 at the
+           bottom, 0 as it passes the centre — so a card settles exactly where
+           it is read and leans on the way in and the way out. */
+        const t = (b.top + b.height / 2 - vh / 2) / (vh / 2);
+        frame.style.transform = `translate3d(0, ${(t * 10).toFixed(2)}px, 0)`;
+      }
+    };
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(write);
+    };
+    write();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [reduce]);
+
+  return (
+    <ol className="wlist" ref={listRef}>
+      {WORK.map((w) => (
+        <WorkCard key={w.name} w={w} reduce={reduce} />
+      ))}
+    </ol>
+  );
+}
+
+function WorkCard({ w, reduce }: { w: (typeof WORK)[number]; reduce: boolean }) {
+  const ref = useRef<HTMLLIElement>(null);
+  /* Two signals, not one. `seen` latches: a card that has arrived stays
+     arrived, so scrolling back up does not fade the page out behind you.
+     `playing` tracks the viewport both ways, so the preview resets when it
+     leaves and runs again when you come back to it. */
+  const [seen, setSeen] = useState(reduce);
+  const [playing, setPlaying] = useState(reduce);
+  const [flipped, setFlipped] = useState(false);
+  const code = sourceOf(w.Preview.name);
+
+  useEffect(() => {
+    if (reduce) return;
+    const el = ref.current;
+    if (!el) return;
+    if (!("IntersectionObserver" in window)) {
+      setSeen(true);
+      setPlaying(true);
+      return;
+    }
+    /* Same lesson as the hero entrance: a card whose resting state is
+       opacity 0 is invisible until something tells it otherwise, and an
+       observer does not report while the document is hidden. Measured here
+       — a phone-width load with visibilityState "hidden" delivered no
+       callback at all, and rAF never ticked either.
+
+       So `spoke` records whether the observer has said ANYTHING, which is a
+       different question from whether the card is on screen: reporting
+       "not intersecting" is a working observer. If it has said nothing at
+       all three seconds in, the observer is the broken part, and the card
+       goes on screen without it. */
+    let spoke = false;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        spoke = true;
+        setPlaying(entry.isIntersecting);
+        if (entry.isIntersecting) setSeen(true);
+      },
+      { threshold: 0.2, rootMargin: "-6% 0px -6% 0px" }
+    );
+    io.observe(el);
+    const failsafe = window.setTimeout(() => {
+      if (!spoke) setSeen(true);
+    }, 3000);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(failsafe);
+    };
+  }, [reduce]);
+
+  return (
+    <li
+      ref={ref}
+      className={`wcard${seen ? " is-in" : ""}`}
+      style={{ ["--ac" as string]: w.accent }}
+    >
+      <div className="wcard__frame">
+        <div className={`flip${flipped ? " is-flipped" : ""}`}>
+          <div className="flip__face flip__face--front">
+            <div className="wcard__art">
+              <w.Preview active={playing} />
+            </div>
+          </div>
+          <div className="flip__face flip__face--back" aria-hidden={!flipped}>
+            <pre className="src">
+              <Highlight code={code} />
+            </pre>
+            <div className="src__foot">
+              <span className="micro">{lineCount(code)} lines · running on the other side</span>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="flipbtn"
+          onClick={() => setFlipped((v) => !v)}
+          aria-pressed={flipped}
+        >
+          {flipped ? "Live" : "Source"}
+        </button>
+      </div>
+
+      <div className="wcard__meta">
+        <span className="micro wcard__n">{w.n}</span>
+        <h3 className="wcard__name">{w.name}</h3>
+        <div className="wcard__rule" aria-hidden="true" />
+        <p className="wcard__line">{w.line}</p>
+        <Link className="stage__go" to={w.to}>
+          View case ↗
+        </Link>
+      </div>
+    </li>
   );
 }
 
@@ -166,26 +352,8 @@ function WorkStage() {
     };
   }, [reduce]);
 
-  /* Reduced motion: a real stacked layout, not a broken pinned one. */
-  if (reduce) {
-    return (
-      <div className="stack">
-        {WORK.map((w) => (
-          <div className="stack__item" key={w.name} style={{ ["--ac" as string]: w.accent }}>
-            <div className="stage__copy">
-              <h3 className="stage__name">{w.name}</h3>
-              <p className="stage__line">{w.line}</p>
-              <Link className="stage__go" to={w.to}>View case ↗</Link>
-            </div>
-            <div className="stage__screen">
-              <w.Preview active />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+  /* Reduced motion and phone widths never reach here — Work() sends both to
+     the list, which is a real layout rather than a degraded stage. */
   return (
     <div ref={wrapRef} className="workwrap" style={{ height: `${WORK.length * 100}vh` }}>
       <div ref={stageRef} className="stage" style={{ ["--ac" as string]: WORK[i].accent }}>
@@ -268,7 +436,7 @@ export function Home() {
             </Reveal>
           </div>
         </div>
-        <WorkStage />
+        <Work />
       </section>
 
       {/* ── stone: one sentence ── */}
@@ -313,3 +481,4 @@ export function Home() {
     </main>
   );
 }
+

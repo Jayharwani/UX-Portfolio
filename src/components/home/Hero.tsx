@@ -45,13 +45,41 @@ export default function Hero() {
   const tierReady = useTierReady();
   const depth = !reduce && !lite && tierReady;
 
-  /* ── entrance ── */
+  /* ── entrance ──────────────────────────────────────────────────────────
+     THE RESTING STATE OF THIS DOM HAS TO BE VISIBLE.
+
+     A gsap .from() writes its start state inline the moment the timeline is
+     built, and only takes it away again as the tween advances — and the tween
+     advances on requestAnimationFrame, which does not run while a document is
+     hidden. Measured on a phone-width load: visibilityState "hidden",
+     progress 0, and the glyphs sitting at translate(0%, 118%) inside their
+     own overflow:hidden clips. The name was not small or dim. It was parked
+     below the bottom of its own box, and the hero was an empty screen.
+
+     That is not an exotic case on a phone. Opening a link from another app,
+     restoring a tab, a page brought back from the back-forward cache: all of
+     them mount the document hidden and leave it hidden until you look.
+
+     So the timeline is built paused, and it starts on whichever of these
+     comes first:
+
+       the document is already visible — play now;
+       it becomes visible later — play then, so a link opened from another
+       app still gets its entrance instead of arriving pre-finished;
+       three and a half seconds pass and the ticker has not moved — put the
+       text on screen regardless. setTimeout is not rAF-driven, so this one
+       fires in precisely the case that breaks the other two.
+
+     The animation can now only ever ADD something. It can no longer be the
+     reason the page is blank. */
   useEffect(() => {
     if (reduce) return;
     const el = root.current;
     if (!el) return;
+    let failsafe = 0;
+    let stopWatching: (() => void) | undefined;
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" }, paused: true });
       if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__introTl = tl;
       tl.from(".entry__welcome", { opacity: 0, y: 10, duration: 0.8 }, 0.25)
         .from(
@@ -61,8 +89,34 @@ export default function Hero() {
         )
         .from(".entry__rule", { scaleX: 0, duration: 1.1, transformOrigin: "center" }, 0.9)
         .from(".entry__cue", { opacity: 0, y: 12, duration: 0.8 }, 1.15);
+
+      const run = () => {
+        tl.play(0);
+        failsafe = window.setTimeout(() => {
+          if (tl.progress() < 1) tl.progress(1);
+        }, 3400);
+      };
+
+      if (document.visibilityState === "visible") {
+        run();
+      } else {
+        const onVisible = () => {
+          if (document.visibilityState !== "visible") return;
+          stopWatching?.();
+          run();
+        };
+        document.addEventListener("visibilitychange", onVisible);
+        stopWatching = () => {
+          document.removeEventListener("visibilitychange", onVisible);
+          stopWatching = undefined;
+        };
+      }
     }, el);
-    return () => ctx.revert();
+    return () => {
+      window.clearTimeout(failsafe);
+      stopWatching?.();
+      ctx.revert();
+    };
   }, [reduce]);
 
   /* ── the parallax: name away from the pointer, lattice toward it ── */
