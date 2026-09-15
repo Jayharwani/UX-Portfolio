@@ -1248,3 +1248,63 @@
      reduced motion, so the inline transform is never written at all */
   .entry__arrow::after { animation: none; opacity: 0.6; transform: translateY(14px); }
 }
+
+/* ── THE GROUND ────────────────────────────────────────────────────────────
+   The hero read as plain dark, and the likely reason is the tier: the WebGL
+   lattice is skipped entirely on the lite tier, so a machine the watchdog has
+   downgraded sees flat ink and nothing else.
+
+   So the background does not depend on WebGL at all. A dot lattice, a light
+   that follows the pointer, and a grain — all of it CSS, all of it present on
+   every tier. When the 3D scene DOES load it sits above this, and the two
+   read as a ground plane under a volume rather than as two competing fields. */
+.entry__ground {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(circle at center, rgba(242, 241, 236, 0.13) 1px, transparent 1.4px);
+  background-size: 28px 28px;
+  /* faded toward the edges so it reads as a surface catching light in the
+     middle of the frame, not as wallpaper running to the corners */
+  -webkit-mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
+  mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
+  opacity: 0.5;
+}
+
+/* the light. Positioned at the origin and moved by transform, so following
+   the pointer costs one compositor write and never a style invalidation —
+   a custom property on this page measured 12.9ms to invalidate. */
+.entry__light {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 760px;
+  height: 760px;
+  margin: -380px 0 0 -380px;
+  pointer-events: none;
+  will-change: transform;
+  background: radial-gradient(
+    circle,
+    rgba(120, 160, 255, 0.16) 0%,
+    rgba(120, 160, 255, 0.07) 32%,
+    transparent 64%
+  );
+}
+
+/* grain. One static texture at very low opacity — it is what keeps a large
+   dark field from looking like an absence of image. */
+.entry__grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+@media (max-width: 900px) {
+  .entry__ground { background-size: 22px 22px; }
+  .entry__light { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
+}

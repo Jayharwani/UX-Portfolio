@@ -40,6 +40,7 @@ export default function Hero() {
   const reduce = !!useReducedMotion();
   const root = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
+  const light = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
   const tierReady = useTierReady();
   const depth = !reduce && !lite && tierReady;
@@ -73,13 +74,21 @@ export default function Hero() {
     let px = 0;
     let py = 0;
     let queued = false;
+    let lx = 0;
+    let ly = 0;
     const write = () => {
       queued = false;
       /* the name leans AGAINST the scene's lean, which is what separates the
          two planes rather than sliding them together */
       el.style.transform = `rotateY(${px * -4}deg) rotateX(${py * 3}deg) translate3d(${px * -16}px, ${py * -11}px, 0)`;
+      /* the light rides the same handler and the same frame — a transform
+         write, not a custom property, so it stays on the compositor and never
+         invalidates a subtree */
+      if (light.current) light.current.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
     };
     const onMove = (e: PointerEvent) => {
+      lx = e.clientX;
+      ly = e.clientY;
       px = (e.clientX / window.innerWidth - 0.5) * 2;
       py = (e.clientY / window.innerHeight - 0.5) * 2;
       if (!queued) {
@@ -96,6 +105,16 @@ export default function Hero() {
 
   return (
     <section ref={root} className="band band--ink entry" aria-label="Welcome">
+      {/* The ground. A dot lattice that does not need WebGL, so it is there
+          on every tier — including the lite tier, where the 3D scene never
+          loads and the background would otherwise be flat ink. The light
+          follows the pointer and brightens the dots it passes over; the grain
+          keeps a large dark field from reading as a void. Both are cheap: one
+          transform write per frame and one static texture. */}
+      <div className="entry__ground" aria-hidden="true" />
+      {!reduce && <div className="entry__light" ref={light} aria-hidden="true" />}
+      <div className="entry__grain" aria-hidden="true" />
+
       {depth && (
         <Suspense fallback={null}>
           <HeroScene interactive />
