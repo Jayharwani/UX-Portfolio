@@ -253,6 +253,21 @@ export function Home() {
 
       {/* ── work: the whole point ── */}
       <section id="work" aria-label="Selected work">
+        {/* The claim moved here when the hero became a pure entrance. It had
+            no other home, and this band had no head — so it gains the
+            sentence the site is actually arguing. */}
+        <div className="band band--ink workhead">
+          <div className="band__in">
+            <Reveal>
+              <span className="micro">Selected work</span>
+            </Reveal>
+            <Reveal delay={0.06}>
+              <h2 className="head" style={{ marginTop: 16, maxWidth: "18ch" }}>
+                I design interfaces that get out of the way.
+              </h2>
+            </Reveal>
+          </div>
+        </div>
         <WorkStage />
       </section>
 

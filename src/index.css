@@ -1136,102 +1136,115 @@
 }
 
 
-/* ── HERO ──────────────────────────────────────────────────────────────────
-   Built from the page's own parts rather than resembling them: .band,
-   .band__in, .micro, .display, .lead, .hair and .stage__screen are the
-   identical rules the sections below use, so the two cannot drift when one is
-   edited. The anatomy is the work stage's — copy left, framed live surface
-   right — so the page teaches its layout once in the first screen and then
-   repeats it. */
-.herox { min-height: 100svh; display: flex; }
-.herox__in {
+
+/* ── THE ENTRANCE ──────────────────────────────────────────────────────────
+   A door, not a section. It holds a name and a welcome and nothing else,
+   which is precisely what lets the 3D exist here: the objection to the
+   lattice was never the lattice, it was a lattice competing with content.
+
+   Perspective lives on the stage, so the plate's rotation is a real
+   perspective divide rather than a skew. The plate leans AGAINST the scene's
+   lean, which is what separates the two planes when the pointer moves. */
+.entry {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  overflow: hidden;
+}
+.entry__stage {
+  position: relative;
+  z-index: 2;
   flex: 1 1 auto;
   display: flex;
-  flex-direction: column;
-  padding-top: clamp(16px, 2.6vh, 30px);
-  padding-bottom: clamp(16px, 2.6vh, 30px);
-}
-.herox__top,
-.herox__foot { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
-.herox .hair { margin: 13px 0; }
-
-/* the same 0.85 / 1.15 split as the work stage */
-.herox__grid {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: clamp(26px, 4vw, 70px);
   align-items: center;
-  padding: clamp(16px, 2.6vh, 34px) 0;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 80px);
+  perspective: 1200px;
 }
-.herox__copy { min-width: 0; align-self: center; }
-/* the headline spans the container, like every other band's head. Measured:
-   the longer line needs 10.79px of width per 1px of font size, so at display
-   size it wants 1122px — which the 492px left column could never give it. */
-.herox__head { margin: clamp(18px, 3vh, 40px) 0 0; }
-.herox__sub { margin-top: clamp(12px, 1.8vh, 20px); max-width: 46ch; color: var(--on-ink-2); }
+.entry__plate {
+  transform-style: preserve-3d;
+  text-align: center;
+  will-change: transform;
+}
 
-/* the index: the work stage's row, at hero scale. Hovering one swaps what is
-   running in the frame — the same binding, introduced here first. */
-.herox__index { list-style: none; margin: 0; padding: 0; }
-.hrow {
-  display: grid;
-  grid-template-columns: 2.4rem 1fr auto;
-  gap: 14px;
-  align-items: baseline;
-  padding: clamp(10px, 1.4vh, 15px) 0;
-  border-top: 1px solid var(--hair-dark);
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 380ms ease;
-}
-.herox__index li:last-child .hrow { border-bottom: 1px solid var(--hair-dark); }
-.hrow--on { border-color: color-mix(in oklab, var(--ac) 45%, transparent); }
-.hrow__n {
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: 0.14em;
+.entry__welcome {
+  margin: 0 0 clamp(18px, 2.6vh, 30px);
+  letter-spacing: 0.34em;
   color: var(--on-ink-2);
-  font-variant-numeric: tabular-nums;
-  transition: color 380ms ease;
 }
-.hrow--on .hrow__n { color: var(--ac); }
-.hrow__name {
-  font-size: var(--t-sub);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  color: var(--on-ink);
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.hrow--on .hrow__name { transform: translateX(8px); }
-.hrow__go {
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  color: var(--ac);
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 340ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.hrow--on .hrow__go { opacity: 1; transform: none; }
-.hrow:focus-visible { outline: 2px solid var(--ac); outline-offset: 6px; }
 
-/* the frame is .stage__screen verbatim; this only gives it a hero height */
-.herox__frame { min-width: 0; }
-.herox__screen { height: 100%; min-height: clamp(240px, 40vh, 440px); }
+/* the name. One clip per glyph so each rises out of nothing; inline-block on
+   both halves because a transform on an inline box does nothing. */
+.entry__name {
+  margin: 0;
+  font-size: clamp(3rem, 12.5vw, 11.5rem);
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -0.042em;
+  color: var(--on-ink);
+  white-space: nowrap;
+}
+.entry__clip { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.entry__g { display: inline-block; will-change: transform; }
+.entry__sp { display: inline-block; width: 0.26em; }
+
+.entry__rule {
+  height: 1px;
+  width: min(420px, 60%);
+  margin: clamp(22px, 3.2vh, 40px) auto 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--on-ink) 42%, transparent),
+    transparent
+  );
+}
+
+/* the cue. The travelling line is the one looping thing on the page and it
+   earns it: it says "there is more below", which is information, not
+   decoration. */
+.entry__cue {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: clamp(22px, 4vh, 44px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.entry__arrow {
+  position: relative;
+  width: 1px;
+  height: 46px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--on-ink) 16%, transparent);
+}
+.entry__arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 1px;
+  height: 16px;
+  background: var(--on-ink);
+  animation: cue-fall 2.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+@keyframes cue-fall {
+  0%   { transform: translateY(-18px); opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translateY(46px); opacity: 0; }
+}
 
 @media (max-width: 900px) {
-  .herox__grid { grid-template-columns: 1fr; gap: 18px; align-items: start; padding: 14px 0; }
-  /* order belongs on the GRID ITEM, which is the motion wrapper — putting it
-     on the frame inside did nothing at all */
-  .herox__frame { order: -1; }
-  .herox__screen { min-height: 240px; }
-  .herox__head { margin-top: clamp(12px, 2vh, 22px); }
-  .herox__sub { max-width: 30ch; }
-  .hrow { grid-template-columns: 2rem 1fr auto; }
+  .entry__welcome { letter-spacing: 0.22em; font-size: 10px; }
+  .entry__rule { width: min(260px, 70%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hrow, .hrow__name, .hrow__go, .hrow__n { transition: none; }
-  .hrow--on .hrow__name { transform: none; }
+  /* nothing to override here: the parallax effect returns early under
+     reduced motion, so the inline transform is never written at all */
+  .entry__arrow::after { animation: none; opacity: 0.6; transform: translateY(14px); }
 }

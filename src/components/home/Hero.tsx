@@ -1,166 +1,135 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { motion, useReducedMotion } from "motion/react";
-import {
-  SignalPreview,
-  HeadroomPreview,
-  ChronoWeavePreview,
-  BumperPreview,
-} from "./previews";
+import { useRef, useEffect, lazy, Suspense } from "react";
+import { useReducedMotion } from "motion/react";
+import gsap from "gsap";
+import { usePerfTier, useTierReady } from "./perfTier";
+
+/* Tier-gated and lazy. three plus fiber is 216 KB gzipped, and the watchdog
+   persists its verdict for thirty days — a machine that cannot hold 60fps
+   never downloads it, on this visit or any later one. */
+const HeroScene = lazy(() => import("./scene/HeroScene"));
 
 /* ──────────────────────────────────────────────────────────────────────────
-   The hero, rebuilt out of the page's own parts.
+   The entrance.
 
-   The previous one was a particle field over a WebGL lattice, and the note on
-   it was that it felt like a different website from everything below. That is
-   exactly right, and it is the same fault the broadsheet plate had: a hero
-   that does not share a vocabulary with its page reads as two sites stacked,
-   which is worse than either on its own.
+   Every previous hero tried to do a job the page below already does. The last
+   one carried a project index sitting directly above the work section, which
+   is why it read as cluttered — it was not too busy, it was REDUNDANT.
 
-   So this is built from the SAME classes the rest of the homepage uses —
-   .band, .band__in, .micro, .display, .lead, .hair, and .stage__screen for
-   the frame. Not lookalikes: the identical rules. Consistency by
-   construction rather than by resemblance, which means it cannot drift when
-   one of them is edited later.
+   So this one carries a name and a welcome and nothing else. That single
+   decision is what finally makes the 3D affordable here: the objection was
+   never the lattice, it was a lattice competing with content. With nothing to
+   compete with, it can just be the room you walk into.
 
-   THE ANATOMY IS THE WORK STAGE'S. Copy on the left, a framed live surface on
-   the right, asymmetric. A visitor meets the same object in the first screen
-   that they will scroll through below, so the page teaches its own layout
-   once and then repeats it.
+   A DOOR, NOT A SECTION. This is the one part of the site that does not need
+   the editorial anatomy of the bands below, because it holds no content to
+   organise. It is allowed its own register, and the page proper begins the
+   moment you scroll.
 
-   THE INTERACTION IS THE PAGE'S TOO. Hovering a project in the index swaps
-   what is running in the frame and tints it to that project's accent — the
-   same index-and-surface binding the work stage uses, introduced here first.
-   Nothing auto-cycles: it answers a hover, which is the rule the rest of the
-   page now follows.
+   DEPTH IS THE INTERACTION. The lattice parallaxes toward the pointer and the
+   name parallaxes AWAY from it, so moving the mouse separates the two planes
+   and the name sits in real space rather than on a picture of it. One
+   rAF-throttled handler, one transform write, nothing measured per frame.
 
-   WHAT WENT, and it is worth being plain about it: the particle assembly and
-   the 3D lattice. Both were liked, and both are what made this section belong
-   to a different design. They can come back the moment the whole page moves
-   toward that language, but they cannot sit on top of a quiet editorial page
-   and be consistent with it.
+   The name arrives glyph by glyph out of a clip — eleven characters, so the
+   stagger reads as one gesture rather than a crawl.
    ────────────────────────────────────────────────────────────────────────── */
 
-const WORK = [
-  { n: "01", name: "Signal", to: "/signal", accent: "#1F9D55", Preview: SignalPreview },
-  { n: "02", name: "Headroom", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview },
-  { n: "03", name: "ChronoWeave", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview },
-  { n: "04", name: "Bumper", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
-];
-
-function Rise({
-  children,
-  delay = 0,
-  className,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={
-        reduce ? { duration: 0.3 } : { duration: 0.85, delay, ease: [0.22, 1, 0.36, 1] }
-      }
-    >
-      {children}
-    </motion.div>
-  );
-}
+const NAME = "Jay Harwani";
 
 export default function Hero() {
   const reduce = !!useReducedMotion();
-  /* which project is showing in the frame. Defaults to the first rather than
-     cycling on a timer — the page's rule is that motion answers the reader. */
-  const [i, setI] = useState(0);
-  const live = WORK[i];
+  const root = useRef<HTMLElement>(null);
+  const plate = useRef<HTMLDivElement>(null);
+  const lite = usePerfTier() === "lite";
+  const tierReady = useTierReady();
+  const depth = !reduce && !lite && tierReady;
+
+  /* ── entrance ── */
+  useEffect(() => {
+    if (reduce) return;
+    const el = root.current;
+    if (!el) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__introTl = tl;
+      tl.from(".entry__welcome", { opacity: 0, y: 10, duration: 0.8 }, 0.25)
+        .from(
+          ".entry__g",
+          { yPercent: 118, duration: 1.15, stagger: 0.045, ease: "power4.out" },
+          0.45
+        )
+        .from(".entry__rule", { scaleX: 0, duration: 1.1, transformOrigin: "center" }, 0.9)
+        .from(".entry__cue", { opacity: 0, y: 12, duration: 0.8 }, 1.15);
+    }, el);
+    return () => ctx.revert();
+  }, [reduce]);
+
+  /* ── the parallax: name away from the pointer, lattice toward it ── */
+  useEffect(() => {
+    if (reduce) return;
+    const el = plate.current;
+    if (!el) return;
+    let raf = 0;
+    let px = 0;
+    let py = 0;
+    let queued = false;
+    const write = () => {
+      queued = false;
+      /* the name leans AGAINST the scene's lean, which is what separates the
+         two planes rather than sliding them together */
+      el.style.transform = `rotateY(${px * -4}deg) rotateX(${py * 3}deg) translate3d(${px * -16}px, ${py * -11}px, 0)`;
+    };
+    const onMove = (e: PointerEvent) => {
+      px = (e.clientX / window.innerWidth - 0.5) * 2;
+      py = (e.clientY / window.innerHeight - 0.5) * 2;
+      if (!queued) {
+        queued = true;
+        raf = requestAnimationFrame(write);
+      }
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, [reduce]);
 
   return (
-    <section
-      className="band band--ink herox"
-      aria-label="Introduction"
-      style={{ ["--ac" as string]: live.accent }}
-    >
-      <div className="band__in herox__in">
-        <Rise className="herox__top">
-          <span className="micro">Jay Harwani</span>
-          <span className="micro">Baltimore, MD</span>
-        </Rise>
-        <Rise delay={0.04}>
-          <hr className="hair" />
-        </Rise>
+    <section ref={root} className="band band--ink entry" aria-label="Welcome">
+      {depth && (
+        <Suspense fallback={null}>
+          <HeroScene interactive />
+        </Suspense>
+      )}
 
-        {/* The headline spans, the way every other band's head does. It was
-            briefly inside the left column and the measurement killed that
-            immediately: the longer line needs 1122px at display size and the
-            column is 492, so it would have had to drop to 45px — smaller than
-            the section heads below it, which is the wrong hierarchy. */}
-        <Rise delay={0.1}>
-          <h1 className="display herox__head">
-            I design interfaces
-            <br />
-            that get out of the way.
+      <div className="entry__stage">
+        <div className="entry__plate" ref={plate}>
+          <p className="micro entry__welcome">Welcome to my portfolio</p>
+
+          {/* one span per glyph, each in its own clip, so the name rises out
+              of nothing rather than fading in. aria-label carries the whole
+              name so a screen reader never hears it spelled out. */}
+          <h1 className="entry__name" aria-label={NAME}>
+            {NAME.split("").map((ch, k) =>
+              ch === " " ? (
+                <span key={k} className="entry__sp" aria-hidden="true">
+                  &nbsp;
+                </span>
+              ) : (
+                <span key={k} className="entry__clip" aria-hidden="true">
+                  <span className="entry__g">{ch}</span>
+                </span>
+              )
+            )}
           </h1>
-        </Rise>
-        <Rise delay={0.18}>
-          <p className="lead herox__sub">
-            Designer who ships the front end. Four products, all live.
-          </p>
-        </Rise>
 
-        <div className="herox__grid">
-          <div className="herox__copy">
-            <Rise delay={0.26}>
-              <ul className="herox__index">
-                {WORK.map((w, k) => (
-                  <li key={w.name}>
-                    <Link
-                      to={w.to}
-                      className={`hrow${k === i ? " hrow--on" : ""}`}
-                      style={{ ["--ac" as string]: w.accent }}
-                      onMouseEnter={() => setI(k)}
-                      onFocus={() => setI(k)}
-                    >
-                      <span className="hrow__n">{w.n}</span>
-                      <span className="hrow__name">{w.name}</span>
-                      <span className="hrow__go" aria-hidden="true">
-                        ↗
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Rise>
-          </div>
-
-          {/* The same frame the work stage uses — .stage__screen is reused
-              verbatim so the two sections cannot drift apart. */}
-          <Rise delay={0.22} className="herox__frame">
-            <div className="stage__screen herox__screen">
-              {WORK.map((w, k) => (
-                <div
-                  key={w.name}
-                  className={`stage__slide${k === i ? " is-on" : ""}`}
-                  aria-hidden={k !== i}
-                >
-                  <w.Preview active={k === i && !reduce} />
-                </div>
-              ))}
-            </div>
-          </Rise>
+          <div className="entry__rule" aria-hidden="true" />
         </div>
+      </div>
 
-        <Rise delay={0.34}>
-          <hr className="hair" />
-        </Rise>
-        <Rise delay={0.38} className="herox__foot">
-          <span className="micro">Selected work ↓</span>
-          <span className="micro">Open to full-time</span>
-        </Rise>
+      <div className="entry__cue">
+        <span className="micro">Scroll</span>
+        <span className="entry__arrow" aria-hidden="true" />
       </div>
     </section>
   );
