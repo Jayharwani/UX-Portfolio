@@ -1395,7 +1395,7 @@
      the browser projects every child from the same eye point, so the side
      wall tapers, the motes in front grow, and the far field shrinks — all of
      it for free, from one transform on the parent. */
-  perspective: 1150px;
+  perspective: 1000px;
   perspective-origin: 50% 46%;
 }
 
@@ -1436,16 +1436,50 @@
   );
 }
 
-/* the motes. Half sit behind the name and half in FRONT of it — the ones in
-   front are what make the name read as being inside something rather than
-   pasted over it, because occlusion is the one depth cue layered parallax
-   cannot produce. */
+/* ── the room ──────────────────────────────────────────────────────────────
+   Every mote flies from the back wall to past your shoulder on its own clock.
+   The apparent size is not animated and neither is the speed: both come out
+   of the perspective divide, because a thing at -2300 and the same thing at
+   +420 are 0.33x and 1.72x of their own size under a 1000 perspective. Five
+   times the size across the journey, from one property.
+
+   transform and opacity only, which is the whole reason this can run on
+   fifty-one elements at once: both are compositor properties, so the travel
+   never touches layout, never touches paint, and never touches the main
+   thread. The one rAF loop in this hero moves the ROOM, not the dust. */
+.entry__field {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
 .entry__mote {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
   filter: blur(var(--b, 0px));
   background: radial-gradient(circle, #EAF0FF 0%, rgba(150, 185, 255, 0.85) 42%, rgba(120, 160, 255, 0) 72%);
+  animation-name: mote-travel;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+/* the foreground: fewer, larger, softer, and always near the camera, so they
+   cross in front of the name rather than around it */
+.entry__mote--soft {
+  background: radial-gradient(circle, rgba(226, 236, 255, 0.95) 0%, rgba(150, 185, 255, 0.5) 45%, rgba(120, 160, 255, 0) 74%);
+}
+
+/* Brightness is graded along the journey, not held flat across it. A mote
+   two thousand units back is not just smaller, it is dimmer — atmosphere
+   eats it — and one that has passed the focal plane is blowing out and
+   leaving. Constant opacity with a fade at each end reads as a sprite
+   crossing a screen; this reads as something coming out of a depth. */
+@keyframes mote-travel {
+  0%   { transform: translateZ(var(--z0)); opacity: 0; }
+  16%  { opacity: calc(var(--o) * 0.3); }
+  70%  { opacity: var(--o); }
+  90%  { opacity: calc(var(--o) * 0.5); }
+  100% { transform: translateZ(var(--z1)); opacity: 0; }
 }
 
 .entry__welcome {
@@ -1467,28 +1501,8 @@
 }
 .entry__clip { display: inline-block; overflow: hidden; vertical-align: bottom; }
 .entry__g { display: inline-block; will-change: transform; }
-.entry__dg { display: inline-block; }
 .entry__sp { display: inline-block; width: 0.26em; }
 
-/* ── the side wall ──
-   The name again at each depth. Absolutely positioned over the same box and
-   built from the same markup as the face, so the two share a layout rather
-   than approximating one: a plain text copy would sit on the baseline while
-   the clipped face aligns to the bottom of its line box, and every plane
-   would be a few pixels out.
-
-   The face keeps its own stacking above them all — it is the lit surface, and
-   the wall is what the light does not reach. */
-.entry__name { position: relative; transform-style: preserve-3d; }
-.entry__wall {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  display: block;
-  pointer-events: none;
-}
-.entry__face { position: relative; display: block; }
 
 .entry__rule {
   height: 1px;
@@ -1546,8 +1560,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* nothing to override here: the parallax effect returns early under
-     reduced motion, so the inline transform is never written at all */
+  /* the drift effect returns early under reduced motion, so the room's own
+     transform is never written — but the motes animate in CSS and have to be
+     stopped here. Parked at a readable depth rather than hidden: the room is
+     still a room, it is just not moving through you. */
+  .entry__mote { animation: none; transform: translateZ(-300px); opacity: var(--o); }
+  .entry__mote--soft { transform: translateZ(240px); }
   .entry__arrow::after { animation: none; opacity: 0.6; transform: translateY(14px); }
 }
 
@@ -1647,15 +1665,14 @@
   .big-link { font-size: 23px; }
 
   /* ── hero ── */
-  .entry__stage { padding: clamp(18px, 5vw, 80px); perspective: 760px; }
-  /* Eight planes of the name is 176 spans inside a preserve-3d context. On a
-     phone the name is a third of the size, so the deepest planes contribute a
-     sub-pixel edge nobody can see — they are paying compositing cost for
-     nothing. The five nearest keep the thickness; the rest go. */
-  .entry__wall:nth-of-type(n + 6) { display: none; }
-  /* twenty-six blur passes is a real cost on a phone GPU and the motes are
-     3px there; the depth they were buying is not visible at that size */
+  /* a shorter room, so the same travel reads at a third of the width */
+  .entry__stage { padding: clamp(18px, 5vw, 80px); perspective: 680px; }
+  /* The dust is 3px here and a blur pass costs the same whatever it is
+     blurring, so the far field pays for depth nobody can see. The seven
+     foreground discs keep theirs — they are 20px and they are the ones doing
+     the work. */
   .entry__mote { filter: none; }
+  .entry__mote--soft { filter: blur(var(--b, 0px)); }
   .entry__halo { margin: -26vh 0 0 -48vw; width: 96vw; height: 52vh; }
   /* Sized from the narrow end, not the wide one. The name needs 5.78px of
      width per 1px of size, and a 320px phone leaves 272px after padding —

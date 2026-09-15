@@ -11,106 +11,141 @@ const HeroScene = lazy(() => import("./scene/HeroScene"));
 /* ──────────────────────────────────────────────────────────────────────────
    The entrance.
 
-   A name and a welcome and nothing else. That single decision is what makes
-   the 3D affordable here: the objection was never the lattice, it was a
-   lattice competing with content. With nothing to compete with, it can just
-   be the room you walk into.
+   THE TYPE IS FLAT. THE ROOM IS NOT.
 
-   THE NAME IS IN THE ROOM, NOT ON A PICTURE OF IT. The previous version put
-   the type on a flat plate and slid it against the scene — layered parallax,
-   which reads as "kind of 3D" because that is exactly what it is. Everything
-   here now lives in ONE CSS 3D volume under a single perspective, so the
-   browser does the projection rather than us approximating it:
+   The previous attempt built the depth into the letters — a side wall, eight
+   planes of extrusion. That was the wrong thing to make three-dimensional.
+   Extruded TYPE is an effect applied to a word; what makes a word look like
+   it is hanging in space is the SPACE. A flat word inside a real volume
+   reads as further into that volume than any amount of thickness on a word
+   sitting in front of a picture.
 
-   1. THICKNESS. The name is drawn several times at decreasing translateZ, so
-      the letters have a side wall that tapers toward the vanishing point. A
-      flat glyph cannot foreshorten; one with depth does, and that is the cue
-      that separates real volume from a drop shadow.
+   So the name is one colour, one plane, no thickness, and the whole budget
+   goes on building a room around it. Four things do that:
 
-   2. OCCLUSION. Motes sit at positive Z — in front of the name — and cross
-      over the letters as the volume turns. Nothing sells "inside a space"
-      like something passing in front of the subject, and it is the one cue
-      layered parallax structurally cannot fake.
+   1. DEPTH THAT IS REAL, NOT LAYERED. Everything shares one perspective.
+      Dust sits from 2300 units behind the name to 420 in front of it, so the
+      near motes are roughly five times the apparent size of the far ones for
+      free — the browser divides by distance, we never fake a scale.
 
-   3. ROTATION, NOT TRANSLATION. The volume turns on two axes. Under
-      perspective that makes the near end of the name larger than the far end,
-      which is the difference between a thing in space and a thing sliding
-      across one.
+   2. THE ROOM MOVES, AND EACH DEPTH MOVES AT ITS OWN SPEED. The volume
+      drifts laterally, and under perspective one translation moves every
+      plane by a different amount on screen: dust in front sweeps, dust at
+      the back barely shifts, the name travels between them. Motion parallax
+      is the cue the eye actually uses to judge distance, and it is the thing
+      a stack of layers can never get right, because there the ratios are
+      guessed and here they are the perspective divide.
 
-   4. IT NEVER STOPS. A slow float on incommensurate rates, so the pose never
-      repeats and the depth stays legible on a phone, where there is no
-      pointer to reveal it. The pointer, where there is one, leans the volume
-      further and eases back.
+   3. TRAVEL. Every mote is flying toward you on its own clock, fading up out
+      of the dark and out again as it passes. That is a CSS animation per
+      mote — transform and opacity only, so it lives on the compositor and
+      costs the main thread nothing at all.
 
-   One rAF loop, one transform write per frame, on one element. Everything
-   inside is positioned once and reprojected by the browser, so the depth
-   costs nothing per frame.
+   4. THINGS IN FRONT. Some of it passes between you and the name, out of
+      focus, the way a lens renders what is nearer than its focal plane.
+      Occlusion is the cue layered parallax structurally cannot fake.
    ────────────────────────────────────────────────────────────────────────── */
 
 const NAME = "Jay Harwani";
 
-/* The side wall: the name again at each depth, in the colour the light falls
-   off to. Eight planes, spaced tightly at the front and further apart as they
-   darken: close enough that the perspective taper does not open visible gaps
-   between them at the ends of a wide word, deep enough that the edge reads as
-   thickness rather than as a drop shadow. Fifty-two units of depth against a
-   1150 perspective is a 4.3% taper, so the far end of the name is genuinely
-   smaller than the near end — which is the whole point. */
-const WALL = [
-  { z: -3, c: "#98A4B8" },
-  { z: -7, c: "#6C798E" },
-  { z: -12, c: "#505B6D" },
-  { z: -18, c: "#3D4757" },
-  { z: -25, c: "#2E3745" },
-  { z: -33, c: "#232B37" },
-  { z: -42, c: "#1A212B" },
-  { z: -52, c: "#131922" },
-];
-
-/* Motes, deterministic so the composition is a decision rather than a slot
-   machine.
-
-   The ones at POSITIVE z sit in front of the name, and they are the point.
-   Occlusion is the one depth cue layered parallax cannot fake, and a thing
-   crossing in front of the subject is what tells you there is space between
-   you and it.
-
-   They are also out of focus, and that is not decoration either: a real lens
-   holds one plane sharp and blurs everything nearer and further. Blurring the
-   near motes is what makes the name read as the focal plane of a camera
-   inside the scene rather than as the top layer of a stack. The far ones take
-   a lighter blur for the same reason from the other side. */
-const MOTES = (() => {
-  let a = 9;
-  const rand = () => {
+/* Deterministic, so the composition is a decision rather than a slot machine. */
+function rng(seed: number) {
+  let a = seed >>> 0;
+  return () => {
     a = (a + 0x6d2b79f5) | 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  return Array.from({ length: 26 }, () => {
-    const front = rand() > 0.55;
-    const k = rand();
-    return front
-      ? {
-          x: rand() * 118 - 9,
-          y: rand() * 118 - 9,
-          z: 110 + k * 190,
-          /* nearer reads bigger and softer, the way out-of-focus light does */
-          s: 7 + k * 11,
-          b: 3.5 + k * 4,
-          o: 0.34 - k * 0.14,
-        }
-      : {
-          x: rand() * 118 - 9,
-          y: rand() * 118 - 9,
-          z: -540 + k * 430,
-          s: 1.8 + rand() * 2.6,
-          b: (1 - k) * 1.4,
-          o: 0.18 + rand() * 0.34,
-        };
-  });
+}
+
+interface Mote {
+  x: number;
+  y: number;
+  z0: number;
+  z1: number;
+  size: number;
+  blur: number;
+  op: number;
+  dur: number;
+  delay: number;
+}
+
+/* Two populations, because they do two different jobs.
+
+   DUST is the volume: forty-six specks crossing the whole depth of the room,
+   small and nearly sharp, which is what gives the space a size.
+
+   BOKEH is the foreground: nine soft discs that only ever live near the
+   camera and pass between you and the name. They are blurred because a lens
+   holds one plane sharp, and the plane it holds is the one the name is on. */
+const { DUST, BOKEH } = (() => {
+  const rand = rng(21);
+
+  /* HOW WIDE THE SPREAD CAN BE IS A GEOMETRY PROBLEM, NOT A TASTE ONE.
+
+     A mote's screen position is measured from the perspective origin and
+     multiplied by its own scale, so one placed at 100% and flown to z +420
+     projects to 50 + 50 x 1.72 = 136% — off the side of the screen long
+     before it reaches you. The first version spread them across -25% to
+     125% and then wondered where the near field went: measured, five of
+     seven foreground discs were off screen at any moment, and they are the
+     ones that were supposed to pass in front of the name.
+
+     So the spread is derived from the scale each population reaches.
+     Foreground discs hit 2.3x, so they start inside 23-77% and stay on
+     screen all the way past you. Dust only reaches 1.7x and is allowed to
+     sail out of frame near the end, which is what dust should do. */
+  const dust: Mote[] = [];
+  for (let i = 0; i < 46; i++) {
+    const dur = 30 + rand() * 34;
+    dust.push({
+      x: rand() * 116 - 8,
+      y: rand() * 116 - 8,
+      z0: -2300,
+      z1: 420,
+      size: 2.8 + rand() * 2.8,
+      blur: rand() * 0.9,
+      op: 0.34 + rand() * 0.46,
+      dur,
+      /* negative, so the field is already in flight on the first frame
+         instead of every mote leaving the back wall together */
+      delay: -rand() * dur,
+    });
+  }
+  const bokeh: Mote[] = [];
+  for (let i = 0; i < 9; i++) {
+    const dur = 38 + rand() * 32;
+    bokeh.push({
+      x: 23 + rand() * 54,
+      y: 23 + rand() * 54,
+      z0: -260,
+      z1: 780,
+      size: 10 + rand() * 12,
+      blur: 4 + rand() * 4,
+      op: 0.13 + rand() * 0.15,
+      dur,
+      delay: -rand() * dur,
+    });
+  }
+  return { DUST: dust, BOKEH: bokeh };
 })();
+
+const moteStyle = (m: Mote): React.CSSProperties =>
+  ({
+    left: `${m.x}%`,
+    top: `${m.y}%`,
+    width: `${m.size.toFixed(2)}px`,
+    height: `${m.size.toFixed(2)}px`,
+    animationDuration: `${m.dur.toFixed(2)}s`,
+    animationDelay: `${m.delay.toFixed(2)}s`,
+    /* through custom properties rather than the declarations themselves, so
+       one media query can strip every blur pass on a phone */
+    "--z0": `${m.z0}px`,
+    "--z1": `${m.z1}px`,
+    "--o": m.op.toFixed(3),
+    "--b": `${m.blur.toFixed(2)}px`,
+  }) as React.CSSProperties;
 
 export default function Hero() {
   const reduce = !!useReducedMotion();
@@ -120,15 +155,16 @@ export default function Hero() {
   const lite = usePerfTier() === "lite";
   const tierReady = useTierReady();
   const depth = !reduce && !lite && tierReady;
-  /* Neither the float nor the WebGL scene has anything to say once the hero
+
+  /* Neither the drift nor the WebGL scene has anything to say once the hero
      is off screen, and both were running for the life of the page — competing
      for frames with the work list's scroll and its four live previews. Both
      stop at the fold now and pick up on the way back.
 
-     The state is OFFSCREEN rather than in-view, and the default is false, and
+     The state is OFFSCREEN rather than in-view, and it defaults to false, and
      that is deliberate. An observer that never speaks is a case this page has
      already been bitten by three times; phrased as "run unless told to stop",
-     a silent observer leaves the hero animating exactly as it did before this
+     a silent one leaves the hero animating exactly as it did before this
      optimisation existed. Phrased the other way it would leave it frozen. An
      optimisation should be able to fail to save work, never to break it. */
   const [offscreen, setOffscreen] = useState(false);
@@ -173,18 +209,17 @@ export default function Hero() {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power3.out" }, paused: true });
       if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__introTl = tl;
-      tl.from(".entry__welcome", { opacity: 0, y: 10, duration: 0.8 }, 0.25)
+      /* The field fades up as a whole rather than mote by mote: each mote is
+         already running its own opacity keyframes, and animating them
+         individually would put two things on the same property. */
+      tl.from(".entry__field", { opacity: 0, duration: 1.6 }, 0)
+        .from(".entry__welcome", { opacity: 0, y: 10, duration: 0.8 }, 0.25)
         .from(
           ".entry__g",
           { yPercent: 118, duration: 1.15, stagger: 0.045, ease: "power4.out" },
           0.45
         )
-        /* the side wall arrives after the face, so the reveal stays a clean
-           rise rather than a rise that already has its own edge standing
-           behind it */
-        .from(".entry__wall", { opacity: 0, duration: 1.1 }, 1.0)
         .from(".entry__rule", { scaleX: 0, duration: 1.1, transformOrigin: "center" }, 0.9)
-        .from(".entry__mote", { opacity: 0, duration: 1.4, stagger: 0.012 }, 0.8)
         .from(".entry__cue", { opacity: 0, y: 12, duration: 0.8 }, 1.15);
 
       const run = () => {
@@ -216,10 +251,19 @@ export default function Hero() {
     };
   }, [reduce]);
 
-  /* ── the float ──
-     The rates are incommensurate (0.21 / 0.13 / 0.17 / 0.11), which is what
-     keeps the volume from returning to a pose you have already seen. A single
-     sine reads as a loop inside about ten seconds. */
+  /* ── the camera ──
+     A LATERAL drift, not a rotation. Rotating the volume tips the name with
+     it, which is the extruded-type read this pass exists to get rid of. A
+     translation leaves every plane square to you and still produces depth,
+     because under perspective one translation moves each depth by a
+     different amount on screen: the near dust travels about 1.7x what the
+     name does, the far dust about a third of it. That spread is the depth
+     cue — and unlike parallax layers driven by hand-picked multipliers, here
+     the ratios are not guessed, they are the perspective divide.
+
+     Rates are incommensurate, so the room never returns to a position you
+     have already seen. One transform write per frame, on one element; the
+     motes' own travel is pure CSS and never touches the main thread. */
   useEffect(() => {
     if (reduce || offscreen) return;
     const el = world.current;
@@ -235,14 +279,13 @@ export default function Hero() {
 
     const frame = (now: number) => {
       const t = (now - t0) / 1000;
-      /* the pointer trails hard, so the volume leans rather than snapping */
-      ex += (px - ex) * 0.045;
-      ey += (py - ey) * 0.045;
-      const rx = Math.sin(t * 0.21) * 2.6 - ey * 7;
-      const ry = Math.sin(t * 0.13 + 1.1) * 4.6 + ex * 9;
-      const tz = Math.sin(t * 0.17) * 24;
-      const ty = Math.sin(t * 0.11 + 0.6) * 9;
-      el.style.transform = `translate3d(0, ${ty.toFixed(2)}px, ${tz.toFixed(2)}px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
+      /* the pointer trails hard, so the room drifts rather than snapping */
+      ex += (px - ex) * 0.04;
+      ey += (py - ey) * 0.04;
+      const x = Math.sin(t * 0.11) * 15 + ex * 44;
+      const y = Math.sin(t * 0.083 + 1.2) * 9 + ey * 26;
+      const z = Math.sin(t * 0.067 + 0.4) * 34;
+      el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, ${z.toFixed(2)}px)`;
       if (light.current && lx > -9000) {
         light.current.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
       }
@@ -263,24 +306,6 @@ export default function Hero() {
     };
   }, [reduce, offscreen]);
 
-  /* One row of glyphs. The side wall reuses it verbatim rather than rendering
-     plain text, because identical markup is the only way to guarantee
-     identical layout: a plain span sits on the baseline while the clipped
-     face aligns to the bottom of its line box, and the wall would be a few
-     pixels out at every depth. */
-  const row = (inner: string) =>
-    NAME.split("").map((ch, k) =>
-      ch === " " ? (
-        <span key={k} className="entry__sp">
-          &nbsp;
-        </span>
-      ) : (
-        <span key={k} className="entry__clip">
-          <span className={inner}>{ch}</span>
-        </span>
-      )
-    );
-
   return (
     <section ref={root} className="band band--ink entry" aria-label="Welcome">
       {/* the ground: a dot lattice that needs no WebGL, so it is there on
@@ -299,49 +324,44 @@ export default function Hero() {
       <div className="entry__stage">
         <div className="entry__world" ref={world}>
           {/* atmosphere, at depth, so it recedes with everything else rather
-              than sitting on the glass */}
+              than sitting flat on the glass */}
           <div className="entry__halo" aria-hidden="true" />
+
+          {/* the far half of the room */}
+          <div className="entry__field" aria-hidden="true">
+            {DUST.map((m, i) => (
+              <span key={i} className="entry__mote" style={moteStyle(m)} />
+            ))}
+          </div>
 
           <div className="entry__plate">
             <p className="micro entry__welcome">Welcome to my portfolio</p>
 
+            {/* one clip per glyph, so the name rises out of nothing rather
+                than fading in. Flat: one colour, one plane, no thickness. */}
             <h1 className="entry__name" aria-label={NAME}>
-              {WALL.map((layer, i) => (
-                <span
-                  key={i}
-                  className="entry__wall"
-                  style={{ transform: `translateZ(${layer.z}px)`, color: layer.c }}
-                  aria-hidden="true"
-                >
-                  {row("entry__dg")}
-                </span>
-              ))}
-              <span className="entry__face" aria-hidden="true">
-                {row("entry__g")}
-              </span>
+              {NAME.split("").map((ch, k) =>
+                ch === " " ? (
+                  <span key={k} className="entry__sp" aria-hidden="true">
+                    &nbsp;
+                  </span>
+                ) : (
+                  <span key={k} className="entry__clip" aria-hidden="true">
+                    <span className="entry__g">{ch}</span>
+                  </span>
+                )
+              )}
             </h1>
 
             <div className="entry__rule" aria-hidden="true" />
           </div>
 
-          {MOTES.map((m, i) => (
-            <span
-              key={i}
-              className="entry__mote"
-              aria-hidden="true"
-              style={{
-                left: `${m.x}%`,
-                top: `${m.y}%`,
-                width: `${m.s}px`,
-                height: `${m.s}px`,
-                opacity: m.o,
-                /* through a custom property rather than the filter itself, so
-                   a phone can drop every blur pass in one CSS rule */
-                ["--b" as string]: `${m.b.toFixed(2)}px`,
-                transform: `translateZ(${m.z}px)`,
-              }}
-            />
-          ))}
+          {/* and the near half, which passes in front of it */}
+          <div className="entry__field" aria-hidden="true">
+            {BOKEH.map((m, i) => (
+              <span key={i} className="entry__mote entry__mote--soft" style={moteStyle(m)} />
+            ))}
+          </div>
         </div>
       </div>
 
