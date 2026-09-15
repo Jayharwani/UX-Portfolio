@@ -757,9 +757,158 @@
    The icons were decoration pretending to be evidence, and they cost 27 KB
    of physics engine to float. Set as words they are denser, faster to read
    and weigh nothing. */
-.tools { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: clamp(26px, 4vh, 46px); }
-.tools span { font-size: var(--t-body); font-weight: 400; color: var(--on-stone-2); }
-.tools b { font-weight: 500; color: var(--on-stone); }
+/* ── band arrival ──
+   A class and a transition rather than a library writing inline styles every
+   frame, so the state survives a frame that never comes. See Reveal(). */
+.rv {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 800ms var(--ease-ui), transform 800ms var(--ease-ui);
+}
+.rv.is-in { opacity: 1; transform: none; }
+/* the guard fired, so there may never be a frame to animate in — land on the
+   end state rather than transition toward one */
+.rv.is-instant, .wcard.is-instant, .route.is-instant * { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv { transform: none; transition: opacity 300ms linear; }
+}
+
+/* ── THE ROUTE BAND ────────────────────────────────────────────────────────
+   One fact about a person, drawn instead of written. The sentence that was
+   here ran four lines on a phone and sat over nine tool names set as running
+   text — twenty-two words, all of it at the same volume, which is what
+   "boring" meant.
+
+   The graphic takes the wider half on a desktop and goes FIRST on a phone,
+   because it is the thing worth looking at and a caption belongs under its
+   plate. */
+.origin {
+  display: grid;
+  /* the drawing comes first in the DOM so a phone gets it first; on a wide
+     screen that puts it in the left column, so the left column is the wide
+     one and the caption reads to its right */
+  grid-template-columns: 1.16fr 0.84fr;
+  gap: clamp(26px, 4vw, 72px);
+  align-items: center;
+  margin-top: clamp(22px, 3.4vh, 44px);
+}
+.origin__line {
+  margin: 0;
+  max-width: 24ch;
+  font-size: var(--t-sub);
+  font-weight: 400;
+  line-height: 1.34;
+  letter-spacing: -0.012em;
+  color: var(--on-stone-2);
+}
+
+/* ── the drawing ──
+   The wrapper carries the viewBox's own ratio, so the SVG scales uniformly
+   and percentage positions map linearly onto its coordinates. That is what
+   lets the two place names be real HTML — an SVG <text> at this scale would
+   render a 15px label at 10px on a phone. */
+.route {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 13 / 6;
+  color: var(--on-stone);
+}
+.route__svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.route__field { opacity: 0.34; }
+
+/* non-scaling-stroke everywhere: the graphic is 520 units wide and renders at
+   346 on a phone, so every hairline would otherwise arrive two thirds of the
+   weight it was drawn at. */
+.route__arc {
+  stroke: var(--on-stone);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1700ms cubic-bezier(0.5, 0, 0.2, 1);
+}
+.route.is-in .route__arc { stroke-dashoffset: 0; }
+
+.route__dot { fill: var(--on-stone); }
+.route__ring {
+  stroke: var(--on-stone);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.32;
+}
+.route__node {
+  opacity: 0;
+  transform: scale(0.4);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 560ms var(--ease-ui), transform 760ms var(--ease-ui);
+}
+.route.is-in .route__node { opacity: 1; transform: none; }
+/* the destination waits for the line to reach it — the order the thing being
+   described actually happened in */
+.route.is-in .route__node--from { transition-delay: 120ms; }
+.route.is-in .route__node--to { transition-delay: 1480ms; }
+
+.route__label {
+  position: absolute;
+  margin: 0;
+  white-space: nowrap;
+  /* these two words are the band's headline — there is no other one —
+     so they carry the weight a head would have carried */
+  font-size: clamp(1rem, 1.75vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: var(--on-stone);
+  opacity: 0;
+  transform: translate(-50%, 22px);
+  transition: opacity 700ms var(--ease-ui), transform 900ms var(--ease-ui);
+}
+.route.is-in .route__label { opacity: 1; transform: translate(-50%, 13px); }
+.route.is-in .route__label--from { transition-delay: 260ms; }
+.route.is-in .route__label--to { transition-delay: 1560ms; }
+
+.route__dist {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  margin: 0;
+  transform: translateX(-50%);
+  color: var(--on-stone-2);
+  opacity: 0;
+  transition: opacity 800ms var(--ease-ui) 980ms;
+}
+.route.is-in .route__dist { opacity: 1; }
+
+/* ── the toolchain ──
+   One ink colour and one optical size, which is what keeps nine marks reading
+   as a set rather than as a sponsor wall. Each carries a title, so the row is
+   legible to a screen reader and on hover without any of it being text. */
+.toolrow {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(15px, 2.2vw, 26px);
+  margin: clamp(22px, 3vh, 34px) 0 0;
+  padding: 0;
+}
+.toolrow li { display: flex; }
+.tool {
+  width: clamp(19px, 2vw, 23px);
+  height: auto;
+  color: var(--on-stone);
+  opacity: 0.55;
+  transition: opacity 320ms var(--ease-ui);
+}
+.tool:hover { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .route__arc { transition: none; stroke-dashoffset: 0; }
+  .route__node, .route__label, .route__dist { transition: none; }
+  .tool { transition: none; }
+}
 
 /* ── contact ── */
 .big-link {
@@ -1410,7 +1559,21 @@
    preview, which moves first. */
 @media (max-width: 900px) {
   /* bands: desktop air is not phone air */
-  .band__in { padding: clamp(56px, 8vh, 92px) clamp(22px, 5vw, 80px); }
+  .band__in { padding: clamp(48px, 7vh, 84px) clamp(22px, 5vw, 80px); }
+
+  /* ── the scale, which a phone did not have ──
+     Measured before touching it: the section headline, the project name, the
+     About headline and the Email link all rendered at 29.6px, because
+     --t-head is pinned to its 1.85rem floor below about 720px and three
+     different elements were reading from it. Four things at one size is not
+     a hierarchy, it is a page shouting, and that is what "bulky and
+     cluttered" was describing.
+
+     Five steps now, each a real jump: 55 / 36 / 28 / 23 / 15. */
+  .display { font-size: 36px; letter-spacing: -0.028em; }
+  .s32 .head { font-size: 23px; line-height: 1.16; letter-spacing: -0.02em; }
+  .wcard__name { font-size: 28px; }
+  .big-link { font-size: 23px; }
 
   /* ── hero ── */
   .entry__stage { padding: clamp(18px, 5vw, 80px); }
@@ -1428,13 +1591,18 @@
   /* the work stage does not render at this width at all any more — the
      section swaps to .wlist, which is styled once and not by breakpoint */
 
-  /* ── stone ── */
-  .tools { gap: 8px 18px; }
-  .tools span { font-size: 15px; }
+  /* ── the route ──
+     The drawing goes first: it is the thing worth looking at, and a caption
+     belongs under its plate rather than over it. */
+  .origin { grid-template-columns: 1fr; gap: 22px; margin-top: 18px; }
+  .origin__art { order: -1; }
+  .origin__line { font-size: 16px; max-width: 30ch; }
+  .toolrow { gap: 18px; margin-top: 22px; }
+  .tool { width: 21px; opacity: 0.62; }
 
   /* ── contact ── */
-  .contact__row { gap: 18px 28px; }
-  .foot { gap: 8px 18px; }
+  .contact__row { gap: 16px 26px; margin-top: 26px; }
+  .foot { gap: 8px 18px; margin-top: clamp(34px, 5vh, 60px); }
 }
 
 /* The Source control gets the same treatment as the case link: globals.css

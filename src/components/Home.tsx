@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
 import { useNarrow } from "./home/useNarrow";
+import { useInView } from "./home/useInView";
+import Route from "./home/Route";
+import { ToolRow } from "./home/toolmarks";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -63,18 +66,38 @@ const WORK = [
   { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
 ];
 
+/* Arrival for the editorial bands.
+
+   This used to be Motion's whileInView, which is the third thing on this page
+   to put an element at opacity 0 and then wait on an observer to take it back
+   — after the hero entrance and the work cards, both of which were found
+   blank on a document that mounted hidden. Motion's viewport detection is the
+   same machinery and inherits the same silence.
+
+   Routing it through the guarded hook was not enough on its own, and the
+   reason is worth recording: Motion animates on requestAnimationFrame and
+   writes each frame as an inline style. When the ticker never runs, the hook
+   correctly reports "arrived" and the element still sits at the start value
+   Motion wrote, because nothing ever writes the next one. Measured exactly
+   that: seen true, inline style still opacity 0.
+
+   So this is a class and a CSS transition now, like the work cards. A class
+   flip changes the computed style whether or not a frame is ever produced,
+   which means the failsafe can actually take effect. Same curve, same delay,
+   one less thing that can hold the page blank.
+   ────────────────────────────────────────────────────────────────────────── */
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const reduce = useReducedMotion();
+  const reduce = !!useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const { seen, forced } = useInView(ref, { threshold: 0.35, rootMargin: "0px", enabled: !reduce });
   return (
-    <motion.div
-      className={className}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.4 }}
-      transition={reduce ? { duration: 0.3 } : { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+    <div
+      ref={ref}
+      className={`rv${seen ? " is-in" : ""}${forced ? " is-instant" : ""}${className ? ` ${className}` : ""}`}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -168,65 +191,25 @@ function WorkList({ reduce }: { reduce: boolean }) {
 
 function WorkCard({ w, reduce }: { w: (typeof WORK)[number]; reduce: boolean }) {
   const ref = useRef<HTMLLIElement>(null);
-  /* Two signals, not one. `seen` latches: a card that has arrived stays
-     arrived, so scrolling back up does not fade the page out behind you.
-     `playing` tracks the viewport both ways, so the preview resets when it
-     leaves and runs again when you come back to it. */
-  const [seen, setSeen] = useState(reduce);
-  const [playing, setPlaying] = useState(reduce);
+  /* Two signals, not one. `seen` latches, so scrolling back up does not fade
+     the page out behind you; `inView` tracks both ways, so the preview resets
+     when it leaves and runs again when you come back to it. The guard against
+     a silent observer lives in the hook — see useInView.ts. */
+  const { seen, inView, forced } = useInView(ref, { enabled: !reduce });
   const [flipped, setFlipped] = useState(false);
   const code = sourceOf(w.Preview.name);
-
-  useEffect(() => {
-    if (reduce) return;
-    const el = ref.current;
-    if (!el) return;
-    if (!("IntersectionObserver" in window)) {
-      setSeen(true);
-      setPlaying(true);
-      return;
-    }
-    /* Same lesson as the hero entrance: a card whose resting state is
-       opacity 0 is invisible until something tells it otherwise, and an
-       observer does not report while the document is hidden. Measured here
-       — a phone-width load with visibilityState "hidden" delivered no
-       callback at all, and rAF never ticked either.
-
-       So `spoke` records whether the observer has said ANYTHING, which is a
-       different question from whether the card is on screen: reporting
-       "not intersecting" is a working observer. If it has said nothing at
-       all three seconds in, the observer is the broken part, and the card
-       goes on screen without it. */
-    let spoke = false;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        spoke = true;
-        setPlaying(entry.isIntersecting);
-        if (entry.isIntersecting) setSeen(true);
-      },
-      { threshold: 0.2, rootMargin: "-6% 0px -6% 0px" }
-    );
-    io.observe(el);
-    const failsafe = window.setTimeout(() => {
-      if (!spoke) setSeen(true);
-    }, 3000);
-    return () => {
-      io.disconnect();
-      window.clearTimeout(failsafe);
-    };
-  }, [reduce]);
 
   return (
     <li
       ref={ref}
-      className={`wcard${seen ? " is-in" : ""}`}
+      className={`wcard${seen ? " is-in" : ""}${forced ? " is-instant" : ""}`}
       style={{ ["--ac" as string]: w.accent }}
     >
       <div className="wcard__frame">
         <div className={`flip${flipped ? " is-flipped" : ""}`}>
           <div className="flip__face flip__face--front">
             <div className="wcard__art">
-              <w.Preview active={playing} />
+              <w.Preview active={inView} />
             </div>
           </div>
           <div className="flip__face flip__face--back" aria-hidden={!flipped}>
@@ -439,21 +422,33 @@ export function Home() {
         <Work />
       </section>
 
-      {/* ── stone: one sentence ── */}
-      <section className="band band--stone">
+      {/* ── stone: the one biographical fact, drawn rather than written ──
+          This band used to be a four-line sentence over nine tool names set
+          as running text: twenty-two words for one fact about a person. The
+          sentence is now a line between two points, and the tool names are
+          marks, so the band says the same thing at a glance. */}
+      <section className="band band--stone" aria-label="About">
         <div className="band__in">
           <Reveal>
-            <h2 className="head" style={{ maxWidth: "20ch" }}>
-              Ahmedabad to Baltimore, by way of a Master&rsquo;s in Human-Centered Computing.
-            </h2>
+            <span className="micro">The route</span>
           </Reveal>
-          <Reveal delay={0.12}>
-            <div className="tools">
-              <span><b>Figma</b></span><span><b>React</b></span><span><b>TypeScript</b></span>
-              <span><b>Claude</b></span><span><b>Cursor</b></span><span><b>GSAP</b></span>
-              <span><b>Three.js</b></span><span><b>Tailwind</b></span><span><b>Adobe CC</b></span>
+          <div className="origin">
+            {/* Route runs its own arrival — wrapping it in Reveal would fade
+                the frame in over a graphic that is already drawing itself. */}
+            <div className="origin__art">
+              <Route />
             </div>
-          </Reveal>
+            <div className="origin__say">
+              <Reveal delay={0.1}>
+                <p className="origin__line">
+                  Master&rsquo;s in Human-Centered Computing, UMBC.
+                </p>
+              </Reveal>
+              <Reveal delay={0.18}>
+                <ToolRow />
+              </Reveal>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -471,7 +466,6 @@ export function Home() {
           </Reveal>
           <Reveal delay={0.2}>
             <div className="foot">
-              <span className="micro">UMBC · Human-Centered Computing</span>
               <span className="micro">No sponsorship required</span>
               <span className="micro">© 2026</span>
             </div>
