@@ -1249,23 +1249,47 @@
   .entry__arrow::after { animation: none; opacity: 0.6; transform: translateY(14px); }
 }
 
-/* ── THE CLOTH ────────────────────────────────────────────────────────────
-   A height field rendered at 192x120 and stretched to fill. Cloth is soft, so
-   the browser's own image smoothing does the interpolation and the shading
-   maths runs over 23,000 cells instead of 1.3 million pixels — visually
-   identical, fifty times cheaper.
+/* ── THE GROUND ────────────────────────────────────────────────────────────
+   The hero read as plain dark, and the likely reason is the tier: the WebGL
+   lattice is skipped entirely on the lite tier, so a machine the watchdog has
+   downgraded sees flat ink and nothing else.
 
-   The fixed SVG texture and the blue light that used to live here are gone:
-   the light moved and the cloth did not, which is the opposite of the thing
-   being asked for. */
-.cloth {
+   So the background does not depend on WebGL at all. A dot lattice, a light
+   that follows the pointer, and a grain — all of it CSS, all of it present on
+   every tier. When the 3D scene DOES load it sits above this, and the two
+   read as a ground plane under a volume rather than as two competing fields. */
+.entry__ground {
   position: absolute;
   inset: 0;
   z-index: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
+  background-image: radial-gradient(circle at center, rgba(242, 241, 236, 0.13) 1px, transparent 1.4px);
+  background-size: 28px 28px;
+  /* faded toward the edges so it reads as a surface catching light in the
+     middle of the frame, not as wallpaper running to the corners */
+  -webkit-mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
+  mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
+  opacity: 0.5;
+}
+
+/* the light. Positioned at the origin and moved by transform, so following
+   the pointer costs one compositor write and never a style invalidation —
+   a custom property on this page measured 12.9ms to invalidate. */
+.entry__light {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 760px;
+  height: 760px;
+  margin: -380px 0 0 -380px;
   pointer-events: none;
+  will-change: transform;
+  background: radial-gradient(
+    circle,
+    rgba(120, 160, 255, 0.16) 0%,
+    rgba(120, 160, 255, 0.07) 32%,
+    transparent 64%
+  );
 }
 
 /* grain. One static texture at very low opacity — it is what keeps a large
@@ -1281,4 +1305,6 @@
 }
 
 @media (max-width: 900px) {
+  .entry__ground { background-size: 22px 22px; }
+  .entry__light { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
 }
