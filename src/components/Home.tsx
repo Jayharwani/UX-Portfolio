@@ -5,7 +5,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
 import { sourceOf, Highlight, lineCount } from "./home/source";
-import Detect from "./home/Detect";
 import {
   SignalPreview,
   HeadroomPreview,
@@ -55,10 +54,10 @@ const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
    nothing — the previews already carry these hues internally, so the frame
    agreeing with them is the whole point. */
 const WORK = [
-  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", tags: ["Live product", "Maps", "Front-end"], Preview: SignalPreview },
-  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", tags: ["PWA", "On-device", "No bank login"], Preview: HeadroomPreview },
-  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", tags: ["Mobile app", "Haptics", "Multi-sensory"], Preview: ChronoWeavePreview },
-  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", tags: ["Chrome extension", "Agentic AI", "Conversational"], Preview: BumperPreview },
+  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview },
+  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview },
+  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview },
+  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
 ];
 
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -174,14 +173,8 @@ function WorkStage() {
         {WORK.map((w) => (
           <div className="stack__item" key={w.name} style={{ ["--ac" as string]: w.accent }}>
             <div className="stage__copy">
-              <span className="micro">{w.n} / 04</span>
               <h3 className="stage__name">{w.name}</h3>
               <p className="stage__line">{w.line}</p>
-              <ul className="tagrow">
-                {w.tags.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
               <Link className="stage__go" to={w.to}>View case ↗</Link>
             </div>
             <div className="stage__screen">
@@ -198,16 +191,10 @@ function WorkStage() {
       <div ref={stageRef} className="stage" style={{ ["--ac" as string]: WORK[i].accent }}>
         <div className="stage__in">
           <div className="stage__copy">
-            <span className="micro">{WORK[i].n} / 04</span>
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__text${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
                 <h3 className="stage__name">{w.name}</h3>
                 <p className="stage__line">{w.line}</p>
-                <ul className="tagrow">
-                  {w.tags.map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                </ul>
                 <Link className="stage__go" to={w.to} tabIndex={k === i ? 0 : -1}>
                   View case ↗
                 </Link>
@@ -226,10 +213,6 @@ function WorkStage() {
                     <w.Preview key={`${w.name}-${replay}`} active={k === i} />
                   </div>
                 ))}
-                {/* the detection pass — boxes measured off the running
-                    preview, so they follow it rather than sitting at
-                    hand-tuned coordinates */}
-                <Detect hostRef={faceRef} runKey={`${i}-${replay}`} reduce={!!reduce} />
               </div>
               <div className="flip__face flip__face--back" aria-hidden={!flipped}>
                 <pre className="src">

@@ -1085,43 +1085,12 @@
 
    Three additions, all of them visual and none of them words. */
 
-/* tags: the strings the old work cards used, in the treatment they used.
-   Outline pills rather than solid — at this size a filled chip reads as a
-   button and invites a click that does nothing. */
-.tagrow {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin: 18px 0 0;
-  padding: 0;
-}
-.tagrow li {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--on-ink-2);
-  border: 1px solid var(--hair-dark);
-  border-radius: 999px;
-  padding: 5px 11px;
-  transition: border-color 420ms ease, color 420ms ease;
-}
-/* the live project tints its own tags — the accent doing work rather than
-   decoration */
-.stage__text.is-on .tagrow li,
-.stack__item .tagrow li {
-  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 30%, transparent);
-  color: color-mix(in oklab, var(--ac, var(--on-ink)) 62%, var(--on-ink));
-}
 
 
 @media (max-width: 900px) {
-  .tagrow { margin-top: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tagrow li { transition: none; }
 }
 
 /* ── the flip: live component on one side, its source on the other ────────
@@ -1239,63 +1208,39 @@
    asked for. */
 .stage__screen:hover { translate: 0 -4px; }
 
-/* ── the detection pass ────────────────────────────────────────────────────
-   Robotics and AI, done as PERCEPTION rather than as neon circuitry: the
-   system showing what it found, where, and what it thinks it is.
 
-   Boxes are positioned from measured rects in Detect.tsx, so this file only
-   describes how they arrive. One-shot: each box snaps in, then the whole
-   layer settles to a resting opacity and stops. Nothing loops. */
-.det { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+/* ── the transition IS the thing ────────────────────────────────────────────
+   Everything that was competing for attention is gone: the detection boxes
+   and their readouts, the tag pills, the index label. What is left on screen
+   is a name, one line, a link, and the work itself.
 
-.det__box {
-  position: absolute;
+   Which frees the only thing that should be surprising — moving between
+   projects. It was a cross-fade, which is what every slideshow does. Now each
+   project arrives with real depth: the outgoing one falls back and away while
+   the incoming rises from behind it, on a long soft curve.
+
+   The whole effect is two properties on a state change. Nothing runs per
+   frame, nothing loops, and there is no new element anywhere — the surprise
+   is behaviour, not ornament. */
+.stage__slide {
   opacity: 0;
-  /* snapping in from slightly LARGER is what reads as acquisition — a box
-     growing into place reads as drawing, a box closing onto it reads as
-     locking on */
-  animation: det-lock 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform: scale(0.94) translateY(26px);
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 980ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-@keyframes det-lock {
-  from { opacity: 0; transform: scale(1.07); }
-  60%  { opacity: 1; }
-  to   { opacity: 0.55; transform: scale(1); }
+.stage__slide.is-on { opacity: 1; transform: none; }
+
+/* the copy travels with it, a beat behind, so the two read as one object
+   arriving rather than two things fading */
+.stage__text {
+  transform: translateY(22px);
+  transition:
+    opacity 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
 }
+.stage__text.is-on { transform: none; }
 
-/* corner ticks rather than a full rectangle: a closed box hides the work
-   behind it, four corners read as a reticle and leave the UI visible */
-.det__c { position: absolute; width: 7px; height: 7px; }
-.det__c--tl { top: -1px; left: -1px; border-top: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
-.det__c--tr { top: -1px; right: -1px; border-top: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
-.det__c--bl { bottom: -1px; left: -1px; border-bottom: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
-.det__c--br { bottom: -1px; right: -1px; border-bottom: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
-
-.det__tag {
-  position: absolute;
-  left: -1px;
-  top: -17px;
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  white-space: nowrap;
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.16em;
-  color: var(--ac, #fff);
-}
-/* the readout is the element's real normalised centre, printed in a dimmer
-   weight so the label leads and the numbers support it */
-.det__tag i {
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.6;
-  letter-spacing: 0.08em;
-}
-
-/* reduced motion: the boxes are simply there, no acquisition */
-.det--still .det__box { animation: none; opacity: 0.45; }
-
-@media (max-width: 900px) {
-  .det__tag { font-size: 7.5px; top: -14px; gap: 5px; }
-  .det__c { width: 5px; height: 5px; }
+@media (prefers-reduced-motion: reduce) {
+  .stage__slide, .stage__text { transition: opacity 200ms linear; transform: none; }
 }
