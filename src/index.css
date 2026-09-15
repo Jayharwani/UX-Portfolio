@@ -1369,19 +1369,52 @@
 
 
 /* ── THE ENTRANCE ──────────────────────────────────────────────────────────
-   A door, not a section. It holds a name and a welcome and nothing else,
-   which is precisely what lets the 3D exist here: the objection to the
-   lattice was never the lattice, it was a lattice competing with content.
-
-   Perspective lives on the stage, so the plate's rotation is a real
-   perspective divide rather than a skew. The plate leans AGAINST the scene's
-   lean, which is what separates the two planes when the pointer moves. */
+   A name inside a real 3D space. Two WebGL canvases share one camera — one
+   under the type, one over it — and the real <h1> sits between them, which
+   is how particles get to pass in front of the name without the name ever
+   being rendered as geometry. Type stays crisp; depth stays honest. */
 .entry {
   position: relative;
   min-height: 100svh;
   display: flex;
   overflow: hidden;
+  background: var(--ink);
 }
+
+/* Absolute, not fixed: a fixed canvas would stay on screen behind the whole
+   page. The section is full-height, so inside the hero the effect is
+   identical and outside it there is nothing to clean up. */
+.entry__sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.entry__sky canvas { display: block; width: 100%; height: 100%; }
+.entry__sky--back { z-index: 0; }
+/* over the type. The pass is transparent, so the name shows through
+   everywhere a near particle is not. */
+.entry__sky--front { z-index: 3; }
+
+/* the one piece of dressing: a faint lift under the name so it never has to
+   win a contrast argument with a bright particle */
+.entry__glow {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: min(1180px, 92vw);
+  height: min(540px, 58vh);
+  transform: translate(-50%, -50%);
+  max-width: none;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(11, 13, 16, 0.62) 0%,
+    rgba(11, 13, 16, 0.34) 44%,
+    transparent 74%
+  );
+}
+
 .entry__stage {
   position: relative;
   z-index: 2;
@@ -1390,97 +1423,26 @@
   align-items: center;
   justify-content: center;
   padding: clamp(24px, 6vw, 80px);
-  /* ONE perspective for the whole volume. Everything below shares it, which
-     is the difference between a 3D space and a stack of layers that slide:
-     the browser projects every child from the same eye point, so the side
-     wall tapers, the motes in front grow, and the far field shrinks — all of
-     it for free, from one transform on the parent. */
-  perspective: 1000px;
-  perspective-origin: 50% 46%;
 }
+.entry__plate { text-align: center; will-change: transform; }
 
-/* the volume. The only animated element in the hero: one transform per frame */
-.entry__world {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  will-change: transform;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ── the entrance: one coordinated moment ──
+   Everything rises together on the same curve. No per-element fade-up, no
+   stagger, no hover flourish — the boldness is spent on the depth. */
+.entry__welcome,
+.entry__name {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.entry__plate {
-  position: relative;
-  transform-style: preserve-3d;
-  text-align: center;
-}
-
-/* atmosphere behind the name, inside the volume, so it recedes with
-   everything else instead of sitting flat on the glass */
-.entry__halo {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(1100px, 86vw);
-  height: min(620px, 62vh);
-  margin: -31vh 0 0 -43vw;
-  max-width: none;
-  transform: translate3d(-4%, -2%, -420px);
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 50%,
-    rgba(110, 150, 240, 0.17) 0%,
-    rgba(80, 110, 190, 0.07) 38%,
-    transparent 70%
-  );
-}
-
-/* ── the room ──────────────────────────────────────────────────────────────
-   Every mote flies from the back wall to past your shoulder on its own clock.
-   The apparent size is not animated and neither is the speed: both come out
-   of the perspective divide, because a thing at -2300 and the same thing at
-   +420 are 0.33x and 1.72x of their own size under a 1000 perspective. Five
-   times the size across the journey, from one property.
-
-   transform and opacity only, which is the whole reason this can run on
-   fifty-one elements at once: both are compositor properties, so the travel
-   never touches layout, never touches paint, and never touches the main
-   thread. The one rAF loop in this hero moves the ROOM, not the dust. */
-.entry__field {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  pointer-events: none;
-}
-.entry__mote {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(var(--b, 0px));
-  background: radial-gradient(circle, #EAF0FF 0%, rgba(150, 185, 255, 0.85) 42%, rgba(120, 160, 255, 0) 72%);
-  animation-name: mote-travel;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-/* the foreground: fewer, larger, softer, and always near the camera, so they
-   cross in front of the name rather than around it */
-.entry__mote--soft {
-  background: radial-gradient(circle, rgba(226, 236, 255, 0.95) 0%, rgba(150, 185, 255, 0.5) 45%, rgba(120, 160, 255, 0) 74%);
-}
-
-/* Brightness is graded along the journey, not held flat across it. A mote
-   two thousand units back is not just smaller, it is dimmer — atmosphere
-   eats it — and one that has passed the focal plane is blowing out and
-   leaving. Constant opacity with a fade at each end reads as a sprite
-   crossing a screen; this reads as something coming out of a depth. */
-@keyframes mote-travel {
-  0%   { transform: translateZ(var(--z0)); opacity: 0; }
-  16%  { opacity: calc(var(--o) * 0.3); }
-  70%  { opacity: var(--o); }
-  90%  { opacity: calc(var(--o) * 0.5); }
-  100% { transform: translateZ(var(--z1)); opacity: 0; }
-}
+.entry__name { transition-delay: 90ms; }
+.entry.is-in .entry__welcome,
+.entry.is-in .entry__name { opacity: 1; transform: none; }
+/* the guard fired, so there may never be a frame to animate in — land on the
+   end state rather than transition toward one */
+.entry.is-instant .entry__welcome,
+.entry.is-instant .entry__name { transition: none; }
 
 .entry__welcome {
   margin: 0 0 clamp(18px, 2.6vh, 30px);
@@ -1488,40 +1450,24 @@
   color: var(--on-ink-2);
 }
 
-/* the name. One clip per glyph so each rises out of nothing; inline-block on
-   both halves because a transform on an inline box does nothing. */
 .entry__name {
   margin: 0;
   font-size: clamp(3rem, 12.5vw, 11.5rem);
   font-weight: 500;
   line-height: 0.92;
   letter-spacing: -0.042em;
-  color: var(--on-ink);
+  /* warm off-white against the cool field — the one colour contrast in the
+     section, and the reason the name separates from the constellation
+     without needing a heavier weight or a glow behind every letter */
+  color: #F4F1EA;
   white-space: nowrap;
-}
-.entry__clip { display: inline-block; overflow: hidden; vertical-align: bottom; }
-.entry__g { display: inline-block; will-change: transform; }
-.entry__sp { display: inline-block; width: 0.26em; }
-
-
-.entry__rule {
-  height: 1px;
-  width: min(420px, 60%);
-  margin: clamp(22px, 3.2vh, 40px) auto 0;
-  background: linear-gradient(
-    to right,
-    transparent,
-    color-mix(in oklab, var(--on-ink) 42%, transparent),
-    transparent
-  );
 }
 
 /* the cue. The travelling line is the one looping thing on the page and it
-   earns it: it says "there is more below", which is information, not
-   decoration. */
+   earns it: it says "there is more below", which is information. */
 .entry__cue {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   left: 0;
   right: 0;
   bottom: clamp(22px, 4vh, 44px);
@@ -1530,7 +1476,11 @@
   align-items: center;
   gap: 12px;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease 700ms;
 }
+.entry.is-in .entry__cue { opacity: 1; }
+.entry.is-instant .entry__cue { transition: none; }
 .entry__arrow {
   position: relative;
   width: 1px;
@@ -1556,77 +1506,13 @@
 
 @media (max-width: 900px) {
   .entry__welcome { letter-spacing: 0.22em; font-size: 10px; }
-  .entry__rule { width: min(260px, 70%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* the drift effect returns early under reduced motion, so the room's own
-     transform is never written — but the motes animate in CSS and have to be
-     stopped here. Parked at a readable depth rather than hidden: the room is
-     still a room, it is just not moving through you. */
-  .entry__mote { animation: none; transform: translateZ(-300px); opacity: var(--o); }
-  .entry__mote--soft { transform: translateZ(240px); }
+  /* the scene renders a single still frame and the camera never moves; the
+     type is simply there. Present and depth-shaded, just not alive. */
+  .entry__welcome, .entry__name, .entry__cue { transition: none; }
   .entry__arrow::after { animation: none; opacity: 0.6; transform: translateY(14px); }
-}
-
-/* ── THE GROUND ────────────────────────────────────────────────────────────
-   The hero read as plain dark, and the likely reason is the tier: the WebGL
-   lattice is skipped entirely on the lite tier, so a machine the watchdog has
-   downgraded sees flat ink and nothing else.
-
-   So the background does not depend on WebGL at all. A dot lattice, a light
-   that follows the pointer, and a grain — all of it CSS, all of it present on
-   every tier. When the 3D scene DOES load it sits above this, and the two
-   read as a ground plane under a volume rather than as two competing fields. */
-.entry__ground {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: radial-gradient(circle at center, rgba(242, 241, 236, 0.13) 1px, transparent 1.4px);
-  background-size: 28px 28px;
-  /* faded toward the edges so it reads as a surface catching light in the
-     middle of the frame, not as wallpaper running to the corners */
-  -webkit-mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
-  mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 12%, transparent 76%);
-  opacity: 0.5;
-}
-
-/* the light. Positioned at the origin and moved by transform, so following
-   the pointer costs one compositor write and never a style invalidation —
-   a custom property on this page measured 12.9ms to invalidate. */
-.entry__light {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 760px;
-  height: 760px;
-  margin: -380px 0 0 -380px;
-  pointer-events: none;
-  will-change: transform;
-  background: radial-gradient(
-    circle,
-    rgba(120, 160, 255, 0.16) 0%,
-    rgba(120, 160, 255, 0.07) 32%,
-    transparent 64%
-  );
-}
-
-/* grain. One static texture at very low opacity — it is what keeps a large
-   dark field from looking like an absence of image. */
-.entry__grain {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-}
-
-@media (max-width: 900px) {
-  .entry__ground { background-size: 22px 22px; }
-  .entry__light { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
 }
 
 /* ── MOBILE ────────────────────────────────────────────────────────────────
@@ -1665,15 +1551,8 @@
   .big-link { font-size: 23px; }
 
   /* ── hero ── */
-  /* a shorter room, so the same travel reads at a third of the width */
-  .entry__stage { padding: clamp(18px, 5vw, 80px); perspective: 680px; }
-  /* The dust is 3px here and a blur pass costs the same whatever it is
-     blurring, so the far field pays for depth nobody can see. The seven
-     foreground discs keep theirs — they are 20px and they are the ones doing
-     the work. */
-  .entry__mote { filter: none; }
-  .entry__mote--soft { filter: blur(var(--b, 0px)); }
-  .entry__halo { margin: -26vh 0 0 -48vw; width: 96vw; height: 52vh; }
+  .entry__stage { padding: clamp(18px, 5vw, 80px); }
+  .entry__glow { width: 96vw; height: 44vh; }
   /* Sized from the narrow end, not the wide one. The name needs 5.78px of
      width per 1px of size, and a 320px phone leaves 272px after padding —
      so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,

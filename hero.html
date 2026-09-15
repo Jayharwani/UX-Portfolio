@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Jay Harwani — hero reference</title>
+
+<!--
+  STANDALONE REFERENCE for the 3D constellation hero.
+
+  Open it by double-clicking; three.js comes from a CDN and everything else
+  is inline. It is the same scene as src/components/home/scene/Constellation.tsx
+  with the React lifecycle stripped out, so it is the fastest way to tune the
+  numbers before moving them into the component.
+
+  TUNE, in order of effect:
+    Z_FAR / Z_NEAR      the depth of the room. Widen this first.
+    PARALLAX_X / _Y     how far the camera travels with the pointer.
+    SIZE / FRONT_Z_MAX  how big and how close the nearest particles get.
+-->
+
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #0B0D10;
+    color: #F4F1EA;
+    font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .entry { position: relative; min-height: 100svh; display: flex; overflow: hidden; }
+
+  /* two canvases, one camera; the real <h1> sits between them */
+  .sky { position: absolute; inset: 0; pointer-events: none; }
+  .sky canvas { display: block; width: 100%; height: 100%; }
+  .sky--back  { z-index: 0; }
+  .sky--front { z-index: 3; }
+
+  .glow {
+    position: absolute; z-index: 1; left: 50%; top: 50%;
+    width: min(1180px, 92vw); height: min(540px, 58vh);
+    transform: translate(-50%, -50%); pointer-events: none;
+    background: radial-gradient(ellipse at center,
+      rgba(11,13,16,0.62) 0%, rgba(11,13,16,0.34) 44%, transparent 74%);
+  }
+
+  .stage {
+    position: relative; z-index: 2; flex: 1 1 auto;
+    display: flex; align-items: center; justify-content: center;
+    padding: clamp(24px, 6vw, 80px);
+  }
+  .plate { text-align: center; will-change: transform; }
+
+  .welcome, .name {
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 900ms cubic-bezier(.16,1,.3,1),
+                transform 1100ms cubic-bezier(.16,1,.3,1);
+  }
+  .name { transition-delay: 90ms; }
+  .is-in .welcome, .is-in .name { opacity: 1; transform: none; }
+  .is-instant .welcome, .is-instant .name, .is-instant .cue { transition: none; }
+
+  .welcome {
+    margin: 0 0 clamp(18px, 2.6vh, 30px);
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: .75rem; letter-spacing: .34em; text-transform: uppercase;
+    color: #9AA2AE;
+  }
+  .name {
+    margin: 0; font-size: clamp(3rem, 12.5vw, 11.5rem); font-weight: 500;
+    line-height: .92; letter-spacing: -.042em; color: #F4F1EA; white-space: nowrap;
+  }
+
+  .cue {
+    position: absolute; z-index: 4; left: 0; right: 0; bottom: clamp(22px, 4vh, 44px);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    pointer-events: none; opacity: 0; transition: opacity 900ms ease 700ms;
+  }
+  .is-in .cue { opacity: 1; }
+  .cue span {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: .75rem; letter-spacing: .28em; text-transform: uppercase; color: #9AA2AE;
+  }
+  .arrow {
+    position: relative; width: 1px; height: 46px; overflow: hidden;
+    background: rgba(242,241,236,.16);
+  }
+  .arrow::after {
+    content: ""; position: absolute; inset: 0 auto auto 0; width: 1px; height: 16px;
+    background: #F2F1EC; animation: fall 2.4s cubic-bezier(.5,0,.5,1) infinite;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-18px); opacity: 0; }
+    30%, 70% { opacity: 1; }
+    100% { transform: translateY(46px); opacity: 0; }
+  }
+
+  @media (max-width: 900px) {
+    .welcome { letter-spacing: .22em; font-size: 10px; }
+    .name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
+    .glow { width: 96vw; height: 44vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .welcome, .name, .cue { transition: none; }
+    .arrow::after { animation: none; opacity: .6; transform: translateY(14px); }
+  }
+</style>
+</head>
+<body>
+
+<section class="entry" id="entry" aria-label="Welcome">
+  <div class="sky sky--back" id="skyBack" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="stage">
+    <div class="plate" id="plate">
+      <p class="welcome">Welcome to my portfolio</p>
+      <h1 class="name">Jay Harwani</h1>
+    </div>
+  </div>
+
+  <div class="sky sky--front" id="skyFront" aria-hidden="true"></div>
+
+  <div class="cue">
+    <span>Scroll</span>
+    <span class="arrow" aria-hidden="true"></span>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  var REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var COARSE = window.matchMedia('(pointer: coarse)').matches;
+  var NARROW = window.matchMedia('(max-width: 760px)').matches;
+
+  var TUNE = {
+    Z_NEAR: 450, Z_FAR: -420,
+    SPREAD_X: 900, SPREAD_Y: 560,
+    CAMERA_Z: 600,
+    PARALLAX_X: 165, PARALLAX_Y: 105, EASE: 0.05,
+    COUNT: Math.round(340 * (NARROW ? 0.52 : 1)),
+    FRONT_COUNT: Math.round(60 * (NARROW ? 0.52 : 1)),
+    FRONT_Z_MIN: 120, FRONT_Z_MAX: 455,
+    SIZE: 4.4, FRONT_SIZE: 7.2,
+    LINK_DIST: 128, MAX_LINKS: 3,
+    SPIN_Y: 0.012, SPIN_X: 0.005,
+    INTRO_MS: 1500, INTRO_FROM: 0.62,
+    C_FAR: '#1E3566', C_MID: '#67D2F0', C_NEAR: '#A08CF2',
+    BG: '#0B0D10',
+    NAME_PARALLAX: 18
+  };
+
+  var POINT_VERT = [
+    'uniform float uPR; uniform float uSize; uniform float uNear;',
+    'uniform float uFar; uniform float uOpacity;',
+    'attribute float aSize; attribute vec3 aColor;',
+    'varying vec3 vColor; varying float vAlpha;',
+    'void main() {',
+    '  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
+    '  float d = max(-mv.z, 1.0);',
+    '  gl_Position = projectionMatrix * mv;',
+    '  gl_PointSize = min(aSize * uSize * uPR * (420.0 / d), 110.0);',
+    '  vColor = aColor;',
+    '  vAlpha = uOpacity * clamp((uFar - d) / (uFar - uNear), 0.06, 1.0);',
+    '}'
+  ].join('\n');
+
+  var POINT_FRAG = [
+    'varying vec3 vColor; varying float vAlpha;',
+    'void main() {',
+    '  vec2 c = gl_PointCoord - 0.5;',
+    '  float r = length(c);',
+    '  if (r > 0.5) discard;',
+    '  float a = smoothstep(0.5, 0.06, r);',
+    '  gl_FragColor = vec4(vColor, a * vAlpha);',
+    '}'
+  ].join('\n');
+
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  var C_FAR = new THREE.Color(TUNE.C_FAR);
+  var C_MID = new THREE.Color(TUNE.C_MID);
+  var C_NEAR = new THREE.Color(TUNE.C_NEAR);
+  var scratch = new THREE.Color();
+  function depthColor(t) {
+    return t < 0.62
+      ? scratch.copy(C_FAR).lerp(C_MID, t / 0.62)
+      : scratch.copy(C_MID).lerp(C_NEAR, (t - 0.62) / 0.38);
+  }
+
+  function buildLayer(o) {
+    var rand = rng(o.seed);
+    var group = new THREE.Group();
+    var pos = new Float32Array(o.count * 3);
+    var col = new Float32Array(o.count * 3);
+    var siz = new Float32Array(o.count);
+    var i, j;
+
+    for (i = 0; i < o.count; i++) {
+      var z = o.zMin + rand() * (o.zMax - o.zMin);
+      pos[i * 3] = (rand() * 2 - 1) * TUNE.SPREAD_X;
+      pos[i * 3 + 1] = (rand() * 2 - 1) * TUNE.SPREAD_Y;
+      pos[i * 3 + 2] = z;
+      var t = (z - TUNE.Z_FAR) / (TUNE.Z_NEAR - TUNE.Z_FAR);
+      var c = depthColor(Math.max(0, Math.min(1, t)));
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+      siz[i] = 0.8 + rand() * rand() * 3.6;
+    }
+
+    var pointGeo = new THREE.BufferGeometry();
+    pointGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    pointGeo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+    pointGeo.setAttribute('aSize', new THREE.BufferAttribute(siz, 1));
+
+    var uniforms = {
+      uPR: { value: 1 },
+      uSize: { value: o.size },
+      uNear: { value: TUNE.CAMERA_Z - TUNE.Z_NEAR },
+      uFar: { value: TUNE.CAMERA_Z - TUNE.Z_FAR + 260 },
+      uOpacity: { value: 0 }
+    };
+    var pointMat = new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: POINT_VERT,
+      fragmentShader: POINT_FRAG,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    var points = new THREE.Points(pointGeo, pointMat);
+    points.frustumCulled = false;
+    group.add(points);
+
+    var lineGeo = null, lineMat = null;
+    if (o.withLines) {
+      var lp = [], lc = [], d2 = TUNE.LINK_DIST * TUNE.LINK_DIST;
+      for (i = 0; i < o.count; i++) {
+        var made = 0;
+        for (j = i + 1; j < o.count && made < TUNE.MAX_LINKS; j++) {
+          var dx = pos[i*3] - pos[j*3], dy = pos[i*3+1] - pos[j*3+1], dz = pos[i*3+2] - pos[j*3+2];
+          if (dx*dx + dy*dy + dz*dz > d2) continue;
+          lp.push(pos[i*3], pos[i*3+1], pos[i*3+2], pos[j*3], pos[j*3+1], pos[j*3+2]);
+          lc.push(col[i*3]*0.42, col[i*3+1]*0.42, col[i*3+2]*0.42);
+          lc.push(col[j*3]*0.42, col[j*3+1]*0.42, col[j*3+2]*0.42);
+          made++;
+        }
+      }
+      lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lp), 3));
+      lineGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(lc), 3));
+      lineMat = new THREE.LineBasicMaterial({
+        vertexColors: true, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      var lines = new THREE.LineSegments(lineGeo, lineMat);
+      lines.frustumCulled = false;
+      group.add(lines);
+    }
+
+    return {
+      group: group, uniforms: uniforms, lineMat: lineMat,
+      dispose: function () {
+        pointGeo.dispose(); pointMat.dispose();
+        if (lineGeo) lineGeo.dispose();
+        if (lineMat) lineMat.dispose();
+      }
+    };
+  }
+
+  var pr = Math.min(window.devicePixelRatio, 2);
+  var camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 3000);
+  camera.position.set(0, 0, TUNE.CAMERA_Z);
+
+  var backScene = new THREE.Scene();
+  var frontScene = new THREE.Scene();
+
+  var back = buildLayer({
+    count: TUNE.COUNT, zMin: TUNE.Z_FAR, zMax: TUNE.Z_NEAR,
+    size: TUNE.SIZE, withLines: true, seed: 7
+  });
+  var front = buildLayer({
+    count: TUNE.FRONT_COUNT, zMin: TUNE.FRONT_Z_MIN, zMax: TUNE.FRONT_Z_MAX,
+    size: TUNE.FRONT_SIZE, withLines: false, seed: 31
+  });
+  backScene.add(back.group);
+  frontScene.add(front.group);
+
+  var backRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  backRenderer.setPixelRatio(pr);
+  backRenderer.setClearColor(new THREE.Color(TUNE.BG), 1);
+  document.getElementById('skyBack').appendChild(backRenderer.domElement);
+
+  var frontRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  frontRenderer.setPixelRatio(pr);
+  frontRenderer.setClearColor(0x000000, 0);
+  document.getElementById('skyFront').appendChild(frontRenderer.domElement);
+
+  back.uniforms.uPR.value = pr;
+  front.uniforms.uPR.value = pr;
+
+  function size() {
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    backRenderer.setSize(w, h);
+    frontRenderer.setSize(w, h);
+  }
+  size();
+
+  var mx = 0, my = 0, ex = 0, ey = 0;
+  function onMove(e) {
+    mx = (e.clientX / window.innerWidth) * 2 - 1;
+    my = (e.clientY / window.innerHeight) * 2 - 1;
+  }
+  if (!REDUCE && !COARSE) window.addEventListener('pointermove', onMove, { passive: true });
+
+  var resizeQueued = false;
+  window.addEventListener('resize', function () {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(function () { resizeQueued = false; size(); });
+  });
+
+  function drawBoth() {
+    backRenderer.render(backScene, camera);
+    frontRenderer.render(frontScene, camera);
+  }
+
+  var entry = document.getElementById('entry');
+  var plate = document.getElementById('plate');
+
+  if (REDUCE) {
+    back.uniforms.uOpacity.value = 1;
+    front.uniforms.uOpacity.value = 0.5;
+    if (back.lineMat) back.lineMat.opacity = 0.24;
+    drawBoth();
+    entry.className += ' is-in is-instant';
+  } else {
+    requestAnimationFrame(function () { entry.className += ' is-in'; });
+    /* A document that mounts hidden produces no animation frames, so neither
+       the class above nor the scene's fade would ever run and the hero would
+       be a dark rectangle. setTimeout is not rAF-driven; if nothing has been
+       drawn by now, everything lands on its end state with no entrance. */
+    var painted = false;
+    setTimeout(function () {
+      if (painted) return;
+      if (entry.className.indexOf('is-in') < 0) entry.className += ' is-in';
+      entry.className += ' is-instant';
+      back.uniforms.uOpacity.value = 1;
+      front.uniforms.uOpacity.value = 0.5;
+      if (back.lineMat) back.lineMat.opacity = 0.24;
+      camera.position.set(0, 0, TUNE.CAMERA_Z);
+      camera.lookAt(0, 0, 0);
+      drawBoth();
+    }, 2500);
+
+    var t0 = performance.now(), last = t0, raf = 0;
+
+    var frame = function (now) {
+      raf = requestAnimationFrame(frame);
+      painted = true;
+      var dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+
+      var p = Math.min(1, (now - t0) / TUNE.INTRO_MS);
+      var e = 1 - Math.pow(1 - p, 3);
+      var restZ = TUNE.CAMERA_Z, introZ = restZ * TUNE.INTRO_FROM;
+
+      back.uniforms.uOpacity.value = e;
+      front.uniforms.uOpacity.value = e * 0.5;
+      if (back.lineMat) back.lineMat.opacity = e * 0.24;
+
+      var tx = mx * TUNE.PARALLAX_X, ty = -my * TUNE.PARALLAX_Y;
+      camera.position.x += (tx - camera.position.x) * TUNE.EASE;
+      camera.position.y += (ty - camera.position.y) * TUNE.EASE;
+      camera.position.z = introZ + (restZ - introZ) * e;
+      camera.lookAt(0, 0, 0);
+
+      back.group.rotation.y += TUNE.SPIN_Y * dt;
+      back.group.rotation.x = Math.sin(now * 0.00007) * TUNE.SPIN_X * 12;
+      front.group.rotation.y += TUNE.SPIN_Y * 0.6 * dt;
+
+      /* the name leans the other way */
+      ex += (mx - ex) * TUNE.EASE;
+      ey += (my - ey) * TUNE.EASE;
+      plate.style.transform = 'translate3d(' +
+        (-ex * TUNE.NAME_PARALLAX).toFixed(2) + 'px,' +
+        (-ey * TUNE.NAME_PARALLAX * 0.66).toFixed(2) + 'px,0)';
+
+      drawBoth();
+    };
+    raf = requestAnimationFrame(frame);
+  }
+})();
+</script>
+</body>
+</html>
