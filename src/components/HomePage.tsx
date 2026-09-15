@@ -60,6 +60,12 @@ const V = {
   accent: "var(--accent)",
   accentSoft: "var(--accent-soft)",
   display: "var(--font-display)",
+  /* the atlas voice — homepage only, so the case studies keep their own */
+  plate: "var(--font-plate)",
+  bone: "var(--bone)",
+  bone2: "var(--bone-2)",
+  brass: "var(--brass)",
+  rule: "var(--rule)",
   body: "var(--font-body)",
   mono: "var(--font-mono)",
   serifIt: "var(--font-serif-it)",
@@ -449,25 +455,46 @@ function Hero() {
   ];
 
   const leadLine: React.CSSProperties = {
-    fontFamily: V.display,
-    fontWeight: 600,
+    /* Instrument Serif, not Clash Display. Clash is a fine face and it is also
+       the face of this entire genre right now; a high-contrast serif moves the
+       register from "tech startup" to "considered" without costing a byte,
+       because the italic accent was already loading it.
+
+       Weight 400, not 600: Instrument Serif ships one weight, and asking for
+       600 makes the browser synthesise a bold by smearing the outline. That
+       is the difference between a typeface and a typeface someone chose. */
+    fontFamily: V.plate,
+    fontWeight: 400,
     /* §7.2: display line-height 0.95, not the 1.06 it was set at. Two lines at
        1.06 read as two separate objects; at 0.95 they lock into one mass, which
        is the whole point of a two-line headline. */
-    /* §2.2 asks for clamp(3.75rem, 7.5vw, 8rem). That assumes a shorter
-       headline than this one: at 8rem the longest authored line
-       ("I design interfaces that get") measures ~1500px against a 1024px
-       copy column, so it would wrap — and a wrapped line resamples at the
-       wrong geometry and lands the particle assembly crooked. Capped at the
-       largest size that provably fits, verified by measurement rather than
-       taken from the spec unchecked. */
-    fontSize: "clamp(1.55rem, 6vw, 4.5rem)",
+    /* §2.2 asked for clamp(3.75rem, 7.5vw, 8rem) and could not have it: in
+       Clash Display the longest authored line measured ~1500px against the
+       copy column and wrapped, and a wrapped line resamples at the wrong
+       geometry and lands the particle assembly crooked. So it was capped at
+       4.5rem.
+
+       Instrument Serif is far narrower — the same line measures 553px at
+       72px against a 1297px column — so the cap was a property of the old
+       typeface, not of the headline. The spec size is now affordable and
+       taken.
+
+       The vw coefficient is set by the MOBILE limit, not the desktop one.
+       Measured: the longest line needs 8.8px of width per 1px of font size,
+       and the copy column at 390px is 262px wide, so anything above 29.8px
+       wraps there. 7.5vw lands at 29.25px — a four-pixel margin, which is
+       not a margin. 7vw lands at 27.3px and clears by 22px, and costs only
+       7px at 1440 where there is width to spare. */
+    fontSize: "clamp(1.5rem, 7vw, 8rem)",
     lineHeight: 0.94,
     /* -0.02em was squeezing the spaces shut ("Idesign interfaces"); a softer
        track plus a touch of word-spacing separates the words again. */
     letterSpacing: "-0.025em",
     wordSpacing: "0.04em",
-    color: V.text,
+    /* warm bone, not the cold near-white. The whole palette sat at one hue,
+       which is what made it read as a template; the headline is where the
+       second temperature has to land to be felt. 14.0:1 on the ground. */
+    color: V.bone,
     /* §9: with the headline centred this becomes optical CENTRING, not a
        left inset. The line begins on a capital I and ends on a full stop,
        both of which carry more sidebearing than the glyphs between them, so
@@ -529,30 +556,13 @@ function Hero() {
 
       <div className="hero-grain" aria-hidden="true" />
 
-      {/* soft accent glows */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          top: "-12%",
-          right: "-6%",
-          width: 720,
-          height: 720,
-          background: "radial-gradient(circle, rgba(91,140,255,0.09) 0%, transparent 62%)",
-        }}
-      />
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          bottom: "-18%",
-          left: "-10%",
-          width: 640,
-          height: 640,
-          background: "radial-gradient(circle, rgba(91,140,255,0.06) 0%, transparent 60%)",
-        }}
-      />
+      {/* The two blue radial glows that used to sit here are gone. PRODUCT.md
+          names "gradient blob" in anti-reference #1 by name, and they were
+          doing the job that light and type should do. A star atlas is printed,
+          not lit. */}
 
       <motion.div
-        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-8 pb-8 md:pb-6 flex flex-col items-center"
+        className="relative z-10 w-full mx-auto max-w-6xl px-6 md:px-10 lg:px-16 pt-8 pb-8 md:pb-6 flex flex-col items-start"
         style={reduce ? undefined : { y: textY, opacity: heroFade }}
       >
         {/* copy centered on every breakpoint */}
@@ -564,7 +574,7 @@ function Hero() {
         {/* §5.1: columns 1-6. Column 7 is left empty on purpose — with both
             sides anchored it reads as a decision rather than as the gap it was
             when only the left side had content. */}
-        <div ref={copyRef} className="flex flex-col items-center text-center w-full">
+        <div ref={copyRef} className="flex flex-col items-start text-left w-full">
           {/* H1: in particle mode the crisp text lands AFTER the particles
               assemble it — a blur-to-sharp crossfade with one glow pulse,
               like a memory clicking into focus. Reduced motion: plain reveal. */}

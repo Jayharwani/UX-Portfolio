@@ -27,6 +27,31 @@
   --font-body: 'General Sans', 'DM Sans', sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   --font-serif-it: 'Instrument Serif', 'Playfair Display', serif;
+
+  /* ── the atlas voice ──────────────────────────────────────────────────
+     The palette had one hue. Every token sat between 260 and 268 degrees,
+     which is why the page read as a template: a single temperature has no
+     tension in it, and tension is most of what taste looks like.
+
+     These are the second voice — warm engraved ink and aged brass against
+     the cold ground, the way a real star atlas is printed. Scoped to the
+     homepage by being new names rather than redefinitions, so the case
+     studies keep the palette they already have.
+
+     Contrast on --bg #0A0E16: bone 14.0:1, bone-2 9.5:1, brass 7.7:1.
+     All clear AA for body text, not just for large type. */
+  --bone:     #EBE1CE;
+  --bone-2:   #C4B79E;
+  --brass:    #C99A4E;
+  --plate:    #0C1119;
+  --rule:     rgba(235, 225, 206, 0.16);
+  --rule-soft: rgba(235, 225, 206, 0.08);
+
+  /* Instrument Serif is already loaded for the italic accent, so promoting it
+     to the plate face costs zero new bytes and changes the register from
+     "tech startup" to "considered" in one move. Deliberately NOT a
+     redefinition of --font-display: the case-study pages read that token. */
+  --font-plate: 'Instrument Serif', 'Playfair Display', Georgia, serif;
 }
 
 /* Visible keyboard focus, accent ring */
