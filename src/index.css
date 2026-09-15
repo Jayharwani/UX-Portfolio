@@ -1308,3 +1308,59 @@
   .entry__ground { background-size: 22px 22px; }
   .entry__light { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
 }
+
+/* ── MOBILE ────────────────────────────────────────────────────────────────
+   Measured at 390x844 before any of this was written. The page had no
+   horizontal overflow and every tap target already cleared 44px, so the
+   faults were not breakage — they were proportion. Five of them:
+
+     the hero name sat at 48.75px in 342px of room, using barely half the
+     width available to it
+     the welcome line was 10px with 0.22em tracking, which is past the point
+     where tracking stops being elegant and starts being hard to read
+     bands carried 101px of vertical padding, which is desktop air on a phone
+     and stretched the page to 6.5 screens
+     the stage's project name and its description were 29.6px and 20.8px —
+     close enough to read as one block rather than as a hierarchy
+     the preview sat BELOW its caption, so the evidence came second
+
+   Everything below is proportion, not layout: no element moves except the
+   preview, which moves first. */
+@media (max-width: 900px) {
+  /* bands: desktop air is not phone air */
+  .band__in { padding: clamp(56px, 8vh, 92px) clamp(22px, 5vw, 80px); }
+
+  /* ── hero ── */
+  .entry__stage { padding: clamp(18px, 5vw, 80px); }
+  /* Sized from the narrow end, not the wide one. The name needs 5.78px of
+     width per 1px of size, and a 320px phone leaves 272px after padding —
+     so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,
+     instead of the 268px it was using. */
+  .entry__name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
+  .entry__welcome {
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    margin-bottom: clamp(14px, 2.2vh, 22px);
+  }
+
+  /* ── work stage ── */
+  /* the preview is the evidence, so it comes first and the caption reads
+     under it, the way a plate and its caption sit on a page */
+  .stage__screen { order: -1; }
+  .stage__name { font-size: 26px; }
+  .stage__line {
+    font-size: 15px;
+    line-height: 1.45;
+    max-width: 34ch;
+    margin-top: 9px;
+  }
+  .stage__go { margin-top: 18px; }
+
+  /* ── stone ── */
+  .tools { gap: 8px 18px; }
+  .tools span { font-size: 15px; }
+
+  /* ── contact ── */
+  .contact__row { gap: 18px 28px; }
+  .foot { gap: 8px 18px; }
+}
