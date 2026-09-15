@@ -1195,3 +1195,86 @@
   .stage__screen { transform: none; }
   .stage__sheen, .stage__spark { opacity: 0; }
 }
+
+/* ── making the stage worth looking at ────────────────────────────────────
+   It was clean and it was empty: a number, a name, one line and a link, with
+   most of the column left as air. The answer to "boring" here is not more
+   prose — the brief asks for less — it is STRUCTURE and craft detail.
+
+   Three additions, all of them visual and none of them words. */
+
+/* the ghosted numeral: a graphic anchor for the column. Big enough to be
+   composition, faint enough that it never competes with the name sitting on
+   top of it. */
+.stage__ghost {
+  position: absolute;
+  left: 14px;
+  top: -0.14em;
+  z-index: 0;
+  font-size: clamp(120px, 15vw, 230px);
+  font-weight: 500;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: var(--on-ink);
+  opacity: 0.045;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+.stage__copy > *:not(.stage__ghost) { position: relative; z-index: 1; }
+
+/* tags: the strings the old work cards used, in the treatment they used.
+   Outline pills rather than solid — at this size a filled chip reads as a
+   button and invites a click that does nothing. */
+.tagrow {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.tagrow li {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--on-ink-2);
+  border: 1px solid var(--hair-dark);
+  border-radius: 999px;
+  padding: 5px 11px;
+  transition: border-color 420ms ease, color 420ms ease;
+}
+/* the live project tints its own tags — the accent doing work rather than
+   decoration */
+.stage__text.is-on .tagrow li,
+.stack__item .tagrow li {
+  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 30%, transparent);
+  color: color-mix(in oklab, var(--ac, var(--on-ink)) 62%, var(--on-ink));
+}
+
+/* registration marks. Corner rules, inset, in the project's accent — the
+   detail that makes a frame read as a plate rather than a rounded box. */
+.reg {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.55;
+  transition: opacity 420ms ease;
+}
+.reg--tl { top: 10px; left: 10px; border-top: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
+.reg--tr { top: 10px; right: 10px; border-top: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
+.reg--bl { bottom: 10px; left: 10px; border-bottom: 1px solid var(--ac, #fff); border-left: 1px solid var(--ac, #fff); }
+.reg--br { bottom: 10px; right: 10px; border-bottom: 1px solid var(--ac, #fff); border-right: 1px solid var(--ac, #fff); }
+.stage__screen:hover .reg { opacity: 1; }
+
+@media (max-width: 900px) {
+  .stage__ghost { font-size: 96px; left: 8px; }
+  .tagrow { margin-top: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagrow li, .reg { transition: none; }
+}

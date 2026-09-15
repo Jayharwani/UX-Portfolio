@@ -53,10 +53,10 @@ const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
    nothing — the previews already carry these hues internally, so the frame
    agreeing with them is the whole point. */
 const WORK = [
-  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview },
-  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview },
-  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview },
-  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
+  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", tags: ["Live product", "Maps", "Front-end"], Preview: SignalPreview },
+  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", tags: ["PWA", "On-device", "No bank login"], Preview: HeadroomPreview },
+  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", tags: ["Mobile app", "Haptics", "Multi-sensory"], Preview: ChronoWeavePreview },
+  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", tags: ["Chrome extension", "Agentic AI", "Conversational"], Preview: BumperPreview },
 ];
 
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -168,6 +168,11 @@ function WorkStage() {
               <span className="micro">{w.n} / 04</span>
               <h3 className="stage__name">{w.name}</h3>
               <p className="stage__line">{w.line}</p>
+              <ul className="tagrow">
+                {w.tags.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
               <Link className="stage__go" to={w.to}>View case ↗</Link>
             </div>
             <div className="stage__screen">
@@ -187,11 +192,17 @@ function WorkStage() {
             {/* the same light, on the rule beside the copy — one idea shown
                 twice rather than two unrelated effects */}
             <span className="stage__spark" aria-hidden="true" />
+            <span className="stage__ghost" aria-hidden="true">{WORK[i].n}</span>
             <span className="micro">{WORK[i].n} / 04</span>
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__text${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
                 <h3 className="stage__name">{w.name}</h3>
                 <p className="stage__line">{w.line}</p>
+                <ul className="tagrow">
+                  {w.tags.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
                 <Link className="stage__go" to={w.to} tabIndex={k === i ? 0 : -1}>
                   View case ↗
                 </Link>
@@ -206,6 +217,12 @@ function WorkStage() {
             {/* light passing over the surface: a wide, very soft accent band
                 that travels down the frame. One element, one transform. */}
             <span className="stage__sheen" aria-hidden="true" />
+            {/* registration marks — the print-plate detail that makes a frame
+                read as a considered object rather than a rounded rectangle */}
+            <span className="reg reg--tl" aria-hidden="true" />
+            <span className="reg reg--tr" aria-hidden="true" />
+            <span className="reg reg--bl" aria-hidden="true" />
+            <span className="reg reg--br" aria-hidden="true" />
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
                 <w.Preview key={`${w.name}-${replay}`} active={k === i} />
