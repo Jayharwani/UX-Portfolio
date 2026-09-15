@@ -220,6 +220,13 @@ export function ChronoWeavePreview({ active }: { active: boolean }) {
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 38}
+                /* initial is REQUIRED, not decorative. Without it Motion takes the
+                   current animate value as the start, so a component mounted with
+                   active already true has nothing to animate FROM and renders the
+                   finished state. Until Motion's first frame lands it also writes
+                   this attribute as the string "undefined", which the browser reads
+                   as 0 and draws as a full ring instead of an arc. */
+                initial={{ strokeDashoffset: 2 * Math.PI * 38 * 0.78 }}
                 animate={{ strokeDashoffset: active ? 2 * Math.PI * 38 * 0.35 : 2 * Math.PI * 38 * 0.78 }}
                 transition={{ duration: 0.9, ease: EASE }}
                 transform="rotate(-90 46 46)"
@@ -238,6 +245,7 @@ export function ChronoWeavePreview({ active }: { active: boolean }) {
               <motion.span
                 key={i}
                 style={{ width: 5, height: 5, borderRadius: 999, background: "#A78BFA" }}
+                initial={{ opacity: 0.3, scale: 1 }}
                 animate={active ? { opacity: [0.3, 1, 0.3], scale: [1, 1.35, 1] } : { opacity: 0.3, scale: 1 }}
                 transition={{ duration: 0.9, repeat: active ? Infinity : 0, delay: i * 0.14 }}
               />
@@ -253,6 +261,7 @@ export function ChronoWeavePreview({ active }: { active: boolean }) {
               background: "#2A2247",
               border: "1px solid rgba(167,139,250,0.5)",
             }}
+            initial={{ y: 40, opacity: 0 }}
             animate={{ y: active ? 0 : 40, opacity: active ? 1 : 0 }}
             transition={{ duration: 0.45, ease: EASE }}
           >
@@ -310,6 +319,7 @@ export function BumperPreview({ active }: { active: boolean }) {
               border: "1px solid rgba(20,184,166,0.5)",
               boxShadow: "0 -8px 26px rgba(0,0,0,0.45)",
             }}
+            initial={{ y: 110, opacity: 0 }}
             animate={{ y: active ? 0 : 110, opacity: active ? 1 : 0 }}
             transition={{ duration: 0.5, ease: EASE }}
           >

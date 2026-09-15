@@ -86,13 +86,24 @@ function WorkStage() {
      lost it: scroll fires each preview once when it arrives and then never
      again, so there was nothing to poke.
 
-     Bumping a counter that feeds the key REMOUNTS the active preview, which
-     is the only reliable way to replay all four. Two of them animate from a
-     useEffect keyed on `active` and two purely from Framer Motion props;
-     toggling the prop would restart the first pair but not reliably the
-     second, whereas a fresh mount restarts both. Only the visible one is
-     re-keyed, so a hover costs exactly one small remount. */
+     A plain remount does NOT work, and the reason is specific: ChronoWeave
+     and Bumper declare no `initial` prop, only animate={active ? A : B}.
+     Framer Motion treats the current animate value as the starting state
+     when initial is absent, so a component mounted with active already true
+     has nothing to animate FROM and renders the finished state statically.
+     Signal and Headroom survived it only because they animate from a
+     useEffect that re-runs on mount.
+
+     The root cause is fixed where it lived: ChronoWeave and Bumper now
+     declare initial props, so a fresh mount animates from the inactive state
+     like anything else. With that in place a plain remount replays all four
+     — the two effect-driven ones re-run their effects, the two Motion-driven
+     ones animate from initial — and no arming dance is needed here.
+
+     Every slide carries the same key, so changing project does not remount
+     anything — that path was already correct and only needed leaving alone. */
   const [replay, setReplay] = useState(0);
+  const replayNow = () => setReplay((r) => r + 1);
 
   useEffect(() => {
     if (reduce) return;
@@ -187,11 +198,11 @@ function WorkStage() {
 
           <div
             className="stage__screen"
-            onMouseEnter={() => setReplay((r) => r + 1)}
+            onMouseEnter={replayNow}
           >
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
-                <w.Preview key={`${w.name}-${k === i ? replay : 0}`} active={k === i} />
+                <w.Preview key={`${w.name}-${replay}`} active={k === i} />
               </div>
             ))}
           </div>
