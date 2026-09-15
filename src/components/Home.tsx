@@ -81,6 +81,18 @@ function WorkStage() {
   const stageRef = useRef<HTMLDivElement>(null);
   const [i, setI] = useState(0);
   const iRef = useRef(0);
+  /* Hover replays the preview's own animation — the counters, the bars, the
+     ring. That was the best thing about the old work cards and the rebuild
+     lost it: scroll fires each preview once when it arrives and then never
+     again, so there was nothing to poke.
+
+     Bumping a counter that feeds the key REMOUNTS the active preview, which
+     is the only reliable way to replay all four. Two of them animate from a
+     useEffect keyed on `active` and two purely from Framer Motion props;
+     toggling the prop would restart the first pair but not reliably the
+     second, whereas a fresh mount restarts both. Only the visible one is
+     re-keyed, so a hover costs exactly one small remount. */
+  const [replay, setReplay] = useState(0);
 
   useEffect(() => {
     if (reduce) return;
@@ -173,10 +185,13 @@ function WorkStage() {
             ))}
           </div>
 
-          <div className="stage__screen">
+          <div
+            className="stage__screen"
+            onMouseEnter={() => setReplay((r) => r + 1)}
+          >
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
-                <w.Preview active={k === i} />
+                <w.Preview key={`${w.name}-${k === i ? replay : 0}`} active={k === i} />
               </div>
             ))}
           </div>
