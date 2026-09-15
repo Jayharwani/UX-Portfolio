@@ -523,7 +523,7 @@ function Hero() {
           for the first paint. */}
       {sceneOn && tierReady && !lite && (
         <Suspense fallback={null}>
-          <HeroScene interactive={!reduce} />
+          <HeroScene interactive={!reduce} running />
         </Suspense>
       )}
 

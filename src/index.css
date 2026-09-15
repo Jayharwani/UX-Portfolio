@@ -1390,12 +1390,62 @@
   align-items: center;
   justify-content: center;
   padding: clamp(24px, 6vw, 80px);
-  perspective: 1200px;
+  /* ONE perspective for the whole volume. Everything below shares it, which
+     is the difference between a 3D space and a stack of layers that slide:
+     the browser projects every child from the same eye point, so the side
+     wall tapers, the motes in front grow, and the far field shrinks — all of
+     it for free, from one transform on the parent. */
+  perspective: 1150px;
+  perspective-origin: 50% 46%;
 }
+
+/* the volume. The only animated element in the hero: one transform per frame */
+.entry__world {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .entry__plate {
+  position: relative;
   transform-style: preserve-3d;
   text-align: center;
-  will-change: transform;
+}
+
+/* atmosphere behind the name, inside the volume, so it recedes with
+   everything else instead of sitting flat on the glass */
+.entry__halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1100px, 86vw);
+  height: min(620px, 62vh);
+  margin: -31vh 0 0 -43vw;
+  max-width: none;
+  transform: translate3d(-4%, -2%, -420px);
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(110, 150, 240, 0.17) 0%,
+    rgba(80, 110, 190, 0.07) 38%,
+    transparent 70%
+  );
+}
+
+/* the motes. Half sit behind the name and half in FRONT of it — the ones in
+   front are what make the name read as being inside something rather than
+   pasted over it, because occlusion is the one depth cue layered parallax
+   cannot produce. */
+.entry__mote {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(var(--b, 0px));
+  background: radial-gradient(circle, #EAF0FF 0%, rgba(150, 185, 255, 0.85) 42%, rgba(120, 160, 255, 0) 72%);
 }
 
 .entry__welcome {
@@ -1417,7 +1467,28 @@
 }
 .entry__clip { display: inline-block; overflow: hidden; vertical-align: bottom; }
 .entry__g { display: inline-block; will-change: transform; }
+.entry__dg { display: inline-block; }
 .entry__sp { display: inline-block; width: 0.26em; }
+
+/* ── the side wall ──
+   The name again at each depth. Absolutely positioned over the same box and
+   built from the same markup as the face, so the two share a layout rather
+   than approximating one: a plain text copy would sit on the baseline while
+   the clipped face aligns to the bottom of its line box, and every plane
+   would be a few pixels out.
+
+   The face keeps its own stacking above them all — it is the lit surface, and
+   the wall is what the light does not reach. */
+.entry__name { position: relative; transform-style: preserve-3d; }
+.entry__wall {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+.entry__face { position: relative; display: block; }
 
 .entry__rule {
   height: 1px;
@@ -1576,7 +1647,16 @@
   .big-link { font-size: 23px; }
 
   /* ── hero ── */
-  .entry__stage { padding: clamp(18px, 5vw, 80px); }
+  .entry__stage { padding: clamp(18px, 5vw, 80px); perspective: 760px; }
+  /* Eight planes of the name is 176 spans inside a preserve-3d context. On a
+     phone the name is a third of the size, so the deepest planes contribute a
+     sub-pixel edge nobody can see — they are paying compositing cost for
+     nothing. The five nearest keep the thickness; the rest go. */
+  .entry__wall:nth-of-type(n + 6) { display: none; }
+  /* twenty-six blur passes is a real cost on a phone GPU and the motes are
+     3px there; the depth they were buying is not visible at that size */
+  .entry__mote { filter: none; }
+  .entry__halo { margin: -26vh 0 0 -48vw; width: 96vw; height: 52vh; }
   /* Sized from the narrow end, not the wide one. The name needs 5.78px of
      width per 1px of size, and a 320px phone leaves 272px after padding —
      so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,

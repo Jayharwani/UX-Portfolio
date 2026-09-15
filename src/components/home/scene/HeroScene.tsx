@@ -33,13 +33,24 @@ import NodeWeb from "./NodeWeb";
    single-rAF-driver rule.
    ────────────────────────────────────────────────────────────────────────── */
 
-export default function HeroScene({ interactive }: { interactive: boolean }) {
+export default function HeroScene({
+  interactive,
+  running,
+}: {
+  interactive: boolean;
+  /* false parks the render loop. R3F renders every frame for the life of the
+     page otherwise, including the whole time the hero is scrolled past and
+     the work list is doing its own scrolling — which is the one place this
+     scene was costing frames it could not possibly be earning. */
+  running: boolean;
+}) {
   const reduce = !!useReducedMotion();
   const live = interactive && !reduce;
 
   return (
     <div className="hero-scene" aria-hidden="true">
       <Canvas
+        frameloop={running ? "always" : "never"}
         dpr={[1, 1.6]}
         gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
         camera={{ position: [0, 0, 11], fov: 42 }}
