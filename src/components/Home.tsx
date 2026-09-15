@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
+import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
   HeadroomPreview,
@@ -104,6 +105,12 @@ function WorkStage() {
      anything — that path was already correct and only needed leaving alone. */
   const [replay, setReplay] = useState(0);
   const replayNow = () => setReplay((r) => r + 1);
+  /* The flip is the point of the whole section: the previews are live React
+     and nothing said so. Reset on project change, so arriving at a project
+     always shows the running thing first and the code is a choice. */
+  const [flipped, setFlipped] = useState(false);
+  useEffect(() => setFlipped(false), [i]);
+  const code = sourceOf(WORK[i].Preview.name);
 
   useEffect(() => {
     if (reduce) return;
@@ -223,11 +230,33 @@ function WorkStage() {
             <span className="reg reg--tr" aria-hidden="true" />
             <span className="reg reg--bl" aria-hidden="true" />
             <span className="reg reg--br" aria-hidden="true" />
-            {WORK.map((w, k) => (
-              <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
-                <w.Preview key={`${w.name}-${replay}`} active={k === i} />
+            <div className={`flip${flipped ? " is-flipped" : ""}`}>
+              <div className="flip__face flip__face--front">
+                {WORK.map((w, k) => (
+                  <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
+                    <w.Preview key={`${w.name}-${replay}`} active={k === i} />
+                  </div>
+                ))}
               </div>
-            ))}
+              <div className="flip__face flip__face--back" aria-hidden={!flipped}>
+                <pre className="src">
+                  <Highlight code={code} />
+                </pre>
+                <div className="src__foot">
+                  <span className="micro">src/components/home/previews.tsx</span>
+                  <span className="micro">{lineCount(code)} lines · running on the other side</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="flipbtn"
+              onClick={() => setFlipped((v) => !v)}
+              aria-pressed={flipped}
+            >
+              {flipped ? "Live" : "Source"}
+            </button>
           </div>
         </div>
 
