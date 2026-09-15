@@ -38,10 +38,10 @@ const COLS = 12;
 const ROWS = 6;
 
 const INDEX = [
-  { n: "01", name: "Signal" },
-  { n: "02", name: "Headroom" },
-  { n: "03", name: "ChronoWeave" },
-  { n: "04", name: "Bumper" },
+  { n: "01", name: "Signal", accent: "#1F9D55" },
+  { n: "02", name: "Headroom", accent: "#34D399" },
+  { n: "03", name: "ChronoWeave", accent: "#A78BFA" },
+  { n: "04", name: "Bumper", accent: "#14B8A6" },
 ];
 
 export default function Hero() {
@@ -133,7 +133,7 @@ export default function Hero() {
           <div className="hero2__rule" />
           <ul className="hero2__index">
             {INDEX.map((p) => (
-              <li className="hero2__ix" key={p.n}>
+              <li className="hero2__ix" key={p.n} style={{ ["--ac" as string]: p.accent }}>
                 <span className="hero2__ixn">{p.n}</span>
                 <span className="hero2__ixname">{p.name}</span>
               </li>

@@ -1049,3 +1049,48 @@
   .hgrid__scan { display: none; }
   .hline__in { transform: none; }
 }
+
+/* ── hover, restored ───────────────────────────────────────────────────────
+   The old work cards did four things the rebuild dropped: lift 4px on hover,
+   take the project's accent on the border, drive the preview's own animation
+   from hover, and drift the art against the scroll.
+
+   Two of those are better handled by the new structure — the preview is
+   driven by scroll index now, which covers touch properly where the old
+   `coarse && inView` was a workaround, and the pinned stage already moves the
+   art. The two worth having back are the LIFT and the ACCENT, and they are
+   restored here against --ac, which the stage sets per project. */
+.stage__screen {
+  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 26%, transparent);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 420ms ease, box-shadow 420ms ease;
+}
+.stage__screen:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 55%, transparent);
+  box-shadow: 0 18px 50px -22px color-mix(in oklab, var(--ac, #000) 45%, transparent);
+}
+
+/* the live tick takes the project's colour, so the progress bar is telling
+   you which project you are in rather than only how far along you are */
+.stage__tick.is-on { background: var(--ac, var(--on-ink)); }
+
+.stage__go { border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 40%, transparent); }
+.stage__go:hover { border-color: var(--ac, var(--on-ink)); color: var(--ac, var(--on-ink)); }
+
+/* ── hero index: the same system, so the colours are introduced before the
+   work section rather than appearing from nowhere ── */
+.hero2__ix {
+  cursor: default;
+  transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero2__ixname { transition: color 300ms ease; }
+.hero2__ixn { transition: color 300ms ease; }
+.hero2__ix:hover { transform: translateY(-2px); }
+.hero2__ix:hover .hero2__ixname { color: var(--ac); }
+.hero2__ix:hover .hero2__ixn { color: var(--ac); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage__screen, .stage__go, .hero2__ix, .hero2__ixname, .hero2__ixn { transition: none; }
+  .stage__screen:hover, .hero2__ix:hover { transform: none; }
+}

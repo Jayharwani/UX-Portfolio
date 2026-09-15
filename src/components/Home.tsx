@@ -48,11 +48,15 @@ import {
 const EMAIL = "harwanijay9498@gmail.com";
 const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
 
+/* The accents are the ones the old work cards used. Losing them made all four
+   projects render identically, which threw away a real colour system for
+   nothing — the previews already carry these hues internally, so the frame
+   agreeing with them is the whole point. */
 const WORK = [
-  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", Preview: SignalPreview },
-  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", Preview: HeadroomPreview },
-  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", Preview: ChronoWeavePreview },
-  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", Preview: BumperPreview },
+  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview },
+  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview },
+  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview },
+  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
 ];
 
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -136,7 +140,7 @@ function WorkStage() {
     return (
       <div className="stack">
         {WORK.map((w) => (
-          <div className="stack__item" key={w.name}>
+          <div className="stack__item" key={w.name} style={{ ["--ac" as string]: w.accent }}>
             <div className="stage__copy">
               <span className="micro">{w.n} / 04</span>
               <h3 className="stage__name">{w.name}</h3>
@@ -154,7 +158,7 @@ function WorkStage() {
 
   return (
     <div ref={wrapRef} className="workwrap" style={{ height: `${WORK.length * 100}vh` }}>
-      <div ref={stageRef} className="stage">
+      <div ref={stageRef} className="stage" style={{ ["--ac" as string]: WORK[i].accent }}>
         <div className="stage__in">
           <div className="stage__copy">
             <span className="micro">{WORK[i].n} / 04</span>
