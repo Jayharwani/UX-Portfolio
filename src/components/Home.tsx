@@ -184,6 +184,9 @@ function WorkStage() {
       <div ref={stageRef} className="stage" style={{ ["--ac" as string]: WORK[i].accent }}>
         <div className="stage__in">
           <div className="stage__copy">
+            {/* the same light, on the rule beside the copy — one idea shown
+                twice rather than two unrelated effects */}
+            <span className="stage__spark" aria-hidden="true" />
             <span className="micro">{WORK[i].n} / 04</span>
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__text${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
@@ -200,6 +203,9 @@ function WorkStage() {
             className="stage__screen"
             onMouseEnter={replayNow}
           >
+            {/* light passing over the surface: a wide, very soft accent band
+                that travels down the frame. One element, one transform. */}
+            <span className="stage__sheen" aria-hidden="true" />
             {WORK.map((w, k) => (
               <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
                 <w.Preview key={`${w.name}-${replay}`} active={k === i} />

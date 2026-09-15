@@ -1094,3 +1094,104 @@
   .stage__screen, .stage__go, .hero2__ix, .hero2__ixname, .hero2__ixn { transition: none; }
   .stage__screen:hover, .hero2__ix:hover { transform: none; }
 }
+
+/* ── the resting state ─────────────────────────────────────────────────────
+   Once a project lands, everything used to stop. This is what keeps it alive
+   while you read, and it is deliberately ONE idea expressed three times —
+   light moving over a surface — rather than three unrelated effects.
+
+   Every property here is transform or opacity, driven by CSS keyframes with
+   no JavaScript per frame. The frame floats, light passes over it, and the
+   same light travels the rule beside the copy. All of it takes the live
+   project's accent from --ac, so the resting state is also telling you which
+   project you are in. */
+
+/* the float is on `transform`; the hover lift below uses `translate`, which
+   is a separate property, so the two compose instead of overwriting one
+   another — the reason the lift does not kill the float */
+.stage__in { perspective: 1500px; }
+.stage__screen {
+  transform-style: preserve-3d;
+  animation: frame-float 16s ease-in-out infinite alternate;
+}
+@keyframes frame-float {
+  from { transform: rotateY(-1.1deg) rotateX(0.55deg) translateY(-3px); }
+  to   { transform: rotateY(1.1deg) rotateX(-0.55deg) translateY(3px); }
+}
+.stage__screen:hover { translate: 0 -4px; }
+
+/* light over glass: a tall, very soft band crossing the frame. Sits under the
+   preview so it reads as the surface catching light rather than as an overlay
+   on the artwork. */
+.stage__sheen {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: -60%;
+  height: 60%;
+  /* ABOVE the preview, not behind it. Every preview paints an opaque
+     background, so a sheen underneath would never be seen. Screen blend is
+     what makes it read as light catching the surface rather than as a wash
+     laid over the artwork — it can only lighten, so the work underneath is
+     never tinted or dimmed. */
+  z-index: 2;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--ac, #fff) 22%, transparent),
+    transparent
+  );
+  filter: blur(22px);
+  animation: sheen-pass 11s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes sheen-pass {
+  0%        { transform: translateY(0); opacity: 0; }
+  12%       { opacity: 1; }
+  70%       { opacity: 1; }
+  85%, 100% { transform: translateY(300%); opacity: 0; }
+}
+.stage__slide { position: relative; z-index: 1; }
+
+/* the rule beside the copy, and the same light travelling down it */
+.stage__copy { position: relative; padding-left: 26px; }
+.stage__copy::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--hair-dark);
+}
+.stage__spark {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 64px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--ac, #fff), transparent);
+  animation: spark-fall 11s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes spark-fall {
+  0%        { transform: translateY(-64px); opacity: 0; }
+  12%       { opacity: 0.9; }
+  70%       { opacity: 0.9; }
+  85%, 100% { transform: translateY(calc(100% + 64px)); opacity: 0; }
+}
+
+/* the copy drifts against the frame — opposite phase, smaller amplitude, so
+   the two read as one slow breath rather than as two things wobbling */
+.stage__copy { animation: copy-drift 16s ease-in-out infinite alternate; }
+@keyframes copy-drift {
+  from { transform: translateY(2px); }
+  to   { transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage__screen, .stage__copy, .stage__sheen, .stage__spark { animation: none; }
+  .stage__screen { transform: none; }
+  .stage__sheen, .stage__spark { opacity: 0; }
+}
