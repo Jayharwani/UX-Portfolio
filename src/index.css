@@ -1244,3 +1244,52 @@
 @media (prefers-reduced-motion: reduce) {
   .stage__slide, .stage__text { transition: opacity 200ms linear; transform: none; }
 }
+
+/* ── the hero hands over to the particles ──────────────────────────────────
+   The masked line reveal is gone: two systems cannot both introduce the
+   headline. The particles assemble it, hand over to real text, and keep a
+   sparse remainder alive that answers the cursor.
+
+   Everything downstream waits on that handover rather than on a clock, so
+   the sub and the index land on the beat the words land. */
+.hline { display: block; overflow: visible; }
+
+.hero2__head {
+  opacity: 0;
+  filter: blur(9px);
+  transition: opacity 950ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 950ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero2.is-assembled .hero2__head { opacity: 1; filter: blur(0); }
+
+/* the em is the one italic in the hero, on the half of the sentence that is
+   the actual claim */
+.hero2__head em { font-style: italic; }
+
+.hero2__sub,
+.hero2__ix {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero2.is-assembled .hero2__sub { opacity: 1; transform: none; transition-delay: 260ms; }
+.hero2.is-assembled .hero2__ix { opacity: 1; transform: none; }
+/* the index arrives left to right, one beat apart */
+.hero2.is-assembled .hero2__ix:nth-child(1) { transition-delay: 420ms; }
+.hero2.is-assembled .hero2__ix:nth-child(2) { transition-delay: 490ms; }
+.hero2.is-assembled .hero2__ix:nth-child(3) { transition-delay: 560ms; }
+.hero2.is-assembled .hero2__ix:nth-child(4) { transition-delay: 630ms; }
+
+/* LAYERING. MemoryParticles sets z-index 5 on its canvas inline, so a rule
+   here can never move it — the component expects the text layer to sit above
+   5, which is what the hero it was written for did. The stack is therefore:
+   grid 0, particles 5, type 10. Trying to push the canvas down instead was
+   the bug: particles rendered over the headline. */
+.hero2__in { z-index: 10; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero2__head, .hero2__sub, .hero2__ix {
+    opacity: 1; filter: none; transform: none; transition: none;
+  }
+}

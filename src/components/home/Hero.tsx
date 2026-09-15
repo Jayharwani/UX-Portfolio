@@ -1,6 +1,7 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import gsap from "gsap";
+import MemoryParticles from "./MemoryParticles";
 
 /* ──────────────────────────────────────────────────────────────────────────
    The hero as a title sequence.
@@ -47,6 +48,13 @@ const INDEX = [
 export default function Hero() {
   const reduce = !!useReducedMotion();
   const root = useRef<HTMLElement>(null);
+  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const wordRef = useRef<HTMLElement>(null);
+  /* The headline is not revealed by the timeline any more — the particles
+     assemble it and hand over. Everything downstream waits on that, so the
+     sub and the index land on the beat the words land rather than on a clock
+     that might disagree with them. */
+  const [assembled, setAssembled] = useState(reduce);
 
   useEffect(() => {
     if (reduce) return;
@@ -67,10 +75,6 @@ export default function Hero() {
         .from(".hgrid__h", { scaleX: 0, duration: 0.95, stagger: 0.055, transformOrigin: "left center" }, 0.08)
         .from(".hero2__rule", { scaleX: 0, duration: 1.05, transformOrigin: "left center" }, 0.22)
         .from(".hero2__micro", { opacity: 0, y: 8, duration: 0.65, stagger: 0.08 }, 0.3)
-        /* the masked reveal: each line rides up out of its own clip */
-        .from(".hline__in", { yPercent: 115, duration: 1.1, stagger: 0.085 }, 0.46)
-        .from(".hero2__sub", { opacity: 0, y: 14, duration: 0.85 }, 1.05)
-        .from(".hero2__ix", { opacity: 0, y: 12, duration: 0.7, stagger: 0.06 }, 1.22)
         /* the grid recedes once the type has landed, so it reads as structure
            behind the words rather than as a pattern competing with them */
         .to(".hgrid", { opacity: 0.4, duration: 1.2 }, 1.1);
@@ -80,7 +84,25 @@ export default function Hero() {
   }, [reduce]);
 
   return (
-    <section ref={root} className="band band--ink hero2" aria-label="Introduction">
+    <section
+      ref={root}
+      className={`band band--ink hero2${assembled ? " is-assembled" : ""}`}
+      aria-label="Introduction"
+    >
+      {/* The field. Canvas 2D, no WebGL: it measured 0.31ms a frame on the
+          lite tier and 0.80 on full, against the 216 KB three.js chunk this
+          page deliberately does not load. It samples the headline from the
+          DOM, flies the particles onto the glyphs, hands over to real text,
+          and then keeps a sparse remainder alive that pushes away from the
+          cursor — which is where the hero's interactivity comes from. */}
+      {!reduce && (
+        <MemoryParticles
+          heroRef={root}
+          h1Ref={h1Ref}
+          wordRef={wordRef}
+          onAssembled={() => setAssembled(true)}
+        />
+      )}
       {/* the grid: structure, drawn */}
       <div className="hgrid" aria-hidden="true">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -117,12 +139,20 @@ export default function Hero() {
         <div className="hero2__rule" />
 
         <div className="hero2__mid">
-          <h1 className="display hero2__head">
+          {/* data-line is what the sampler measures: each span is one text
+              run, so the breaks are AUTHORED rather than left to wrapping —
+              a reflowed line would resample at a different width and land the
+              assembly crooked. */}
+          <h1 className="display hero2__head" ref={h1Ref}>
             <span className="hline">
-              <span className="hline__in">I design interfaces</span>
+              <span className="hline__in" data-line>
+                I design interfaces{" "}
+              </span>
             </span>
             <span className="hline">
-              <span className="hline__in">that get out of the way.</span>
+              <span className="hline__in" data-line>
+                that get out of <em ref={wordRef}>the way.</em>
+              </span>
             </span>
           </h1>
           <p className="lead hero2__sub">Designer who ships the front end. Four products, all live.</p>
