@@ -2,6 +2,7 @@ import { useRef, useEffect, lazy, Suspense } from "react";
 import { useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import { usePerfTier, useTierReady } from "./perfTier";
+import ClothField from "./ClothField";
 
 /* Tier-gated and lazy. three plus fiber is 216 KB gzipped, and the watchdog
    persists its verdict for thirty days — a machine that cannot hold 60fps
@@ -40,8 +41,6 @@ export default function Hero() {
   const reduce = !!useReducedMotion();
   const root = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
-  const light = useRef<HTMLDivElement>(null);
-  const cloth = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
   const tierReady = useTierReady();
   const depth = !reduce && !lite && tierReady;
@@ -75,8 +74,6 @@ export default function Hero() {
     let px = 0;
     let py = 0;
     let queued = false;
-    let lx = 0;
-    let ly = 0;
     const write = () => {
       queued = false;
       /* the name leans AGAINST the scene's lean, which is what separates the
@@ -85,16 +82,8 @@ export default function Hero() {
       /* the light rides the same handler and the same frame — a transform
          write, not a custom property, so it stays on the compositor and never
          invalidates a subtree */
-      if (light.current) light.current.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
-      /* the fabric shifts slightly AGAINST the hand. Real cloth gives under
-         pressure, and without this the light reads as sliding over a photo
-         rather than over a surface. Deliberately tiny — at more than a few
-         pixels it stops being fabric and becomes a parallax layer. */
-      if (cloth.current) cloth.current.style.transform = `translate3d(${px * -9}px, ${py * -7}px, 0) scale(1.02)`;
     };
     const onMove = (e: PointerEvent) => {
-      lx = e.clientX;
-      ly = e.clientY;
       px = (e.clientX / window.innerWidth - 0.5) * 2;
       py = (e.clientY / window.innerHeight - 0.5) * 2;
       if (!queued) {
@@ -111,14 +100,12 @@ export default function Hero() {
 
   return (
     <section ref={root} className="band band--ink entry" aria-label="Welcome">
-      {/* The ground. A dot lattice that does not need WebGL, so it is there
-          on every tier — including the lite tier, where the 3D scene never
-          loads and the background would otherwise be flat ink. The light
-          follows the pointer and brightens the dots it passes over; the grain
-          keeps a large dark field from reading as a void. Both are cheap: one
-          transform write per frame and one static texture. */}
-      <div className="entry__ground" ref={cloth} aria-hidden="true" />
-      {!reduce && <div className="entry__light" ref={light} aria-hidden="true" />}
+      {/* Real cloth: a height field shaded per pixel, pushed by the pointer.
+          It replaces the fixed fabric texture and the coloured light that sat
+          on top of it — the light moved, the cloth did not, which was the
+          wrong model. Greyscale throughout, so it reads as dark plain fabric
+          rather than as a tinted lamp. */}
+      <ClothField reduce={reduce} />
       <div className="entry__grain" aria-hidden="true" />
 
       {depth && (
