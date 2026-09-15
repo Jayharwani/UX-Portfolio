@@ -107,7 +107,6 @@ export default function Hero() {
             />
           ))}
         </svg>
-        {!reduce && <span className="hgrid__scan" />}
       </div>
 
       <div className="hero2__in">
