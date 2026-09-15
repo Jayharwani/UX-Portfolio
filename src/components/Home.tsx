@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Hero from "./home/Hero";
 import {
   SignalPreview,
   HeadroomPreview,
@@ -190,33 +191,7 @@ function WorkStage() {
 export function Home() {
   return (
     <main className="s32">
-      {/* ── hero ── */}
-      <section className="band band--ink band--hero">
-        <div className="band__in">
-          <Reveal className="hero__top">
-            <span className="micro">Jay Harwani</span>
-            <span className="micro">Baltimore, MD</span>
-          </Reveal>
-
-          <div className="hero__mid">
-            <Reveal delay={0.08}>
-              <h1 className="display">
-                I design interfaces
-                <br />
-                that get out of the way.
-              </h1>
-            </Reveal>
-            <Reveal delay={0.18}>
-              <p className="lead hero__lead">Designer who ships the front end. Four products, all live.</p>
-            </Reveal>
-          </div>
-
-          <Reveal delay={0.26} className="hero__bottom">
-            <span className="micro">Selected work ↓</span>
-            <span className="micro">Open to full-time</span>
-          </Reveal>
-        </div>
-      </section>
+      <Hero />
 
       {/* ── work: the whole point ── */}
       <section id="work" aria-label="Selected work">

@@ -933,3 +933,119 @@
   .stage__text { position: static; opacity: 1; transform: none; pointer-events: auto; }
   .stage__text:not(.is-on) { display: none; }
 }
+
+/* ── HERO: the title sequence ──────────────────────────────────────────────
+   The frame is composed top, middle and bottom rather than being a block of
+   type with four hundred empty pixels under it. The grid behind is the one
+   graphic, and it is a design grid on purpose: it is what the work is built
+   on, every designer reads it instantly, and the headline aligns to it. */
+.hero2 {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  overflow: hidden;
+  background: var(--ink);
+}
+.hero2__in {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(18px, 3vh, 34px) clamp(22px, 5vw, 80px) clamp(20px, 3vh, 36px);
+}
+
+.hero2__top,
+.hero2__foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+.hero2__rule { height: 1px; width: 100%; background: var(--hair-dark); margin: 13px 0 0; }
+
+/* the middle takes the slack, so the type sits optically centred and the
+   index is held to the bottom edge instead of floating */
+.hero2__mid {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(16px, 2.4vh, 30px);
+  padding: clamp(24px, 5vh, 62px) 0;
+  min-height: 0;
+}
+.hero2__head { margin: 0; }
+
+/* masked line reveal: the clip is the point — the line rises out of nothing
+   rather than fading, which is what makes it read as titling rather than as
+   a web animation */
+.hline { display: block; overflow: hidden; }
+.hline__in { display: block; will-change: transform; }
+
+.hero2__sub { max-width: 34ch; color: var(--on-ink-2); }
+
+/* ── the index fills what used to be dead space ── */
+.hero2__bottom { flex: none; }
+.hero2__index {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px clamp(22px, 4vw, 62px);
+  margin: 0;
+  padding: 16px 0 18px;
+}
+.hero2__ix { display: flex; align-items: baseline; gap: 9px; }
+.hero2__ixn {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  color: var(--on-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.hero2__ixname {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  color: var(--on-ink);
+}
+
+/* ── the grid ──
+   Hairlines at 12 columns and 6 baselines. Non-scaling-stroke keeps them at
+   one device pixel no matter how the viewBox stretches, which is the whole
+   difference between a drawn grid and a blurry one. */
+.hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.hgrid svg { width: 100%; height: 100%; display: block; }
+.hgrid__v,
+.hgrid__h { stroke: var(--on-ink); stroke-width: 1; opacity: 0.075; }
+
+/* the one thing still moving after the intro: a single line crossing the
+   frame on a long loop. One element, one transform, no per-frame work. */
+.hgrid__scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(242, 241, 236, 0.5), transparent);
+  animation: hscan 13s linear infinite;
+}
+@keyframes hscan {
+  from { transform: translateX(-2vw); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  to   { transform: translateX(100vw); opacity: 0; }
+}
+
+@media (max-width: 900px) {
+  .hero2__index { gap: 8px 22px; }
+  .hero2__ixname { font-size: 0.95rem; }
+  .hero2__sub { max-width: 28ch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hgrid__scan { display: none; }
+  .hline__in { transform: none; }
+}
