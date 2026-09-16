@@ -5,12 +5,12 @@ import { usePerfTier } from "./perfTier";
 /* ──────────────────────────────────────────────────────────────────────────
    THE HERO — a name inside a real 3D space.
 
-   TUNABLE CONSTANTS live in scene/Constellation.tsx, at the top, in TUNE.
-   The three to reach for first if the depth ever stops reading:
+   TUNABLE CONSTANTS live in scene/LiquidField.tsx, at the top, in C and
+   PALETTE. The three to reach for first:
 
-     TUNE.Z_FAR / Z_NEAR   the depth of the room — widen this before anything
-     TUNE.PARALLAX_X / _Y  how far the camera travels with the pointer
-     TUNE.SIZE / FRONT_Z   how big and how close the nearest particles get
+     C.SPEED    how fast the surface evolves — the biggest taste knob there is
+     PALETTE    the cosine-palette coefficients. This IS the art direction
+     C.BLOOM    bloom strength. Past ~0.5 it reads as a mistake, not as light
 
    The scene itself is lazy-loaded. three.js is 216 KB gzipped and this site
    has spent real effort keeping it out of the main bundle; a component that
@@ -23,17 +23,17 @@ import { usePerfTier } from "./perfTier";
    are pinned to this section instead, which is full-height anyway, so the
    effect is identical inside the hero and correct outside it.
 
-   THE NAME LEANS AGAINST THE SPACE. The camera goes toward the pointer and
-   the name goes slightly the other way. Small — about eighteen pixels — but
-   it is the difference between type sitting on the scene and type sitting in
-   it, because two things moving oppositely cannot be read as one plane.
+   THE NAME LEANS AGAINST THE FLOW. The surface bulges toward the pointer and
+   the name drifts slightly the other way. Small — about fourteen pixels — but
+   two things moving oppositely cannot be read as one plane, which is the
+   cheapest honest way to put type in front of something rather than on it.
    ────────────────────────────────────────────────────────────────────────── */
 
-const Constellation = lazy(() => import("./scene/Constellation"));
+const LiquidField = lazy(() => import("./scene/LiquidField"));
 
 const NAME = "Jay Harwani";
 /** how far the name drifts against the camera, in px at full deflection */
-const NAME_PARALLAX = 18;
+const NAME_PARALLAX = 14;
 
 export default function Hero() {
   const reduce = !!useReducedMotion();
@@ -41,14 +41,14 @@ export default function Hero() {
   const plate = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
 
-  /* Fewer particles on a phone and on a machine the frame-time watchdog has
-     already downgraded. Not an on/off gate: the scene IS the hero now, and a
-     hero that renders nothing on a slow laptop is worse than one that renders
-     a thinner field. */
-  const [density, setDensity] = useState(1);
+  /* A phone, or a machine the frame-time watchdog has already downgraded,
+     gets three noise octaves instead of four and a smaller buffer. Not an
+     on/off gate: the shader IS the hero now, and one that renders nothing on
+     a slow laptop is worse than one that renders a simpler surface. */
+  const [small, setSmall] = useState(false);
   useEffect(() => {
     const narrow = window.matchMedia("(max-width: 760px)");
-    const apply = () => setDensity(narrow.matches ? 0.52 : lite ? 0.65 : 1);
+    const apply = () => setSmall(narrow.matches || lite);
     apply();
     narrow.addEventListener("change", apply);
     return () => narrow.removeEventListener("change", apply);
@@ -131,7 +131,7 @@ export default function Hero() {
       aria-label="Welcome"
     >
       <Suspense fallback={null}>
-        <Constellation running={!offscreen} reduce={reduce} density={density} />
+        <LiquidField running={!offscreen} reduce={reduce} small={small} />
       </Suspense>
 
       {/* a faint lift under the name, so it never has to fight a bright
