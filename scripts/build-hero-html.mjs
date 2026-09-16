@@ -57,7 +57,8 @@ const KEYS = [
   "GRID", "JITTER", "CLEAR_BAND", "SIZE_MIN", "SIZE_MAX",
   "PARALLAX", "EASE", "DRIFT",
   "BLOOM", "BLOOM_RADIUS", "BLOOM_THRESHOLD", "EXPOSURE",
-  "ABERRATION", "GRAIN", "VIGNETTE",
+  "ABERRATION", "VIGNETTE",
+  "DEPART_AT", "DEPART_BY",
   "INTRO_MS", "SCATTER_Z", "SCATTER_XY",
   "RENDER_SCALE", "RENDER_SCALE_SMALL",
 ];
@@ -69,13 +70,11 @@ const ACCENTS = need(/const ACCENTS = (\[[^\]]*\])/, "ACCENTS")
   .replace(/"/g, '"')
   .replace(/\s+/g, " ");
 const HAIR = need(/const HAIR = "(#\w+)"/, "HAIR");
-const BG = need(/const BG = "(#\w+)"/, "BG");
 
 const out = readFileSync(TPL, "utf8")
   .replace("__C__", JSON.stringify(C, null, 2))
   .replace("__ACCENTS__", ACCENTS)
   .replace("__HAIR__", HAIR)
-  .replace("__BG__", BG)
   /* The trailing newline of a shader matters where one string is concatenated
      onto another; it does not here, but the geometry builder's does — an
      arrow function body ending without a newline would swallow the next

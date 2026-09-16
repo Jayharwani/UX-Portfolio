@@ -1404,6 +1404,28 @@
 
 
 
+/* ── THE GRAIN, ONCE, OVER EVERYTHING ────────────────────────────────────
+   It used to live inside the hero's post-processing pass, which meant the
+   hero had a texture the rest of the page did not — one more thing making
+   the join between them visible. One fixed overlay over the whole document
+   instead: the hero, the work, the route and the contact band all sit under
+   the same film.
+
+   Fixed rather than absolute so it never scrolls against the content, which
+   is what makes grain read as a property of the image rather than of the
+   page. pointer-events:none, and it is above everything, so nothing has to
+   know it is there. */
+.s32::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
 /* ── THE ENTRANCE ──────────────────────────────────────────────────────────
    A name inside a real 3D space. Two WebGL canvases share one camera — one
    under the type, one over it — and the real <h1> sits between them, which
@@ -1452,6 +1474,7 @@
   margin-left: calc(min(780px, 74vw) / -2);
   margin-top: calc(min(340px, 42vh) / -2);
   opacity: 0;
+  will-change: transform, opacity;
   transition: opacity 1200ms var(--ease-ui) 400ms;
 }
 .entry.is-in .entry__near { opacity: 1; }
@@ -1476,6 +1499,7 @@
   align-items: center;
   justify-content: center;
   padding: clamp(24px, 6vw, 80px);
+  will-change: transform, opacity;
 }
 .entry__plate { text-align: center; will-change: transform; }
 

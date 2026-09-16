@@ -33,10 +33,17 @@
     -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
   .entry { position: relative; min-height: 100svh; display: flex; overflow: hidden; }
+  /* one grain over everything, so the hero's ground and the page's cannot
+     be two different textures */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 9; pointer-events: none;
+    opacity: .055; background-size: 160px 160px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
   .field { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
   .field canvas { display: block; width: 100%; height: 100%; }
   .stage {
-    position: relative; z-index: 2; flex: 1 1 auto;
+    position: relative; z-index: 2; flex: 1 1 auto; will-change: transform, opacity;
     display: flex; align-items: center; justify-content: center;
     padding: clamp(24px, 6vw, 80px);
   }
@@ -152,8 +159,9 @@ const C = {
   "BLOOM_THRESHOLD": 0.42,
   "EXPOSURE": 1.15,
   "ABERRATION": 0.09,
-  "GRAIN": 0.022,
   "VIGNETTE": 0.55,
+  "DEPART_AT": 0.25,
+  "DEPART_BY": 0.85,
   "INTRO_MS": 2200,
   "SCATTER_Z": 26,
   "SCATTER_XY": 3.4,
@@ -161,7 +169,7 @@ const C = {
   "RENDER_SCALE_SMALL": 0.8
 };
 const ACCENTS = ["#1F9D55", "#34D399", "#A78BFA", "#14B8A6"];
-const HAIR = '#F2F1EC', BG = '#0B0D10';
+const HAIR = '#F2F1EC';
 
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
@@ -217,7 +225,6 @@ const FinishShader = {
     uRes: { value: new THREE.Vector2(1, 1) },
     uTime: { value: 0 },
     uAberration: { value: C.ABERRATION },
-    uGrain: { value: C.GRAIN },
     uVignette: { value: C.VIGNETTE }
   },
   vertexShader: `
@@ -231,13 +238,8 @@ const FinishShader = {
     uniform vec2 uRes;
     uniform float uTime;
     uniform float uAberration;
-    uniform float uGrain;
-    uniform float uVignette;
+      uniform float uVignette;
     varying vec2 vUv;
-
-    float hash(vec2 p) {
-      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-    }
 
     void main() {
       vec2 c = vUv - 0.5;
@@ -245,15 +247,19 @@ const FinishShader = {
       /* scaled by r², so the fringing lives at the edges of the frame the way
          it does in a real lens and never touches the type in the middle */
       vec2 off = c * r2 * uAberration * 0.06;
+      vec4 mid = texture2D(tDiffuse, vUv);
       vec3 col;
       col.r = texture2D(tDiffuse, vUv + off).r;
-      col.g = texture2D(tDiffuse, vUv).g;
+      col.g = mid.g;
       col.b = texture2D(tDiffuse, vUv - off).b;
 
-      float g = hash(vUv * uRes + fract(uTime * 11.0)) - 0.5;
-      col += g * uGrain;
-      col *= 1.0 - uVignette * r2 * 1.5;
-      gl_FragColor = vec4(col, 1.0);
+      /* THE VIGNETTE MULTIPLIES ALPHA, NOT COLOUR. Multiplying colour fades
+         the frame toward BLACK, which is a different colour from the page and
+         is what put a hard seam under the hero. Multiplying alpha fades it
+         toward whatever is behind the canvas, which is the page itself. A
+         vignette should mean "less of this", not "more black". */
+      float a = mid.a * (1.0 - uVignette * r2 * 1.5);
+      gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
     }`
 };
 
@@ -345,15 +351,17 @@ function build(count, aspect, seed) {
 const scale = SMALL ? C.RENDER_SCALE_SMALL : C.RENDER_SCALE;
 const pr = Math.min(devicePixelRatio, 2) * scale;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = C.EXPOSURE;
+/* transparent: the PAGE is the ground, so the hero and whatever follows it
+   cannot be two different greys */
+renderer.setClearColor(0x000000, 0);
 document.getElementById('field').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(BG);
 const camera = new THREE.PerspectiveCamera(C.FOV, innerWidth / innerHeight, 0.1, 120);
 camera.position.set(0, 0, C.CAMERA_Z);
 
@@ -411,6 +419,24 @@ addEventListener('resize', () => {
 const entry = document.getElementById('entry');
 const plate = document.getElementById('plate');
 const near = document.getElementById('near');
+const stageEl = document.querySelector('.stage');
+
+/* THE DEPARTURE. Scrolling out of the hero runs the assembly backwards and
+   takes the type with it. A scroll listener rather than a frame loop: a value
+   that depends on scroll position should be computed when scroll changes, and
+   the browser already coalesces those to about one per frame. */
+let depart = 0;
+function onDepart() {
+  const box = entry.getBoundingClientRect();
+  const past = Math.min(1, Math.max(0, -box.top / Math.max(box.height, 1)));
+  const t = Math.min(1, Math.max(0, (past - C.DEPART_AT) / (C.DEPART_BY - C.DEPART_AT)));
+  depart = t * t * (3 - 2 * t);
+  stageEl.style.opacity = (1 - depart).toFixed(3);
+  stageEl.style.transform = 'translate3d(0,' + (depart * -46).toFixed(2) + 'px,0)';
+}
+onDepart();
+addEventListener('scroll', onDepart, { passive: true });
+addEventListener('resize', onDepart, { passive: true });
 
 if (REDUCE) {
   uniforms.uTime.value = 11; finish.uniforms.uTime.value = 11;
@@ -444,9 +470,9 @@ if (REDUCE) {
 
     const p = Math.min(1, (now - t0) / C.INTRO_MS);
     const e = 1 - Math.pow(1 - p, 4);
-    uniforms.uAssemble.value = e;
-    uniforms.uFade.value = Math.min(1, p * 1.6);
-    bloom.strength = C.BLOOM * e;
+    uniforms.uAssemble.value = e * (1 - depart);
+    uniforms.uFade.value = Math.min(1, p * 1.6) * (1 - depart);
+    bloom.strength = C.BLOOM * e * (1 - depart);
     uniforms.uTime.value = t;
     finish.uniforms.uTime.value = t;
 
@@ -462,7 +488,7 @@ if (REDUCE) {
     plate.style.transform = 'translate3d(' +
       (-ex * 14).toFixed(2) + 'px,' + (-ey * 9).toFixed(2) + 'px,0)';
     near.style.transform = 'translate3d(' +
-      (-ex * 46).toFixed(2) + 'px,' + (-ey * 30).toFixed(2) + 'px,0)';
+      (-ex * 46).toFixed(2) + 'px,' + (-ey * 30 + depart * -110).toFixed(2) + 'px,0)';
 
     composer.render();
   };

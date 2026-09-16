@@ -82,8 +82,19 @@ const C = {
   EXPOSURE: 1.15,
   ABERRATION: 0.09, // low: coloured fringing on a one-pixel line reads as a
   //                    rendering fault rather than as a lens
-  GRAIN: 0.022,
+  /* grain lives on the page now, not in this pass — one texture over
+     everything, so the hero's ground and the bands' cannot disagree */
   VIGNETTE: 0.55,
+
+  /* ── the exit ──
+     Scrolling out of the hero runs the assembly BACKWARDS. The pieces return
+     along the exact paths they arrived on, because the shader already knows
+     both ends of every vertex's journey — the scroll just drives the same
+     mix the entrance did. A composition that comes apart as you leave it is
+     the scroll-driven scene deconstruction the trend pieces keep pointing
+     at, and here it costs one uniform and no new geometry. */
+  DEPART_AT: 0.25, // fraction of the hero scrolled before it starts coming apart
+  DEPART_BY: 0.85, // and fully apart by here
 
   /* ── the entrance ── */
   INTRO_MS: 2200,
@@ -101,7 +112,18 @@ const C = {
    rather than a palette invented for a background. */
 const ACCENTS = ["#1F9D55", "#34D399", "#A78BFA", "#14B8A6"] as const;
 const HAIR = "#F2F1EC"; // --on-ink
-const BG = "#0B0D10"; // --ink, so the band edge has no seam
+
+/* NO BACKGROUND COLOUR. The canvas used to clear to the page's --ink and it
+   still produced a visible seam where the hero met the band below it, because
+   the clear colour does not survive the pipeline: ACES tone mapping darkens
+   it and the vignette then multiplied it further toward black. The hero was
+   rendering a different, darker grey than the CSS underneath, and no amount
+   of matching the two hex values would have fixed it — one of them was going
+   through a tone mapper and the other was not.
+
+   So the canvas is transparent and the page provides the ground. The bands
+   and the hero are now the same colour because they are the SAME PIXELS, not
+   because two numbers were tuned to agree. */
 
 const VERT = `
   attribute vec3 aStart;
@@ -157,7 +179,6 @@ const FinishShader = {
     uRes: { value: new THREE.Vector2(1, 1) },
     uTime: { value: 0 },
     uAberration: { value: C.ABERRATION },
-    uGrain: { value: C.GRAIN },
     uVignette: { value: C.VIGNETTE },
   },
   vertexShader: `
@@ -172,13 +193,8 @@ const FinishShader = {
     uniform vec2 uRes;
     uniform float uTime;
     uniform float uAberration;
-    uniform float uGrain;
-    uniform float uVignette;
+      uniform float uVignette;
     varying vec2 vUv;
-
-    float hash(vec2 p) {
-      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-    }
 
     void main() {
       vec2 c = vUv - 0.5;
@@ -186,15 +202,19 @@ const FinishShader = {
       /* scaled by r², so the fringing lives at the edges of the frame the way
          it does in a real lens and never touches the type in the middle */
       vec2 off = c * r2 * uAberration * 0.06;
+      vec4 mid = texture2D(tDiffuse, vUv);
       vec3 col;
       col.r = texture2D(tDiffuse, vUv + off).r;
-      col.g = texture2D(tDiffuse, vUv).g;
+      col.g = mid.g;
       col.b = texture2D(tDiffuse, vUv - off).b;
 
-      float g = hash(vUv * uRes + fract(uTime * 11.0)) - 0.5;
-      col += g * uGrain;
-      col *= 1.0 - uVignette * r2 * 1.5;
-      gl_FragColor = vec4(col, 1.0);
+      /* THE VIGNETTE MULTIPLIES ALPHA, NOT COLOUR. Multiplying colour fades
+         the frame toward BLACK, which is a different colour from the page and
+         is what put a hard seam under the hero. Multiplying alpha fades it
+         toward whatever is behind the canvas, which is the page itself. A
+         vignette should mean "less of this", not "more black". */
+      float a = mid.a * (1.0 - uVignette * r2 * 1.5);
+      gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
     }
   `,
 };
@@ -359,15 +379,15 @@ export default function Anatomy({ running, reduce, small }: Props) {
     const scale = small ? C.RENDER_SCALE_SMALL : C.RENDER_SCALE;
     const pr = Math.min(window.devicePixelRatio, 2) * scale;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(pr);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = C.EXPOSURE;
+    renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(BG);
     const camera = new THREE.PerspectiveCamera(
       C.FOV,
       window.innerWidth / window.innerHeight,
@@ -494,9 +514,22 @@ export default function Anatomy({ running, reduce, small }: Props) {
          than after */
       const p = Math.min(1, (now - t0) / C.INTRO_MS);
       const e = 1 - Math.pow(1 - p, 4);
-      uniforms.uAssemble.value = e;
-      uniforms.uFade.value = Math.min(1, p * 1.6);
-      bloom.strength = C.BLOOM * e;
+
+      /* how far out of the hero we have scrolled, 0 to 1. Read from the host
+         rather than from window.scrollY against a guessed height, so it stays
+         correct whatever the hero's size turns out to be. */
+      const box = host.getBoundingClientRect();
+      const past = Math.min(1, Math.max(0, -box.top / Math.max(box.height, 1)));
+      const depart = Math.min(
+        1,
+        Math.max(0, (past - C.DEPART_AT) / (C.DEPART_BY - C.DEPART_AT))
+      );
+      /* eased, so the composition lets go slowly and then all at once */
+      const d = depart * depart * (3 - 2 * depart);
+
+      uniforms.uAssemble.value = e * (1 - d);
+      uniforms.uFade.value = Math.min(1, p * 1.6) * (1 - d);
+      bloom.strength = C.BLOOM * e * (1 - d);
 
       uniforms.uTime.value = t;
       finish.uniforms.uTime.value = t;

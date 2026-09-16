@@ -52,6 +52,7 @@ export default function Hero() {
   const root = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
   const near = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
 
   /* A phone, or a machine the frame-time watchdog has already downgraded,
@@ -108,10 +109,51 @@ export default function Hero() {
     };
   }, [reduce]);
 
-  /* ── the name's counter-parallax ── */
+  /* ── the departure ──────────────────────────────────────────────────────
+     Scrolling out of the hero takes the type with the frames behind it.
+
+     THIS IS A SCROLL LISTENER, NOT A FRAME LOOP, and the distinction is the
+     point. A value that depends on scroll position should be computed when
+     the scroll position changes; putting it in a render loop makes it depend
+     on frames being produced, which is a thing this codebase has now been
+     bitten by four separate times. The browser already coalesces scroll
+     events to about one per frame, so there is nothing to throttle.
+
+     It writes the STAGE, while the pointer loop writes the plate inside it.
+     Two elements, two owners, no transform being fought over. */
+  const departRef = useRef(0);
+  useEffect(() => {
+    if (reduce) return;
+    const host = root.current;
+    const st = stage.current;
+    if (!host || !st) return;
+    const onScroll = () => {
+      const box = host.getBoundingClientRect();
+      const past = Math.min(1, Math.max(0, -box.top / Math.max(box.height, 1)));
+      /* the same window the scene uses, so the type and the composition it
+         sits in let go together rather than one holding while the other goes */
+      const t = Math.min(1, Math.max(0, (past - 0.25) / 0.6));
+      const d = t * t * (3 - 2 * t);
+      departRef.current = d;
+      st.style.opacity = `${(1 - d).toFixed(3)}`;
+      st.style.transform = `translate3d(0, ${(d * -46).toFixed(2)}px, 0)`;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [reduce]);
+
+  /* ── the name's counter-parallax ──
+     The pointer gate sits on the listener, not on the effect: a touch device
+     has no pointer and needs no loop, but it still scrolls, and the
+     departure above runs regardless. */
   useEffect(() => {
     if (reduce || offscreen) return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const fine = !window.matchMedia("(pointer: coarse)").matches;
     const el = plate.current;
     if (!el) return;
     let raf = 0;
@@ -122,11 +164,15 @@ export default function Hero() {
     const frame = () => {
       ex += (px - ex) * 0.05;
       ey += (py - ey) * 0.05;
+
       el.style.transform = `translate3d(${(-ex * NAME_PARALLAX).toFixed(2)}px, ${(-ey * NAME_PARALLAX * 0.66).toFixed(2)}px, 0)`;
       /* the near frame travels further than the name, because it is nearer.
          Same eased input, one multiplier — that ratio IS the depth. */
       if (near.current) {
-        near.current.style.transform = `translate3d(${(-ex * NEAR_PARALLAX).toFixed(2)}px, ${(-ey * NEAR_PARALLAX * 0.66).toFixed(2)}px, 0)`;
+        /* the nearest frame leaves fastest, because it is nearest — the
+           departure term comes from the scroll handler through a ref rather
+           than being recomputed here */
+        near.current.style.transform = `translate3d(${(-ex * NEAR_PARALLAX).toFixed(2)}px, ${(-ey * NEAR_PARALLAX * 0.66 + departRef.current * -110).toFixed(2)}px, 0)`;
       }
       raf = requestAnimationFrame(frame);
     };
@@ -135,7 +181,7 @@ export default function Hero() {
       px = (e.clientX / window.innerWidth) * 2 - 1;
       py = (e.clientY / window.innerHeight) * 2 - 1;
     };
-    window.addEventListener("pointermove", onMove, { passive: true });
+    if (fine) window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(raf);
@@ -153,7 +199,7 @@ export default function Hero() {
       </Suspense>
 
 
-      <div className="entry__stage">
+      <div className="entry__stage" ref={stage}>
         <div className="entry__plate" ref={plate}>
           <p className="micro entry__welcome">Welcome to my portfolio</p>
           <h1 className="entry__name">{NAME}</h1>
