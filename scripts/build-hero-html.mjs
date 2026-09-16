@@ -2,61 +2,77 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 /* Regenerates hero.html from the component, so the standalone reference and
    the shipped hero cannot drift apart. The template is the page around the
-   scene; every shader and every constant is extracted from LiquidField.tsx.
+   scene; every shader and every constant is extracted from MetalForm.tsx.
 
    Run after tuning the component:  node scripts/build-hero-html.mjs         */
 
-const SRC = "src/components/home/scene/LiquidField.tsx";
+const SRC = "src/components/home/scene/MetalForm.tsx";
 const TPL = "scripts/hero.template.html";
 const OUT = "hero.html";
 
 const src = readFileSync(SRC, "utf8");
 
-const grab = (name) => {
-  const m = src.match(new RegExp("const " + name + " = `([\\s\\S]*?)\\n`;"));
-  if (!m) throw new Error(`could not find ${name} in ${SRC}`);
+const need = (re, what) => {
+  const m = src.match(re);
+  if (!m) throw new Error(`could not find ${what} in ${SRC}`);
   return m[1];
 };
 
-const VERT = grab("VERT");
-const FIELD = grab("FIELD_FRAG");
-const finV = src.match(/vertexShader: `([\s\S]*?)\n  `,/)[1];
-const finF = src.match(/fragmentShader: `([\s\S]*?)\n  `,\n\};/)[1];
+/* The trailing newline matters and the capture drops it. DISPLACE_GLSL is
+   prepended straight onto three's own vertex shader, whose first line is
+   `#define STANDARD` — and a preprocessor directive that does not begin a
+   line is a syntax error. Without this the component compiled fine and the
+   generated file rendered nothing but the type, which is exactly the class
+   of bug a generated reference exists to avoid and only running it catches. */
+const DISPLACE = need(/const DISPLACE_GLSL = `([\s\S]*?)\n`;/, "DISPLACE_GLSL") + "\n";
+const NORMAL = need(/const NORMAL_GLSL = `([\s\S]*?)\n`;/, "NORMAL_GLSL");
+const finV = need(/vertexShader: `([\s\S]*?)\n  `,/, "finish vertex shader");
+const finF = need(/fragmentShader: `([\s\S]*?)\n  `,\n\};/, "finish fragment shader");
 
 const KEYS = [
-  "SCALE", "SPEED", "WARP", "BANDS", "BUMP", "SPEC", "FRESNEL",
-  "PUSH", "RIPPLE", "EASE",
+  "FOV", "FILL", "FILL_PORTRAIT", "LIFT_F",
+  "DETAIL", "DETAIL_SMALL", "RADIUS", "AMP", "FREQ", "MORPH", "NORMAL_EPS",
+  "ROUGHNESS", "CLEARCOAT", "CLEARCOAT_ROUGHNESS",
+  "IRIDESCENCE", "IRIDESCENCE_IOR", "IRIDESCENCE_MIN", "IRIDESCENCE_MAX",
+  "PARALLAX", "EASE",
   "BLOOM", "BLOOM_RADIUS", "BLOOM_THRESHOLD", "EXPOSURE",
   "ABERRATION", "GRAIN", "VIGNETTE",
-  "INTRO_MS", "RENDER_SCALE", "RENDER_SCALE_SMALL",
+  "INTRO_MS", "INTRO_DOLLY", "RENDER_SCALE", "RENDER_SCALE_SMALL",
 ];
 const C = Object.fromEntries(
-  KEYS.map((k) => {
-    const m = src.match(new RegExp("\\n  " + k + ": ([0-9.]+)"));
-    if (!m) throw new Error(`could not find constant ${k} in ${SRC}`);
-    return [k, Number(m[1])];
-  })
+  KEYS.map((k) => [k, Number(need(new RegExp("\\n  " + k + ": ([0-9.]+)"), k))])
 );
 
-const pal = src.match(
-  /const PALETTE = \{[\s\S]*?a: \[(.*?)\],\s*\n  b: \[(.*?)\],\s*\n  c: \[(.*?)\],\s*\n  d: \[(.*?)\],/
-);
-const PALETTE = Object.fromEntries(
-  ["a", "b", "c", "d"].map((k, i) => [k, pal[i + 1].split(",").map(Number)])
-);
+/* the light and env intensities live at their call sites rather than in C,
+   so they are pulled from there — if they ever move into C this throws
+   rather than silently shipping a stale reference */
+const envI = need(/envMapIntensity: ([0-9.]+)/, "envMapIntensity");
+const keyI = need(/DirectionalLight\(new THREE\.Color\(KEY\), ([0-9.]+)\)/, "key intensity");
+const rimI = need(/DirectionalLight\(new THREE\.Color\(RIM\), ([0-9.]+)\)/, "rim intensity");
 
-const WARM = src.match(/const WARM = "(#\w+)"/)[1];
-const COOL = src.match(/const COOL = "(#\w+)"/)[1];
+const matColor = need(/color: "(#\w+)",\n  metalness/, "material colour");
+const KEY = need(/const KEY = "(#\w+)"/, "KEY colour");
+const RIM = need(/const RIM = "(#\w+)"/, "RIM colour");
+const BG = need(/const BG = "(#\w+)"/, "BG colour");
 
 const out = readFileSync(TPL, "utf8")
   .replace("__C__", JSON.stringify(C, null, 2))
-  .replace("__PAL__", JSON.stringify(PALETTE))
-  .replace("__WARM__", WARM)
-  .replace("__COOL__", COOL)
-  .replace("__VERT__", VERT)
-  .replace("__FIELD__", FIELD)
+  .replace("__DISPLACE__", DISPLACE)
+  .replace("__NORMAL__", NORMAL)
   .replace("__FINV__", finV)
-  .replace("__FINF__", finF);
+  .replace("__FINF__", finF)
+  .replace("__MATCOLOR__", matColor)
+  .replace("__KEY__", KEY)
+  .replace("__RIM__", RIM)
+  .replace("__BG__", BG)
+  .replace("__ENVI__", envI)
+  .replace("__KEYI__", keyI)
+  .replace("__RIMI__", rimI);
+
+if (out.includes("__")) {
+  const left = out.match(/__[A-Z_]+__/g);
+  if (left) throw new Error(`template placeholders left unfilled: ${[...new Set(left)].join(", ")}`);
+}
 
 writeFileSync(OUT, out);
 console.log(`${OUT} written — ${out.length} bytes, ${KEYS.length} constants in sync`);

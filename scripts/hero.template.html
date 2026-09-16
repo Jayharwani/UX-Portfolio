@@ -6,22 +6,21 @@
 <title>Jay Harwani — hero reference</title>
 
 <!--
-  STANDALONE REFERENCE for the liquid-field hero.
+  STANDALONE REFERENCE for the hero.
 
   GENERATED. The GLSL and every constant below are extracted from
-  src/components/home/scene/LiquidField.tsx, so the two cannot drift. After
+  src/components/home/scene/MetalForm.tsx, so the two cannot drift. After
   tuning the component, regenerate:
 
       node scripts/build-hero-html.mjs
 
   It uses ES modules, so serve it rather than opening the file directly:
       npm run dev   →   http://localhost:3000/hero.html
-  (A file:// page cannot resolve an import map.)
 
   TUNE, in order of effect:
-    C.SPEED    how fast the surface evolves — the biggest taste knob there is
-    PALETTE    the cosine-palette coefficients. This IS the art direction
-    C.BLOOM    bloom strength. Past ~0.5 it reads as a mistake, not as light
+    C.ROUGHNESS  how polished. 0.12 is wet mercury, 0.35 is brushed
+    MATERIAL     colour and iridescence. This IS the art direction
+    C.BLOOM      bloom strength. Past ~0.5 it reads as a mistake, not light
 -->
 
 <style>
@@ -36,13 +35,6 @@
   .entry { position: relative; min-height: 100svh; display: flex; overflow: hidden; }
   .field { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
   .field canvas { display: block; width: 100%; height: 100%; }
-  .glow {
-    position: absolute; z-index: 1; left: 50%; top: 50%;
-    width: min(1180px, 92vw); height: min(540px, 58vh);
-    transform: translate(-50%, -50%); pointer-events: none;
-    background: radial-gradient(ellipse at center,
-      rgba(11,13,16,0.46) 0%, rgba(11,13,16,0.24) 46%, transparent 76%);
-  }
   .stage {
     position: relative; z-index: 2; flex: 1 1 auto;
     display: flex; align-items: center; justify-content: center;
@@ -92,7 +84,6 @@
   @media (max-width: 900px) {
     .welcome { letter-spacing: .22em; font-size: 10px; }
     .name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
-    .glow { width: 96vw; height: 44vh; }
   }
   @media (prefers-reduced-motion: reduce) {
     .welcome, .name, .cue { transition: none; }
@@ -104,7 +95,6 @@
 
 <section class="entry" id="entry" aria-label="Welcome">
   <div class="field" id="field" aria-hidden="true"></div>
-  <div class="glow" aria-hidden="true"></div>
   <div class="stage">
     <div class="plate" id="plate">
       <p class="welcome">Welcome to my portfolio</p>
@@ -125,6 +115,7 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
@@ -132,15 +123,16 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const C = __C__;
-const PALETTE = __PAL__;
-const BASE = '#0B0D10', WARM = '__WARM__', COOL = '__COOL__';
+const MATERIAL = { color: '__MATCOLOR__', metalness: 1.0 };
+const KEY = '__KEY__', RIM = '__RIM__', BG = '__BG__';
 
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const SMALL  = matchMedia('(max-width: 760px)').matches;
 
-const VERT = `__VERT__`;
-const FIELD_FRAG = `__FIELD__`;
+const DISPLACE_GLSL = `__DISPLACE__`;
+const NORMAL_GLSL = `__NORMAL__`;
+
 const FinishShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -154,13 +146,10 @@ const FinishShader = {
   fragmentShader: `__FINF__`
 };
 
-const v3 = (hex) => { const c = new THREE.Color(hex); return new THREE.Vector3(c.r, c.g, c.b); };
-const a3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
-
 const scale = SMALL ? C.RENDER_SCALE_SMALL : C.RENDER_SCALE;
 const pr = Math.min(devicePixelRatio, 2) * scale;
 
-const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -168,31 +157,72 @@ renderer.toneMappingExposure = C.EXPOSURE;
 document.getElementById('field').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+scene.background = new THREE.Color(BG);
 
-const uniforms = {
-  uRes: { value: new THREE.Vector2(1, 1) },
-  uTime: { value: 0 },
-  uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-  uSwirl: { value: 0 },
-  uIntro: { value: REDUCE ? 1 : 0 },
-  uBase: { value: v3(BASE) }, uWarm: { value: v3(WARM) }, uCool: { value: v3(COOL) },
-  pA: { value: a3(PALETTE.a) }, pB: { value: a3(PALETTE.b) },
-  pC: { value: a3(PALETTE.c) }, pD: { value: a3(PALETTE.d) },
-  uScale: { value: C.SCALE }, uSpeed: { value: C.SPEED }, uWarp: { value: C.WARP },
-  uBands: { value: C.BANDS }, uBump: { value: C.BUMP },
-  uSpec: { value: C.SPEC }, uFres: { value: C.FRESNEL },
-  uPush: { value: C.PUSH }, uRipple: { value: C.RIPPLE }
+const camera = new THREE.PerspectiveCamera(C.FOV, innerWidth / innerHeight, 0.1, 80);
+const halfHPerUnit = Math.tan((C.FOV / 2) * Math.PI / 180);
+const extent = C.RADIUS * (1 + C.AMP);
+let restDist = C.RADIUS * 4;
+function fit() {
+  const aspect = camera.aspect;
+  const half = Math.min(halfHPerUnit, halfHPerUnit * aspect);
+  const fill = aspect < 1 ? C.FILL_PORTRAIT : C.FILL;
+  restDist = extent / (half * fill);
+}
+camera.position.set(0, 0, restDist);
+
+/* image-based lighting, built rather than downloaded */
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+const roomScene = new RoomEnvironment();
+const envRT = pmrem.fromScene(roomScene, 0.035);
+scene.environment = envRT.texture;
+roomScene.traverse((o) => {
+  if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); }
+});
+pmrem.dispose();
+
+const key = new THREE.DirectionalLight(new THREE.Color(KEY), __KEYI__);
+key.position.set(-2.6, 3.0, 2.4);
+scene.add(key);
+const rim = new THREE.DirectionalLight(new THREE.Color(RIM), __RIMI__);
+rim.position.set(2.8, -1.4, -2.2);
+scene.add(rim);
+
+const geo = new THREE.IcosahedronGeometry(C.RADIUS, SMALL ? C.DETAIL_SMALL : C.DETAIL);
+const mat = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color(MATERIAL.color),
+  metalness: MATERIAL.metalness,
+  roughness: C.ROUGHNESS,
+  clearcoat: C.CLEARCOAT,
+  clearcoatRoughness: C.CLEARCOAT_ROUGHNESS,
+  iridescence: C.IRIDESCENCE,
+  iridescenceIOR: C.IRIDESCENCE_IOR,
+  iridescenceThicknessRange: [C.IRIDESCENCE_MIN, C.IRIDESCENCE_MAX],
+  envMapIntensity: __ENVI__
+});
+
+const uTime = { value: 0 }, uAmp = { value: 0 };
+const uFreq = { value: C.FREQ }, uEps = { value: C.NORMAL_EPS };
+
+mat.onBeforeCompile = (shader) => {
+  shader.uniforms.uTime = uTime;
+  shader.uniforms.uAmp = uAmp;
+  shader.uniforms.uFreq = uFreq;
+  shader.uniforms.uEps = uEps;
+  shader.vertexShader = DISPLACE_GLSL + shader.vertexShader;
+  shader.vertexShader = shader.vertexShader.replace(
+    '#include <beginnormal_vertex>',
+    NORMAL_GLSL.replaceAll('%R%', C.RADIUS.toFixed(3))
+  );
+  shader.vertexShader = shader.vertexShader.replace(
+    '#include <begin_vertex>',
+    'vec3 transformed = gPos;'
+  );
 };
 
-const geo = new THREE.PlaneGeometry(2, 2);
-const mat = new THREE.ShaderMaterial({
-  uniforms, vertexShader: VERT, fragmentShader: FIELD_FRAG,
-  defines: { OCTAVES: SMALL ? 3 : 4 }, depthTest: false, depthWrite: false
-});
-const quad = new THREE.Mesh(geo, mat);
-quad.frustumCulled = false;
-scene.add(quad);
+const mesh = new THREE.Mesh(geo, mat);
+scene.add(mesh);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -204,20 +234,22 @@ composer.addPass(finish);
 composer.addPass(new OutputPass());
 
 function size() {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  fit();
+  mesh.position.y = C.LIFT_F * halfHPerUnit * restDist;
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth * pr, innerHeight * pr);
-  uniforms.uRes.value.set(innerWidth * pr, innerHeight * pr);
   finish.uniforms.uRes.value.set(innerWidth * pr, innerHeight * pr);
 }
 size();
 
-let tx = 0.5, ty = 0.5, px = 0.5, py = 0.5, swirl = 0;
+let tx = 0, ty = 0, ex = 0, ey = 0;
 if (!REDUCE && !COARSE) {
   addEventListener('pointermove', (e) => {
-    const nx = e.clientX / innerWidth, ny = 1 - e.clientY / innerHeight;
-    swirl = Math.min(1, swirl + Math.hypot(nx - tx, ny - ty) * 5.5);
-    tx = nx; ty = ny;
+    tx = (e.clientX / innerWidth) * 2 - 1;
+    ty = (e.clientY / innerHeight) * 2 - 1;
   }, { passive: true });
 }
 
@@ -232,49 +264,55 @@ const entry = document.getElementById('entry');
 const plate = document.getElementById('plate');
 
 if (REDUCE) {
-  uniforms.uTime.value = 42; finish.uniforms.uTime.value = 42;
+  uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
+  mesh.rotation.set(0.24, -0.5, 0.08);
   composer.render();
   entry.className += ' is-in is-instant';
 } else {
   requestAnimationFrame(() => { entry.className += ' is-in'; });
   let painted = false;
   /* A document that mounts hidden produces no animation frames, so nothing
-     above would ever run and the hero would be a flat rectangle. setTimeout
-     is not rAF-driven, which is the entire point. */
+     above would ever run and the hero would be a dark sphere. setTimeout is
+     not rAF-driven, which is the entire point. */
   setTimeout(() => {
     if (painted) return;
     if (entry.className.indexOf('is-in') < 0) entry.className += ' is-in';
     entry.className += ' is-instant';
-    uniforms.uIntro.value = 1;
-    uniforms.uTime.value = 42; finish.uniforms.uTime.value = 42;
+    uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
+    mesh.rotation.set(0.24, -0.5, 0.08);
     bloom.strength = C.BLOOM;
     composer.render();
   }, 2500);
 
   const t0 = performance.now();
-  let last = t0;
+  let last = t0, spin = 0;
   const frame = (now) => {
     requestAnimationFrame(frame);
     painted = true;
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
+    const t = (now - t0) / 1000;
 
     const p = Math.min(1, (now - t0) / C.INTRO_MS);
     const e = 1 - Math.pow(1 - p, 3);
-    uniforms.uIntro.value = e;
+    uAmp.value = C.AMP * e;
     bloom.strength = C.BLOOM * e;
-    uniforms.uTime.value = (now - t0) / 1000;
-    finish.uniforms.uTime.value = (now - t0) / 1000;
+    uTime.value = t * C.MORPH;
+    finish.uniforms.uTime.value = t;
 
-    px += (tx - px) * C.EASE;
-    py += (ty - py) * C.EASE;
-    uniforms.uMouse.value.set(px, py);
-    swirl *= Math.pow(0.12, dt);
-    uniforms.uSwirl.value = swirl;
+    spin += dt * (0.055 + 0.028 * Math.sin(t * 0.07));
+    mesh.rotation.y = spin;
+    mesh.rotation.x = Math.sin(t * 0.13) * 0.18;
+    mesh.rotation.z = Math.sin(t * 0.09 + 1.1) * 0.1;
+
+    ex += (tx - ex) * C.EASE;
+    ey += (ty - ey) * C.EASE;
+    const dolly = restDist * (C.INTRO_DOLLY + (1 - C.INTRO_DOLLY) * e);
+    camera.position.set(ex * C.PARALLAX, -ey * C.PARALLAX * 0.62, dolly);
+    camera.lookAt(0, mesh.position.y * 0.55, 0);
 
     plate.style.transform = 'translate3d(' +
-      (-(px - 0.5) * 2 * 14).toFixed(2) + 'px,' +
-      ((py - 0.5) * 2 * 9).toFixed(2) + 'px,0)';
+      (-ex * 14).toFixed(2) + 'px,' + (-ey * 9).toFixed(2) + 'px,0)';
 
     composer.render();
   };

@@ -13,55 +13,64 @@
 
 ## The hero
 
-**Concept A — a liquid-metal shader field.** Picked over the single-hero-object
-and scroll-flight options for one reason each: a PBR object lives or dies on the
-quality of its environment map, which means shipping an HDRI and a second
-network request before you know whether it looks good; and a scroll-driven
-flight would fight the pinned work section directly below it for the same
-gesture. The shader field is the only one of the three whose entire cost is
-pixels, which makes it both the most distinctive and the most predictable.
+**Concept B — one object, real materials, studio light.** Picked over the
+shader field and the scroll-flight for one reason each: a fullscreen shader is
+a *picture*, and a picture has no silhouette, which means it can never be a
+composition; and a scroll-driven flight would fight the pinned work section
+directly below it for the same gesture. An object under studio light is the
+only one of the three that gets compared to a product render rather than to a
+wallpaper.
 
-**What it is.** One fullscreen fragment shader on a quad. Layered simplex noise,
-domain-warped twice (Quílez), lit with a Blinn specular lobe and a fresnel rim
-off a normal derived from the warp vector, coloured through a cosine palette
-driven by *multiplied* height so the iridescence bands the way thin films do.
-Then `EffectComposer`: bloom → a custom finishing pass (radial chromatic
-aberration, animated grain, vignette) → ACES tone mapping.
+**What it is.** A sphere displaced by fbm in a vertex shader injected into
+`MeshPhysicalMaterial` through `onBeforeCompile`, so the custom geometry gets
+the whole PBR pipeline instead of a hand-rolled material that reimplements
+lighting badly. The normal is **recomputed** from two displaced tangent
+neighbours — displacing positions and keeping the sphere's normals gives a
+lumpy shape lit like a ball, every highlight in the wrong place.
+
+The material does real work: `iridescence` is the material's own thin-film
+term with an IOR and a physical thickness range, so the hue shift follows the
+viewing angle the way anodised titanium does. Lighting is image-based from
+`RoomEnvironment` pre-filtered through `PMREMGenerator` — genuine soft-box
+streaks in the reflections, built at startup, zero network requests, no HDRI
+to ship. Then `EffectComposer`: bloom → a custom finishing pass (radial
+chromatic aberration, animated grain, vignette) → ACES tone mapping.
 
 **Where it lives.**
 
 | | |
 |---|---|
 | `src/components/home/Hero.tsx` | already wired into the homepage — nothing to import |
-| `src/components/home/scene/LiquidField.tsx` | the scene, the shaders, and every constant |
+| `src/components/home/scene/MetalForm.tsx` | the scene, the shaders, and every constant |
 | `hero.html` | standalone reference. **Generated** — see below |
 | `scripts/build-hero-html.mjs` | regenerates `hero.html` from the component |
 
 `hero.html` uses ES modules, so serve it rather than opening the file:
 `npm run dev` then `http://localhost:3000/hero.html`.
 
-After tuning the component, run `node scripts/build-hero-html.mjs` so the
-standalone stays in sync. It extracts the GLSL and all twenty constants from
-the component, so the two cannot drift.
+After tuning the component, run `node scripts/build-hero-html.mjs`. It
+extracts both GLSL chunks and all thirty-one constants from the component and
+throws if any placeholder is left unfilled, so the reference cannot drift from
+what ships.
 
-**The three constants to tune first**, all at the top of `LiquidField.tsx`:
+**The three constants to tune first**, all at the top of `MetalForm.tsx`:
 
-1. **`C.SPEED`** — how fast the surface evolves. The biggest taste knob there
-   is. Slower always reads more expensive.
-2. **`PALETTE`** — the cosine-palette coefficients `a` (colour centre) and `b`
-   (amplitude). This *is* the art direction. Halving `b` was most of what
-   turned the first pass from a demo into a grade.
-3. **`C.BLOOM`** — bloom strength. Past about 0.5 it stops reading as light and
-   starts reading as a mistake.
+1. **`C.ROUGHNESS`** — how polished. 0.12 is wet mercury, 0.35 is brushed.
+2. **`MATERIAL.color`** plus `envMapIntensity` and the two light intensities.
+   At `metalness: 1` the colour is not a diffuse tint, it is what the
+   reflections are made of. These four numbers came down together to take the
+   first pass from a blown-out white blob to a dark object with bright edges.
+3. **`C.BLOOM`** — past about 0.5 it stops reading as light and starts reading
+   as a mistake.
 
-If it ever looks busy rather than premium, the fix is `C.SCALE` and `C.BANDS`
-down, not more effects: large slow forms in mostly deep navy, with iridescence
-only where a fold catches the light.
+If the form ever crowds the type, `C.LIFT_F` moves it up the frame and
+`C.FILL` / `C.FILL_PORTRAIT` decide how much of the frame it occupies. The
+camera distance is derived from those, not fixed, so the framing is correct at
+every aspect — a fixed distance frames against the *vertical* field of view
+and showed a form 163% of the frame width on a 390px phone.
 
-**Performance.** The field is smooth and the type is real HTML, so the canvas
-renders at 0.7× resolution (0.55× on phones) and nothing that needs to be sharp
-is scaled at all. Phones also drop to three noise octaves from four, which is a
-compile-time `#define` because a GLSL loop bound has to be constant. The loop
-parks when the hero scrolls out of view, and unmount disposes every geometry,
-material, pass, render target and the renderer, with `forceContextLoss()` so an
-SPA route change actually frees the GPU context.
+**Performance.** Full pixel ratio on desktop (capped at 2), 0.72× on phones,
+where the icosahedron also drops from subdivision 6 to 4. The loop parks when
+the hero scrolls out of view, and unmount disposes every geometry, material,
+pass, render target and the renderer, with `forceContextLoss()` so an SPA
+route change actually frees the GPU context.

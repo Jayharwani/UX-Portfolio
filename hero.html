@@ -6,22 +6,21 @@
 <title>Jay Harwani — hero reference</title>
 
 <!--
-  STANDALONE REFERENCE for the liquid-field hero.
+  STANDALONE REFERENCE for the hero.
 
   GENERATED. The GLSL and every constant below are extracted from
-  src/components/home/scene/LiquidField.tsx, so the two cannot drift. After
+  src/components/home/scene/MetalForm.tsx, so the two cannot drift. After
   tuning the component, regenerate:
 
       node scripts/build-hero-html.mjs
 
   It uses ES modules, so serve it rather than opening the file directly:
       npm run dev   →   http://localhost:3000/hero.html
-  (A file:// page cannot resolve an import map.)
 
   TUNE, in order of effect:
-    C.SPEED    how fast the surface evolves — the biggest taste knob there is
-    PALETTE    the cosine-palette coefficients. This IS the art direction
-    C.BLOOM    bloom strength. Past ~0.5 it reads as a mistake, not as light
+    C.ROUGHNESS  how polished. 0.12 is wet mercury, 0.35 is brushed
+    MATERIAL     colour and iridescence. This IS the art direction
+    C.BLOOM      bloom strength. Past ~0.5 it reads as a mistake, not light
 -->
 
 <style>
@@ -36,13 +35,6 @@
   .entry { position: relative; min-height: 100svh; display: flex; overflow: hidden; }
   .field { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
   .field canvas { display: block; width: 100%; height: 100%; }
-  .glow {
-    position: absolute; z-index: 1; left: 50%; top: 50%;
-    width: min(1180px, 92vw); height: min(540px, 58vh);
-    transform: translate(-50%, -50%); pointer-events: none;
-    background: radial-gradient(ellipse at center,
-      rgba(11,13,16,0.46) 0%, rgba(11,13,16,0.24) 46%, transparent 76%);
-  }
   .stage {
     position: relative; z-index: 2; flex: 1 1 auto;
     display: flex; align-items: center; justify-content: center;
@@ -92,7 +84,6 @@
   @media (max-width: 900px) {
     .welcome { letter-spacing: .22em; font-size: 10px; }
     .name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
-    .glow { width: 96vw; height: 44vh; }
   }
   @media (prefers-reduced-motion: reduce) {
     .welcome, .name, .cue { transition: none; }
@@ -104,7 +95,6 @@
 
 <section class="entry" id="entry" aria-label="Welcome">
   <div class="field" id="field" aria-hidden="true"></div>
-  <div class="glow" aria-hidden="true"></div>
   <div class="stage">
     <div class="plate" id="plate">
       <p class="welcome">Welcome to my portfolio</p>
@@ -125,6 +115,7 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
@@ -132,68 +123,51 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const C = {
-  "SCALE": 0.62,
-  "SPEED": 0.045,
-  "WARP": 2.3,
-  "BANDS": 1.05,
-  "BUMP": 0.55,
-  "SPEC": 0.26,
-  "FRESNEL": 0.18,
-  "PUSH": 0.085,
-  "RIPPLE": 0.007,
+  "FOV": 38,
+  "FILL": 0.75,
+  "FILL_PORTRAIT": 0.66,
+  "LIFT_F": 0.25,
+  "DETAIL": 6,
+  "DETAIL_SMALL": 4,
+  "RADIUS": 1.02,
+  "AMP": 0.13,
+  "FREQ": 0.95,
+  "MORPH": 0.16,
+  "NORMAL_EPS": 0.03,
+  "ROUGHNESS": 0.22,
+  "CLEARCOAT": 1,
+  "CLEARCOAT_ROUGHNESS": 0.12,
+  "IRIDESCENCE": 0.9,
+  "IRIDESCENCE_IOR": 1.36,
+  "IRIDESCENCE_MIN": 140,
+  "IRIDESCENCE_MAX": 430,
+  "PARALLAX": 0.62,
   "EASE": 0.045,
-  "BLOOM": 0.34,
-  "BLOOM_RADIUS": 0.72,
-  "BLOOM_THRESHOLD": 0.68,
-  "EXPOSURE": 1.02,
-  "ABERRATION": 0.22,
-  "GRAIN": 0.022,
-  "VIGNETTE": 0.58,
-  "INTRO_MS": 1900,
-  "RENDER_SCALE": 0.7,
-  "RENDER_SCALE_SMALL": 0.55
+  "BLOOM": 0.3,
+  "BLOOM_RADIUS": 0.75,
+  "BLOOM_THRESHOLD": 0.72,
+  "EXPOSURE": 0.88,
+  "ABERRATION": 0.2,
+  "GRAIN": 0.02,
+  "VIGNETTE": 0.62,
+  "INTRO_MS": 2000,
+  "INTRO_DOLLY": 0.68,
+  "RENDER_SCALE": 1,
+  "RENDER_SCALE_SMALL": 0.72
 };
-const PALETTE = {"a":[0.085,0.105,0.148],"b":[0.085,0.1,0.13],"c":[1,0.98,0.92],"d":[0.61,0.5,0.36]};
-const BASE = '#0B0D10', WARM = '#FFE3C6', COOL = '#7FD4F0';
+const MATERIAL = { color: '#0E141C', metalness: 1.0 };
+const KEY = '#FFE3C6', RIM = '#7FD4F0', BG = '#0B0D10';
 
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const SMALL  = matchMedia('(max-width: 760px)').matches;
 
-const VERT = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position.xy, 0.0, 1.0);
-  }`;
-const FIELD_FRAG = `
-  precision highp float;
-  varying vec2 vUv;
-
-  uniform vec2  uRes;
+const DISPLACE_GLSL = `
   uniform float uTime;
-  uniform vec2  uMouse;    // eased pointer, 0..1 in uv space
-  uniform float uSwirl;    // rises with pointer speed, decays — extra turbulence
-  uniform float uIntro;    // 0..1 entrance
-  uniform vec3  uBase;
-  uniform vec3  uWarm;
-  uniform vec3  uCool;
-  uniform vec3  pA;
-  uniform vec3  pB;
-  uniform vec3  pC;
-  uniform vec3  pD;
-  uniform float uScale;
-  uniform float uSpeed;
-  uniform float uWarp;
-  uniform float uBands;
-  uniform float uBump;
-  uniform float uSpec;
-  uniform float uFres;
-  uniform float uPush;
-  uniform float uRipple;
+  uniform float uAmp;
+  uniform float uFreq;
+  uniform float uEps;
 
-  /* ── Ashima simplex 3D. z carries time, so the field EVOLVES rather than
-     scrolling past — a scrolling field always reads as a texture on a belt. */
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
@@ -242,97 +216,39 @@ const FIELD_FRAG = `
     return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
   }
 
-  /* The gain is 0.44 rather than the textbook 0.5, which means each octave
-     contributes less than half the last and the result is dominated by its
-     largest form. Textbook fbm gives an evenly detailed surface — correct,
-     and it reads as texture. Weighting the base frequency up is what makes it
-     read as a large object instead. */
-  float fbm(vec3 p) {
-    float amp = 0.5;
-    float sum = 0.0;
-    for (int i = 0; i < OCTAVES; i++) {
-      sum += amp * snoise(p);
-      p *= 2.03;
-      amp *= 0.44;
-    }
-    return sum;
+  /* Three octaves, and one much larger slow fold on top. The fold is what
+     changes the SILHOUETTE over time; octaves alone only ripple the surface,
+     and a form whose outline never changes stops being interesting in about
+     four seconds. */
+  float shape(vec3 p) {
+    vec3 q = p * uFreq + vec3(0.0, 0.0, uTime);
+    float n = snoise(q) * 0.55;
+    n += snoise(q * 2.07) * 0.18;
+    n += snoise(q * 4.13) * 0.06;
+    n += snoise(p * uFreq * 0.42 + vec3(uTime * 0.55, 0.0, 0.0)) * 0.42;
+    return n;
   }
 
-  vec3 pal(float t) { return pA + pB * cos(6.28318530718 * (pC * t + pD)); }
+  vec3 displaced(vec3 p) { return p * (1.0 + shape(p) * uAmp); }
 
-  void main() {
-    float aspect = uRes.x / uRes.y;
-    vec2 uv = vUv;
+  vec3 gPos;
+`;
+const NORMAL_GLSL = `
+  gPos = displaced(position);
 
-    /* ── the pointer displaces the flow, it does not move a sprite ──
-       A gaussian push away from the cursor plus a decaying ring, applied to
-       the DOMAIN before any noise is evaluated. The surface bulges and the
-       bands bend around it, which is what a fluid does and what a parallax
-       layer cannot do. */
-    vec2 d = uv - uMouse;
-    d.x *= aspect;
-    float dist = length(d);
-    float falloff = exp(-dist * 4.2);
-    vec2 dir = d / max(dist, 0.0001);
-    uv += dir * falloff * uPush;
-    uv += dir * sin(dist * 20.0 - uTime * 1.6) * falloff * uRipple;
+  /* a stable tangent basis — a fixed 'up' degenerates at the poles, so swap
+     axes when the normal gets close to one */
+  vec3 up = abs(normal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 t1 = normalize(cross(up, normal));
+  vec3 t2 = cross(normal, t1);
 
-    float t = uTime * uSpeed;
-    vec3 p = vec3(uv * uScale * vec2(aspect, 1.0), t);
+  /* the neighbours are renormalised back onto the sphere before being
+     displaced, so both samples come from the same surface */
+  vec3 n1 = displaced(normalize(position + t1 * uEps) * %R%);
+  vec3 n2 = displaced(normalize(position + t2 * uEps) * %R%);
+  vec3 objectNormal = normalize(cross(n1 - gPos, n2 - gPos));
+  if (dot(objectNormal, normal) < 0.0) objectNormal = -objectNormal;`;
 
-    /* domain warp, twice. fbm of a position displaced by fbm of a position
-       displaced by fbm — the reason this folds instead of boiling */
-    float w = uWarp * (1.0 + uSwirl * 0.6);
-    vec2 q = vec2(fbm(p), fbm(p + vec3(5.2, 1.3, 2.1)));
-    vec2 r = vec2(
-      fbm(p + vec3(w * q, 0.0) + vec3(1.7, 9.2, 0.0)),
-      fbm(p + vec3(w * q, 0.0) + vec3(8.3, 2.8, 0.0))
-    );
-    float hgt = fbm(p + vec3(w * r, 0.0));
-
-    /* ── the normal, for free ──
-       r is the direction the domain was pushed, which is a serviceable
-       gradient of the surface. Lighting it is what separates metal from fog,
-       and it costs nothing because r was already computed. */
-    vec3 n = normalize(vec3(-r.x * uBump, -r.y * uBump, 1.0));
-    vec3 L = normalize(vec3(-0.42, 0.70, 0.58));
-    vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-    float diff = max(dot(n, L), 0.0);
-    float spec = pow(max(dot(n, H), 0.0), 44.0);
-    float fres = pow(1.0 - clamp(n.z, 0.0, 1.0), 3.0);
-
-    /* ── thin-film banding ──
-       Height MULTIPLIED before the palette, so colour repeats with thickness
-       the way interference does. Straight height would give a gradient; this
-       gives iridescence. */
-    vec3 irid = pal(hgt * uBands + diff * 0.22);
-
-    /* only the higher folds take colour — the rest of the frame stays the
-       base. A field that is iridescent everywhere has nothing to be
-       iridescent against. */
-    vec3 col = uBase;
-    col = mix(col, irid, smoothstep(0.02, 0.62, hgt) * 0.80);
-    col += uWarm * spec * uSpec;
-    col += uCool * fres * uFres;
-
-    /* ── composition ──
-       The field is quietened through the middle of the frame, where the name
-       sits. Not a scrim over the top: the light genuinely falls off there, so
-       the type has a bed without anything being pasted over the image. */
-    vec2 cc = uv - vec2(0.5, 0.47);
-    cc.x *= aspect * 0.44;
-    float calm = smoothstep(0.05, 0.58, length(cc));
-    col = mix(uBase * 1.10, col, 0.08 + 0.92 * calm);
-
-    /* the entrance: the surface resolves out of the dark, once */
-    col = mix(uBase * 0.55, col, uIntro);
-
-    /* one last pull-down. Everything above is additive, and additive terms
-       accumulate into a frame that is brighter than any of them intended. */
-    col *= 0.88;
-
-    gl_FragColor = vec4(col, 1.0);
-  }`;
 const FinishShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -364,13 +280,15 @@ const FinishShader = {
     void main() {
       vec2 c = vUv - 0.5;
       float r2 = dot(c, c);
+      /* scaled by r², so the fringing lives at the edges of the frame the way
+         it does in a real lens and never touches the type in the middle */
       vec2 off = c * r2 * uAberration * 0.06;
       vec3 col;
       col.r = texture2D(tDiffuse, vUv + off).r;
       col.g = texture2D(tDiffuse, vUv).g;
       col.b = texture2D(tDiffuse, vUv - off).b;
 
-      /* grain moves, because static grain reads as a dirty screen */
+      /* grain moves; static grain reads as a dirty screen */
       float g = hash(vUv * uRes + fract(uTime * 11.0)) - 0.5;
       col += g * uGrain;
 
@@ -379,13 +297,10 @@ const FinishShader = {
     }`
 };
 
-const v3 = (hex) => { const c = new THREE.Color(hex); return new THREE.Vector3(c.r, c.g, c.b); };
-const a3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
-
 const scale = SMALL ? C.RENDER_SCALE_SMALL : C.RENDER_SCALE;
 const pr = Math.min(devicePixelRatio, 2) * scale;
 
-const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(pr);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -393,31 +308,72 @@ renderer.toneMappingExposure = C.EXPOSURE;
 document.getElementById('field').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+scene.background = new THREE.Color(BG);
 
-const uniforms = {
-  uRes: { value: new THREE.Vector2(1, 1) },
-  uTime: { value: 0 },
-  uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-  uSwirl: { value: 0 },
-  uIntro: { value: REDUCE ? 1 : 0 },
-  uBase: { value: v3(BASE) }, uWarm: { value: v3(WARM) }, uCool: { value: v3(COOL) },
-  pA: { value: a3(PALETTE.a) }, pB: { value: a3(PALETTE.b) },
-  pC: { value: a3(PALETTE.c) }, pD: { value: a3(PALETTE.d) },
-  uScale: { value: C.SCALE }, uSpeed: { value: C.SPEED }, uWarp: { value: C.WARP },
-  uBands: { value: C.BANDS }, uBump: { value: C.BUMP },
-  uSpec: { value: C.SPEC }, uFres: { value: C.FRESNEL },
-  uPush: { value: C.PUSH }, uRipple: { value: C.RIPPLE }
+const camera = new THREE.PerspectiveCamera(C.FOV, innerWidth / innerHeight, 0.1, 80);
+const halfHPerUnit = Math.tan((C.FOV / 2) * Math.PI / 180);
+const extent = C.RADIUS * (1 + C.AMP);
+let restDist = C.RADIUS * 4;
+function fit() {
+  const aspect = camera.aspect;
+  const half = Math.min(halfHPerUnit, halfHPerUnit * aspect);
+  const fill = aspect < 1 ? C.FILL_PORTRAIT : C.FILL;
+  restDist = extent / (half * fill);
+}
+camera.position.set(0, 0, restDist);
+
+/* image-based lighting, built rather than downloaded */
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+const roomScene = new RoomEnvironment();
+const envRT = pmrem.fromScene(roomScene, 0.035);
+scene.environment = envRT.texture;
+roomScene.traverse((o) => {
+  if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); }
+});
+pmrem.dispose();
+
+const key = new THREE.DirectionalLight(new THREE.Color(KEY), 0.42);
+key.position.set(-2.6, 3.0, 2.4);
+scene.add(key);
+const rim = new THREE.DirectionalLight(new THREE.Color(RIM), 1.15);
+rim.position.set(2.8, -1.4, -2.2);
+scene.add(rim);
+
+const geo = new THREE.IcosahedronGeometry(C.RADIUS, SMALL ? C.DETAIL_SMALL : C.DETAIL);
+const mat = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color(MATERIAL.color),
+  metalness: MATERIAL.metalness,
+  roughness: C.ROUGHNESS,
+  clearcoat: C.CLEARCOAT,
+  clearcoatRoughness: C.CLEARCOAT_ROUGHNESS,
+  iridescence: C.IRIDESCENCE,
+  iridescenceIOR: C.IRIDESCENCE_IOR,
+  iridescenceThicknessRange: [C.IRIDESCENCE_MIN, C.IRIDESCENCE_MAX],
+  envMapIntensity: 0.32
+});
+
+const uTime = { value: 0 }, uAmp = { value: 0 };
+const uFreq = { value: C.FREQ }, uEps = { value: C.NORMAL_EPS };
+
+mat.onBeforeCompile = (shader) => {
+  shader.uniforms.uTime = uTime;
+  shader.uniforms.uAmp = uAmp;
+  shader.uniforms.uFreq = uFreq;
+  shader.uniforms.uEps = uEps;
+  shader.vertexShader = DISPLACE_GLSL + shader.vertexShader;
+  shader.vertexShader = shader.vertexShader.replace(
+    '#include <beginnormal_vertex>',
+    NORMAL_GLSL.replaceAll('%R%', C.RADIUS.toFixed(3))
+  );
+  shader.vertexShader = shader.vertexShader.replace(
+    '#include <begin_vertex>',
+    'vec3 transformed = gPos;'
+  );
 };
 
-const geo = new THREE.PlaneGeometry(2, 2);
-const mat = new THREE.ShaderMaterial({
-  uniforms, vertexShader: VERT, fragmentShader: FIELD_FRAG,
-  defines: { OCTAVES: SMALL ? 3 : 4 }, depthTest: false, depthWrite: false
-});
-const quad = new THREE.Mesh(geo, mat);
-quad.frustumCulled = false;
-scene.add(quad);
+const mesh = new THREE.Mesh(geo, mat);
+scene.add(mesh);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -429,20 +385,22 @@ composer.addPass(finish);
 composer.addPass(new OutputPass());
 
 function size() {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  fit();
+  mesh.position.y = C.LIFT_F * halfHPerUnit * restDist;
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth * pr, innerHeight * pr);
-  uniforms.uRes.value.set(innerWidth * pr, innerHeight * pr);
   finish.uniforms.uRes.value.set(innerWidth * pr, innerHeight * pr);
 }
 size();
 
-let tx = 0.5, ty = 0.5, px = 0.5, py = 0.5, swirl = 0;
+let tx = 0, ty = 0, ex = 0, ey = 0;
 if (!REDUCE && !COARSE) {
   addEventListener('pointermove', (e) => {
-    const nx = e.clientX / innerWidth, ny = 1 - e.clientY / innerHeight;
-    swirl = Math.min(1, swirl + Math.hypot(nx - tx, ny - ty) * 5.5);
-    tx = nx; ty = ny;
+    tx = (e.clientX / innerWidth) * 2 - 1;
+    ty = (e.clientY / innerHeight) * 2 - 1;
   }, { passive: true });
 }
 
@@ -457,49 +415,55 @@ const entry = document.getElementById('entry');
 const plate = document.getElementById('plate');
 
 if (REDUCE) {
-  uniforms.uTime.value = 42; finish.uniforms.uTime.value = 42;
+  uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
+  mesh.rotation.set(0.24, -0.5, 0.08);
   composer.render();
   entry.className += ' is-in is-instant';
 } else {
   requestAnimationFrame(() => { entry.className += ' is-in'; });
   let painted = false;
   /* A document that mounts hidden produces no animation frames, so nothing
-     above would ever run and the hero would be a flat rectangle. setTimeout
-     is not rAF-driven, which is the entire point. */
+     above would ever run and the hero would be a dark sphere. setTimeout is
+     not rAF-driven, which is the entire point. */
   setTimeout(() => {
     if (painted) return;
     if (entry.className.indexOf('is-in') < 0) entry.className += ' is-in';
     entry.className += ' is-instant';
-    uniforms.uIntro.value = 1;
-    uniforms.uTime.value = 42; finish.uniforms.uTime.value = 42;
+    uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
+    mesh.rotation.set(0.24, -0.5, 0.08);
     bloom.strength = C.BLOOM;
     composer.render();
   }, 2500);
 
   const t0 = performance.now();
-  let last = t0;
+  let last = t0, spin = 0;
   const frame = (now) => {
     requestAnimationFrame(frame);
     painted = true;
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
+    const t = (now - t0) / 1000;
 
     const p = Math.min(1, (now - t0) / C.INTRO_MS);
     const e = 1 - Math.pow(1 - p, 3);
-    uniforms.uIntro.value = e;
+    uAmp.value = C.AMP * e;
     bloom.strength = C.BLOOM * e;
-    uniforms.uTime.value = (now - t0) / 1000;
-    finish.uniforms.uTime.value = (now - t0) / 1000;
+    uTime.value = t * C.MORPH;
+    finish.uniforms.uTime.value = t;
 
-    px += (tx - px) * C.EASE;
-    py += (ty - py) * C.EASE;
-    uniforms.uMouse.value.set(px, py);
-    swirl *= Math.pow(0.12, dt);
-    uniforms.uSwirl.value = swirl;
+    spin += dt * (0.055 + 0.028 * Math.sin(t * 0.07));
+    mesh.rotation.y = spin;
+    mesh.rotation.x = Math.sin(t * 0.13) * 0.18;
+    mesh.rotation.z = Math.sin(t * 0.09 + 1.1) * 0.1;
+
+    ex += (tx - ex) * C.EASE;
+    ey += (ty - ey) * C.EASE;
+    const dolly = restDist * (C.INTRO_DOLLY + (1 - C.INTRO_DOLLY) * e);
+    camera.position.set(ex * C.PARALLAX, -ey * C.PARALLAX * 0.62, dolly);
+    camera.lookAt(0, mesh.position.y * 0.55, 0);
 
     plate.style.transform = 'translate3d(' +
-      (-(px - 0.5) * 2 * 14).toFixed(2) + 'px,' +
-      ((py - 0.5) * 2 * 9).toFixed(2) + 'px,0)';
+      (-ex * 14).toFixed(2) + 'px,' + (-ey * 9).toFixed(2) + 'px,0)';
 
     composer.render();
   };

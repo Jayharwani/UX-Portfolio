@@ -5,12 +5,12 @@ import { usePerfTier } from "./perfTier";
 /* ──────────────────────────────────────────────────────────────────────────
    THE HERO — a name inside a real 3D space.
 
-   TUNABLE CONSTANTS live in scene/LiquidField.tsx, at the top, in C and
-   PALETTE. The three to reach for first:
+   TUNABLE CONSTANTS live in scene/MetalForm.tsx, at the top, in C and
+   MATERIAL. The three to reach for first:
 
-     C.SPEED    how fast the surface evolves — the biggest taste knob there is
-     PALETTE    the cosine-palette coefficients. This IS the art direction
-     C.BLOOM    bloom strength. Past ~0.5 it reads as a mistake, not as light
+     C.ROUGHNESS  how polished. 0.12 is wet mercury, 0.35 is brushed
+     MATERIAL     colour and iridescence. This IS the art direction
+     C.BLOOM      bloom strength. Past ~0.5 it reads as a mistake, not light
 
    The scene itself is lazy-loaded. three.js is 216 KB gzipped and this site
    has spent real effort keeping it out of the main bundle; a component that
@@ -23,13 +23,14 @@ import { usePerfTier } from "./perfTier";
    are pinned to this section instead, which is full-height anyway, so the
    effect is identical inside the hero and correct outside it.
 
-   THE NAME LEANS AGAINST THE FLOW. The surface bulges toward the pointer and
-   the name drifts slightly the other way. Small — about fourteen pixels — but
-   two things moving oppositely cannot be read as one plane, which is the
-   cheapest honest way to put type in front of something rather than on it.
+   THE NAME LEANS AGAINST THE CAMERA. The camera orbits toward the pointer
+   and the name drifts slightly the other way. Small — about fourteen pixels
+   — but two things moving oppositely cannot be read as one plane, which is
+   the cheapest honest way to put type in front of an object rather than on
+   a picture of one.
    ────────────────────────────────────────────────────────────────────────── */
 
-const LiquidField = lazy(() => import("./scene/LiquidField"));
+const MetalForm = lazy(() => import("./scene/MetalForm"));
 
 const NAME = "Jay Harwani";
 /** how far the name drifts against the camera, in px at full deflection */
@@ -131,7 +132,7 @@ export default function Hero() {
       aria-label="Welcome"
     >
       <Suspense fallback={null}>
-        <LiquidField running={!offscreen} reduce={reduce} small={small} />
+        <MetalForm running={!offscreen} reduce={reduce} small={small} />
       </Suspense>
 
       {/* a faint lift under the name, so it never has to fight a bright
