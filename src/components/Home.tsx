@@ -109,7 +109,67 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
 function Work() {
   const reduce = !!useReducedMotion();
   const narrow = useNarrow();
-  return reduce || narrow ? <WorkList reduce={reduce} /> : <WorkStage />;
+  /* which project you are looking at, owned here so the header and the work
+     itself can be the same statement rather than two neighbours */
+  const [active, setActive] = useState(0);
+  return (
+    <>
+      <WorkHead active={active} />
+      {reduce || narrow ? (
+        <WorkList reduce={reduce} onActive={setActive} />
+      ) : (
+        <WorkStage onActive={setActive} />
+      )}
+    </>
+  );
+}
+
+/* ── the head ──────────────────────────────────────────────────────────────
+   It was a label and a sentence in a large empty band, and it was the most
+   boring rectangle on the page. The sentence stays — it is the thing the
+   site is arguing — and it now sits above an INDEX.
+
+   The index is four small frames, one per project, in the page's own
+   hairline language, and it is deliberately wordless. Listing the four names
+   here would only repeat what is two hundred pixels below; four frames carry
+   the same information as a shape — how many, in what order, in which
+   colour — and add none of the text this page has spent months cutting.
+
+   It is also LIVE. The frame for the project you are looking at takes its
+   accent and opens its header bar, on desktop from the pinned stage's index
+   and on a phone from whichever card is on screen. A header that knows where
+   you are is a header doing work rather than introducing. */
+function WorkHead({ active }: { active: number }) {
+  return (
+    <div className="band band--ink workhead">
+      <div className="band__in">
+        <Reveal>
+          <span className="micro">Selected work</span>
+        </Reveal>
+        <Reveal delay={0.06}>
+          <h2 className="head workhead__claim">
+            I design interfaces that get out of the way.
+          </h2>
+        </Reveal>
+        <Reveal delay={0.14}>
+          {/* wordless on purpose, so it is a legend rather than a second
+              contents list — the names are right below it */}
+          <ol className="wix" aria-hidden="true">
+            {WORK.map((w, k) => (
+              <li
+                key={w.name}
+                className={`wix__item${k === active ? " is-on" : ""}`}
+                style={{ ["--ac" as string]: w.accent }}
+              >
+                <span className="wix__frame" />
+                <span className="wix__n">{w.n}</span>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+      </div>
+    </div>
+  );
 }
 
 /* ── phone: a vertical list you can just read ─────────────────────────────
@@ -129,8 +189,50 @@ function Work() {
    This is also the shorter page: four full-height pinned screens came to
    3248px on a 390 phone, and the list comes to about 2100px with all four
    projects actually visible in it. */
-function WorkList({ reduce }: { reduce: boolean }) {
+function WorkList({ reduce, onActive }: { reduce: boolean; onActive: (i: number) => void }) {
   const listRef = useRef<HTMLOListElement>(null);
+
+  /* ── which project is on screen, for the header ──
+     A scroll listener and a distance test, not an IntersectionObserver.
+
+     The observer would be the obvious tool and it is the wrong one twice
+     over: "in view" is ambiguous when two cards are half visible, and a
+     silent observer leaves the header stuck on the first project with no way
+     to notice. Nearest-to-the-centre is unambiguous, it is one comparison
+     against four rectangles, and it is computed from a number that always
+     exists. The browser coalesces scroll to about a frame, so there is
+     nothing to throttle. */
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const cards = Array.from(list.querySelectorAll<HTMLElement>(".wcard"));
+    if (!cards.length) return;
+    let last = -1;
+    const pick = () => {
+      const mid = window.innerHeight * 0.5;
+      let best = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < cards.length; i++) {
+        const b = cards[i].getBoundingClientRect();
+        const d = Math.abs(b.top + b.height / 2 - mid);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      if (best !== last) {
+        last = best;
+        onActive(best);
+      }
+    };
+    pick();
+    window.addEventListener("scroll", pick, { passive: true });
+    window.addEventListener("resize", pick, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", pick);
+      window.removeEventListener("resize", pick);
+    };
+  }, [onActive]);
 
   /* The drift. The FRAME moves, not the art inside it, and that distinction
      was worth a rebuild: drifting the art meant rendering it taller than its
@@ -245,7 +347,7 @@ function WorkCard({ w, reduce }: { w: (typeof WORK)[number]; reduce: boolean }) 
 }
 
 /* ── the pinned stage ───────────────────────────────────────────────────── */
-function WorkStage() {
+function WorkStage({ onActive }: { onActive: (i: number) => void }) {
   const reduce = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -315,6 +417,7 @@ function WorkStage() {
           if (next !== iRef.current) {
             iRef.current = next;
             setI(next);
+            onActive(next);
           }
         },
       });
@@ -333,7 +436,7 @@ function WorkStage() {
       cancelled = true;
       ctx.revert();
     };
-  }, [reduce]);
+  }, [reduce, onActive]);
 
   /* Reduced motion and phone widths never reach here — Work() sends both to
      the list, which is a real layout rather than a degraded stage. */
@@ -404,21 +507,6 @@ export function Home() {
 
       {/* ── work: the whole point ── */}
       <section id="work" aria-label="Selected work">
-        {/* The claim moved here when the hero became a pure entrance. It had
-            no other home, and this band had no head — so it gains the
-            sentence the site is actually arguing. */}
-        <div className="band band--ink workhead">
-          <div className="band__in">
-            <Reveal>
-              <span className="micro">Selected work</span>
-            </Reveal>
-            <Reveal delay={0.06}>
-              <h2 className="head" style={{ marginTop: 16, maxWidth: "18ch" }}>
-                I design interfaces that get out of the way.
-              </h2>
-            </Reveal>
-          </div>
-        </div>
         <Work />
       </section>
 

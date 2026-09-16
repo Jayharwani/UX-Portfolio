@@ -662,6 +662,17 @@
   letter-spacing: -0.032em;
   text-wrap: balance;
 }
+/* The section's claim settles in weight the way the hero's name does — the
+   page has one typographic gesture and this is it, used twice. */
+.workhead__claim {
+  margin-top: 16px;
+  max-width: 18ch;
+  font-variation-settings: "wght" 420;
+  transition: font-variation-settings 1400ms var(--ease-ui) 200ms;
+}
+.rv.is-in .workhead__claim { font-variation-settings: "wght" 500; }
+.rv.is-instant .workhead__claim { transition: none; }
+
 .head {
   margin: 0;
   font-size: var(--t-head);
@@ -1094,6 +1105,101 @@
 
 /* aspect-ratio rather than a min-height, so a preview holds its proportion
    from a 320 phone to a tablet instead of going squatter as the screen grows */
+/* ── THE WORK INDEX ────────────────────────────────────────────────────────
+   Four small frames, one per project, in the page's own hairline language and
+   deliberately wordless — the names are two hundred pixels below and do not
+   need saying twice. What four frames carry that four words do not is SHAPE:
+   how many, in what order, in which colour, and which one you are looking at
+   right now.
+
+   Each is a miniature of the frames it stands for, down to the header rule
+   and the accent bar sitting in the same place the work cards put theirs. The
+   active one takes its accent and opens that bar. Everything animates on the
+   page's one curve. */
+.wix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(12px, 1.5vw, 20px);
+  margin: clamp(30px, 4.4vh, 58px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.wix__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+}
+.wix__frame {
+  position: relative;
+  display: block;
+  width: clamp(66px, 5.8vw, 86px);
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--hair-dark);
+  border-radius: 2px;
+  transition: border-color 520ms var(--ease-ui);
+}
+/* the header rule, in the same place the real frames put it */
+.wix__frame::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30%;
+  height: 1px;
+  background: var(--hair-dark);
+  transition: background 520ms var(--ease-ui);
+}
+/* And the accent bar, which is the only colour here. It starts at zero width
+   and DRAWS, one frame after another, so the index arrives as a sequence
+   rather than appearing all at once — the same gesture as the rule under each
+   project name, four times, left to right. */
+.wix__frame::after {
+  content: "";
+  position: absolute;
+  left: 9%;
+  top: 12%;
+  width: 0;
+  height: 2px;
+  background: color-mix(in oklab, var(--ac, var(--on-ink)) 40%, transparent);
+  transition: background 520ms var(--ease-ui), width 700ms var(--ease-ui);
+}
+.rv.is-in .wix__frame::after { width: 24%; }
+.rv.is-in .wix__item:nth-child(1) .wix__frame::after { transition-delay: 0ms, 120ms; }
+.rv.is-in .wix__item:nth-child(2) .wix__frame::after { transition-delay: 0ms, 210ms; }
+.rv.is-in .wix__item:nth-child(3) .wix__frame::after { transition-delay: 0ms, 300ms; }
+.rv.is-in .wix__item:nth-child(4) .wix__frame::after { transition-delay: 0ms, 390ms; }
+.wix__item.is-on .wix__frame {
+  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 58%, transparent);
+}
+.wix__item.is-on .wix__frame::before {
+  background: color-mix(in oklab, var(--on-ink) 26%, transparent);
+}
+.rv.is-in .wix__item.is-on .wix__frame::after {
+  background: var(--ac, var(--on-ink));
+  width: 54%;
+}
+/* the active frame's own ground lifts a touch, so the difference is a change
+   of state and not only a change of colour */
+.wix__item.is-on .wix__frame {
+  background: color-mix(in oklab, var(--on-ink) 3%, transparent);
+}
+.rv.is-instant .wix__frame::after { transition: none; }
+.wix__n {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--on-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition: color 520ms var(--ease-ui);
+}
+.wix__item.is-on .wix__n { color: var(--on-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wix__frame, .wix__frame::before, .wix__n { transition: none; }
+  .wix__frame::after { transition: none; width: 24%; }
+}
+
 /* ── THE FRAME ─────────────────────────────────────────────────────────────
    The same object the hero is built out of, and the reason the page now reads
    as one thing. It was a card: sixteen-pixel radius, a border tinted with the
@@ -1644,7 +1750,18 @@
 
      Five steps now, each a real jump: 55 / 36 / 28 / 23 / 15. */
   .display { font-size: 36px; letter-spacing: -0.028em; }
-  .s32 .head { font-size: 23px; line-height: 1.16; letter-spacing: -0.02em; }
+  .s32 /* The section's claim settles in weight the way the hero's name does — the
+   page has one typographic gesture and this is it, used twice. */
+.workhead__claim {
+  margin-top: 16px;
+  max-width: 18ch;
+  font-variation-settings: "wght" 420;
+  transition: font-variation-settings 1400ms var(--ease-ui) 200ms;
+}
+.rv.is-in .workhead__claim { font-variation-settings: "wght" 500; }
+.rv.is-instant .workhead__claim { transition: none; }
+
+.head { font-size: 23px; line-height: 1.16; letter-spacing: -0.02em; }
   .wcard__name { font-size: 28px; }
   .big-link { font-size: 23px; }
 
