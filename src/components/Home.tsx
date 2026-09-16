@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { useReducedMotion } from "motion/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Hero from "./home/Hero";
-import { useNarrow } from "./home/useNarrow";
 import { useInView } from "./home/useInView";
 import Route from "./home/Route";
 import { ToolRow } from "./home/toolmarks";
@@ -33,23 +30,16 @@ import {
    animated recreations of four shipped products, which means the evidence
    for "I build the front end" is itself front-end running in the page.
 
-   THE SCROLL. One pinned stage, scrubbed, that advances through four
-   projects. Per the ScrollTrigger guidance: the trigger is pinned and the
-   animation is a single top-level timeline, nothing animates the pinned
-   element itself, instances are killed through a gsap.context() on unmount,
-   and a refresh is issued once fonts settle because their metrics move the
-   start and end positions.
+   ALL FOUR AT ONCE. There was a pinned stage here that showed one project at
+   a time, scrubbed by scroll — 400vh of hijacked page to see four things
+   that fit on one screen, and it made the site's strongest asset take turns.
+   The grid shows them together at every width, two columns above 900px and
+   one below, all four running.
 
-   Progress drives React state only when the INDEX changes, not on every
-   scroll frame — four renders across the whole stage rather than several
-   hundred. That distinction is the difference between this being smooth and
-   it being the jank this site spent weeks removing.
-
-   THE PIN IS NOT UNIVERSAL. A phone, and anyone who asked for reduced
-   motion, gets a vertical list instead — a second real layout, not a
-   degraded one. A pinned stage needs room for the copy beside the work and
-   a pointer that can hover it; on a phone it is 400vh of scrubbed scroll
-   showing one project at a time with no way back to the last one.
+   NOTHING IN THIS SECTION USES AN INTERSECTION OBSERVER. Arrival, liveness
+   and the header's active project all come from one scroll handler measuring
+   rectangles: correct on the first frame, unambiguous when two cards are half
+   on screen, and measurable — which the observer path provably was not.
    ────────────────────────────────────────────────────────────────────────── */
 
 const EMAIL = "harwanijay9498@gmail.com";
@@ -101,25 +91,17 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
   );
 }
 
-/* ── the work section picks its structure ────────────────────────────────
-   Two layouts, not one layout with mobile CSS on top. The pinned stage is a
-   good use of scroll on a wide screen and a bad one on a phone, where it
-   becomes 400vh of scrubbed scroll showing one project at a time with no way
-   to look back at the one you just passed. See useNarrow.ts. */
+/* ── the work section ────────────────────────────────────────────────────
+   One layout at every width: the grid below, two columns or one. */
 function Work() {
   const reduce = !!useReducedMotion();
-  const narrow = useNarrow();
-  /* which project you are looking at, owned here so the header and the work
-     itself can be the same statement rather than two neighbours */
+  /* which project the header is showing. Owned here so the head and the work
+     are one statement rather than two neighbours. */
   const [active, setActive] = useState(0);
   return (
     <>
       <WorkHead active={active} />
-      {reduce || narrow ? (
-        <WorkList reduce={reduce} onActive={setActive} />
-      ) : (
-        <WorkStage onActive={setActive} />
-      )}
+      <WorkGrid reduce={reduce} onActive={setActive} />
     </>
   );
 }
@@ -172,146 +154,173 @@ function WorkHead({ active }: { active: number }) {
   );
 }
 
-/* ── phone: a vertical list you can just read ─────────────────────────────
-   Every project is on the page at once, in order, and scrolling past one
-   does not take it away. Nothing is pinned and nothing is scrubbed, so the
-   page scrolls at the speed the thumb moved it — which is most of what
-   "satisfying" means on a phone.
+/* ── ALL FOUR AT ONCE ────────────────────────────────────────
+   The pinned stage is gone. It showed one project at a time, scrubbed by
+   scroll, and it was 400vh of hijacked page to see four things that fit on
+   one screen. Worse, it made the site's strongest asset take turns: four
+   hand-built, animated recreations of shipped products, and you could only
+   ever look at one.
 
-   What is left to design, then, is arrival. Each card rises and settles on a
-   long exponential curve, its rule draws out under the accent, and the
-   preview inside the frame drifts against the frame as the card crosses the
-   screen, so the work has a plane of its own behind the border. The preview
-   also PLAYS when it arrives and resets when it leaves, which is the same
-   contract the stage used — so scrolling back up runs the animation again
-   rather than showing you a finished still.
+   They all run at once now, in a grid, on every width — two columns above
+   900px and one below. The argument the page is making is "these are not
+   screenshots", and four of them moving simultaneously makes that argument
+   four times over without a word.
 
-   This is also the shorter page: four full-height pinned screens came to
-   3248px on a 390 phone, and the list comes to about 2100px with all four
-   projects actually visible in it. */
-function WorkList({ reduce, onActive }: { reduce: boolean; onActive: (i: number) => void }) {
+   NOTHING HERE USES AN INTERSECTION OBSERVER. Arrival, liveness and the
+   header's active project all come from one scroll handler measuring
+   rectangles. Three reasons, in order of how much they matter: it is correct
+   on the first frame because the handler runs on mount, where an observer has
+   to be told and can stay silent; "nearest the middle" is unambiguous when
+   two cards are half on screen and "intersecting" is not; and it is
+   measurable, which the observer path provably was not.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/** how far a frame leans toward the pointer, in degrees */
+const TILT = 4.2;
+/** and how far it drifts against its own caption as it crosses the screen */
+const DRIFT = 10;
+
+function WorkGrid({
+  reduce,
+  onActive,
+}: {
+  reduce: boolean;
+  onActive: (i: number) => void;
+}) {
   const listRef = useRef<HTMLOListElement>(null);
+  /* seen latches (a card that has arrived stays arrived); live tracks both
+     ways, so a preview replays when you come back to it */
+  const [seen, setSeen] = useState<boolean[]>(() => WORK.map(() => reduce));
+  const [live, setLive] = useState<boolean[]>(() => WORK.map(() => reduce));
 
-  /* ── which project is on screen, for the header ──
-     A scroll listener and a distance test, not an IntersectionObserver.
-
-     The observer would be the obvious tool and it is the wrong one twice
-     over: "in view" is ambiguous when two cards are half visible, and a
-     silent observer leaves the header stuck on the first project with no way
-     to notice. Nearest-to-the-centre is unambiguous, it is one comparison
-     against four rectangles, and it is computed from a number that always
-     exists. The browser coalesces scroll to about a frame, so there is
-     nothing to throttle. */
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
     const cards = Array.from(list.querySelectorAll<HTMLElement>(".wcard"));
+    const frames = cards.map((c) => c.querySelector<HTMLElement>(".wcard__frame"));
     if (!cards.length) return;
-    let last = -1;
-    const pick = () => {
-      const mid = window.innerHeight * 0.5;
+
+    /* every frame's transform is composed from two independent inputs, so
+       each one owns its own number and neither can clobber the other */
+    const drift = cards.map(() => 0);
+    const tilt = cards.map(() => [0, 0]);
+    const apply = (k: number) => {
+      const f = frames[k];
+      if (!f) return;
+      const [rx, ry] = tilt[k];
+      f.style.transform =
+        `translate3d(0, ${drift[k].toFixed(2)}px, 0)` +
+        ` rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    };
+
+    let lastActive = -1;
+    const measure = () => {
+      const vh = window.innerHeight;
+      const mid = vh * 0.5;
       let best = 0;
       let bestD = Infinity;
-      for (let i = 0; i < cards.length; i++) {
-        const b = cards[i].getBoundingClientRect();
-        const d = Math.abs(b.top + b.height / 2 - mid);
+      const nextSeen: boolean[] = [];
+      const nextLive: boolean[] = [];
+
+      for (let k = 0; k < cards.length; k++) {
+        const b = cards[k].getBoundingClientRect();
+        const centre = b.top + b.height / 2;
+
+        /* nearest the middle of the screen wins the header */
+        const d = Math.abs(centre - mid);
         if (d < bestD) {
           bestD = d;
-          best = i;
+          best = k;
+        }
+
+        const onScreen = b.bottom > vh * 0.06 && b.top < vh * 0.94;
+        nextSeen[k] = onScreen;
+        nextLive[k] = onScreen;
+
+        if (!reduce) {
+          /* -1 at the top of the screen, +1 at the bottom, 0 as it passes the
+             middle — so a card settles exactly where it is read */
+          const t = (centre - mid) / mid;
+          drift[k] = Math.max(-1, Math.min(1, t)) * DRIFT;
+          apply(k);
         }
       }
-      if (best !== last) {
-        last = best;
+
+      setSeen((prev) => (prev.some((v, k) => !v && nextSeen[k]) ? prev.map((v, k) => v || nextSeen[k]) : prev));
+      setLive((prev) => (prev.some((v, k) => v !== nextLive[k]) ? nextLive : prev));
+      if (best !== lastActive) {
+        lastActive = best;
         onActive(best);
       }
     };
-    pick();
-    window.addEventListener("scroll", pick, { passive: true });
-    window.addEventListener("resize", pick, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", pick);
-      window.removeEventListener("resize", pick);
-    };
-  }, [onActive]);
 
-  /* The drift. The FRAME moves, not the art inside it, and that distinction
-     was worth a rebuild: drifting the art meant rendering it taller than its
-     frame and clipping the overhang, which quietly ate the bottom of every
-     preview — Signal's "12 you can make" card was cut in half by it. The
-     frame carries its contents with it and nothing is cropped at all.
+    measure();
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure, { passive: true });
 
-     What you see instead is the frame moving against the caption under it,
-     which is the same parallax read: two layers of one card at two depths.
-
-     One passive listener for the whole list, throttled to a frame, writing a
-     transform on at most four elements and only on the ones near the
-     viewport. A transform rather than a custom property — a custom property
-     on this page measured 12.9ms to invalidate, a transform stays on the
-     compositor. */
-  useEffect(() => {
-    if (reduce) return;
-    const list = listRef.current;
-    if (!list) return;
-    const frames = Array.from(list.querySelectorAll<HTMLElement>(".wcard__frame"));
-    if (!frames.length) return;
+    /* the tilt. One window handler rather than eight per-card ones, throttled
+       to a frame, and the lean falls off with distance so only the card you
+       are actually near responds. */
     let queued = false;
+    let px = 0;
+    let py = 0;
     const write = () => {
       queued = false;
-      const vh = window.innerHeight;
-      for (const frame of frames) {
-        const b = frame.getBoundingClientRect();
-        if (b.bottom < -120 || b.top > vh + 120) continue;
-        /* -1 when the frame's middle is at the top of the screen, +1 at the
-           bottom, 0 as it passes the centre — so a card settles exactly where
-           it is read and leans on the way in and the way out. */
-        const t = (b.top + b.height / 2 - vh / 2) / (vh / 2);
-        frame.style.transform = `translate3d(0, ${(t * 10).toFixed(2)}px, 0)`;
+      for (let k = 0; k < cards.length; k++) {
+        const b = frames[k]?.getBoundingClientRect();
+        if (!b) continue;
+        const nx = (px - (b.left + b.width / 2)) / (b.width / 2);
+        const ny = (py - (b.top + b.height / 2)) / (b.height / 2);
+        const near = Math.max(0, 1 - Math.hypot(nx, ny) / 1.9);
+        tilt[k] = [-ny * TILT * near, nx * TILT * near];
+        apply(k);
       }
     };
-    const onScroll = () => {
+    const onMove = (e: PointerEvent) => {
+      px = e.clientX;
+      py = e.clientY;
       if (queued) return;
       queued = true;
       requestAnimationFrame(write);
     };
-    write();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    const fine = !window.matchMedia("(pointer: coarse)").matches;
+    if (!reduce && fine) window.addEventListener("pointermove", onMove, { passive: true });
+
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("pointermove", onMove);
     };
-  }, [reduce]);
+  }, [reduce, onActive]);
 
   return (
-    <ol className="wlist" ref={listRef}>
-      {WORK.map((w) => (
-        <WorkCard key={w.name} w={w} reduce={reduce} />
+    <ol className="wgrid" ref={listRef}>
+      {WORK.map((w, k) => (
+        <WorkCard key={w.name} w={w} seen={seen[k]} live={live[k]} />
       ))}
     </ol>
   );
 }
 
-function WorkCard({ w, reduce }: { w: (typeof WORK)[number]; reduce: boolean }) {
-  const ref = useRef<HTMLLIElement>(null);
-  /* Two signals, not one. `seen` latches, so scrolling back up does not fade
-     the page out behind you; `inView` tracks both ways, so the preview resets
-     when it leaves and runs again when you come back to it. The guard against
-     a silent observer lives in the hook — see useInView.ts. */
-  const { seen, inView, forced } = useInView(ref, { enabled: !reduce });
+function WorkCard({
+  w,
+  seen,
+  live,
+}: {
+  w: (typeof WORK)[number];
+  seen: boolean;
+  live: boolean;
+}) {
   const [flipped, setFlipped] = useState(false);
   const code = sourceOf(w.Preview.name);
 
   return (
-    <li
-      ref={ref}
-      className={`wcard${seen ? " is-in" : ""}${forced ? " is-instant" : ""}`}
-      style={{ ["--ac" as string]: w.accent }}
-    >
+    <li className={`wcard${seen ? " is-in" : ""}`} style={{ ["--ac" as string]: w.accent }}>
       <div className="wcard__frame">
         <div className={`flip${flipped ? " is-flipped" : ""}`}>
           <div className="flip__face flip__face--front">
             <div className="wcard__art">
-              <w.Preview active={inView} />
+              <w.Preview active={live} />
             </div>
           </div>
           <div className="flip__face flip__face--back" aria-hidden={!flipped}>
@@ -338,165 +347,11 @@ function WorkCard({ w, reduce }: { w: (typeof WORK)[number]; reduce: boolean }) 
         <h3 className="wcard__name">{w.name}</h3>
         <div className="wcard__rule" aria-hidden="true" />
         <p className="wcard__line">{w.line}</p>
-        <Link className="stage__go" to={w.to}>
+        <Link className="wcard__go" to={w.to}>
           View case ↗
         </Link>
       </div>
     </li>
-  );
-}
-
-/* ── the pinned stage ───────────────────────────────────────────────────── */
-function WorkStage({ onActive }: { onActive: (i: number) => void }) {
-  const reduce = useReducedMotion();
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [i, setI] = useState(0);
-  const iRef = useRef(0);
-  /* Hover replays the preview's own animation — the counters, the bars, the
-     ring. That was the best thing about the old work cards and the rebuild
-     lost it: scroll fires each preview once when it arrives and then never
-     again, so there was nothing to poke.
-
-     A plain remount does NOT work, and the reason is specific: ChronoWeave
-     and Bumper declare no `initial` prop, only animate={active ? A : B}.
-     Framer Motion treats the current animate value as the starting state
-     when initial is absent, so a component mounted with active already true
-     has nothing to animate FROM and renders the finished state statically.
-     Signal and Headroom survived it only because they animate from a
-     useEffect that re-runs on mount.
-
-     The root cause is fixed where it lived: ChronoWeave and Bumper now
-     declare initial props, so a fresh mount animates from the inactive state
-     like anything else. With that in place a plain remount replays all four
-     — the two effect-driven ones re-run their effects, the two Motion-driven
-     ones animate from initial — and no arming dance is needed here.
-
-     Every slide carries the same key, so changing project does not remount
-     anything — that path was already correct and only needed leaving alone. */
-  const [replay, setReplay] = useState(0);
-  const replayNow = () => setReplay((r) => r + 1);
-  /* The flip is the point of the whole section: the previews are live React
-     and nothing said so. Reset on project change, so arriving at a project
-     always shows the running thing first and the code is a choice. */
-  const [flipped, setFlipped] = useState(false);
-  const faceRef = useRef<HTMLDivElement>(null);
-  useEffect(() => setFlipped(false), [i]);
-  const code = sourceOf(WORK[i].Preview.name);
-
-  useEffect(() => {
-    if (reduce) return;
-    const wrap = wrapRef.current;
-    const stage = stageRef.current;
-    if (!wrap || !stage) return;
-
-    gsap.registerPlugin(ScrollTrigger);
-    /* Dev-only handle. ScrollTrigger updates through gsap.ticker, which is
-       requestAnimationFrame-driven, and rAF does not run in a backgrounded
-       tab — so automated checks can create the trigger but never see it
-       advance. Exposing it in DEV lets a test drive update() by hand and
-       verify the pin and the index for real instead of assuming. Stripped
-       from production by import.meta.env.DEV. */
-    if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ST = ScrollTrigger;
-
-    /* gsap.context() scopes every instance created inside it, so one revert()
-       on unmount kills the pin, the spacer and the trigger together. Without
-       it a client-side route change leaves a pinned spacer behind. */
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: wrap,
-        start: "top top",
-        end: "bottom bottom",
-        pin: stage,
-        pinSpacing: false, // the wrapper already reserves the scroll distance
-        scrub: true,
-        onUpdate: (self) => {
-          /* Index only. Writing state on every scroll frame would be a few
-             hundred React renders across this section; this is four. */
-          const next = Math.min(WORK.length - 1, Math.floor(self.progress * WORK.length));
-          if (next !== iRef.current) {
-            iRef.current = next;
-            setI(next);
-            onActive(next);
-          }
-        },
-      });
-    }, wrap);
-
-    /* Font metrics move the start and end positions, and the page loads three
-       families. Refresh once they have settled. */
-    let cancelled = false;
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        if (!cancelled) ScrollTrigger.refresh();
-      });
-    }
-
-    return () => {
-      cancelled = true;
-      ctx.revert();
-    };
-  }, [reduce, onActive]);
-
-  /* Reduced motion and phone widths never reach here — Work() sends both to
-     the list, which is a real layout rather than a degraded stage. */
-  return (
-    <div ref={wrapRef} className="workwrap" style={{ height: `${WORK.length * 100}vh` }}>
-      <div ref={stageRef} className="stage" style={{ ["--ac" as string]: WORK[i].accent }}>
-        <div className="stage__in">
-          <div className="stage__copy">
-            {WORK.map((w, k) => (
-              <div key={w.name} className={`stage__text${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
-                <h3 className="stage__name">{w.name}</h3>
-                <p className="stage__line">{w.line}</p>
-                <Link className="stage__go" to={w.to} tabIndex={k === i ? 0 : -1}>
-                  View case ↗
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="stage__screen"
-            onMouseEnter={replayNow}
-          >
-            <div className={`flip${flipped ? " is-flipped" : ""}`}>
-              <div className="flip__face flip__face--front" ref={faceRef}>
-                {WORK.map((w, k) => (
-                  <div key={w.name} className={`stage__slide${k === i ? " is-on" : ""}`} aria-hidden={k !== i}>
-                    <w.Preview key={`${w.name}-${replay}`} active={k === i} />
-                  </div>
-                ))}
-              </div>
-              <div className="flip__face flip__face--back" aria-hidden={!flipped}>
-                <pre className="src">
-                  <Highlight code={code} />
-                </pre>
-                <div className="src__foot">
-                  <span className="micro">src/components/home/previews.tsx</span>
-                  <span className="micro">{lineCount(code)} lines · running on the other side</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="flipbtn"
-              onClick={() => setFlipped((v) => !v)}
-              aria-pressed={flipped}
-            >
-              {flipped ? "Live" : "Source"}
-            </button>
-          </div>
-        </div>
-
-        <div className="stage__bar" aria-hidden="true">
-          {WORK.map((w, k) => (
-            <span key={w.name} className={`stage__tick${k === i ? " is-on" : ""}`} />
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 
