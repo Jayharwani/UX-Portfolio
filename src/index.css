@@ -617,7 +617,14 @@
 .band { position: relative; width: 100%; }
 .band--ink   { background: var(--ink);   color: var(--on-ink); }
 .band--slate { background: var(--slate); color: var(--on-ink); }
-.band--stone { background: var(--stone); color: var(--on-stone); }
+/* Every band on the homepage is ink now. The light stone band in the middle
+   was the single loudest inconsistency on the page — a cream rectangle
+   between a hero and a work section both drawn in hairlines on near-black —
+   and its rules are gone with it, along with the ground it stood on.
+
+   The seam between bands is a hairline instead: the same line everything
+   else on this page is drawn with. */
+.entry-seam { border-top: 1px solid var(--hair-dark); }
 
 .band__in {
   max-width: 1360px;
@@ -642,7 +649,6 @@
   text-transform: uppercase;
 }
 .band--ink .micro, .band--slate .micro { color: var(--on-ink-2); }
-.band--stone .micro { color: var(--on-stone-2); }
 
 /* ── display type ──
    Weight 500, never 600+. At this size a heavier weight stops reading as
@@ -679,10 +685,8 @@
 }
 .band--ink .lead, .band--slate .lead { color: var(--on-ink); }
 .band--ink .body, .band--slate .body { color: var(--on-ink-2); }
-.band--stone .body { color: var(--on-stone-2); }
 
 .hair { height: 1px; width: 100%; background: var(--hair-dark); border: 0; margin: 0; }
-.band--stone .hair { background: var(--hair-stone); }
 
 /* ── hero ── */
 .hero__top { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
@@ -800,7 +804,7 @@
   font-weight: 400;
   line-height: 1.34;
   letter-spacing: -0.012em;
-  color: var(--on-stone-2);
+  color: var(--on-ink-2);
 }
 
 /* ── the drawing ──
@@ -812,7 +816,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 13 / 6;
-  color: var(--on-stone);
+  color: var(--on-ink);
 }
 .route__svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .route__field { opacity: 0.34; }
@@ -821,7 +825,7 @@
    346 on a phone, so every hairline would otherwise arrive two thirds of the
    weight it was drawn at. */
 .route__arc {
-  stroke: var(--on-stone);
+  stroke: var(--on-ink);
   stroke-width: 1.5;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -831,9 +835,9 @@
 }
 .route.is-in .route__arc { stroke-dashoffset: 0; }
 
-.route__dot { fill: var(--on-stone); }
+.route__dot { fill: var(--on-ink); }
 .route__ring {
-  stroke: var(--on-stone);
+  stroke: var(--on-ink);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
   opacity: 0.32;
@@ -860,7 +864,7 @@
   font-size: clamp(1rem, 1.75vw, 1.6rem);
   font-weight: 500;
   letter-spacing: -0.018em;
-  color: var(--on-stone);
+  color: var(--on-ink);
   opacity: 0;
   transform: translate(-50%, 22px);
   transition: opacity 700ms var(--ease-ui), transform 900ms var(--ease-ui);
@@ -875,7 +879,7 @@
   top: 11%;
   margin: 0;
   transform: translateX(-50%);
-  color: var(--on-stone-2);
+  color: var(--on-ink-2);
   opacity: 0;
   transition: opacity 800ms var(--ease-ui) 980ms;
 }
@@ -898,7 +902,7 @@
 .tool {
   width: clamp(19px, 2vw, 23px);
   height: auto;
-  color: var(--on-stone);
+  color: var(--on-ink);
   opacity: 0.55;
   transition: opacity 320ms var(--ease-ui);
 }
@@ -920,7 +924,7 @@
   text-decoration: none;
   border-bottom: 1px solid var(--hair-dark);
   padding-bottom: 4px;
-  transition: border-color 300ms ease, opacity 300ms ease;
+  transition: border-color 300ms var(--ease-ui), opacity 300ms var(--ease-ui);
 }
 .big-link:hover { border-color: var(--on-ink); }
 .big-link:focus-visible { outline: 2px solid var(--on-ink); outline-offset: 8px; }
@@ -1012,7 +1016,7 @@
   text-decoration: none;
   border-bottom: 1px solid var(--hair-dark);
   padding-bottom: 5px;
-  transition: border-color 300ms ease;
+  transition: border-color 300ms var(--ease-ui);
 }
 .stage__go:hover { border-color: var(--on-ink); }
 .stage__go:focus-visible { outline: 2px solid var(--on-ink); outline-offset: 6px; }
@@ -1026,10 +1030,7 @@
   display: grid;
   height: 100%;
   min-height: 0;
-  border: 1px solid var(--hair-dark);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #070A0E;
+  overflow: visible;
 }
 .stage__slide {
   grid-area: 1 / 1;
@@ -1056,7 +1057,7 @@
   flex: 1 1 0;
   height: 2px;
   background: var(--hair-dark);
-  transition: background 520ms ease;
+  transition: background 520ms var(--ease-ui);
 }
 .stage__tick.is-on { background: var(--on-ink); }
 
@@ -1093,18 +1094,55 @@
 
 /* aspect-ratio rather than a min-height, so a preview holds its proportion
    from a 320 phone to a tablet instead of going squatter as the screen grows */
+/* ── THE FRAME ─────────────────────────────────────────────────────────────
+   The same object the hero is built out of, and the reason the page now reads
+   as one thing. It was a card: sixteen-pixel radius, a border tinted with the
+   project accent, and a coloured glow underneath — three pieces of chrome
+   that exist in no other part of the site.
+
+   It is a frame now: square, hairline, with the corner ticks the hero's
+   nearest frame carries. The accent has not gone, it moved to the places that
+   carry meaning — the number and the rule under the name. A border that is
+   always the accent colour is telling you nothing. */
+.wcard__frame,
+.stage__screen {
+  border: 1px solid var(--hair-dark);
+  border-radius: 2px;
+  background: #070A0E;
+  box-shadow: none;
+}
+/* the corner ticks. One rule, two pseudo-elements, and it is what ties the
+   work section to the hero without repeating anything else. */
+.wcard__frame::before,
+.wcard__frame::after,
+.stage__screen::before,
+.stage__screen::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  border: 1px solid color-mix(in oklab, var(--on-ink) 30%, transparent);
+  transition: border-color 420ms var(--ease-ui);
+}
+.wcard__frame::before,
+.stage__screen::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
+.wcard__frame::after,
+.stage__screen::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+
 .wcard__frame {
   position: relative;
   display: grid;
   aspect-ratio: 4 / 3;
-  border: 1px solid color-mix(in oklab, var(--ac, var(--on-ink)) 28%, transparent);
-  border-radius: 16px;
-  overflow: hidden;
-  background: #070A0E;
+  overflow: visible;
   perspective: 1400px;
-  box-shadow: 0 26px 60px -36px color-mix(in oklab, var(--ac, #000) 70%, transparent);
   will-change: transform;
 }
+/* the flip carries the clip; the frame itself must not, or the corner ticks
+   sitting a pixel outside the border get cut off by it */
+.wcard__frame .flip,
+.stage__screen .flip { overflow: hidden; border-radius: 2px; }
 .wcard__frame .flip { grid-area: 1 / 1; }
 .wcard__frame .src { font-size: 11px; }
 
@@ -1175,16 +1213,14 @@
    `coarse && inView` was a workaround, and the pinned stage already moves the
    art. The two worth having back are the LIFT and the ACCENT, and they are
    restored here against --ac, which the stage sets per project. */
-.stage__screen {
-  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 26%, transparent);
-  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 420ms ease, box-shadow 420ms ease;
-}
-.stage__screen:hover {
-  transform: translateY(-4px);
-  border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 55%, transparent);
-  box-shadow: 0 18px 50px -22px color-mix(in oklab, var(--ac, #000) 45%, transparent);
-}
+/* Hover is a hairline brightening and the corner ticks waking up in the
+   project's colour. The lift and the coloured drop shadow are gone: they were
+   the loudest thing in a section whose whole argument is what is inside the
+   frame, not the frame. */
+.stage__screen { transition: border-color 420ms var(--ease-ui); }
+.stage__screen:hover { border-color: color-mix(in oklab, var(--on-ink) 34%, transparent); }
+.stage__screen:hover::before,
+.stage__screen:hover::after { border-color: var(--ac, var(--on-ink)); }
 
 /* the live tick takes the project's colour, so the progress bar is telling
    you which project you are in rather than only how far along you are */
@@ -1230,7 +1266,7 @@
   height: 100%;
   min-height: 0;
   transform-style: preserve-3d;
-  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 900ms var(--ease-ui);
 }
 .flip.is-flipped { transform: rotateY(180deg); }
 
@@ -1294,10 +1330,10 @@
   background: rgba(7, 10, 14, 0.72);
   backdrop-filter: blur(6px);
   border: 1px solid var(--hair-dark);
-  border-radius: 999px;
-  padding: 7px 14px;
+  border-radius: 2px;
+  padding: 7px 12px;
   cursor: pointer;
-  transition: color 300ms ease, border-color 300ms ease;
+  transition: color 300ms var(--ease-ui), border-color 300ms var(--ease-ui);
 }
 .flipbtn:hover,
 .flipbtn[aria-pressed="true"] {
@@ -1327,7 +1363,7 @@
    the replay, the flip to source). Nothing on this page moves on its own any
    more, which is the whole of what "clean" has meant every time it was
    asked for. */
-.stage__screen:hover { translate: 0 -4px; }
+
 
 
 /* ── the transition IS the thing ────────────────────────────────────────────
@@ -1347,8 +1383,8 @@
   opacity: 0;
   transform: scale(0.94) translateY(26px);
   transition:
-    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 980ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 620ms var(--ease-ui),
+    transform 980ms var(--ease-ui);
 }
 .stage__slide.is-on { opacity: 1; transform: none; }
 
@@ -1357,8 +1393,8 @@
 .stage__text {
   transform: translateY(22px);
   transition:
-    opacity 560ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 900ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
+    opacity 560ms var(--ease-ui),
+    transform 900ms var(--ease-ui) 60ms;
 }
 .stage__text.is-on { transform: none; }
 
@@ -1515,7 +1551,7 @@
   gap: 12px;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 900ms ease 700ms;
+  transition: opacity 900ms var(--ease-ui) 700ms;
 }
 .entry.is-in .entry__cue { opacity: 1; }
 .entry.is-instant .entry__cue { transition: none; }

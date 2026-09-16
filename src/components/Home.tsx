@@ -427,7 +427,7 @@ export function Home() {
           as running text: twenty-two words for one fact about a person. The
           sentence is now a line between two points, and the tool names are
           marks, so the band says the same thing at a glance. */}
-      <section className="band band--stone" aria-label="About">
+      <section className="band band--ink entry-seam" aria-label="About">
         <div className="band__in">
           <Reveal>
             <span className="micro">The route</span>
