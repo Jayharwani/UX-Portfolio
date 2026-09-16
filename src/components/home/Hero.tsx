@@ -5,12 +5,12 @@ import { usePerfTier } from "./perfTier";
 /* ──────────────────────────────────────────────────────────────────────────
    THE HERO — a name inside a real 3D space.
 
-   TUNABLE CONSTANTS live in scene/MetalForm.tsx, at the top, in C and
-   MATERIAL. The three to reach for first:
+   TUNABLE CONSTANTS live in scene/Anatomy.tsx, at the top, in C and
+   ACCENTS. The three to reach for first:
 
-     C.ROUGHNESS  how polished. 0.12 is wet mercury, 0.35 is brushed
-     MATERIAL     colour and iridescence. This IS the art direction
-     C.BLOOM      bloom strength. Past ~0.5 it reads as a mistake, not light
+     C.COUNT    how many frames. Density is the whole mood
+     ACCENTS    the four project colours — the only colour in the section
+     C.BLOOM    bloom strength. Past ~0.4 it reads as a mistake, not light
 
    The scene itself is lazy-loaded. three.js is 216 KB gzipped and this site
    has spent real effort keeping it out of the main bundle; a component that
@@ -25,21 +25,33 @@ import { usePerfTier } from "./perfTier";
 
    THE NAME LEANS AGAINST THE CAMERA. The camera orbits toward the pointer
    and the name drifts slightly the other way. Small — about fourteen pixels
-   — but two things moving oppositely cannot be read as one plane, which is
-   the cheapest honest way to put type in front of an object rather than on
-   a picture of one.
+   — but two things moving oppositely cannot be read as one plane.
+
+   AND ONE FRAME SITS IN FRONT OF IT. A single hairline rectangle in CSS,
+   parallaxing harder than the name because it is nearer, so the name is
+   INSIDE the stack of frames rather than pasted over it. Occlusion is the
+   one depth cue a background can never provide, and this is the cheapest
+   honest way to get it without a second WebGL context.
+
+   THE TYPE IS KINETIC, which is the other thing 2026 is actually doing.
+   Geist is loaded variable (wght 400..600), so the name settles in WEIGHT
+   and TRACKING as the frames land rather than just fading up. It is one
+   gesture with the scene, and it stays real selectable text throughout.
    ────────────────────────────────────────────────────────────────────────── */
 
-const MetalForm = lazy(() => import("./scene/MetalForm"));
+const Anatomy = lazy(() => import("./scene/Anatomy"));
 
 const NAME = "Jay Harwani";
 /** how far the name drifts against the camera, in px at full deflection */
 const NAME_PARALLAX = 14;
+/** the frame in front travels further, because it is nearer */
+const NEAR_PARALLAX = 46;
 
 export default function Hero() {
   const reduce = !!useReducedMotion();
   const root = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
+  const near = useRef<HTMLDivElement>(null);
   const lite = usePerfTier() === "lite";
 
   /* A phone, or a machine the frame-time watchdog has already downgraded,
@@ -111,6 +123,11 @@ export default function Hero() {
       ex += (px - ex) * 0.05;
       ey += (py - ey) * 0.05;
       el.style.transform = `translate3d(${(-ex * NAME_PARALLAX).toFixed(2)}px, ${(-ey * NAME_PARALLAX * 0.66).toFixed(2)}px, 0)`;
+      /* the near frame travels further than the name, because it is nearer.
+         Same eased input, one multiplier — that ratio IS the depth. */
+      if (near.current) {
+        near.current.style.transform = `translate3d(${(-ex * NEAR_PARALLAX).toFixed(2)}px, ${(-ey * NEAR_PARALLAX * 0.66).toFixed(2)}px, 0)`;
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -132,18 +149,18 @@ export default function Hero() {
       aria-label="Welcome"
     >
       <Suspense fallback={null}>
-        <MetalForm running={!offscreen} reduce={reduce} small={small} />
+        <Anatomy running={!offscreen} reduce={reduce} small={small} />
       </Suspense>
 
-      {/* a faint lift under the name, so it never has to fight a bright
-          particle for legibility */}
-      <div className="entry__glow" aria-hidden="true" />
 
       <div className="entry__stage">
         <div className="entry__plate" ref={plate}>
           <p className="micro entry__welcome">Welcome to my portfolio</p>
           <h1 className="entry__name">{NAME}</h1>
         </div>
+        {/* the nearest frame in the stack — in front of the name, so the
+            name is inside the architecture rather than on top of it */}
+        <div className="entry__near" ref={near} aria-hidden="true" />
       </div>
 
       <div className="entry__cue">

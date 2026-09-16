@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import esbuild from "esbuild";
 
 /* Regenerates hero.html from the component, so the standalone reference and
    the shipped hero cannot drift apart. The template is the page around the
-   scene; every shader and every constant is extracted from MetalForm.tsx.
+   scene; every shader, the geometry builder, and every constant are pulled
+   out of Anatomy.tsx.
 
    Run after tuning the component:  node scripts/build-hero-html.mjs         */
 
-const SRC = "src/components/home/scene/MetalForm.tsx";
+const SRC = "src/components/home/scene/Anatomy.tsx";
 const TPL = "scripts/hero.template.html";
 const OUT = "hero.html";
 
@@ -18,60 +20,76 @@ const need = (re, what) => {
   return m[1];
 };
 
-/* The trailing newline matters and the capture drops it. DISPLACE_GLSL is
-   prepended straight onto three's own vertex shader, whose first line is
-   `#define STANDARD` — and a preprocessor directive that does not begin a
-   line is a syntax error. Without this the component compiled fine and the
-   generated file rendered nothing but the type, which is exactly the class
-   of bug a generated reference exists to avoid and only running it catches. */
-const DISPLACE = need(/const DISPLACE_GLSL = `([\s\S]*?)\n`;/, "DISPLACE_GLSL") + "\n";
-const NORMAL = need(/const NORMAL_GLSL = `([\s\S]*?)\n`;/, "NORMAL_GLSL");
+const VERT = need(/const VERT = `([\s\S]*?)\n`;/, "VERT");
+const FRAG = need(/const FRAG = `([\s\S]*?)\n`;/, "FRAG");
 const finV = need(/vertexShader: `([\s\S]*?)\n  `,/, "finish vertex shader");
 const finF = need(/fragmentShader: `([\s\S]*?)\n  `,\n\};/, "finish fragment shader");
 
+/* The geometry builder is shared verbatim. It is plain arithmetic with no
+   React in it, so rather than writing the composition twice — two copies of
+   a composition are two compositions, sooner or later — it is lifted out of
+   the component and stripped of its types.
+
+   Stripped by esbuild, not by regex. The first attempt tried to unpick the
+   annotations with substitutions and fell over on a multi-line parameter
+   list, which is the entirely predictable outcome of parsing a language with
+   patterns. esbuild already ships inside Vite, so this adds no dependency and
+   cannot be wrong about the syntax. */
+const rngFn = need(/(function rng\(seed: number\)[\s\S]*?\n\})/, "rng");
+const buildFn = need(/(\/\* ── the composition[\s\S]*?\nfunction build\([\s\S]*?\n\})/, "build");
+
+const strip = (ts) =>
+  esbuild.transformSync(ts, {
+    loader: "ts",
+    format: "esm",
+    target: "es2020",
+    /* keep the comments — they are half the point of shipping a reference */
+    legalComments: "none",
+  }).code.trim();
+
+const RNG = strip(rngFn);
+const BUILD = strip("interface Built { geometry: unknown }\n" + buildFn)
+  .replace(/^\s*$/gm, "")
+  .trim();
+
 const KEYS = [
-  "FOV", "FILL", "FILL_PORTRAIT", "LIFT_F",
-  "DETAIL", "DETAIL_SMALL", "RADIUS", "AMP", "FREQ", "MORPH", "NORMAL_EPS",
-  "ROUGHNESS", "CLEARCOAT", "CLEARCOAT_ROUGHNESS",
-  "IRIDESCENCE", "IRIDESCENCE_IOR", "IRIDESCENCE_MIN", "IRIDESCENCE_MAX",
-  "PARALLAX", "EASE",
+  "COUNT", "COUNT_SMALL", "Z_NEAR", "Z_FAR", "CAMERA_Z", "FOV", "OVERFILL",
+  "GRID", "JITTER", "CLEAR_BAND", "SIZE_MIN", "SIZE_MAX",
+  "PARALLAX", "EASE", "DRIFT",
   "BLOOM", "BLOOM_RADIUS", "BLOOM_THRESHOLD", "EXPOSURE",
   "ABERRATION", "GRAIN", "VIGNETTE",
-  "INTRO_MS", "INTRO_DOLLY", "RENDER_SCALE", "RENDER_SCALE_SMALL",
+  "INTRO_MS", "SCATTER_Z", "SCATTER_XY",
+  "RENDER_SCALE", "RENDER_SCALE_SMALL",
 ];
 const C = Object.fromEntries(
-  KEYS.map((k) => [k, Number(need(new RegExp("\\n  " + k + ": ([0-9.]+)"), k))])
+  KEYS.map((k) => [k, Number(need(new RegExp("\\n  " + k + ": (-?[0-9.]+)"), k))])
 );
 
-/* the light and env intensities live at their call sites rather than in C,
-   so they are pulled from there — if they ever move into C this throws
-   rather than silently shipping a stale reference */
-const envI = need(/envMapIntensity: ([0-9.]+)/, "envMapIntensity");
-const keyI = need(/DirectionalLight\(new THREE\.Color\(KEY\), ([0-9.]+)\)/, "key intensity");
-const rimI = need(/DirectionalLight\(new THREE\.Color\(RIM\), ([0-9.]+)\)/, "rim intensity");
-
-const matColor = need(/color: "(#\w+)",\n  metalness/, "material colour");
-const KEY = need(/const KEY = "(#\w+)"/, "KEY colour");
-const RIM = need(/const RIM = "(#\w+)"/, "RIM colour");
-const BG = need(/const BG = "(#\w+)"/, "BG colour");
+const ACCENTS = need(/const ACCENTS = (\[[^\]]*\])/, "ACCENTS")
+  .replace(/"/g, '"')
+  .replace(/\s+/g, " ");
+const HAIR = need(/const HAIR = "(#\w+)"/, "HAIR");
+const BG = need(/const BG = "(#\w+)"/, "BG");
 
 const out = readFileSync(TPL, "utf8")
   .replace("__C__", JSON.stringify(C, null, 2))
-  .replace("__DISPLACE__", DISPLACE)
-  .replace("__NORMAL__", NORMAL)
+  .replace("__ACCENTS__", ACCENTS)
+  .replace("__HAIR__", HAIR)
+  .replace("__BG__", BG)
+  /* The trailing newline of a shader matters where one string is concatenated
+     onto another; it does not here, but the geometry builder's does — an
+     arrow function body ending without a newline would swallow the next
+     statement into a comment if the last line were one. */
+  .replace("__VERT__", VERT)
+  .replace("__FRAG__", FRAG)
   .replace("__FINV__", finV)
   .replace("__FINF__", finF)
-  .replace("__MATCOLOR__", matColor)
-  .replace("__KEY__", KEY)
-  .replace("__RIM__", RIM)
-  .replace("__BG__", BG)
-  .replace("__ENVI__", envI)
-  .replace("__KEYI__", keyI)
-  .replace("__RIMI__", rimI);
+  .replace("__RNG__", RNG)
+  .replace("__BUILD__", BUILD);
 
-if (out.includes("__")) {
-  const left = out.match(/__[A-Z_]+__/g);
-  if (left) throw new Error(`template placeholders left unfilled: ${[...new Set(left)].join(", ")}`);
+const left = out.match(/__[A-Z_]+__/g);
+if (left) {
+  throw new Error(`template placeholders left unfilled: ${[...new Set(left)].join(", ")}`);
 }
 
 writeFileSync(OUT, out);

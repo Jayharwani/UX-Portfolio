@@ -1392,26 +1392,45 @@
 }
 .entry__field canvas { display: block; width: 100%; height: 100%; }
 
-/* A faint lift under the name. The shader already quietens the middle of the
-   frame — see the composition note in LiquidField — so this only has to
-   finish the job, not do it. */
-.entry__glow {
+/* ── the nearest frame ──
+   A single hairline rectangle in front of the name, in the same stroke as
+   the frames in the scene behind. It parallaxes harder than the name because
+   it is nearer — the ratio between the two multipliers is the only thing
+   saying so, and it is enough. */
+.entry__near {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   left: 50%;
   top: 50%;
-  width: min(1180px, 92vw);
-  height: min(540px, 58vh);
-  transform: translate(-50%, -50%);
+  width: min(780px, 74vw);
+  height: min(340px, 42vh);
+  margin: 0;
   max-width: none;
+  transform: translate3d(0, 0, 0);
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(11, 13, 16, 0.46) 0%,
-    rgba(11, 13, 16, 0.24) 46%,
-    transparent 76%
-  );
+  border: 1px solid color-mix(in oklab, var(--on-ink) 13%, transparent);
+  /* centred by halving the element's OWN width, not by a second min() of
+     negative values — min(-390px, -37vw) picks the more negative one, which
+     on a 390 phone is -390 rather than the -144 that centres it, and put the
+     frame's left edge off screen. calc(.../ -2) cannot make that mistake. */
+  margin-left: calc(min(780px, 74vw) / -2);
+  margin-top: calc(min(340px, 42vh) / -2);
+  opacity: 0;
+  transition: opacity 1200ms var(--ease-ui) 400ms;
 }
+.entry.is-in .entry__near { opacity: 1; }
+.entry.is-instant .entry__near { transition: none; }
+/* the corner ticks, the same detail the work cards carry */
+.entry__near::before,
+.entry__near::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid color-mix(in oklab, var(--on-ink) 26%, transparent);
+}
+.entry__near::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
+.entry__near::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
 
 .entry__stage {
   position: relative;
@@ -1427,6 +1446,15 @@
 /* ── the entrance: one coordinated moment ──
    Everything rises together on the same curve. No per-element fade-up, no
    stagger, no hover flourish — the boldness is spent on the depth. */
+/* ── the entrance: one coordinated moment ──
+   Everything rises together on the same curve while the frames behind
+   assemble. No per-element fade-up, no stagger.
+
+   THE NAME IS KINETIC. Geist is loaded variable (wght 400..600), so the name
+   arrives LIGHT and WIDE and settles into its weight and tracking as the
+   scene lands. That is the 2026 move done honestly: it is one gesture with
+   the composition, it is real selectable text the whole way through, and it
+   costs a font-variation-settings transition rather than a library. */
 .entry__welcome,
 .entry__name {
   opacity: 0;
@@ -1434,7 +1462,19 @@
   transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.entry__name { transition-delay: 90ms; }
+.entry__name {
+  transition-delay: 90ms;
+  font-variation-settings: "wght" 400;
+  letter-spacing: 0.02em;
+  transition: opacity 1000ms cubic-bezier(0.16, 1, 0.3, 1) 90ms,
+    transform 1200ms cubic-bezier(0.16, 1, 0.3, 1) 90ms,
+    font-variation-settings 1400ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+    letter-spacing 1400ms cubic-bezier(0.16, 1, 0.3, 1) 180ms;
+}
+.entry.is-in .entry__name {
+  font-variation-settings: "wght" 500;
+  letter-spacing: -0.042em;
+}
 .entry.is-in .entry__welcome,
 .entry.is-in .entry__name { opacity: 1; transform: none; }
 /* the guard fired, so there may never be a frame to animate in — land on the
@@ -1550,8 +1590,7 @@
 
   /* ── hero ── */
   .entry__stage { padding: clamp(18px, 5vw, 80px); }
-  .entry__glow { width: 96vw; height: 44vh; }
-  /* Sized from the narrow end, not the wide one. The name needs 5.78px of
+    /* Sized from the narrow end, not the wide one. The name needs 5.78px of
      width per 1px of size, and a 320px phone leaves 272px after padding —
      so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,
      instead of the 268px it was using. */

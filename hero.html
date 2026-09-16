@@ -9,7 +9,7 @@
   STANDALONE REFERENCE for the hero.
 
   GENERATED. The GLSL and every constant below are extracted from
-  src/components/home/scene/MetalForm.tsx, so the two cannot drift. After
+  src/components/home/scene/Anatomy.tsx, so the two cannot drift. After
   tuning the component, regenerate:
 
       node scripts/build-hero-html.mjs
@@ -18,9 +18,9 @@
       npm run dev   →   http://localhost:3000/hero.html
 
   TUNE, in order of effect:
-    C.ROUGHNESS  how polished. 0.12 is wet mercury, 0.35 is brushed
-    MATERIAL     colour and iridescence. This IS the art direction
-    C.BLOOM      bloom strength. Past ~0.5 it reads as a mistake, not light
+    C.COUNT    how many frames. Density is the whole mood
+    ACCENTS    the four project colours - the only colour in the section
+    C.BLOOM    bloom strength. Past ~0.4 it reads as a mistake, not light
 -->
 
 <style>
@@ -46,7 +46,16 @@
     transition: opacity 900ms cubic-bezier(.16,1,.3,1),
                 transform 1100ms cubic-bezier(.16,1,.3,1);
   }
-  .name { transition-delay: 90ms; }
+  /* kinetic type: Geist is variable (wght 400..600), so the name arrives
+     light and wide and settles into weight and tracking with the assembly */
+  .name {
+    font-variation-settings: "wght" 400; letter-spacing: .02em;
+    transition: opacity 1000ms cubic-bezier(.16,1,.3,1) 90ms,
+                transform 1200ms cubic-bezier(.16,1,.3,1) 90ms,
+                font-variation-settings 1400ms cubic-bezier(.16,1,.3,1) 180ms,
+                letter-spacing 1400ms cubic-bezier(.16,1,.3,1) 180ms;
+  }
+  .is-in .name { font-variation-settings: "wght" 500; letter-spacing: -.042em; }
   .is-in .welcome, .is-in .name { opacity: 1; transform: none; }
   .is-instant .welcome, .is-instant .name, .is-instant .cue { transition: none; }
   .welcome {
@@ -56,7 +65,7 @@
   }
   .name {
     margin: 0; font-size: clamp(3rem, 12.5vw, 11.5rem); font-weight: 500;
-    line-height: .92; letter-spacing: -.042em; color: #F4F1EA; white-space: nowrap;
+    line-height: .92; color: #F4F1EA; white-space: nowrap;
   }
   .cue {
     position: absolute; z-index: 4; left: 0; right: 0; bottom: clamp(22px, 4vh, 44px);
@@ -101,6 +110,7 @@
       <h1 class="name">Jay Harwani</h1>
     </div>
   </div>
+  <div class="near" id="near" aria-hidden="true"></div>
   <div class="cue">
     <span>Scroll</span>
     <span class="arrow" aria-hidden="true"></span>
@@ -115,7 +125,6 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
@@ -123,132 +132,85 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const C = {
-  "FOV": 38,
-  "FILL": 0.75,
-  "FILL_PORTRAIT": 0.66,
-  "LIFT_F": 0.25,
-  "DETAIL": 6,
-  "DETAIL_SMALL": 4,
-  "RADIUS": 1.02,
-  "AMP": 0.13,
-  "FREQ": 0.95,
-  "MORPH": 0.16,
-  "NORMAL_EPS": 0.03,
-  "ROUGHNESS": 0.22,
-  "CLEARCOAT": 1,
-  "CLEARCOAT_ROUGHNESS": 0.12,
-  "IRIDESCENCE": 0.9,
-  "IRIDESCENCE_IOR": 1.36,
-  "IRIDESCENCE_MIN": 140,
-  "IRIDESCENCE_MAX": 430,
-  "PARALLAX": 0.62,
+  "COUNT": 20,
+  "COUNT_SMALL": 14,
+  "Z_NEAR": 1.1,
+  "Z_FAR": -15,
+  "CAMERA_Z": 6,
+  "FOV": 42,
+  "OVERFILL": 1.22,
+  "GRID": 7,
+  "JITTER": 0.46,
+  "CLEAR_BAND": 0.34,
+  "SIZE_MIN": 0.5,
+  "SIZE_MAX": 1.5,
+  "PARALLAX": 0.78,
   "EASE": 0.045,
-  "BLOOM": 0.3,
-  "BLOOM_RADIUS": 0.75,
-  "BLOOM_THRESHOLD": 0.72,
-  "EXPOSURE": 0.88,
-  "ABERRATION": 0.2,
-  "GRAIN": 0.02,
-  "VIGNETTE": 0.62,
-  "INTRO_MS": 2000,
-  "INTRO_DOLLY": 0.68,
+  "DRIFT": 0.09,
+  "BLOOM": 0.2,
+  "BLOOM_RADIUS": 0.8,
+  "BLOOM_THRESHOLD": 0.42,
+  "EXPOSURE": 1.15,
+  "ABERRATION": 0.09,
+  "GRAIN": 0.022,
+  "VIGNETTE": 0.55,
+  "INTRO_MS": 2200,
+  "SCATTER_Z": 26,
+  "SCATTER_XY": 3.4,
   "RENDER_SCALE": 1,
-  "RENDER_SCALE_SMALL": 0.72
+  "RENDER_SCALE_SMALL": 0.8
 };
-const MATERIAL = { color: '#0E141C', metalness: 1.0 };
-const KEY = '#FFE3C6', RIM = '#7FD4F0', BG = '#0B0D10';
+const ACCENTS = ["#1F9D55", "#34D399", "#A78BFA", "#14B8A6"];
+const HAIR = '#F2F1EC', BG = '#0B0D10';
 
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const SMALL  = matchMedia('(max-width: 760px)').matches;
 
-const DISPLACE_GLSL = `
+const VERT = `
+  attribute vec3 aStart;
+  attribute vec3 aColor;
+  attribute float aPhase;
+  attribute float aWeight;
+
   uniform float uTime;
-  uniform float uAmp;
-  uniform float uFreq;
-  uniform float uEps;
+  uniform float uAssemble;
+  uniform float uFade;
+  uniform float uNear;
+  uniform float uFar;
 
-  vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-  vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-  vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
-  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+  varying vec3 vColor;
+  varying float vAlpha;
 
-  float snoise(vec3 v) {
-    const vec2 C2 = vec2(1.0 / 6.0, 1.0 / 3.0);
-    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-    vec3 i  = floor(v + dot(v, C2.yyy));
-    vec3 x0 = v - i + dot(i, C2.xxx);
-    vec3 g = step(x0.yzx, x0.xyz);
-    vec3 l = 1.0 - g;
-    vec3 i1 = min(g.xyz, l.zxy);
-    vec3 i2 = max(g.xyz, l.zxy);
-    vec3 x1 = x0 - i1 + C2.xxx;
-    vec3 x2 = x0 - i2 + C2.yyy;
-    vec3 x3 = x0 - D.yyy;
-    i = mod289(i);
-    vec4 p = permute(permute(permute(
-               i.z + vec4(0.0, i1.z, i2.z, 1.0))
-             + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-             + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-    float n_ = 0.142857142857;
-    vec3 ns = n_ * D.wyz - D.xzx;
-    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-    vec4 x_ = floor(j * ns.z);
-    vec4 y_ = floor(j - 7.0 * x_);
-    vec4 x = x_ * ns.x + ns.yyyy;
-    vec4 y = y_ * ns.x + ns.yyyy;
-    vec4 h = 1.0 - abs(x) - abs(y);
-    vec4 b0 = vec4(x.xy, y.xy);
-    vec4 b1 = vec4(x.zw, y.zw);
-    vec4 s0 = floor(b0) * 2.0 + 1.0;
-    vec4 s1 = floor(b1) * 2.0 + 1.0;
-    vec4 sh = -step(h, vec4(0.0));
-    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-    vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-    vec3 p0 = vec3(a0.xy, h.x);
-    vec3 p1 = vec3(a0.zw, h.y);
-    vec3 p2 = vec3(a1.xy, h.z);
-    vec3 p3 = vec3(a1.zw, h.w);
-    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
-    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-    vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-    m = m * m;
-    return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
-  }
+  void main() {
+    /* THE ENTRANCE, in one line. Each vertex knows where it started and
+       where it belongs; uAssemble is the only thing that moves. */
+    vec3 p = mix(aStart, position, uAssemble);
 
-  /* Three octaves, and one much larger slow fold on top. The fold is what
-     changes the SILHOUETTE over time; octaves alone only ripple the surface,
-     and a form whose outline never changes stops being interesting in about
-     four seconds. */
-  float shape(vec3 p) {
-    vec3 q = p * uFreq + vec3(0.0, 0.0, uTime);
-    float n = snoise(q) * 0.55;
-    n += snoise(q * 2.07) * 0.18;
-    n += snoise(q * 4.13) * 0.06;
-    n += snoise(p * uFreq * 0.42 + vec3(uTime * 0.55, 0.0, 0.0)) * 0.42;
-    return n;
-  }
+    /* a slow individual drift once assembled, so the composition breathes
+       without anything looping visibly. Per-vertex phase, so neighbouring
+       frames never move together. */
+    float live = uAssemble * uAssemble;
+    p.y += sin(uTime * 0.23 + aPhase) * 0.042 * live;
+    p.x += cos(uTime * 0.17 + aPhase * 1.7) * 0.034 * live;
 
-  vec3 displaced(vec3 p) { return p * (1.0 + shape(p) * uAmp); }
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    float d = max(-mv.z, 0.001);
+    gl_Position = projectionMatrix * mv;
 
-  vec3 gPos;
-`;
-const NORMAL_GLSL = `
-  gPos = displaced(position);
-
-  /* a stable tangent basis — a fixed 'up' degenerates at the poles, so swap
-     axes when the normal gets close to one */
-  vec3 up = abs(normal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-  vec3 t1 = normalize(cross(up, normal));
-  vec3 t2 = cross(normal, t1);
-
-  /* the neighbours are renormalised back onto the sphere before being
-     displaced, so both samples come from the same surface */
-  vec3 n1 = displaced(normalize(position + t1 * uEps) * %R%);
-  vec3 n2 = displaced(normalize(position + t2 * uEps) * %R%);
-  vec3 objectNormal = normalize(cross(n1 - gPos, n2 - gPos));
-  if (dot(objectNormal, normal) < 0.0) objectNormal = -objectNormal;`;
-
+    vColor = aColor;
+    /* atmospheric perspective: the back of the stack fades toward the page
+       colour rather than staying crisp and small */
+    float depth = clamp((uFar - d) / (uFar - uNear), 0.0, 1.0);
+    vAlpha = uFade * aWeight * (0.12 + 0.88 * depth * depth);
+  }`;
+const FRAG = `
+  precision mediump float;
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    gl_FragColor = vec4(vColor, vAlpha);
+  }`;
 const FinishShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -288,14 +250,97 @@ const FinishShader = {
       col.g = texture2D(tDiffuse, vUv).g;
       col.b = texture2D(tDiffuse, vUv - off).b;
 
-      /* grain moves; static grain reads as a dirty screen */
       float g = hash(vUv * uRes + fract(uTime * 11.0)) - 0.5;
       col += g * uGrain;
-
       col *= 1.0 - uVignette * r2 * 1.5;
       gl_FragColor = vec4(col, 1.0);
     }`
 };
+
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = a + 1831565813 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function build(count, aspect, seed) {
+  const rand = rng(seed);
+  const pos = [];
+  const start = [];
+  const col = [];
+  const phase = [];
+  const weight = [];
+  const tan = Math.tan(C.FOV / 2 * Math.PI / 180);
+  const hair = new THREE.Color(HAIR);
+  const accents = ACCENTS.map((a) => new THREE.Color(a));
+  const seg = (ax, ay, bx, by, z, c, w, ph) => {
+    pos.push(ax, ay, z, bx, by, z);
+    const sz = z - C.SCATTER_Z * (0.35 + rand() * 0.65);
+    const sx = (rand() * 2 - 1) * C.SCATTER_XY;
+    const sy = (rand() * 2 - 1) * C.SCATTER_XY;
+    start.push(ax + sx, ay + sy, sz, bx + sx, by + sy, sz);
+    for (let k = 0; k < 2; k++) {
+      col.push(c.r, c.g, c.b);
+      phase.push(ph);
+      weight.push(w);
+    }
+  };
+  for (let i = 0; i < count; i++) {
+    const t = Math.pow(rand(), 0.7);
+    const z = C.Z_NEAR + (C.Z_FAR - C.Z_NEAR) * t;
+    const d = C.CAMERA_Z - z;
+    const halfH = tan * d * C.OVERFILL;
+    const halfW = halfH * aspect;
+    const gx = Math.floor(rand() * C.GRID);
+    const gy = Math.floor(rand() * C.GRID);
+    const cx = (gx + 0.5) / C.GRID * 2 - 1 + (rand() * 2 - 1) * (C.JITTER / C.GRID) * 2;
+    let cy = (gy + 0.5) / C.GRID * 2 - 1 + (rand() * 2 - 1) * (C.JITTER / C.GRID) * 2;
+    const scale = (C.SIZE_MIN + rand() * (C.SIZE_MAX - C.SIZE_MIN)) * (d / C.CAMERA_Z);
+    const big = scale > (C.SIZE_MIN + C.SIZE_MAX) * 0.5 * (d / C.CAMERA_Z);
+    if (big && Math.abs(cy) < C.CLEAR_BAND) {
+      cy = (cy < 0 ? -1 : 1) * (C.CLEAR_BAND + rand() * (1 - C.CLEAR_BAND));
+    }
+    const x = cx * halfW;
+    const y = cy * halfH;
+    const ratios = [1.6, 1.33, 1, 0.75];
+    const ratio = ratios[Math.floor(rand() * ratios.length)];
+    const w = scale * ratio;
+    const h = scale;
+    const ph = rand() * 6.283;
+    const l = x - w / 2;
+    const r = x + w / 2;
+    const b = y - h / 2;
+    const tp = y + h / 2;
+    seg(l, tp, r, tp, z, hair, 0.55, ph);
+    seg(r, tp, r, b, z, hair, 0.55, ph);
+    seg(r, b, l, b, z, hair, 0.55, ph);
+    seg(l, b, l, tp, z, hair, 0.55, ph);
+    const hy = tp - h * 0.19;
+    seg(l, hy, r, hy, z, hair, 0.34, ph);
+    const rows = 2 + Math.floor(rand() * 2);
+    for (let k = 0; k < rows; k++) {
+      const ry = hy - h * (0.16 + k * 0.15);
+      const rw = w * (0.3 + rand() * 0.45);
+      seg(l + w * 0.09, ry, l + w * 0.09 + rw, ry, z, hair, 0.26, ph);
+    }
+    if (rand() < 0.34) {
+      const a = accents[Math.floor(rand() * accents.length)];
+      const by2 = tp - h * 0.095;
+      seg(l + w * 0.09, by2, l + w * 0.09 + w * 0.22, by2, z, a, 1, ph);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geometry.setAttribute("aStart", new THREE.Float32BufferAttribute(start, 3));
+  geometry.setAttribute("aColor", new THREE.Float32BufferAttribute(col, 3));
+  geometry.setAttribute("aPhase", new THREE.Float32BufferAttribute(phase, 1));
+  geometry.setAttribute("aWeight", new THREE.Float32BufferAttribute(weight, 1));
+  return { geometry };
+}
 
 const scale = SMALL ? C.RENDER_SCALE_SMALL : C.RENDER_SCALE;
 const pr = Math.min(devicePixelRatio, 2) * scale;
@@ -309,71 +354,25 @@ document.getElementById('field').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
+const camera = new THREE.PerspectiveCamera(C.FOV, innerWidth / innerHeight, 0.1, 120);
+camera.position.set(0, 0, C.CAMERA_Z);
 
-const camera = new THREE.PerspectiveCamera(C.FOV, innerWidth / innerHeight, 0.1, 80);
-const halfHPerUnit = Math.tan((C.FOV / 2) * Math.PI / 180);
-const extent = C.RADIUS * (1 + C.AMP);
-let restDist = C.RADIUS * 4;
-function fit() {
-  const aspect = camera.aspect;
-  const half = Math.min(halfHPerUnit, halfHPerUnit * aspect);
-  const fill = aspect < 1 ? C.FILL_PORTRAIT : C.FILL;
-  restDist = extent / (half * fill);
-}
-camera.position.set(0, 0, restDist);
+const { geometry } = build(SMALL ? C.COUNT_SMALL : C.COUNT, innerWidth / innerHeight, 11);
 
-/* image-based lighting, built rather than downloaded */
-const pmrem = new THREE.PMREMGenerator(renderer);
-pmrem.compileEquirectangularShader();
-const roomScene = new RoomEnvironment();
-const envRT = pmrem.fromScene(roomScene, 0.035);
-scene.environment = envRT.texture;
-roomScene.traverse((o) => {
-  if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); }
-});
-pmrem.dispose();
-
-const key = new THREE.DirectionalLight(new THREE.Color(KEY), 0.42);
-key.position.set(-2.6, 3.0, 2.4);
-scene.add(key);
-const rim = new THREE.DirectionalLight(new THREE.Color(RIM), 1.15);
-rim.position.set(2.8, -1.4, -2.2);
-scene.add(rim);
-
-const geo = new THREE.IcosahedronGeometry(C.RADIUS, SMALL ? C.DETAIL_SMALL : C.DETAIL);
-const mat = new THREE.MeshPhysicalMaterial({
-  color: new THREE.Color(MATERIAL.color),
-  metalness: MATERIAL.metalness,
-  roughness: C.ROUGHNESS,
-  clearcoat: C.CLEARCOAT,
-  clearcoatRoughness: C.CLEARCOAT_ROUGHNESS,
-  iridescence: C.IRIDESCENCE,
-  iridescenceIOR: C.IRIDESCENCE_IOR,
-  iridescenceThicknessRange: [C.IRIDESCENCE_MIN, C.IRIDESCENCE_MAX],
-  envMapIntensity: 0.32
-});
-
-const uTime = { value: 0 }, uAmp = { value: 0 };
-const uFreq = { value: C.FREQ }, uEps = { value: C.NORMAL_EPS };
-
-mat.onBeforeCompile = (shader) => {
-  shader.uniforms.uTime = uTime;
-  shader.uniforms.uAmp = uAmp;
-  shader.uniforms.uFreq = uFreq;
-  shader.uniforms.uEps = uEps;
-  shader.vertexShader = DISPLACE_GLSL + shader.vertexShader;
-  shader.vertexShader = shader.vertexShader.replace(
-    '#include <beginnormal_vertex>',
-    NORMAL_GLSL.replaceAll('%R%', C.RADIUS.toFixed(3))
-  );
-  shader.vertexShader = shader.vertexShader.replace(
-    '#include <begin_vertex>',
-    'vec3 transformed = gPos;'
-  );
+const uniforms = {
+  uTime: { value: 0 },
+  uAssemble: { value: REDUCE ? 1 : 0 },
+  uFade: { value: REDUCE ? 1 : 0 },
+  uNear: { value: C.CAMERA_Z - C.Z_NEAR },
+  uFar: { value: C.CAMERA_Z - C.Z_FAR }
 };
-
-const mesh = new THREE.Mesh(geo, mat);
-scene.add(mesh);
+const material = new THREE.ShaderMaterial({
+  uniforms, vertexShader: VERT, fragmentShader: FRAG,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const lines = new THREE.LineSegments(geometry, material);
+lines.frustumCulled = false;
+scene.add(lines);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -387,8 +386,6 @@ composer.addPass(new OutputPass());
 function size() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  fit();
-  mesh.position.y = C.LIFT_F * halfHPerUnit * restDist;
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth * pr, innerHeight * pr);
@@ -413,57 +410,59 @@ addEventListener('resize', () => {
 
 const entry = document.getElementById('entry');
 const plate = document.getElementById('plate');
+const near = document.getElementById('near');
 
 if (REDUCE) {
-  uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
-  mesh.rotation.set(0.24, -0.5, 0.08);
+  uniforms.uTime.value = 11; finish.uniforms.uTime.value = 11;
+  camera.position.set(0.22, -0.1, C.CAMERA_Z);
+  camera.lookAt(0, 0, 0);
   composer.render();
   entry.className += ' is-in is-instant';
 } else {
   requestAnimationFrame(() => { entry.className += ' is-in'; });
   let painted = false;
-  /* A document that mounts hidden produces no animation frames, so nothing
-     above would ever run and the hero would be a dark sphere. setTimeout is
-     not rAF-driven, which is the entire point. */
+  /* A document that mounts hidden produces no animation frames, so uAssemble
+     would never leave zero and the hero would be an empty rectangle.
+     setTimeout is not rAF-driven, which is the entire point. */
   setTimeout(() => {
     if (painted) return;
     if (entry.className.indexOf('is-in') < 0) entry.className += ' is-in';
     entry.className += ' is-instant';
-    uTime.value = 6.2; uAmp.value = C.AMP; finish.uniforms.uTime.value = 6.2;
-    mesh.rotation.set(0.24, -0.5, 0.08);
+    uniforms.uAssemble.value = 1; uniforms.uFade.value = 1;
+    uniforms.uTime.value = 11; finish.uniforms.uTime.value = 11;
     bloom.strength = C.BLOOM;
+    camera.position.set(0.22, -0.1, C.CAMERA_Z);
+    camera.lookAt(0, 0, 0);
     composer.render();
   }, 2500);
 
   const t0 = performance.now();
-  let last = t0, spin = 0;
   const frame = (now) => {
     requestAnimationFrame(frame);
     painted = true;
-    const dt = Math.min((now - last) / 1000, 0.05);
-    last = now;
     const t = (now - t0) / 1000;
 
     const p = Math.min(1, (now - t0) / C.INTRO_MS);
-    const e = 1 - Math.pow(1 - p, 3);
-    uAmp.value = C.AMP * e;
+    const e = 1 - Math.pow(1 - p, 4);
+    uniforms.uAssemble.value = e;
+    uniforms.uFade.value = Math.min(1, p * 1.6);
     bloom.strength = C.BLOOM * e;
-    uTime.value = t * C.MORPH;
+    uniforms.uTime.value = t;
     finish.uniforms.uTime.value = t;
 
-    spin += dt * (0.055 + 0.028 * Math.sin(t * 0.07));
-    mesh.rotation.y = spin;
-    mesh.rotation.x = Math.sin(t * 0.13) * 0.18;
-    mesh.rotation.z = Math.sin(t * 0.09 + 1.1) * 0.1;
-
+    const driftX = Math.sin(t * 0.13) * C.DRIFT;
+    const driftY = Math.sin(t * 0.097 + 1.2) * C.DRIFT * 0.6;
     ex += (tx - ex) * C.EASE;
     ey += (ty - ey) * C.EASE;
-    const dolly = restDist * (C.INTRO_DOLLY + (1 - C.INTRO_DOLLY) * e);
-    camera.position.set(ex * C.PARALLAX, -ey * C.PARALLAX * 0.62, dolly);
-    camera.lookAt(0, mesh.position.y * 0.55, 0);
+    camera.position.set(ex * C.PARALLAX + driftX, -ey * C.PARALLAX * 0.62 + driftY, C.CAMERA_Z);
+    camera.lookAt(0, 0, 0);
 
+    /* the name leans against the camera; the near frame travels further,
+       because it is nearer. That ratio is the depth. */
     plate.style.transform = 'translate3d(' +
       (-ex * 14).toFixed(2) + 'px,' + (-ey * 9).toFixed(2) + 'px,0)';
+    near.style.transform = 'translate3d(' +
+      (-ex * 46).toFixed(2) + 'px,' + (-ey * 30).toFixed(2) + 'px,0)';
 
     composer.render();
   };

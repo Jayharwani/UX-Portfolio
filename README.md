@@ -13,64 +13,79 @@
 
 ## The hero
 
-**Concept B — one object, real materials, studio light.** Picked over the
-shader field and the scroll-flight for one reason each: a fullscreen shader is
-a *picture*, and a picture has no silhouette, which means it can never be a
-composition; and a scroll-driven flight would fight the pinned work section
-directly below it for the same gesture. An object under studio light is the
-only one of the three that gets compared to a product render rather than to a
-wallpaper.
+**Anatomy — the page's own parts, pulled apart into depth.**
 
-**What it is.** A sphere displaced by fbm in a vertex shader injected into
-`MeshPhysicalMaterial` through `onBeforeCompile`, so the custom geometry gets
-the whole PBR pipeline instead of a hand-rolled material that reimplements
-lighting badly. The normal is **recomputed** from two displaced tangent
-neighbours — displacing positions and keeping the sphere's normals gives a
-lumpy shape lit like a ball, every highlight in the wrong place.
+Every earlier attempt imported a look from somewhere else and set the
+portfolio behind it: a particle constellation, a liquid-metal shader field, a
+chrome blob. Each was fine and none of them belonged to this site. This one is
+built out of what the page is already made of — hairline frames, rules, and
+the four project accents. The frames are the same frames the work section puts
+its live previews in, three hundred pixels further down, so the hero is not
+decorating the site, it is the site's own anatomy laid out in space. For a
+design engineer that is also the argument: an interface taken apart and put
+back together is the job.
 
-The material does real work: `iridescence` is the material's own thin-film
-term with an IOR and a physical thickness range, so the hue shift follows the
-viewing angle the way anodised titanium does. Lighting is image-based from
-`RoomEnvironment` pre-filtered through `PMREMGenerator` — genuine soft-box
-streaks in the reflections, built at startup, zero network requests, no HDRI
-to ship. Then `EffectComposer`: bloom → a custom finishing pass (radial
-chromatic aberration, animated grain, vignette) → ACES tone mapping.
+**What makes it 2026 rather than 2019**, from the research rather than from
+taste ([Envato](https://elements.envato.com/learn/web-design-trends),
+[Index.dev](https://www.index.dev/blog/web-design-trends),
+[studiomeyer](https://studiomeyer.io/en/blog/webdesign-trends-2026-reality-check)):
+
+- **Kinetic typography.** Geist is loaded variable (`wght 400..600`), so the
+  name arrives light and wide and settles into weight and tracking as the
+  frames land. One gesture with the scene, and it stays real selectable text
+  the whole way through — a `font-variation-settings` transition, not a
+  library.
+- **Broken grids.** Frames sit on a deliberately asymmetric lattice with real
+  jitter and overlap, not a centred array.
+- **Depth with a purpose.** The assembly *is* the message — scattered to
+  aligned — rather than depth for its own sake.
+- And the caveat the reality-check pieces all landed on: use WebGL only where
+  the craft is the point. On a portfolio for someone who builds interfaces, it
+  is.
+
+**The entrance is one uniform.** Every vertex carries both where it starts
+(scattered, far back) and where it belongs; the vertex shader mixes between
+them by `uAssemble`. The whole composition resolves from one number ramping 0
+to 1 — no per-frame CPU work, no tweening thirty objects, and the pieces
+cannot arrive out of sync.
+
+**Everything is lines.** One `BufferGeometry`, one draw call, one material. A
+site whose entire visual language is hairlines should have a hero made of
+hairlines, and the cheapest thing to render happens to be the most honest one.
 
 **Where it lives.**
 
 | | |
 |---|---|
 | `src/components/home/Hero.tsx` | already wired into the homepage — nothing to import |
-| `src/components/home/scene/MetalForm.tsx` | the scene, the shaders, and every constant |
+| `src/components/home/scene/Anatomy.tsx` | the scene, the shaders, and every constant |
 | `hero.html` | standalone reference. **Generated** — see below |
 | `scripts/build-hero-html.mjs` | regenerates `hero.html` from the component |
 
 `hero.html` uses ES modules, so serve it rather than opening the file:
 `npm run dev` then `http://localhost:3000/hero.html`.
 
-After tuning the component, run `node scripts/build-hero-html.mjs`. It
-extracts both GLSL chunks and all thirty-one constants from the component and
-throws if any placeholder is left unfilled, so the reference cannot drift from
-what ships.
+After tuning the component, run `node scripts/build-hero-html.mjs`. It lifts
+both shaders, the geometry builder and all twenty-seven constants out of the
+component — stripping the TypeScript with esbuild, which already ships inside
+Vite — and throws if any placeholder is left unfilled, so the reference cannot
+drift from what ships.
 
-**The three constants to tune first**, all at the top of `MetalForm.tsx`:
+**The three constants to tune first**, at the top of `Anatomy.tsx`:
 
-1. **`C.ROUGHNESS`** — how polished. 0.12 is wet mercury, 0.35 is brushed.
-2. **`MATERIAL.color`** plus `envMapIntensity` and the two light intensities.
-   At `metalness: 1` the colour is not a diffuse tint, it is what the
-   reflections are made of. These four numbers came down together to take the
-   first pass from a blown-out white blob to a dark object with bright edges.
-3. **`C.BLOOM`** — past about 0.5 it stops reading as light and starts reading
+1. **`C.COUNT`** — how many frames. Density is the whole mood; twenty reads as
+   a composition and thirty-four reads as noise.
+2. **`ACCENTS`** — the four project colours, the only colour in the section.
+   Keep them the same four the work section uses.
+3. **`C.BLOOM`** — past about 0.4 it stops reading as light and starts reading
    as a mistake.
 
-If the form ever crowds the type, `C.LIFT_F` moves it up the frame and
-`C.FILL` / `C.FILL_PORTRAIT` decide how much of the frame it occupies. The
-camera distance is derived from those, not fixed, so the framing is correct at
-every aspect — a fixed distance frames against the *vertical* field of view
-and showed a form 163% of the frame width on a 390px phone.
+`C.CLEAR_BAND` is the corridor the name sits in: large frames are pushed out
+of that band rather than dimmed inside it. Emptying the space beats scrimming
+over it.
 
-**Performance.** Full pixel ratio on desktop (capped at 2), 0.72× on phones,
-where the icosahedron also drops from subdivision 6 to 4. The loop parks when
-the hero scrolls out of view, and unmount disposes every geometry, material,
-pass, render target and the renderer, with `forceContextLoss()` so an SPA
-route change actually frees the GPU context.
+**Performance.** One draw call. Full pixel ratio on desktop (capped at 2),
+0.8× and fourteen frames on phones. The loop parks when the hero scrolls out
+of view, and unmount disposes the geometry, material, every pass and the
+renderer, with `forceContextLoss()` so an SPA route change actually frees the
+GPU context.
