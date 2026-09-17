@@ -106,6 +106,43 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
   );
 }
 
+/* Words on their own line-clip, so a headline rises into place a word at a
+   time instead of fading as a block.
+
+   Masks, not opacity, and the distinction is the whole effect: a fade says
+   "this is appearing", a mask says "this was always here and you are now
+   seeing it", which is what makes the gesture read as typesetting rather
+   than as an animation. Word level rather than character level, because
+   characters look like a typewriter and destroy the line breaks the browser
+   would otherwise choose.
+
+   The visible words are aria-hidden with one readable copy alongside, so
+   nobody hears a sentence delivered one word at a time. */
+function Words({ text, className }: { text: string; className?: string }) {
+  const words = text.split(" ");
+  return (
+    <span className={className}>
+      <span className="vh">{text}</span>
+      {words.map((word, i) => (
+        /* Two wrappers, and the outer one is not optional. The space between
+           words has to live OUTSIDE the clip, because .wm clips its overflow
+           and a trailing space inside it is overflow — which is exactly how
+           this first rendered: "Idesigninterfacesthatgetoutoftheway." The
+           normal space between these outer spans is also what lets the line
+           wrap where the browser would have wrapped it anyway. */
+        <span key={i} aria-hidden="true">
+          <span className="wm">
+            <span className="wm__w" style={{ ["--i" as string]: i }}>
+              {word}
+            </span>
+          </span>
+          {i < words.length - 1 ? " " : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /* ── the work section ────────────────────────────────────────────────────
    One layout at every width: the grid below, two columns or one. */
 function Work() {
@@ -137,6 +174,38 @@ function Work() {
    and on a phone from whichever card is on screen. A header that knows where
    you are is a header doing work rather than introducing. */
 function WorkHead({ active }: { active: number }) {
+  const list = useRef<HTMLOListElement>(null);
+  const mark = useRef<HTMLSpanElement>(null);
+
+  /* ── the travelling mark ──
+     The index used to say which project you were looking at by recolouring
+     one of four things. Four states with nothing between them is a readout;
+     one mark that MOVES is a mechanism, and the movement is the part that
+     tells you the index and the grid are the same object seen twice.
+
+     Its position is read off the active item's own box rather than computed
+     from an assumed width, so it stays correct when the items wrap at narrow
+     widths or the clamp changes their size. */
+  useEffect(() => {
+    const ol = list.current;
+    const m = mark.current;
+    if (!ol || !m) return;
+    const place = () => {
+      const item = ol.children[active] as HTMLElement | undefined;
+      const frame = item?.querySelector<HTMLElement>(".wix__frame");
+      if (!frame) return;
+      m.style.setProperty("--ac", WORK[active]?.accent ?? "");
+      m.style.width = `${frame.offsetWidth}px`;
+      m.style.transform = `translate3d(${item!.offsetLeft}px, ${
+        frame.offsetTop + frame.offsetHeight
+      }px, 0)`;
+      m.style.opacity = "1";
+    };
+    place();
+    window.addEventListener("resize", place, { passive: true });
+    return () => window.removeEventListener("resize", place);
+  }, [active]);
+
   return (
     <div className="band band--ink workhead">
       <div className="band__in">
@@ -145,24 +214,27 @@ function WorkHead({ active }: { active: number }) {
         </Reveal>
         <Reveal delay={0.06}>
           <h2 className="head workhead__claim">
-            I design interfaces that get out of the way.
+            <Words text="I design interfaces that get out of the way." />
           </h2>
         </Reveal>
         <Reveal delay={0.14}>
           {/* wordless on purpose, so it is a legend rather than a second
               contents list — the names are right below it */}
-          <ol className="wix" aria-hidden="true">
-            {WORK.map((w, k) => (
-              <li
-                key={w.name}
-                className={`wix__item${k === active ? " is-on" : ""}`}
-                style={{ ["--ac" as string]: w.accent }}
-              >
-                <span className="wix__frame" />
-                <span className="wix__n">{w.n}</span>
-              </li>
-            ))}
-          </ol>
+          <div className="wixwrap">
+            <ol className="wix" ref={list} aria-hidden="true">
+              {WORK.map((w, k) => (
+                <li
+                  key={w.name}
+                  className={`wix__item${k === active ? " is-on" : ""}`}
+                  style={{ ["--ac" as string]: w.accent }}
+                >
+                  <span className="wix__frame" />
+                  <span className="wix__n">{w.n}</span>
+                </li>
+              ))}
+              <span className="wix__mark" ref={mark} aria-hidden="true" />
+            </ol>
+          </div>
         </Reveal>
       </div>
     </div>
@@ -437,12 +509,27 @@ function WorkCard({
         </button>
       </div>
 
+      {/* Reading order, and the numbers say so: index, name, rule, line,
+          link. The stagger is small enough that it reads as one arrival with
+          a direction rather than as five separate events. */}
       <div className="wcard__meta">
-        <span className="micro wcard__n">{w.n}</span>
-        <h3 className="wcard__name">{w.name}</h3>
+        <span className="micro wcard__n" style={{ ["--i" as string]: 0 }}>
+          {w.n}
+        </span>
+        <h3 className="wcard__name" style={{ ["--i" as string]: 1 }}>
+          <Words text={w.name} />
+        </h3>
         <div className="wcard__rule" aria-hidden="true" />
-        <p className="wcard__line">{w.line}</p>
-        <Link className="wcard__go link-wipe" to={w.to} data-mag viewTransition>
+        <p className="wcard__line" style={{ ["--i" as string]: 3 }}>
+          {w.line}
+        </p>
+        <Link
+          className="wcard__go link-wipe"
+          to={w.to}
+          data-mag
+          viewTransition
+          style={{ ["--i" as string]: 4 }}
+        >
           View case ↗
         </Link>
       </div>

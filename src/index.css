@@ -1559,6 +1559,138 @@
   ::view-transition-new(root) { animation: none; }
 }
 
+/* ── WORD MASKS ────────────────────────────────────────────────────────────
+   The hero's name settles in weight and tracking; this is the same gesture
+   applied to sentences. Each word sits on its own clip and rises into place,
+   staggered, so a headline is typeset rather than faded in.
+
+   The padding and the matching negative margin are load-bearing: overflow on
+   its own clips the descenders off y, g and p while the word is at rest, and
+   that is the detail that makes most implementations of this look subtly
+   wrong in a way nobody can name.
+
+   The gate is whatever .rv or .wcard already uses, so these inherit the
+   failsafe the rest of the page depends on rather than adding a third way to
+   decide whether something has arrived. */
+.wm {
+  display: inline-block;
+  overflow: clip;
+  vertical-align: top;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.wm__w {
+  display: inline-block;
+  transform: translateY(110%);
+  transition: transform 900ms var(--ease-ui);
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+.rv.is-in .wm__w,
+.wcard.is-in .wm__w { transform: none; }
+.rv.is-instant .wm__w,
+.wcard.is-instant .wm__w { transition: none; }
+
+/* one readable copy for anything that is not looking at the screen */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── THE TRAVELLING MARK ───────────────────────────────────────────────────
+   The index used to report the active project by recolouring one of four
+   things. Four states with nothing between them is a readout; one mark that
+   moves is a mechanism, and the movement is what says the index and the grid
+   below are the same four objects seen twice.
+
+   Its width and position come from the active item's own box, measured in
+   WorkHead, so wrapping at narrow widths cannot desynchronise it. */
+.wixwrap { position: relative; }
+.wix { position: relative; }
+.wix__mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  margin-top: 5px;
+  background: var(--ac, var(--on-ink));
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 760ms var(--ease-ui), width 760ms var(--ease-ui),
+    opacity 400ms var(--ease-ui), background 520ms var(--ease-ui);
+}
+/* It takes the colour of whichever project it is under, and --ac is set on
+   it from WorkHead rather than inherited: the accents live on the ITEMS, and
+   the mark is their sibling, so there is nothing for it to inherit from.
+   The first version of this rule tried `.wix__item:nth-child(1) ~ .wix__mark`
+   and simply painted it white every time, which is what a selector that
+   matches unconditionally does. */
+
+/* ── THE CARD FRAME OPENS ──────────────────────────────────────────────────
+   The frames used to fade up with the card. A curtain instead: the frame is
+   clipped to nothing and unveils downward, which is how a piece of media
+   gets presented rather than how a div appears.
+
+   clip-path and not height, because the frame's transform belongs to the
+   pointer loop and its layout must not move while four previews are running
+   inside it. */
+.wcard__frame {
+  clip-path: inset(0 0 100% 0 round 2px);
+  transition: clip-path 900ms var(--ease-ui) 60ms,
+    border-color 420ms var(--ease-ui);
+}
+.wcard.is-in .wcard__frame { clip-path: inset(0 0 0 0 round 2px); }
+.wcard.is-instant .wcard__frame { transition: none; }
+
+/* ── THE META, IN READING ORDER ────────────────────────────────────────────
+   Index, name, rule, line, link. --i is the step, and the stagger is small
+   enough that five elements read as one arrival with a direction rather than
+   as five events. */
+.wcard__n,
+.wcard__line,
+.wcard__go {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 620ms var(--ease-ui), transform 760ms var(--ease-ui);
+  transition-delay: calc(240ms + var(--i, 0) * 70ms);
+}
+.wcard.is-in .wcard__n,
+.wcard.is-in .wcard__line,
+.wcard.is-in .wcard__go { opacity: 1; transform: none; }
+.wcard.is-instant .wcard__n,
+.wcard.is-instant .wcard__line,
+.wcard.is-instant .wcard__go { transition: none; }
+
+/* The name settles in weight and tracking as it rises, which is the hero's
+   one typographic gesture used a third time. Geist is variable, so this is
+   real interpolation rather than a swap between two cut files. */
+.wcard__name {
+  font-variation-settings: "wght" 420;
+  transition: font-variation-settings 1100ms var(--ease-ui) 300ms;
+}
+.wcard.is-in .wcard__name { font-variation-settings: "wght" 500; }
+.wcard.is-instant .wcard__name { transition: none; }
+
+/* the word masks inside a card name start after the frame has opened */
+.wcard .wm__w { transition-delay: calc(300ms + var(--i, 0) * 55ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wm__w,
+  .wix__mark,
+  .wcard__frame,
+  .wcard__n,
+  .wcard__line,
+  .wcard__go,
+  .wcard__name { transition: none; }
+}
+
 /* ── THE INTRO ─────────────────────────────────────────────────────────────
    Five acts, and the last one is a match cut.
 
@@ -2033,18 +2165,12 @@
 
      Five steps now, each a real jump: 55 / 36 / 28 / 23 / 15. */
   .display { font-size: 36px; letter-spacing: -0.028em; }
-  .s32 /* The section's claim settles in weight the way the hero's name does — the
-   page has one typographic gesture and this is it, used twice. */
-.workhead__claim {
-  margin-top: 16px;
-  max-width: 18ch;
-  font-variation-settings: "wght" 420;
-  transition: font-variation-settings 1400ms var(--ease-ui) 200ms;
-}
-.rv.is-in .workhead__claim { font-variation-settings: "wght" 500; }
-.rv.is-instant .workhead__claim { transition: none; }
-
-.head { font-size: 23px; line-height: 1.16; letter-spacing: -0.02em; }
+  /* A stray `.s32` used to sit here, welded onto a duplicate of the claim
+     block by a marker-based deletion several commits before this one. It
+     parsed as `.s32 .workhead__claim` and re-declared four properties the
+     desktop rule already owned. Removed; the mobile type scale it was
+     interrupting is below. */
+  .head { font-size: 23px; line-height: 1.16; letter-spacing: -0.02em; }
   .wcard__name { font-size: 28px; }
   .big-link { font-size: 23px; }
 
