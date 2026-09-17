@@ -9,6 +9,7 @@ import { Work } from "./v2/Work";
 import { Contact } from "./v2/Contact";
 import "../styles/v2.css";
 import "../styles/v2-ported.css";
+import "../styles/v2-hero.css";
 
 /* --------------------------------------------------------------------------
    THE HOMEPAGE — the handoff design.
