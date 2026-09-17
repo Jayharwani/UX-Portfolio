@@ -1,0 +1,115 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   V2 — the handoff design.
+
+   Tokens and base, ported from reference/index.html per BUILD.md step 0.
+
+   EVERYTHING IS SCOPED UNDER .v2 FOR NOW, including the tokens, and that is
+   deliberate rather than tidy-minded. The current homepage is still live at
+   / and declares its own --accent; putting these on :root would repaint its
+   focus rings and its case-study pages the moment this file was imported.
+   Custom properties inherit, so scoping them to the page root costs nothing
+   and the two designs cannot reach each other.
+
+   When v2 becomes /, these move to :root and the scope comes off. SPEC §2
+   wants --accent set on document.documentElement at runtime; that lands with
+   the swap, not before.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.v2 {
+  --void: #05070C; /* page + canvas base */
+  --paper: #EEF1F5; /* text, cool white */
+  --gold: #E9C58B; /* accent 1 · route, Bumper */
+  --cyan: #5FD3D8; /* accent 2 · Signal */
+  --violet: #8B7BE8; /* accent 3 · ChronoWeave */
+  --mint: #5FD8A4; /* accent 4 · Headroom, "open" */
+  --accent: var(--mint); /* live, swapped at runtime */
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --gut: clamp(22px, 5vw, 64px);
+
+  position: relative;
+  min-height: 100svh;
+  background: var(--void);
+  color: var(--paper);
+  font-family: "Geist", -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.v2 *,
+.v2 *::before,
+.v2 *::after {
+  box-sizing: border-box;
+}
+
+.v2 .mono {
+  font-family: "Geist Mono", ui-monospace, monospace;
+}
+
+.v2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── the field ──
+   One fixed canvas behind everything. z-index 0, so every layer below is
+   numbered relative to it and nothing needs a z-index race. */
+.v2 .field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+
+/* ── grain ──
+   Inset -150% so the animation can translate it without ever showing an
+   edge. steps(3) rather than a smooth tween: film grain resamples, it does
+   not slide. */
+.v2 .grain {
+  position: fixed;
+  inset: -150%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  animation: v2-grain 0.6s steps(3) infinite;
+}
+
+@keyframes v2-grain {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-2%, 2%); }
+  66% { transform: translate(2%, -2%); }
+  100% { transform: translate(1%, 1%); }
+}
+
+/* ── vignette ──
+   Weighted off-centre (58% / 34%), which is what stops it reading as a
+   filter applied to a rectangle and starts it reading as a lens. */
+.v2 .vig {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    125% 105% at 58% 34%,
+    transparent 22%,
+    rgba(3, 5, 9, 0.58) 70%,
+    rgba(3, 5, 9, 0.94) 100%
+  );
+}
+
+/* content sits above the canvas, the grain and the vignette */
+.v2 .page {
+  position: relative;
+  z-index: 4;
+}
+
+.v2 :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2 .grain { animation: none; }
+}

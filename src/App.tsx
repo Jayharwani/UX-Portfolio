@@ -21,6 +21,10 @@ const CardsPreview = lazy(() =>
   import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
 );
 
+/* The handoff design, built at /v2 until it is ready to replace /. Lazy, so
+   its canvas engine never reaches the current homepage's bundle. */
+const HomeV2 = lazy(() => import("./components/HomeV2").then((m) => ({ default: m.HomeV2 })));
+
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0E16" }}>
@@ -53,6 +57,7 @@ export default function App() {
             <Route path="/headroom" element={<HeadroomPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/cards" element={<CardsPreview />} />
+            <Route path="/v2" element={<HomeV2 />} />
           </Routes>
         </Suspense>
       </div>

@@ -5,3 +5,7 @@ dist
 *.local
 .env
 .env.*
+
+# a working copy of reference/index.html, served by vite so it can be compared
+# against during the build. The committed source of truth is reference/.
+public/_ref/
