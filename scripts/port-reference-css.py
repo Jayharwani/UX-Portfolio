@@ -93,6 +93,31 @@ def walk(block: str) -> str:
 
 ported = walk(css)
 
+# ── collision rename ───────────────────────────────────────────────────────
+# Scoping the ported rules under .v2 stops them reaching the rest of the site.
+# It does NOT stop the rest of the site reaching THEM: the old design's global
+# stylesheet declares bare `.rv`, `.work`, `.route` and `.foot`, and the
+# reference happens to use all four names. A bare `.rv { opacity: 0 }` landing
+# on a v2 section blanks it outright, and no amount of specificity on our side
+# helps, because the properties that leak are the ones we never declare.
+# So the names themselves have to differ.
+COLLIDE = {"rv": "v2rv", "work": "v2work", "route": "v2route", "foot": "v2foot"}
+
+
+def rename_classes(sel: str) -> str:
+    for old, new in COLLIDE.items():
+        sel = re.sub(rf"\.{old}\b", f".{new}", sel)
+    return sel
+
+
+lines = []
+for line in ported.split(chr(10)):
+    head, brace, rest = line.partition("{")
+    if brace and not head.lstrip().startswith("@"):
+        head = rename_classes(head)
+    lines.append(head + brace + rest)
+ported = chr(10).join(lines)
+
 # rename every keyframe reference so the scoped copies are the ones used
 for name in kf_names:
     ported = re.sub(rf"(animation\s*:[^;{{}}]*?\b){re.escape(name)}\b", rf"\1{KF_PREFIX}{name}", ported)
@@ -111,6 +136,8 @@ header = f"""/* ─────────────────────�
      the universal reset is scoped, so it cannot reach the rest of the site
      all {len(kf_names)} keyframes are renamed with a v2- prefix, because the current
        site declares sixteen of its own and several names collide
+     {", ".join(COLLIDE)} are renamed too: the old stylesheet declares those
+       class names globally, and a bare .rv {{ opacity: 0 }} blanks a section
    ────────────────────────────────────────────────────────────────────────── */
 
 """

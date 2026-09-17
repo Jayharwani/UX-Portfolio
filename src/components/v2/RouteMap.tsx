@@ -129,7 +129,7 @@ export function RouteMap() {
 
   return (
     <section
-      className={`route${revealed ? " rv" : ""}${started ? " in" : ""}`}
+      className={`v2route${revealed ? " v2rv" : ""}${started ? " in" : ""}`}
       id="route"
       ref={section}
     >

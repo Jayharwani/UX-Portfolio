@@ -11,6 +11,8 @@
      the universal reset is scoped, so it cannot reach the rest of the site
      all 16 keyframes are renamed with a v2- prefix, because the current
        site declares sixteen of its own and several names collide
+     rv, work, route, foot are renamed too: the old stylesheet declares those
+       class names globally, and a bare .rv { opacity: 0 } blanks a section
    ────────────────────────────────────────────────────────────────────────── */
 
 .v2 {
@@ -84,8 +86,8 @@
 .v2 /* section head reveal */
 .eyebrow {font-size:10.5px;letter-spacing:.12em;color:rgba(238,241,245,.35);margin-bottom:34px;overflow:hidden}
 .v2 .eyebrow span {display:inline-block;transform:translateY(110%);transition:transform .9s var(--ease-out)}
-.v2 .rv .eyebrow span {transform:none}
-.v2 .route {padding:clamp(80px,12vh,140px) 0}
+.v2 .v2rv .eyebrow span {transform:none}
+.v2 .v2route {padding:clamp(80px,12vh,140px) 0}
 .v2 .rgrid {display:grid;grid-template-columns:1fr;gap:56px;align-items:center}
 @media (min-width:980px) {
 .v2 .rgrid {grid-template-columns:1.25fr .85fr;gap:70px}
@@ -126,7 +128,7 @@
 .v2 .in .tools i {animation:v2-fade .5s var(--ease-out) forwards;animation-delay:calc(1.8s + var(--i)*70ms)}
 .v2 .tools svg {width:22px;height:22px;color:rgba(238,241,245,.42);transition:color .35s var(--ease-out)}
 .v2 .tools i:hover svg {color:var(--gold)}
-.v2 .work {padding:clamp(80px,12vh,150px) 0}
+.v2 .v2work {padding:clamp(80px,12vh,150px) 0}
 .v2 .grid {display:grid;grid-template-columns:1fr;gap:0}
 .v2 .list {display:flex;flex-direction:column}
 .v2 .item {position:relative;display:block;padding:32px 0;border-bottom:1px solid rgba(238,241,245,.09);
@@ -251,9 +253,9 @@
 .v2 .credits {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:2px 48px;margin-top:64px;padding-top:26px;border-top:1px solid rgba(238,241,245,.09)}
 .v2 .credits div {display:flex;justify-content:space-between;gap:20px;padding:9px 0;font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:rgba(238,241,245,.3)}
 .v2 .credits b {font-weight:400;color:rgba(238,241,245,.62);text-align:right}
-.v2 .foot {display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:34px;font-size:11.5px;color:rgba(238,241,245,.38)}
-.v2 .foot a {transition:color .3s}
-.v2 .foot a:hover {color:var(--gold)}
+.v2 .v2foot {display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:34px;font-size:11.5px;color:rgba(238,241,245,.38)}
+.v2 .v2foot a {transition:color .3s}
+.v2 .v2foot a:hover {color:var(--gold)}
 .v2 /* ===== contact ===== */
 .bigline {font-weight:200;font-size:clamp(2.9rem,10vw,8.4rem);line-height:.88;letter-spacing:-.05em;margin-bottom:clamp(44px,7vh,80px)}
 .v2 .bigline .ln {display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}

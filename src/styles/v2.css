@@ -128,3 +128,21 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ── the work grid needs real room ──
+   `.grid` goes two-column at 1000px, but a work row's own min-content — a
+   51px title beside a nowrap tag — is wider than the 1fr share until roughly
+   1240px. The column refuses to shrink below it, the grid overflows its
+   container, and the sticky preview panel is pushed past the page gutter and
+   clipped. The reference only ever ran wide enough for that not to show.
+
+   Higher specificity than the generated file on purpose: v2-ported.css is
+   imported after this one, so matching its .v2 .grid would lose the tie. */
+@media (min-width: 1000px) and (max-width: 1239.98px) {
+  .v2 .v2work .grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .v2 .v2work .preview { display: none; }
+  .v2 .v2work .m-shot { display: block; }
+}

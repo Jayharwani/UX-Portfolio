@@ -75,7 +75,23 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
     try_ = (pmx - 0.5) * 0.55; trx = (pmy - 0.5) * -0.35;
   };
   const onScroll = () => { tScroll = window.scrollY; };
-  const onVis = () => { running = !document.hidden; if (running) raf = requestAnimationFrame(frame); };
+  /* Pausing on hidden is CLAUDE.md rule 1. Resuming it needs care: a browser
+     stops delivering rAF while the tab is hidden, so the callback queued by
+     the last frame is still PENDING when we come back. Scheduling a new one
+     without cancelling that leaves two loops running, and since `frame`
+     advances time by a fixed step, two loops is literally double speed —
+     then four, then eight, once per hide/show cycle. The cancel and the
+     `running` guard are what keep it at one. */
+  const onVis = () => {
+    if (document.hidden) {
+      running = false;
+      cancelAnimationFrame(raf);
+      return;
+    }
+    if (running) return;
+    running = true;
+    raf = requestAnimationFrame(frame);
+  };
 
   function rot(x: number, y: number, z: number, sy: number, cyr: number, sx: number, cxr: number) {
     const x1 = x * cyr - z * sy, z1 = x * sy + z * cyr;

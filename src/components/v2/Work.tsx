@@ -189,7 +189,7 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
   };
 
   return (
-    <section className={`work${revealed ? " rv" : ""}`} id="work" ref={section}>
+    <section className={`v2work${revealed ? " v2rv" : ""}`} id="work" ref={section}>
       <div className="eyebrow">
         <span>SELECTED WORK</span>
       </div>

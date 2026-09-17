@@ -61,7 +61,7 @@ export function Contact() {
   const [section, revealed] = useReveal<HTMLElement>();
 
   return (
-    <section className={`end${revealed ? " rv in" : ""}`} id="end" ref={section}>
+    <section className={`end${revealed ? " v2rv in" : ""}`} id="end" ref={section}>
       <div className="eyebrow">
         <span>AVAILABLE NOW</span>
       </div>
@@ -121,7 +121,7 @@ export function Contact() {
         ))}
       </div>
 
-      <div className="foot">
+      <div className="v2foot">
         <span>Jay Harwani</span>
         <span className="mono" style={{ marginLeft: "auto" }}>
           2026
