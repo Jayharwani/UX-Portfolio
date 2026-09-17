@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router";
 import { useReducedMotion } from "motion/react";
 import Hero from "./home/Hero";
 import Intro from "./home/Intro";
@@ -9,6 +8,7 @@ import { ToolRow } from "./home/toolmarks";
 import { useMagnetic } from "./home/magnetic";
 import { useHeartbeat } from "./home/useHeartbeat";
 import WorkField from "./home/WorkField";
+import { ProjectCard3D, Depth } from "./projects/ProjectCard";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -408,7 +408,12 @@ function WorkGrid({
   }, [reduce, onActive]);
 
   return (
-    <ol className="wgrid" ref={listRef}>
+    /* ONE perspective for all four cards, on the list rather than on each
+       card. Per-card perspective gives every card its own vanishing point at
+       its own centre, so they all lean toward their own middles and the grid
+       reads as four unrelated skews. Shared, they lean like objects on a desk
+       seen from one place. */
+    <ol className="wgrid" ref={listRef} style={{ perspective: "1200px" }}>
       {WORK.map((w, k) => (
         <WorkCard key={w.name} w={w} seen={seen[k]} live={live[k]} />
       ))}
@@ -427,101 +432,62 @@ function WorkCard({
 }) {
   const [open, setOpen] = useState(false);
   const code = sourceOf(w.fn);
-
-  /* ── THE HEARTBEAT ──
-     Each preview told its story once and then sat still, so a grid of four
-     "live" products was motionless within a second of arriving. They replay
-     now, on their own clock.
-
-     The remount is the replay: changing the key throws the component away
-     and builds it again from its resting state, which is exactly what its
-     entrance animation is written to start from. That beats threading a
-     reset prop through four components that each define "the beginning"
-     differently.
-
-     setInterval rather than a frame loop, because this is a schedule and not
-     an animation — and because it stops dead when the card is off screen or
-     its own source is showing, which is the only optimisation here that
-     matters. */
   const beat = useHeartbeat(live && !open, w.beat);
 
   return (
     <li className={`wcard${seen ? " is-in" : ""}`} style={{ ["--ac" as string]: w.accent }}>
-      <div className={`wcard__frame${open ? " is-src" : ""}`}>
-        {/* aria-hidden: the link in the meta row already says this, and
-            saying it twice to a screen reader is worse than not saying it */}
-        <span className="wcard__tag" aria-hidden="true">
-          View case <span className="wcard__tag-arrow">↗</span>
-        </span>
+      <ProjectCard3D
+        number={w.n}
+        title={w.name}
+        description={w.line}
+        href={w.to}
+        accent={w.accent}
+        overlay={
+          /* Above the card's own link, so it stays pressable. Everything else
+             in the frame is picture; this is a control. */
+          <button
+            type="button"
+            className="srcbtn"
+            onClick={() => setOpen((v) => !v)}
+            aria-pressed={open}
+          >
+            {open ? "Live" : "Source"}
+          </button>
+        }
+      >
+        {/* The ground: a plane that stays ON the card, so the preview floating
+            above it has something to be parallax AGAINST. Two planes is the
+            minimum for depth to exist at all. */}
+        <div className="absolute inset-0 bg-[#070A0E]" aria-hidden="true" />
 
-        <div className="wcard__art">
-          {/* the preview stops while its own source is over it: two things
-              animating in the same frame, one of them hidden, is work nobody
-              can see */}
-          <w.Preview key={beat} active={live && !open} />
-        </div>
-
-        {/* ── THE SOURCE PANEL, WHICH USED TO BE A 3D FLIP ──
-            The flip rotated the frame to show the component's source on its
-            back. It was broken in two ways and only one was visible.
-
-            The visible one: .flip__face--front held an animating preview, and
-            an animated descendant gets its own compositing layer, which
-            defeats backface-visibility on its ancestor. The back face stayed
-            painted THROUGH the front, mirrored, so the card showed reversed
-            code over a live preview. Adding the hover tag gave the frame one
-            more animating layer and turned an occasional glitch into a
-            reliable one.
-
-            So there is no third dimension here any more. The panel is a
-            clip-path over the art. Nothing rotates, nothing needs a backface,
-            and there is no compositing arrangement that can turn it inside
-            out. */}
-        <div className="wcard__src" aria-hidden={!open} {...(open ? {} : { inert: "" })}>
-          <pre className="src">
-            <Highlight code={code} />
-          </pre>
-          <div className="src__foot">
-            <span className="micro">
-              {w.fn}.tsx &middot; {lineCount(code)} lines &middot; running on the other side
-            </span>
+        {/* The live preview, held 30px off the card. It is a real animated
+            recreation of the product rather than a picture of one, and it
+            replays on its own clock — which is why it is worth floating. */}
+        <Depth z={30} className="absolute inset-0">
+          <div className="wcard__art absolute inset-0">
+            <w.Preview key={beat} active={live && !open} />
           </div>
-        </div>
+        </Depth>
 
-        <button
-          type="button"
-          className="srcbtn"
-          onClick={() => setOpen((v) => !v)}
-          aria-pressed={open}
-        >
-          {open ? "Live" : "Source"}
-        </button>
-      </div>
-
-      {/* Reading order, and the numbers say so: index, name, rule, line,
-          link. The stagger is small enough that it reads as one arrival with
-          a direction rather than as five separate events. */}
-      <div className="wcard__meta">
-        <span className="micro wcard__n" style={{ ["--i" as string]: 0 }}>
-          {w.n}
-        </span>
-        <h3 className="wcard__name" style={{ ["--i" as string]: 1 }}>
-          <Words text={w.name} />
-        </h3>
-        <div className="wcard__rule" aria-hidden="true" />
-        <p className="wcard__line" style={{ ["--i" as string]: 3 }}>
-          {w.line}
-        </p>
-        <Link
-          className="wcard__go link-wipe"
-          to={w.to}
-          data-mag
-          viewTransition
-          style={{ ["--i" as string]: 4 }}
-        >
-          View case ↗
-        </Link>
-      </div>
+        {/* the source, nearer still, so opening it reads as something arriving
+            in front of the preview rather than replacing it */}
+        <Depth z={46} className="absolute inset-0">
+          <div
+            className={`wcard__src${open ? " is-open" : ""}`}
+            aria-hidden={!open}
+            {...(open ? {} : { inert: "" })}
+          >
+            <pre className="src">
+              <Highlight code={code} />
+            </pre>
+            <div className="src__foot">
+              <span className="micro">
+                {w.fn}.tsx &middot; {lineCount(code)} lines &middot; running on the other side
+              </span>
+            </div>
+          </div>
+        </Depth>
+      </ProjectCard3D>
     </li>
   );
 }

@@ -1336,16 +1336,15 @@
   clip-path: inset(100% 0 0 0 round 2px);
   transition: clip-path 620ms var(--ease-ui);
 }
-.wcard__frame.is-src .wcard__src { clip-path: inset(0 0 0 0 round 2px); }
+/* The panel now lives inside the 3D card and carries its own state, because
+   the frame it used to hang off is gone. */
+.wcard__src.is-open { clip-path: inset(0 0 0 0 round 2px); }
 
 /* the art steps back rather than simply being covered, so the panel reads as
    arriving in front of something rather than replacing it */
 .wcard__art {
   transition: transform 620ms var(--ease-ui), opacity 620ms var(--ease-ui);
 }
-.wcard__frame.is-src .wcard__art { transform: scale(0.97); opacity: 0.4; }
-/* and the cursor tag has nothing to point at while the source is up */
-.wcard__frame.is-src .wcard__tag { opacity: 0; }
 
 /* the source face */
 .src {

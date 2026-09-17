@@ -62,6 +62,10 @@ export interface ProjectCard3DProps {
   /** hex or css colour that tints the glare and the hover border */
   accent?: string;
   className?: string;
+  /** Controls that must sit ABOVE the full-card link and stay clickable —
+      a Source toggle, say. Anything passed as children sits under the link
+      and is therefore decoration; anything passed here is not. */
+  overlay?: ReactNode;
 }
 
 export function ProjectCard3D({
@@ -72,6 +76,7 @@ export function ProjectCard3D({
   children,
   accent = "#ffffff",
   className = "",
+  overlay,
 }: ProjectCard3DProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
@@ -194,14 +199,18 @@ export function ProjectCard3D({
         </div>
 
         {/* ── the hit target ──
-            One link covering the card, above everything, so the whole surface
-            is clickable and there is exactly ONE thing in the tab order per
-            card. The caption above is not a link; this is. */}
+            One link covering the card, so the whole surface is clickable and
+            there is exactly ONE thing in the tab order per card by default.
+            The caption above is not a link; this is. */}
         <Link
           to={href}
           aria-label={`Open the ${title} case study`}
           className="absolute inset-0 z-30 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
         />
+
+        {/* Above the link, so it can still be pressed. Anything here is a
+            real control rather than part of the picture. */}
+        {overlay ? <div className="absolute inset-0 z-40 [transform-style:preserve-3d]">{overlay}</div> : null}
       </motion.div>
     </div>
   );
