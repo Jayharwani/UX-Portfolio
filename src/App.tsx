@@ -4,7 +4,6 @@ import { lazy, Suspense } from "react";
    references it, so it and everything it pulled in — the particle canvas,
    the WebGL hero, matter-js — tree-shake out of the bundle entirely, and it
    is one import away if this direction is ever reversed. */
-import { Home } from "./components/Home";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
@@ -21,8 +20,8 @@ const CardsPreview = lazy(() =>
   import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
 );
 
-/* The handoff design, built at /v2 until it is ready to replace /. Lazy, so
-   its canvas engine never reaches the current homepage's bundle. */
+/* The handoff design. It IS the homepage now; the previous one is still in
+   components/Home.tsx, one import away, and in git if this is ever reversed. */
 const HomeV2 = lazy(() => import("./components/HomeV2").then((m) => ({ default: m.HomeV2 })));
 
 function RouteFallback() {
@@ -50,14 +49,13 @@ export default function App() {
       <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomeV2 />} />
             <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/cards" element={<CardsPreview />} />
-            <Route path="/v2" element={<HomeV2 />} />
           </Routes>
         </Suspense>
       </div>
