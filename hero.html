@@ -154,6 +154,10 @@ const C = {
   "PARALLAX": 0.78,
   "EASE": 0.045,
   "DRIFT": 0.09,
+  "SCATTER_TILT": 1.05,
+  "SWEEP_FROM": -17,
+  "SWEEP_TO": 3,
+  "SWEEP_WIDTH": 0.5,
   "BLOOM": 0.2,
   "BLOOM_RADIUS": 0.8,
   "BLOOM_THRESHOLD": 0.42,
@@ -186,6 +190,11 @@ const VERT = `
   uniform float uFade;
   uniform float uNear;
   uniform float uFar;
+  /* a plane of light travelling out through the stack along z. One
+     exponential: whatever is near it brightens and lifts. */
+  uniform float uSweep;
+  uniform float uSweepAmp;
+  uniform float uSweepWidth;
 
   varying vec3 vColor;
   varying float vAlpha;
@@ -206,11 +215,18 @@ const VERT = `
     float d = max(-mv.z, 0.001);
     gl_Position = projectionMatrix * mv;
 
-    vColor = aColor;
+    /* THE SWEEP. A band of light passing through the stack from behind,
+       reaching the front as the camera arrives. It is what gives the tumble
+       something to be lit BY — frames catching a light as it goes past read
+       as objects in a room, where the same frames at a constant brightness
+       read as a diagram. */
+    float sw = exp(-pow((p.z - uSweep) * uSweepWidth, 2.0)) * uSweepAmp;
+
+    vColor = aColor + vec3(sw * 0.85);
     /* atmospheric perspective: the back of the stack fades toward the page
        colour rather than staying crisp and small */
     float depth = clamp((uFar - d) / (uFar - uNear), 0.0, 1.0);
-    vAlpha = uFade * aWeight * (0.12 + 0.88 * depth * depth);
+    vAlpha = uFade * aWeight * (0.12 + 0.88 * depth * depth) * (1.0 + sw * 1.8);
   }`;
 const FRAG = `
   precision mediump float;
@@ -239,6 +255,7 @@ const FinishShader = {
     uniform float uTime;
     uniform float uAberration;
       uniform float uVignette;
+    uniform float uMotion;
     varying vec2 vUv;
 
     void main() {
@@ -247,11 +264,31 @@ const FinishShader = {
       /* scaled by r², so the fringing lives at the edges of the frame the way
          it does in a real lens and never touches the type in the middle */
       vec2 off = c * r2 * uAberration * 0.06;
-      vec4 mid = texture2D(tDiffuse, vUv);
+
+      /* ── RADIAL MOTION BLUR ──
+         A rendered frame is an instant; a filmed frame is an exposure over
+         time. That single difference is why CG at thirty frames looks
+         staggered where footage at thirty frames does not, and it is the
+         cheapest thing on this page that buys the word "cinematic".
+
+         Six taps along the vector from the centre, which is the right shape
+         for a camera travelling down its own axis: nothing smears at the
+         centre of frame and the edges streak. uMotion is driven by the
+         camera's actual speed, so this cannot be visible once it stops. */
+      vec4 mid = vec4(0.0);
+      for (int i = 0; i < 6; i++) {
+        float k = float(i) / 5.0;
+        mid += texture2D(tDiffuse, vUv - c * uMotion * k);
+      }
+      mid /= 6.0;
+
       vec3 col;
       col.r = texture2D(tDiffuse, vUv + off).r;
       col.g = mid.g;
       col.b = texture2D(tDiffuse, vUv - off).b;
+      /* the blurred pass carries the red and blue too once it is doing
+         anything, or the fringing would stay sharp against a smeared frame */
+      col = mix(col, mid.rgb, clamp(uMotion * 22.0, 0.0, 1.0));
 
       /* THE VIGNETTE MULTIPLIES ALPHA, NOT COLOUR. Multiplying colour fades
          the frame toward BLACK, which is a different colour from the page and
@@ -283,12 +320,33 @@ function build(count, aspect, seed) {
   const tan = Math.tan(C.FOV / 2 * Math.PI / 180);
   const hair = new THREE.Color(HAIR);
   const accents = ACCENTS.map((a) => new THREE.Color(a));
+  let fx = 0;
+  let fy = 0;
+  let fz = 0;
+  let fcx = 0;
+  let fcy = 0;
+  let sx = 0;
+  let cx1 = 1;
+  let sy = 0;
+  let cy1 = 1;
+  let sz = 0;
+  let cz1 = 1;
+  const place = (px, py, pz) => {
+    const X = px - fcx;
+    const Y = py - fcy;
+    const y1 = Y * cx1;
+    const z1 = Y * sx;
+    const x2 = X * cy1 + z1 * sy;
+    const z2 = -X * sy + z1 * cy1;
+    const x3 = x2 * cz1 - y1 * sz;
+    const y3 = x2 * sz + y1 * cz1;
+    return [fcx + x3 + fx, fcy + y3 + fy, pz + z2 + fz];
+  };
   const seg = (ax, ay, bx, by, z, c, w, ph) => {
     pos.push(ax, ay, z, bx, by, z);
-    const sz = z - C.SCATTER_Z * (0.35 + rand() * 0.65);
-    const sx = (rand() * 2 - 1) * C.SCATTER_XY;
-    const sy = (rand() * 2 - 1) * C.SCATTER_XY;
-    start.push(ax + sx, ay + sy, sz, bx + sx, by + sy, sz);
+    const A = place(ax, ay, z);
+    const B = place(bx, by, z);
+    start.push(A[0], A[1], A[2], B[0], B[1], B[2]);
     for (let k = 0; k < 2; k++) {
       col.push(c.r, c.g, c.b);
       phase.push(ph);
@@ -312,6 +370,20 @@ function build(count, aspect, seed) {
     }
     const x = cx * halfW;
     const y = cy * halfH;
+    fcx = x;
+    fcy = y;
+    fz = -C.SCATTER_Z * (0.35 + rand() * 0.65);
+    fx = (rand() * 2 - 1) * C.SCATTER_XY;
+    fy = (rand() * 2 - 1) * C.SCATTER_XY;
+    const tiltX = (rand() * 2 - 1) * C.SCATTER_TILT;
+    const tiltY = (rand() * 2 - 1) * C.SCATTER_TILT;
+    const tiltZ = (rand() * 2 - 1) * C.SCATTER_TILT * 0.45;
+    sx = Math.sin(tiltX);
+    cx1 = Math.cos(tiltX);
+    sy = Math.sin(tiltY);
+    cy1 = Math.cos(tiltY);
+    sz = Math.sin(tiltZ);
+    cz1 = Math.cos(tiltZ);
     const ratios = [1.6, 1.33, 1, 0.75];
     const ratio = ratios[Math.floor(rand() * ratios.length)];
     const w = scale * ratio;
@@ -372,7 +444,14 @@ const uniforms = {
   uAssemble: { value: REDUCE ? 1 : 0 },
   uFade: { value: REDUCE ? 1 : 0 },
   uNear: { value: C.CAMERA_Z - C.Z_NEAR },
-  uFar: { value: C.CAMERA_Z - C.Z_FAR }
+  uFar: { value: C.CAMERA_Z - C.Z_FAR },
+  /* The standalone reference does not run the title move — that lives in the
+     component's frame loop, which is not extracted — but the shader it DOES
+     share now declares these, so they have to exist or three.js renders with
+     undefined uniforms. Amp zero means the sweep contributes nothing here. */
+  uSweep: { value: C.SWEEP_FROM },
+  uSweepAmp: { value: 0 },
+  uSweepWidth: { value: C.SWEEP_WIDTH }
 };
 const material = new THREE.ShaderMaterial({
   uniforms, vertexShader: VERT, fragmentShader: FRAG,

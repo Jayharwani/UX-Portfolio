@@ -56,6 +56,8 @@ const KEYS = [
   "COUNT", "COUNT_SMALL", "Z_NEAR", "Z_FAR", "CAMERA_Z", "FOV", "OVERFILL",
   "GRID", "JITTER", "CLEAR_BAND", "SIZE_MIN", "SIZE_MAX",
   "PARALLAX", "EASE", "DRIFT",
+  /* the title move, and SCATTER_TILT which the extracted build() reads */
+  "SCATTER_TILT", "SWEEP_FROM", "SWEEP_TO", "SWEEP_WIDTH",
   "BLOOM", "BLOOM_RADIUS", "BLOOM_THRESHOLD", "EXPOSURE",
   "ABERRATION", "VIGNETTE",
   "DEPART_AT", "DEPART_BY",

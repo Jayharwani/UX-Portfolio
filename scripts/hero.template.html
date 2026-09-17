@@ -188,7 +188,14 @@ const uniforms = {
   uAssemble: { value: REDUCE ? 1 : 0 },
   uFade: { value: REDUCE ? 1 : 0 },
   uNear: { value: C.CAMERA_Z - C.Z_NEAR },
-  uFar: { value: C.CAMERA_Z - C.Z_FAR }
+  uFar: { value: C.CAMERA_Z - C.Z_FAR },
+  /* The standalone reference does not run the title move — that lives in the
+     component's frame loop, which is not extracted — but the shader it DOES
+     share now declares these, so they have to exist or three.js renders with
+     undefined uniforms. Amp zero means the sweep contributes nothing here. */
+  uSweep: { value: C.SWEEP_FROM },
+  uSweepAmp: { value: 0 },
+  uSweepWidth: { value: C.SWEEP_WIDTH }
 };
 const material = new THREE.ShaderMaterial({
   uniforms, vertexShader: VERT, fragmentShader: FRAG,

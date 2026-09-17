@@ -110,9 +110,35 @@ const C = {
      stopping down as it finds focus. Every one of these is an ease from a
      punch value to the value the rest of the page already uses, so there is
      exactly one place to tune the whole sequence. */
-  CINE_MS: 4300,
+  CINE_MS: 5200,
+  /* THE CAMERA ARCS, IT DOES NOT ZOOM. A straight dolly down the z axis is
+     a zoom with extra steps: the parallax between near and far never
+     changes, so nothing tells you the camera is a body moving through a
+     place. Starting off-axis and arriving on-axis makes the near frames
+     sweep across the far ones, and that sweep IS the depth. */
   CAM_START_Z: -7.2, // inside the stack, looking out through it
-  CAM_ROLL: 4.5, // degrees, unwinding to level
+  CAM_START_X: 3.4,
+  CAM_START_Y: -1.9,
+  CAM_ROLL: 7.0, // degrees, unwinding to level
+
+  /* how far a frame is tumbled when it is still scattered, in radians. The
+     frames used to translate into place; now they rotate into it, which is
+     the difference between pieces sliding on a plane and objects arriving
+     in a space. */
+  SCATTER_TILT: 1.05,
+
+  /* the sweep: a plane of light travelling out through the stack along z,
+     brightening whatever it passes. One exponential in the vertex shader. */
+  SWEEP_FROM: -17.0,
+  SWEEP_TO: 3.0,
+  SWEEP_WIDTH: 0.5, // smaller is a wider, softer band
+
+  /* radial blur while the camera is moving. This is the single thing that
+     separates filmed motion from rendered motion: a film frame is an
+     exposure over time and a rendered frame is an instant, which is why CG
+     at 30fps looks staggered where footage does not. Driven by the camera's
+     own speed, so it cannot be visible once the camera is at rest. */
+  MOTION: 0.055,
   PUNCH_EXPOSURE: 1.85,
   PUNCH_BLOOM: 0.58,
   /* 0.20, not the 0.55 this started at. The resting value is 0.09 and the
@@ -163,6 +189,11 @@ const VERT = `
   uniform float uFade;
   uniform float uNear;
   uniform float uFar;
+  /* a plane of light travelling out through the stack along z. One
+     exponential: whatever is near it brightens and lifts. */
+  uniform float uSweep;
+  uniform float uSweepAmp;
+  uniform float uSweepWidth;
 
   varying vec3 vColor;
   varying float vAlpha;
@@ -183,11 +214,18 @@ const VERT = `
     float d = max(-mv.z, 0.001);
     gl_Position = projectionMatrix * mv;
 
-    vColor = aColor;
+    /* THE SWEEP. A band of light passing through the stack from behind,
+       reaching the front as the camera arrives. It is what gives the tumble
+       something to be lit BY — frames catching a light as it goes past read
+       as objects in a room, where the same frames at a constant brightness
+       read as a diagram. */
+    float sw = exp(-pow((p.z - uSweep) * uSweepWidth, 2.0)) * uSweepAmp;
+
+    vColor = aColor + vec3(sw * 0.85);
     /* atmospheric perspective: the back of the stack fades toward the page
        colour rather than staying crisp and small */
     float depth = clamp((uFar - d) / (uFar - uNear), 0.0, 1.0);
-    vAlpha = uFade * aWeight * (0.12 + 0.88 * depth * depth);
+    vAlpha = uFade * aWeight * (0.12 + 0.88 * depth * depth) * (1.0 + sw * 1.8);
   }
 `;
 
@@ -207,6 +245,7 @@ const FinishShader = {
     uTime: { value: 0 },
     uAberration: { value: C.ABERRATION },
     uVignette: { value: C.VIGNETTE },
+    uMotion: { value: 0 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -221,6 +260,7 @@ const FinishShader = {
     uniform float uTime;
     uniform float uAberration;
       uniform float uVignette;
+    uniform float uMotion;
     varying vec2 vUv;
 
     void main() {
@@ -229,11 +269,31 @@ const FinishShader = {
       /* scaled by r², so the fringing lives at the edges of the frame the way
          it does in a real lens and never touches the type in the middle */
       vec2 off = c * r2 * uAberration * 0.06;
-      vec4 mid = texture2D(tDiffuse, vUv);
+
+      /* ── RADIAL MOTION BLUR ──
+         A rendered frame is an instant; a filmed frame is an exposure over
+         time. That single difference is why CG at thirty frames looks
+         staggered where footage at thirty frames does not, and it is the
+         cheapest thing on this page that buys the word "cinematic".
+
+         Six taps along the vector from the centre, which is the right shape
+         for a camera travelling down its own axis: nothing smears at the
+         centre of frame and the edges streak. uMotion is driven by the
+         camera's actual speed, so this cannot be visible once it stops. */
+      vec4 mid = vec4(0.0);
+      for (int i = 0; i < 6; i++) {
+        float k = float(i) / 5.0;
+        mid += texture2D(tDiffuse, vUv - c * uMotion * k);
+      }
+      mid /= 6.0;
+
       vec3 col;
       col.r = texture2D(tDiffuse, vUv + off).r;
       col.g = mid.g;
       col.b = texture2D(tDiffuse, vUv - off).b;
+      /* the blurred pass carries the red and blue too once it is doing
+         anything, or the fringing would stay sharp against a smeared frame */
+      col = mix(col, mid.rgb, clamp(uMotion * 22.0, 0.0, 1.0));
 
       /* THE VIGNETTE MULTIPLIES ALPHA, NOT COLOUR. Multiplying colour fades
          the frame toward BLACK, which is a different colour from the page and
@@ -283,6 +343,41 @@ function build(count: number, aspect: number, seed: number): Built {
   const hair = new THREE.Color(HAIR);
   const accents = ACCENTS.map((a) => new THREE.Color(a));
 
+  /* ── THE FRAME CURRENTLY BEING WRITTEN ──
+     These are set once per frame in the loop below and read by every seg()
+     call that frame makes. That is the whole point: the scatter used to be
+     rolled inside seg(), so each of a frame's nine or ten segments flew in
+     from a different place and a frame arrived as a pile of unrelated lines.
+     Now a frame is displaced and TUMBLED as one rigid object, and it rotates
+     into alignment rather than sliding into it. */
+  let fx = 0;
+  let fy = 0;
+  let fz = 0;
+  let fcx = 0;
+  let fcy = 0;
+  let sx = 0;
+  let cx1 = 1;
+  let sy = 0;
+  let cy1 = 1;
+  let sz = 0;
+  let cz1 = 1;
+
+  /** a point on the frame, taken to where that frame starts: rotated about
+      the frame's own centre on all three axes, then displaced. The z the
+      rotation produces is kept, which is what makes the tumble real depth
+      rather than a sheared rectangle. */
+  const place = (px: number, py: number, pz: number) => {
+    const X = px - fcx;
+    const Y = py - fcy;
+    const y1 = Y * cx1;
+    const z1 = Y * sx;
+    const x2 = X * cy1 + z1 * sy;
+    const z2 = -X * sy + z1 * cy1;
+    const x3 = x2 * cz1 - y1 * sz;
+    const y3 = x2 * sz + y1 * cz1;
+    return [fcx + x3 + fx, fcy + y3 + fy, pz + z2 + fz];
+  };
+
   const seg = (
     ax: number,
     ay: number,
@@ -294,13 +389,9 @@ function build(count: number, aspect: number, seed: number): Built {
     ph: number
   ) => {
     pos.push(ax, ay, z, bx, by, z);
-    /* the scatter: far back, thrown sideways, and the further back a piece
-       starts the further it travels — so the assembly reads as depth
-       collapsing rather than as a fade */
-    const sz = z - C.SCATTER_Z * (0.35 + rand() * 0.65);
-    const sx = (rand() * 2 - 1) * C.SCATTER_XY;
-    const sy = (rand() * 2 - 1) * C.SCATTER_XY;
-    start.push(ax + sx, ay + sy, sz, bx + sx, by + sy, sz);
+    const A = place(ax, ay, z);
+    const B = place(bx, by, z);
+    start.push(A[0], A[1], A[2], B[0], B[1], B[2]);
     for (let k = 0; k < 2; k++) {
       col.push(c.r, c.g, c.b);
       phase.push(ph);
@@ -338,6 +429,24 @@ function build(count: number, aspect: number, seed: number): Built {
 
     const x = cx * halfW;
     const y = cy * halfH;
+
+    /* where this frame starts, and how far over it is tumbled. Rolled once
+       here so the whole frame shares it. The further back a frame begins the
+       further it travels, so the assembly reads as depth collapsing. */
+    fcx = x;
+    fcy = y;
+    fz = -C.SCATTER_Z * (0.35 + rand() * 0.65);
+    fx = (rand() * 2 - 1) * C.SCATTER_XY;
+    fy = (rand() * 2 - 1) * C.SCATTER_XY;
+    const tiltX = (rand() * 2 - 1) * C.SCATTER_TILT;
+    const tiltY = (rand() * 2 - 1) * C.SCATTER_TILT;
+    const tiltZ = (rand() * 2 - 1) * C.SCATTER_TILT * 0.45;
+    sx = Math.sin(tiltX);
+    cx1 = Math.cos(tiltX);
+    sy = Math.sin(tiltY);
+    cy1 = Math.cos(tiltY);
+    sz = Math.sin(tiltZ);
+    cz1 = Math.cos(tiltZ);
     const ratios = [1.6, 1.33, 1.0, 0.75];
     const ratio = ratios[Math.floor(rand() * ratios.length)];
     const w = scale * ratio;
@@ -438,6 +547,14 @@ export default function Anatomy({ running, reduce, small, cine = false }: Props)
       uFade: { value: reduce ? 1 : 0 },
       uNear: { value: C.CAMERA_Z - C.Z_NEAR },
       uFar: { value: C.CAMERA_Z - C.Z_FAR },
+      /* The sweep. Declared here as well as in the shader, which sounds
+         obvious and was not: the shader had them and the frame loop wrote to
+         them, but this object did not, so every frame threw on
+         `undefined.value` and the loop died before it rendered. A uniform
+         exists in three places and all three have to agree. */
+      uSweep: { value: C.SWEEP_FROM },
+      uSweepAmp: { value: 0 },
+      uSweepWidth: { value: C.SWEEP_WIDTH },
     };
 
     const material = new THREE.ShaderMaterial({
@@ -533,6 +650,13 @@ export default function Anatomy({ running, reduce, small, cine = false }: Props)
       composer.render();
     }, 2500);
 
+    /* last frame's camera, for the motion blur's own arithmetic */
+    /* annotated, because C is `as const` and these would otherwise infer the
+       literal types of their seeds and refuse every later assignment */
+    let pcx: number = C.CAM_START_X;
+    let pcy: number = C.CAM_START_Y;
+    let pcz: number = C.CAM_START_Z;
+
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       if (!runRef.current) return;
@@ -557,24 +681,40 @@ export default function Anatomy({ running, reduce, small, cine = false }: Props)
       /* eased, so the composition lets go slowly and then all at once */
       const d = depart * depart * (3 - 2 * depart);
 
-      /* ── the title move ──
-         One eased number, ce, drives the camera and the whole grade. Quintic
-         ease-out: most of the distance is covered early and the last stretch
-         takes its time, which is what makes a camera look like it is being
-         BROUGHT to rest rather than stopped. */
+      /* ── THE TITLE MOVE, IN THREE CURVES ──
+         Not one eased number for everything. The research behind this
+         rebuild kept making the same point: small differences in
+         acceleration between things moving together are what separate a
+         camera move from a transition, because nothing in a real shot
+         arrives on exactly the same curve as everything else.
+
+         So the camera decelerates hard (quintic) and is effectively parked
+         well before the sequence ends, which buys a HOLD — a beat of
+         stillness before the overlay clears. The grade settles more gently
+         (cubic), so exposure is still coming down after the camera has
+         stopped. The sweep runs on its own window entirely. */
       const c = cine ? Math.min(1, (now - t0) / C.CINE_MS) : 1;
       const ce = 1 - Math.pow(1 - c, 5);
+      const ge = 1 - Math.pow(1 - c, 3);
+
+      /* the sweep: out through the stack, reaching the front as the camera
+         does, then gone. sin() over its own window, so it fades up and away
+         rather than switching off. */
+      const sp = Math.min(1, Math.max(0, (c - 0.06) / 0.66));
+      const se = sp * sp * (3 - 2 * sp);
+      uniforms.uSweep.value = C.SWEEP_FROM + (C.SWEEP_TO - C.SWEEP_FROM) * se;
+      uniforms.uSweepAmp.value = cine ? Math.sin(Math.PI * sp) * 0.9 : 0;
 
       uniforms.uAssemble.value = e * (1 - d);
       uniforms.uFade.value = Math.min(1, p * 1.6) * (1 - d);
 
-      /* the grade stops down as the camera settles */
+      /* the grade stops down as the camera settles, on the gentler curve */
       renderer.toneMappingExposure =
-        C.EXPOSURE + (C.PUNCH_EXPOSURE - C.EXPOSURE) * (1 - ce);
+        C.EXPOSURE + (C.PUNCH_EXPOSURE - C.EXPOSURE) * (1 - ge);
       finish.uniforms.uAberration.value =
-        C.ABERRATION + (C.PUNCH_ABERRATION - C.ABERRATION) * (1 - ce);
+        C.ABERRATION + (C.PUNCH_ABERRATION - C.ABERRATION) * (1 - ge);
       bloom.strength =
-        (C.BLOOM + (C.PUNCH_BLOOM - C.BLOOM) * (1 - ce)) * e * (1 - d);
+        (C.BLOOM + (C.PUNCH_BLOOM - C.BLOOM) * (1 - ge)) * e * (1 - d);
 
       uniforms.uTime.value = t;
       finish.uniforms.uTime.value = t;
@@ -585,17 +725,33 @@ export default function Anatomy({ running, reduce, small, cine = false }: Props)
       const driftY = Math.sin(t * 0.097 + 1.2) * C.DRIFT * 0.6;
       ex += (tx - ex) * C.EASE;
       ey += (ty - ey) * C.EASE;
-      camera.position.set(
-        ex * C.PARALLAX + driftX,
-        -ey * C.PARALLAX * 0.62 + driftY,
-        C.CAM_START_Z + (C.CAMERA_Z - C.CAM_START_Z) * ce
-      );
+      /* THE ARC. Off-axis and inside the stack to begin with, on-axis and
+         outside it at rest. A straight dolly down z is a zoom with extra
+         steps — the parallax between near and far never changes, so nothing
+         tells you the camera is a body moving through a place. Coming in on
+         a curve sweeps the near frames across the far ones, and that sweep
+         IS the depth. */
+      const camX = ex * C.PARALLAX + driftX + C.CAM_START_X * (1 - ce);
+      const camY = -ey * C.PARALLAX * 0.62 + driftY + C.CAM_START_Y * (1 - ce);
+      const camZ = C.CAM_START_Z + (C.CAMERA_Z - C.CAM_START_Z) * ce;
+      camera.position.set(camX, camY, camZ);
       camera.lookAt(0, 0, 0);
       /* AFTER lookAt, which writes the full rotation and would otherwise
          discard this. A few degrees of roll unwinding to level is the
          cheapest thing on this list and the one that most reads as a camera
          rather than a viewport. */
       camera.rotation.z = (C.CAM_ROLL * Math.PI) / 180 * (1 - ce);
+
+      /* Motion blur from the camera's ACTUAL per-frame displacement rather
+         than from the eased parameter. Two reasons: it is automatically
+         correct whatever the frame rate turns out to be, and it cannot be
+         left switched on — a camera that is not moving produces no blur by
+         construction rather than by remembering to clear a uniform. */
+      const moved = Math.hypot(camX - pcx, camY - pcy, camZ - pcz);
+      pcx = camX;
+      pcy = camY;
+      pcz = camZ;
+      finish.uniforms.uMotion.value = Math.min(C.MOTION, moved * 0.3);
 
       composer.render();
     };
