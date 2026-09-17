@@ -161,7 +161,7 @@ export function BumperCasePage() {
   const [edgeRef, edgeSeen] = useReveal<HTMLDivElement>();
 
   return (
-    <CaseShell accent="gold" live={{ href: STORE, label: "ON THE CHROME WEB STORE" }}>
+    <CaseShell accent="gold" live={{ href: STORE, label: "CHROME STORE" }}>
       <CaseHero
         meta={
           <>

@@ -120,6 +120,19 @@
 .cs-page {
   position: relative;
   z-index: 3;
+
+  /* CLIP, NOT HIDDEN. Bumper's comparison table is six columns wide and keeps
+     a min-width so it stays readable, scrolling inside its own wrapper on a
+     phone — which is the right behaviour. But its intrinsic width still
+     reached the document: measured at 360px the page was 509px wide, and the
+     fixed chrome stretched with it, so every section gained a horizontal
+     scrollbar because of one table.
+
+     `hidden` would fix the width and break the pause, because it makes this a
+     scroll container and the sticky panel inside would have nothing to stick
+     to. `clip` contains the overflow without creating one. Verified: document
+     back to 360, and .bp-pause .stick still computes to position: sticky. */
+  overflow-x: clip;
 }
 
 /* ── the rail ──
@@ -177,13 +190,25 @@
   transition: transform 0.4s var(--ease);
 }
 .cs .cs-nav a:hover .arrow { transform: translateX(-4px); }
+/* The label cannot be allowed to set the bar's width. It is a fixed element
+   spanning left:0 to right:0, so an unshrinkable flex item inside it widens
+   the document itself — every page then gains a horizontal scrollbar because
+   of one string in the corner. Bumper's "ON THE CHROME WEB STORE" was doing
+   exactly that at 360px: 149px of overflow, and the offender looked like the
+   comparison table until it was measured. */
 .cs .cs-nav .live {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--accent);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
+.cs .cs-nav .live i { flex: none; }
+.cs .cs-nav > a:first-child { flex: none; }
 .cs .cs-nav .live i {
   width: 5px;
   height: 5px;
