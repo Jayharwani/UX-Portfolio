@@ -14,6 +14,13 @@ const ChronoWeavePage = lazy(() => import("./components/ChronoWeavePage").then((
 const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => ({ default: m.HeadroomPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
+/* A preview of the 3D case-study cards, on their own route so they can be
+   looked at without committing the homepage to them. Lazy, so nothing about
+   them reaches the homepage bundle until they are actually wired in. */
+const CardsPreview = lazy(() =>
+  import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
+);
+
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0E16" }}>
@@ -45,6 +52,7 @@ export default function App() {
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/cards" element={<CardsPreview />} />
           </Routes>
         </Suspense>
       </div>
