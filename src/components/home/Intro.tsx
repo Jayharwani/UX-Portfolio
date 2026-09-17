@@ -41,10 +41,29 @@ import { useEffect, useRef, useState } from "react";
 
 const KEY = "jh.intro.v1";
 
-/** when the plate starts pushing past the camera */
-const EXIT_MS = 2050;
-/** and when the overlay is gone, no matter what */
-const END_MS = 2650;
+/* ── THE CHOREOGRAPHY ──
+   Five acts. The two numbers below are the only ones this file owns; every
+   other beat is a delay in the stylesheet, next to the thing it delays.
+
+     0.15s  a layout grid is laid down, columns sweeping from the centre out
+     0.70s  the centre rule draws outward through them
+     1.00s  the corner slugs arrive, one after another
+     1.50s  the name rack-focuses in, blurred and wide to sharp and tight
+     2.60s  a light passes across it
+     3.10s  the eyebrow
+     3.35s  the grid retracts and the slugs go, leaving only the plate
+     3.70s  the frame closes around it
+     4.10s  dissolve, on to a hero already holding the same composition */
+/** when the overlay starts dissolving */
+const EXIT_MS = 4100;
+/** and when it is gone, no matter what */
+const END_MS = 4800;
+
+/** the corner slugs, in the order they arrive */
+const SLUGS = ["JH", "2026", "Baltimore, MD", "Product designer"] as const;
+
+/** vertical rules. Odd, so one lands on the centre line. */
+const COLUMNS = 7;
 
 /** Whether the intro will play on this load. Exported because the hero needs
     the same answer: if the intro is running, the hero must already be settled
@@ -140,16 +159,41 @@ export default function Intro() {
 
   return (
     <div className={`intro${state === "out" ? " is-out" : ""}`} aria-hidden="true">
+      {/* The layout grid, laid down and then taken away again. The site's
+          whole conceit is that it looks like a design file that happens to
+          be running, and this is the file's own grid arriving first. */}
+      <div className="intro__grid">
+        {Array.from({ length: COLUMNS }, (_, i) => (
+          <span
+            key={i}
+            style={{ ["--d" as string]: Math.abs(i - (COLUMNS - 1) / 2) }}
+          />
+        ))}
+      </div>
+
+      {/* Corner slugs, the way a film leader or a camera viewfinder carries
+          its metadata. They say the four things a stranger actually wants and
+          then get out of the way before the hero is revealed. */}
+      {SLUGS.map((t, i) => (
+        <span key={t} className={`intro__slug intro__slug--${i}`} style={{ ["--i" as string]: i }}>
+          {t}
+        </span>
+      ))}
+
       {/* The same two elements the hero plate holds, in the same order, at
           the same sizes. That is what makes the dissolve a match cut rather
           than a cut: when the overlay goes, nothing moves. */}
       <div className="intro__plate">
-        {/* the frame, opening out of the line it was drawn from */}
+        {/* the frame, closing around the plate at the end */}
         <span className="intro__frame" />
         {/* the line itself: the site's one mark, drawn before anything else */}
         <span className="intro__rule" />
         <p className="micro intro__welcome">Welcome to my portfolio</p>
-        <h2 className="intro__name">Jay Harwani</h2>
+        {/* data-text feeds the light sweep, which is a masked copy of the
+            same string sitting exactly on top of it */}
+        <h2 className="intro__name" data-text="Jay Harwani">
+          Jay Harwani
+        </h2>
       </div>
     </div>
   );

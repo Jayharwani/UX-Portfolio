@@ -7,6 +7,7 @@ import { useInView } from "./home/useInView";
 import Route from "./home/Route";
 import { ToolRow } from "./home/toolmarks";
 import { useMagnetic } from "./home/magnetic";
+import { useHeartbeat } from "./home/useHeartbeat";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -47,15 +48,27 @@ import {
 const EMAIL = "harwanijay9498@gmail.com";
 const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
 
-/* The accents are the ones the old work cards used. Losing them made all four
+/* `beat` is how often that preview replays its own story, in ms. Four
+   different periods on purpose: equal ones would sync into a single pulse
+   across the whole grid, which reads as a page-wide glitch rather than as
+   four products running. Nothing here divides evenly into anything else, so
+   they drift apart and stay apart.
+
+   `fn` is the literal name of each preview's component, and it is literal on
+   purpose. The source panel used to look its code up with w.Preview.name,
+   which minification renames — so on the live site every panel found nothing
+   and reported "0 lines". It worked in dev and had never worked in
+   production. A string in the data cannot be minified away.
+
+   The accents are the ones the old work cards used. Losing them made all four
    projects render identically, which threw away a real colour system for
    nothing — the previews already carry these hues internally, so the frame
    agreeing with them is the whole point. */
 const WORK = [
-  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview },
-  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview },
-  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview },
-  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview },
+  { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview, fn: "SignalPreview", beat: 6200 },
+  { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview, fn: "HeadroomPreview", beat: 7100 },
+  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview, fn: "ChronoWeavePreview", beat: 8000 },
+  { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview, fn: "BumperPreview", beat: 8900 },
 ];
 
 /* Arrival for the editorial bands.
@@ -351,39 +364,76 @@ function WorkCard({
   seen: boolean;
   live: boolean;
 }) {
-  const [flipped, setFlipped] = useState(false);
-  const code = sourceOf(w.Preview.name);
+  const [open, setOpen] = useState(false);
+  const code = sourceOf(w.fn);
+
+  /* ── THE HEARTBEAT ──
+     Each preview told its story once and then sat still, so a grid of four
+     "live" products was motionless within a second of arriving. They replay
+     now, on their own clock.
+
+     The remount is the replay: changing the key throws the component away
+     and builds it again from its resting state, which is exactly what its
+     entrance animation is written to start from. That beats threading a
+     reset prop through four components that each define "the beginning"
+     differently.
+
+     setInterval rather than a frame loop, because this is a schedule and not
+     an animation — and because it stops dead when the card is off screen or
+     its own source is showing, which is the only optimisation here that
+     matters. */
+  const beat = useHeartbeat(live && !open, w.beat);
 
   return (
     <li className={`wcard${seen ? " is-in" : ""}`} style={{ ["--ac" as string]: w.accent }}>
-      <div className="wcard__frame">
+      <div className={`wcard__frame${open ? " is-src" : ""}`}>
         {/* aria-hidden: the link in the meta row already says this, and
             saying it twice to a screen reader is worse than not saying it */}
         <span className="wcard__tag" aria-hidden="true">
           View case <span className="wcard__tag-arrow">↗</span>
         </span>
-        <div className={`flip${flipped ? " is-flipped" : ""}`}>
-          <div className="flip__face flip__face--front">
-            <div className="wcard__art">
-              <w.Preview active={live} />
-            </div>
-          </div>
-          <div className="flip__face flip__face--back" aria-hidden={!flipped}>
-            <pre className="src">
-              <Highlight code={code} />
-            </pre>
-            <div className="src__foot">
-              <span className="micro">{lineCount(code)} lines · running on the other side</span>
-            </div>
+
+        <div className="wcard__art">
+          {/* the preview stops while its own source is over it: two things
+              animating in the same frame, one of them hidden, is work nobody
+              can see */}
+          <w.Preview key={beat} active={live && !open} />
+        </div>
+
+        {/* ── THE SOURCE PANEL, WHICH USED TO BE A 3D FLIP ──
+            The flip rotated the frame to show the component's source on its
+            back. It was broken in two ways and only one was visible.
+
+            The visible one: .flip__face--front held an animating preview, and
+            an animated descendant gets its own compositing layer, which
+            defeats backface-visibility on its ancestor. The back face stayed
+            painted THROUGH the front, mirrored, so the card showed reversed
+            code over a live preview. Adding the hover tag gave the frame one
+            more animating layer and turned an occasional glitch into a
+            reliable one.
+
+            So there is no third dimension here any more. The panel is a
+            clip-path over the art. Nothing rotates, nothing needs a backface,
+            and there is no compositing arrangement that can turn it inside
+            out. */}
+        <div className="wcard__src" aria-hidden={!open} {...(open ? {} : { inert: "" })}>
+          <pre className="src">
+            <Highlight code={code} />
+          </pre>
+          <div className="src__foot">
+            <span className="micro">
+              {w.fn}.tsx &middot; {lineCount(code)} lines &middot; running on the other side
+            </span>
           </div>
         </div>
+
         <button
           type="button"
-          className="flipbtn"
-          onClick={() => setFlipped((v) => !v)}
-          aria-pressed={flipped}
+          className="srcbtn"
+          onClick={() => setOpen((v) => !v)}
+          aria-pressed={open}
         >
-          {flipped ? "Live" : "Source"}
+          {open ? "Live" : "Source"}
         </button>
       </div>
 

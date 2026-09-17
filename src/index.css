@@ -1134,9 +1134,6 @@
   border: 1px solid var(--hair-dark);
   border-radius: 2px;
   background: #070A0E;
-  /* the flip needs a viewpoint of its own, separate from the one .wcard uses
-     to lean this whole frame toward the pointer */
-  perspective: 1400px;
   will-change: transform;
 }
 /* the corner ticks. One rule, two pseudo-elements, and it is what ties the
@@ -1157,11 +1154,24 @@
 
 /* the flip carries the clip; the frame itself must not, or the corner ticks
    sitting a pixel outside the border get cut off by it */
-.wcard__frame .flip { overflow: hidden; border-radius: 2px; grid-area: 1 / 1; }
+/* The art carries the clip so the corner ticks, which sit a pixel outside
+   the border, are not cut off by it. */
+.wcard__art { overflow: hidden; border-radius: 2px; }
 .wcard__frame .src { font-size: 11px; }
 
 /* exactly the frame, never larger, so the preview is never clipped */
 .wcard__art { position: absolute; inset: 0; }
+/* Each heartbeat throws the preview away and builds a new one, so this is
+   every replay's way back in. 420ms of dissolve turns what would be a hard
+   cut to the frame's own black into a change of shot. */
+.wcard__art > * { animation: art-cut 420ms var(--ease-ui) both; }
+@keyframes art-cut {
+  from { opacity: 0; transform: scale(1.012); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wcard__art > * { animation: none; }
+}
 .wcard__art > * { width: 100%; height: 100%; }
 
 .wcard__meta { padding-top: clamp(18px, 4vw, 26px); }
@@ -1298,37 +1308,44 @@
 @media (prefers-reduced-motion: reduce) {
 }
 
-/* ── the flip: live component on one side, its source on the other ────────
-   The previews are running React and the page never said so. Flipping the
-   frame answers "can this person actually build?" without making a claim.
+/* ── THE SOURCE PANEL ───────────────────────────────────────────
+   The previews are running React and the page never said so. Showing the
+   component that renders the thing you were just watching answers "can this
+   person actually build?" without making a claim.
 
-   The rotation gets its perspective from .wcard__frame, which sets one for
-   exactly this reason: a flip needs a viewpoint of its own, separate from
-   the one the card uses to lean the whole frame toward the pointer. */
+   IT USED TO BE A 3D FLIP AND THAT WAS A MISTAKE. The front face held an
+   animating preview, an animated descendant gets its own compositing layer,
+   and that defeats backface-visibility on its ancestor: the back stayed
+   painted through the front, mirrored, so the card showed reversed source
+   code over a live preview. Adding one more animating layer to the frame
+   turned an occasional glitch into a reliable one.
 
-.flip {
-  grid-area: 1 / 1;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  transform-style: preserve-3d;
-  transition: transform 900ms var(--ease-ui);
-}
-.flip.is-flipped { transform: rotateY(180deg); }
-
-.flip__face {
+   There is no third dimension here now. The panel is a clip-path wipe over
+   the art — no rotation, no backface to cull, and no compositing
+   arrangement that can turn it inside out. It also animates a property the
+   compositor handles, which the rotation was supposed to be doing anyway. */
+.wcard__src {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
+  z-index: 3;
   display: grid;
-  min-height: 0;
-}
-.flip__face--back {
-  transform: rotateY(180deg);
   grid-template-rows: 1fr auto;
+  min-height: 0;
   background: #070A0E;
+  border-radius: 2px;
+  clip-path: inset(100% 0 0 0 round 2px);
+  transition: clip-path 620ms var(--ease-ui);
 }
+.wcard__frame.is-src .wcard__src { clip-path: inset(0 0 0 0 round 2px); }
+
+/* the art steps back rather than simply being covered, so the panel reads as
+   arriving in front of something rather than replacing it */
+.wcard__art {
+  transition: transform 620ms var(--ease-ui), opacity 620ms var(--ease-ui);
+}
+.wcard__frame.is-src .wcard__art { transform: scale(0.97); opacity: 0.4; }
+/* and the cursor tag has nothing to point at while the source is up */
+.wcard__frame.is-src .wcard__tag { opacity: 0; }
 
 /* the source face */
 .src {
@@ -1364,7 +1381,7 @@
 
 /* the control. Sits above the flip on its own layer so it never rotates with
    the faces — a button that turns away from you mid-press is not a button. */
-.flipbtn {
+.srcbtn {
   position: absolute;
   z-index: 4;
   top: 14px;
@@ -1382,12 +1399,12 @@
   cursor: pointer;
   transition: color 300ms var(--ease-ui), border-color 300ms var(--ease-ui);
 }
-.flipbtn:hover,
-.flipbtn[aria-pressed="true"] {
+.srcbtn:hover,
+.srcbtn[aria-pressed="true"] {
   color: var(--ac, var(--on-ink));
   border-color: color-mix(in oklab, var(--ac, var(--on-ink)) 55%, transparent);
 }
-.flipbtn:focus-visible { outline: 2px solid var(--ac, var(--on-ink)); outline-offset: 4px; }
+.srcbtn:focus-visible { outline: 2px solid var(--ac, var(--on-ink)); outline-offset: 4px; }
 
 @media (max-width: 900px) {
   .src { font-size: 10.5px; padding: 14px 15px; }
@@ -1395,8 +1412,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flip { transition: none; }
-  .flipbtn { transition: none; }
+  .wcard__src, .wcard__art, .srcbtn { transition: none; }
 }
 
 /* ── what survives ─────────────────────────────────────────────────────────
@@ -1544,35 +1560,25 @@
 }
 
 /* ── THE INTRO ─────────────────────────────────────────────────────────────
-   A hairline draws. The name arrives out of focus and sharpens through it. A
-   frame opens. Then the overlay dissolves and the name DOES NOT MOVE,
-   because the hero underneath is already showing the same name at the same
-   size in the same place.
+   Five acts, and the last one is a match cut.
 
-   THAT IS THE WHOLE IDEA. This is not a title card in front of a website; it
-   is the website's own first screen, arriving. The intro plate and the hero
-   plate are the same two elements, and the type below is declared once and
-   used by both so the two can never drift apart by a pixel. When the overlay
-   goes, nothing cuts: the rule and the frame dissolve, the scene fades up
-   behind, and the composition that was already there is simply revealed.
+   A layout grid is laid down. The centre rule draws through it. Corner slugs
+   arrive like a film leader. The name rack-focuses in and a light passes
+   across it. Then the grid retracts, a frame closes around the plate, and
+   the overlay dissolves onto a hero already holding the same name at the
+   same size in the same place — so nothing moves at the join.
 
-   A push past the camera was the first version. It looked fine and it threw
-   away the match, which was the better idea sitting in the file the whole
-   time.
+   THE WHOLE THING IS MADE OF ONE MARK. Hairlines, a frame, and type. The
+   site's conceit is that it looks like a design file that happens to be
+   running, so the opening is that file's own grid arriving, being used, and
+   being cleared away. An opening that introduced a second vocabulary would
+   be a trailer for a different film.
 
-   The choreography, because a title sequence is a list of times:
-
-     120   the rule draws outward from the centre
-     400   the name rises through it, blurred and wide
-     1150  the eyebrow
-     1400  the frame opens around both
-     1750  the rule retires, so the last held frame is exactly the hero
-     2050  the overlay dissolves
-
-   The one thing NOT expressed here is the exit's guarantee, which lives in
-   Intro.tsx on a setTimeout. A transition cannot end on a document that never
-   produces a frame, and an intro that cannot end is a site that cannot be
-   read. */
+   Every delay is written next to the thing it delays, because a title
+   sequence is choreography and choreography is a list of times. Only the
+   dissolve is owned by Intro.tsx, on a setTimeout, because a transition
+   cannot end on a document that never produces a frame and an intro that
+   cannot end is a site that cannot be read. */
 .intro {
   position: fixed;
   inset: 0;
@@ -1580,9 +1586,71 @@
   display: grid;
   place-items: center;
   background: var(--ink);
-  transition: opacity 600ms var(--ease-ui);
+  transition: opacity 640ms var(--ease-ui);
 }
 .intro.is-out { opacity: 0; }
+
+/* ── act one: the grid ──
+   Columns sweep down from the top, staggered outward from the centre, and
+   retract the same way they came. --d is each column's distance from the
+   middle, so the middle one leads and the outer ones follow. */
+.intro__grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 clamp(26px, 9vw, 190px);
+  pointer-events: none;
+}
+.intro__grid span {
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--on-ink) 16%,
+    var(--on-ink) 84%,
+    transparent
+  );
+  opacity: 0.1;
+  transform: scaleY(0);
+  transform-origin: top center;
+  animation: intro-col 900ms var(--ease-ui) calc(150ms + var(--d, 0) * 75ms) both,
+    intro-col-out 620ms var(--ease-ui) calc(3350ms + var(--d, 0) * 45ms) forwards;
+}
+@keyframes intro-col {
+  to { transform: scaleY(1); }
+}
+@keyframes intro-col-out {
+  to { transform: scaleY(0); opacity: 0; }
+}
+
+/* ── act two: the slugs ──
+   The four things a stranger actually wants to know, set where a viewfinder
+   would put them, gone before the reveal. */
+.intro__slug {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--on-ink-2);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: intro-slug 700ms var(--ease-ui) calc(1000ms + var(--i, 0) * 95ms) forwards,
+    intro-slug-out 520ms var(--ease-ui) calc(3350ms + var(--i, 0) * 40ms) forwards;
+}
+@keyframes intro-slug {
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-slug-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+.intro__slug--0 { top: clamp(22px, 4vh, 44px); left: clamp(26px, 9vw, 190px); }
+.intro__slug--1 { top: clamp(22px, 4vh, 44px); right: clamp(26px, 9vw, 190px); }
+.intro__slug--2 { bottom: clamp(22px, 4vh, 44px); left: clamp(26px, 9vw, 190px); }
+.intro__slug--3 { bottom: clamp(22px, 4vh, 44px); right: clamp(26px, 9vw, 190px); }
 
 .intro__plate {
   position: relative;
@@ -1591,7 +1659,7 @@
   /* 1.02, not 1.14. Enough momentum to read as a move, small enough that the
      name still lands on the hero's. */
   transform: scale(1);
-  transition: transform 700ms var(--ease-ui);
+  transition: transform 720ms var(--ease-ui);
 }
 .intro.is-out .intro__plate { transform: scale(1.02); }
 
@@ -1606,30 +1674,25 @@
   background: var(--on-ink);
   opacity: 0;
   transform: scaleX(0);
-  animation: intro-rule 760ms var(--ease-ui) 120ms forwards,
-             intro-rule-out 520ms var(--ease-ui) 1750ms forwards;
+  animation: intro-rule 820ms var(--ease-ui) 700ms forwards,
+    intro-rule-out 520ms var(--ease-ui) 3350ms forwards;
 }
 @keyframes intro-rule {
   from { transform: scaleX(0); opacity: 0.5; }
-  to   { transform: scaleX(1); opacity: 0.5; }
+  to { transform: scaleX(1); opacity: 0.5; }
 }
 @keyframes intro-rule-out {
   to { opacity: 0; }
 }
 
-/* the frame, opening out of the line it grew from */
-/* THE FRAME DROPS, THE PLATE DOES NOT.
-
-   The name's line-height is 0.92, so the glyphs overhang their own box and
-   the descender of the y in Jay sits about 10px closer to the bottom border
-   than the cap height sits to the top. Optically the frame wants more room
-   underneath.
-
-   That extra room goes on the FRAME, not on the plate's padding. The plate is
-   centred in the viewport, so asymmetric padding would move its contents up
-   by half the difference and the name would no longer land on the hero's —
-   which is the one thing this whole sequence is built on. The frame is
-   decoration and can hang wherever it looks right. */
+/* ── act five: the frame closes ──
+   THE FRAME DROPS, THE PLATE DOES NOT. The name's line-height is 0.92, so
+   the glyphs overhang their own box and the descender of the y in Jay sits
+   about 10px closer to the bottom border than the caps sit to the top. That
+   room goes on the frame rather than on the plate's padding: the plate is
+   centred, so asymmetric padding would move its contents up by half the
+   difference and the name would no longer land on the hero's — which is the
+   one thing this whole sequence is built on. */
 .intro__frame {
   position: absolute;
   top: 0;
@@ -1639,11 +1702,11 @@
   border: 1px solid var(--hair-dark);
   transform: scaleY(0);
   opacity: 0;
-  animation: intro-frame 720ms var(--ease-ui) 1400ms forwards;
+  animation: intro-frame 760ms var(--ease-ui) 3700ms forwards;
 }
 @keyframes intro-frame {
   from { transform: scaleY(0); opacity: 0; }
-  to   { transform: scaleY(1); opacity: 1; }
+  to { transform: scaleY(1); opacity: 1; }
 }
 /* corner ticks, the same 9px mark the work grid and the scene use */
 .intro__frame::before,
@@ -1658,7 +1721,7 @@
 .intro__frame::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
 .intro__frame::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
 
-/* ── the rack focus ──
+/* ── act three: the rack focus ──
    Blurred, wide and light, resolving to sharp, tight and settled. A fade
    makes a name appear; this makes it ARRIVE, which is the difference between
    a title card and a title sequence.
@@ -1669,11 +1732,11 @@
 .intro__name {
   position: relative;
   opacity: 0;
-  filter: blur(16px);
-  letter-spacing: 0.12em;
+  filter: blur(18px);
+  letter-spacing: 0.14em;
   font-variation-settings: "wght" 400;
-  transform: translateY(0.16em);
-  animation: intro-name 1200ms var(--ease-ui) 400ms forwards;
+  transform: translateY(0.18em);
+  animation: intro-name 1400ms var(--ease-ui) 1500ms forwards;
 }
 @keyframes intro-name {
   to {
@@ -1685,12 +1748,42 @@
   }
 }
 
+/* ── act four: the light pass ──
+   A copy of the same string, in a brighter ink, revealed through a narrow
+   moving mask. Not a gradient sitting on the type — a light crossing it,
+   which is why the mask moves and the colour does not.
+
+   It runs after the rack focus has settled, so the letterforms it travels
+   across are the final ones. */
+.intro__name::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #FFFFFF;
+  pointer-events: none;
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(104deg, transparent 43%, #000 50%, transparent 57%);
+  mask-image: linear-gradient(104deg, transparent 43%, #000 50%, transparent 57%);
+  -webkit-mask-size: 280% 100%;
+  mask-size: 280% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: intro-sweep 1150ms var(--ease-ui) 2600ms both;
+}
+@keyframes intro-sweep {
+  0% { opacity: 0; -webkit-mask-position: 170% 0; mask-position: 170% 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; -webkit-mask-position: -70% 0; mask-position: -70% 0; }
+}
+
 .intro__welcome {
   position: relative;
   color: var(--on-ink-2);
   opacity: 0;
   transform: translateY(8px);
-  animation: intro-sub 620ms var(--ease-ui) 1150ms forwards;
+  animation: intro-sub 640ms var(--ease-ui) 3100ms forwards;
 }
 @keyframes intro-sub {
   to { opacity: 1; transform: none; }
@@ -1698,6 +1791,13 @@
 
 @media (max-width: 760px) {
   .intro__plate { padding: clamp(26px, 5vw, 44px) clamp(24px, 7vw, 56px); }
+  .intro__grid { padding: 0 clamp(18px, 7vw, 40px); }
+  /* Four corner slugs at phone width crowd the frame and fight the name, so
+     only the two that say where and what survive. */
+  .intro__slug--0,
+  .intro__slug--1 { display: none; }
+  .intro__slug--2 { left: 0; right: 0; text-align: center; }
+  .intro__slug--3 { display: none; }
 }
 
 /* Reduced motion never mounts this, but if it somehow renders it must not
@@ -1985,7 +2085,7 @@
    floors every button at 44px under a coarse pointer, which turned a quiet
    corner pill into the loudest object inside the frame. The box goes back to
    fitting its label and the 44px target is restored as an overlay. */
-.wcard__frame .flipbtn {
+.wcard__frame .srcbtn {
   min-height: 0;
   min-width: 0;
   top: 12px;
@@ -1993,7 +2093,7 @@
   padding: 6px 11px;
   font-size: 9.5px;
 }
-.wcard__frame .flipbtn::after {
+.wcard__frame .srcbtn::after {
   content: "";
   position: absolute;
   inset: -12px -11px;
