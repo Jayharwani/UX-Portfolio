@@ -8,6 +8,7 @@ import Route from "./home/Route";
 import { ToolRow } from "./home/toolmarks";
 import { useMagnetic } from "./home/magnetic";
 import { useHeartbeat } from "./home/useHeartbeat";
+import WorkField from "./home/WorkField";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -147,32 +148,20 @@ function Words({ text, className }: { text: string; className?: string }) {
    One layout at every width: the grid below, two columns or one. */
 function Work() {
   const reduce = !!useReducedMotion();
-  /* which project the header is showing. Owned here so the head and the work
-     are one statement rather than two neighbours. */
+  /* which project the header is showing. Owned here so the head, the field
+     and the work are one statement rather than three neighbours. */
   const [active, setActive] = useState(0);
   return (
-    <>
+    /* The field sits behind both the head and the grid, so the depth belongs
+       to the whole section rather than to the cards alone. */
+    <div className="workzone">
+      <WorkField active={active} accent={WORK[active]?.accent ?? ""} reduce={reduce} />
       <WorkHead active={active} />
       <WorkGrid reduce={reduce} onActive={setActive} />
-    </>
+    </div>
   );
 }
 
-/* ── the head ──────────────────────────────────────────────────────────────
-   It was a label and a sentence in a large empty band, and it was the most
-   boring rectangle on the page. The sentence stays — it is the thing the
-   site is arguing — and it now sits above an INDEX.
-
-   The index is four small frames, one per project, in the page's own
-   hairline language, and it is deliberately wordless. Listing the four names
-   here would only repeat what is two hundred pixels below; four frames carry
-   the same information as a shape — how many, in what order, in which
-   colour — and add none of the text this page has spent months cutting.
-
-   It is also LIVE. The frame for the project you are looking at takes its
-   accent and opens its header bar, on desktop from the pinned stage's index
-   and on a phone from whichever card is on screen. A header that knows where
-   you are is a header doing work rather than introducing. */
 function WorkHead({ active }: { active: number }) {
   const list = useRef<HTMLOListElement>(null);
   const mark = useRef<HTMLSpanElement>(null);

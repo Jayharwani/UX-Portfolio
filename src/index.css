@@ -1559,6 +1559,109 @@
   ::view-transition-new(root) { animation: none; }
 }
 
+/* ── THE FIELD BEHIND THE WORK ─────────────────────────────────────────────
+   The hero puts its name inside a stack of hairline frames receding into
+   depth. The work section put four cards on a flat void. This is the hero's
+   motif in CSS: nine plates on three planes, each plane drifting at its own
+   rate as the section crosses the screen.
+
+   The ratio between those rates is the depth. Nothing else here is doing it
+   — no blur, no scale, no perspective — which is also all the hero's scene
+   was ever doing.
+
+   EVERYTHING IS DELIBERATELY ALMOST INVISIBLE. The plates top out at 0.085
+   alpha and the light at 0.06. A background that can be described is
+   competing with the work in front of it, and the brief was clean. What it
+   is for is the feeling that the cards are IN something. */
+.workzone { position: relative; }
+/* the bands inside the zone go transparent so the field can be seen through
+   them; .s32 is still providing the ink underneath */
+.workzone .band--ink { background: transparent; }
+.workzone .workhead,
+.workzone .wgrid { position: relative; z-index: 1; }
+
+.wfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Faded at the top and bottom edges so the field never meets the sections
+     above and below it as a hard line. The seam between bands is the one
+     thing on this page that has already been got wrong once. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+}
+
+.wfield__plane {
+  position: absolute;
+  inset: -12% 0;
+  will-change: transform;
+}
+
+.wfield__plate {
+  position: absolute;
+  /* a trace of the active project, never the full accent: at these opacities
+     a saturated hairline would read as a coloured line rather than as light
+     falling on a grey one */
+  border: 1px solid color-mix(in oklab, var(--ac, var(--on-ink)) 42%, var(--on-ink));
+  border-radius: 2px;
+  opacity: 0.05;
+  transition: border-color 900ms var(--ease-ui);
+}
+/* the header rule, in the same place the real frames and the index put it —
+   which is what makes these read as interface frames rather than rectangles */
+.wfield__plate::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  height: 1px;
+  background: color-mix(in oklab, var(--ac, var(--on-ink)) 42%, var(--on-ink));
+  opacity: 0.55;
+  transition: background 900ms var(--ease-ui);
+}
+/* the near plane is the only one allowed a visible edge, because something
+   has to be nearest or the three planes read as one */
+.wfield__plane--0 .wfield__plate { opacity: 0.085; }
+.wfield__plane--1 .wfield__plate { opacity: 0.13; }
+.wfield__plane--2 .wfield__plate { opacity: 0.24; }
+
+/* ── the wash ──
+   It changes colour and it does not move. A light that chases the reader is
+   exactly what makes a background feel busy; one that simply IS the colour
+   of the project being read is information. */
+.wfield__light {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1100px, 92%);
+  aspect-ratio: 1 / 0.72;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--ac, var(--on-ink)) 34%, transparent),
+    transparent 72%
+  );
+  opacity: 0.14;
+  filter: blur(40px);
+  transition: background 900ms var(--ease-ui);
+}
+
+@media (max-width: 900px) {
+  /* At phone width the gutters are gone, so the far plane would sit directly
+     under the cards where it is only noise. Two planes, fewer plates. */
+  .wfield__plane--0 { display: none; }
+  .wfield__light { width: 130%; opacity: 0.12; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wfield__plane { transform: none; }
+  .wfield__light { transition: none; }
+}
+
 /* ── WORD MASKS ────────────────────────────────────────────────────────────
    The hero's name settles in weight and tracking; this is the same gesture
    applied to sentences. Each word sits on its own clip and rises into place,
