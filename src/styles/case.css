@@ -740,3 +740,225 @@
   .cs .hr-version { grid-template-columns: 1fr; gap: 6px; }
   .cs .hr-version .n { padding-top: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SIGNAL — cyan. The live embed, the coverage gap, the numbered lists.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.cs .sg-meta {
+  margin-top: 30px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--ink-3);
+}
+
+/* ── the product, running ──
+   An app window rather than a bare iframe, so it reads as a thing that exists
+   rather than a panel of the page. */
+.cs .sg-embed {
+  margin-top: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55);
+}
+.cs .sg-embed .bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.cs .sg-embed .dots { display: flex; gap: 6px; }
+.cs .sg-embed .dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-2);
+}
+.cs .sg-embed .url {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs .sg-embed .go {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.cs .sg-embed .view {
+  position: relative;
+  /* tall enough that the map is usable, short enough that it does not eat
+     the fold on a laptop */
+  height: clamp(300px, 52vh, 520px);
+  background: #0a0f14;
+}
+.cs .sg-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ── the coverage gap ── */
+.cs .sg-gap {
+  margin: clamp(38px, 6vh, 64px) 0 0;
+  padding: clamp(20px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.cs .sg-gap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.cs .sg-gap .sg-link {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.5;
+  stroke-dasharray: 40;
+  stroke-dashoffset: calc(40 - 40 * clamp(0, (var(--p) - 0.24) * 4, 1));
+  opacity: 0.5;
+}
+/* the leg the incumbents drop arrives late, and dashed, because it is the
+   one being argued about */
+.cs .sg-gap .sg-link.b {
+  stroke-dasharray: 2.4 2.4;
+  stroke-dashoffset: 0;
+  opacity: clamp(0, (var(--p) - 0.52) * 5, 0.85);
+}
+
+.cs .sg-gap .sg-node {
+  --k: clamp(0, (var(--p) - var(--at)) * 6, 1);
+  opacity: var(--k);
+}
+.cs .sg-gap .sg-node .dot {
+  fill: var(--accent);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(var(--k));
+}
+.cs .sg-gap .sg-node .halo {
+  fill: color-mix(in oklab, var(--accent) 13%, transparent);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(var(--k));
+}
+.cs .sg-gap .sg-node text {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 2.9px;
+  letter-spacing: 0.14em;
+  fill: var(--ink-2);
+}
+.cs .sg-gap .sg-node.late .dot { fill: var(--paper); }
+.cs .sg-gap .sg-node.late text { fill: var(--paper); }
+
+.cs .sg-gap-cap {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.cs .sg-gap-cap span { color: var(--ink-3); }
+.cs .sg-gap-cap b {
+  color: var(--accent);
+  font-weight: 400;
+  opacity: clamp(0, (var(--p) - 0.72) * 6, 1);
+}
+
+/* ── numbered lists ── */
+.cs .sg-list {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.cs .sg-list li {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0 20px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.4s var(--ease);
+}
+.cs .sg-list li:hover { background: rgba(238, 241, 245, 0.02); }
+.cs .sg-list .n {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  padding-top: 5px;
+  transition: color 0.35s var(--ease);
+}
+.cs .sg-list li:hover .n { color: var(--accent); }
+.cs .sg-list h3 { margin: 0 0 8px; }
+.cs .sg-list p { margin: 0; font-size: 14.5px; }
+
+@media (max-width: 560px) {
+  .cs .sg-list li { grid-template-columns: 1fr; gap: 6px; }
+  .cs .sg-list .n { padding-top: 0; }
+}
+
+/* ── the fit legend ── */
+.cs .sg-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 34px;
+}
+.cs .sg-legend .lbl {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--ink-3);
+}
+.cs .sg-legend .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+.cs .sg-legend .chip i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.cs .sg-legend .open i { background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+.cs .sg-legend .tight i { background: #e9c58b; }
+.cs .sg-legend .conflict i { background: rgba(238, 241, 245, 0.28); }
+
+/* ── stack ── */
+.cs .sg-stack {
+  list-style: none;
+  margin: 34px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cs .sg-stack li {
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  transition: border-color 0.35s var(--ease), color 0.35s var(--ease);
+}
+.cs .sg-stack li:hover { border-color: var(--accent); color: var(--paper); }
