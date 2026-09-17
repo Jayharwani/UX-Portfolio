@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { MOCKUPS, type MockupKey } from "../../data/mockups";
+import { useReveal } from "./useReveal";
 
 /* --------------------------------------------------------------------------
    WORK — SPEC §7, BUILD step 6.
@@ -100,8 +101,10 @@ function Shot({ k, on, beat }: { k: MockupKey; on: boolean; beat: number }) {
 export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => void }) {
   const [active, setActive] = useState<MockupKey>("headroom");
   const [beat, setBeat] = useState(0);
+  const [shown, setShown] = useState<boolean[]>(() => ITEMS.map(() => false));
   const preview = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const [section, revealed] = useReveal<HTMLElement>();
 
   const activate = useCallback(
     (it: Item) => {
@@ -110,8 +113,13 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
         setBeat((b) => b + 1);
         return it.key;
       });
+      /* On the page root, NOT on documentElement. The reference declares
+         --accent in :root, so an inline property on <html> outranks it there.
+         Here the tokens are scoped to .v2, which is a descendant — an inline
+         value on <html> would be inherited and then immediately overridden by
+         the .v2 rule, and the accent would never move off mint. */
       const rgb = `rgb(${it.rgb.join(",")})`;
-      document.documentElement.style.setProperty("--accent", rgb);
+      list.current?.closest<HTMLElement>(".v2")?.style.setProperty("--accent", rgb);
       const tint = preview.current?.querySelector<HTMLElement>(".tint");
       if (tint) {
         tint.style.background = `radial-gradient(90% 70% at 50% 40%, rgba(${it.rgb.join(",")},.13), transparent 70%)`;
@@ -121,25 +129,29 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
     [onHue]
   );
 
-  /* rows arrive staggered, and the magnetic indent rides one listener per row
-     because each row needs its own rectangle anyway */
+  /* Rows arrive staggered. THE REVEAL IS STATE. Adding `in` with classList
+     works until the next render — and this component re-renders on every
+     hover, because `active` moves. React then writes the className prop back
+     over the element and the row that had revealed disappears again, one row
+     per project hovered, until the whole list is gone. Rendering the class is
+     the only version of this that survives its own component. */
   useEffect(() => {
     const root = list.current;
     if (!root) return;
     const rows = Array.from(root.querySelectorAll<HTMLElement>(".item"));
     const io = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e, k) => {
-          if (!e.isIntersecting) return;
-          (e.target as HTMLElement).style.transitionDelay = `${k * 70}ms`;
-          e.target.classList.add("in");
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const i = rows.indexOf(e.target as HTMLElement);
           io.unobserve(e.target);
-        });
+          if (i >= 0) setShown((prev) => (prev[i] ? prev : prev.map((v, k) => k === i || v)));
+        }
       },
       { threshold: 0.15 }
     );
     rows.forEach((r) => io.observe(r));
-    const failsafe = window.setTimeout(() => rows.forEach((r) => r.classList.add("in")), 3000);
+    const failsafe = window.setTimeout(() => setShown(ITEMS.map(() => true)), 2500);
     return () => {
       io.disconnect();
       window.clearTimeout(failsafe);
@@ -177,16 +189,17 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
   };
 
   return (
-    <section className="work" id="work">
+    <section className={`work${revealed ? " rv" : ""}`} id="work" ref={section}>
       <div className="eyebrow">
         <span>SELECTED WORK</span>
       </div>
       <div className="grid">
         <div className="list" id="list" ref={list}>
-          {ITEMS.map((it) => (
+          {ITEMS.map((it, i) => (
             <Link
               key={it.key}
-              className={`item${active === it.key ? " act" : ""}`}
+              className={`item${active === it.key ? " act" : ""}${shown[i] ? " in" : ""}`}
+              style={{ transitionDelay: `${i * 70}ms` }}
               to={it.href}
               onPointerEnter={() => activate(it)}
               onFocus={() => activate(it)}

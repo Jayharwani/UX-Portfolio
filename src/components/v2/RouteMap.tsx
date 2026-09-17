@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ROUTE } from "../../data/projects";
+import { useReveal } from "./useReveal";
 
 /* --------------------------------------------------------------------------
    THE ROUTE — SPEC §7, BUILD step 5.
@@ -35,6 +36,15 @@ export function RouteMap() {
   const torch = useRef<HTMLDivElement>(null);
   const spark = useRef<HTMLDivElement>(null);
   const km = useRef<HTMLSpanElement>(null);
+  const [section, revealed] = useReveal<HTMLElement>();
+
+  /* `in` lands on the SECTION, not on the map. The rules it drives are all
+     descendant selectors, and one of them — `.in .tools i` — is aimed at the
+     tool glyphs, which are a sibling of the map inside .rgrid. Putting the
+     class on the map leaves those four icons at opacity 0 permanently.
+     It still fires on the MAP's threshold, so the arc, the travelling light
+     and the counter stay one synchronised event. */
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     const el = map.current;
@@ -48,7 +58,7 @@ export function RouteMap() {
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const land = () => {
-      el.classList.add("in");
+      setStarted(true);
       if (km.current) km.current.textContent = ROUTE.km.toLocaleString();
       if (torch.current) torch.current.style.opacity = "0";
       if (spark.current) spark.current.style.opacity = "0";
@@ -64,7 +74,7 @@ export function RouteMap() {
     const run = () => {
       if (done) return;
       done = true;
-      el.classList.add("in");
+      setStarted(true);
       let t0: number | null = null;
       const step = (ts: number) => {
         if (t0 === null) t0 = ts;
@@ -118,7 +128,11 @@ export function RouteMap() {
   }, []);
 
   return (
-    <section className="route" id="route">
+    <section
+      className={`route${revealed ? " rv" : ""}${started ? " in" : ""}`}
+      id="route"
+      ref={section}
+    >
       <div className="eyebrow">
         <span>THE ROUTE</span>
       </div>

@@ -1,4 +1,5 @@
 import { CONTACT, CREDITS } from "../../data/projects";
+import { useReveal } from "./useReveal";
 
 /* --------------------------------------------------------------------------
    CONTACT — SPEC §7, BUILD step 7.
@@ -53,8 +54,14 @@ function demagnetise(e: React.PointerEvent<HTMLAnchorElement>) {
 }
 
 export function Contact() {
+  /* `in` drives the headline: .bigline .ln>span sits at translateY(115%)
+     inside a clipped line box until `section.in` lifts it. Without a reveal
+     the whole line is not dim, it is absent. `rv` does the same for the
+     eyebrow above it. */
+  const [section, revealed] = useReveal<HTMLElement>();
+
   return (
-    <section className="end" id="end">
+    <section className={`end${revealed ? " rv in" : ""}`} id="end" ref={section}>
       <div className="eyebrow">
         <span>AVAILABLE NOW</span>
       </div>
