@@ -43,6 +43,10 @@ import { introWillPlay } from "./Intro";
 const Anatomy = lazy(() => import("./scene/Anatomy"));
 
 const NAME = "Jay Harwani";
+
+/** When the name starts resolving on a first visit: after the intro's ground
+    has dissolved and while the camera is still pulling back. */
+const NAME_IN_MS = 2400;
 /** how far the name drifts against the camera, in px at full deflection */
 const NAME_PARALLAX = 14;
 /** the frame in front travels further, because it is nearer */
@@ -95,23 +99,39 @@ export default function Hero() {
      seconds pass without the transition having run, the text lands on its
      end state with no transition at all. setTimeout is not rAF-driven, which
      is the whole point — it fires in the case that breaks everything else. */
-  /* If the title sequence is running, the hero is already finished underneath
-     it. Its own entrance would be playing behind an opaque overlay where
-     nobody can see it, and worse, it would still be mid-transition when the
-     overlay dissolves — so the name would jump at the exact moment the whole
-     sequence is built on it not moving. */
+  /* ── THE NAME RESOLVES INTO THE MOVE ──
+     On a first visit the scene runs a camera move (CINE_MS in Anatomy) and
+     the overlay's ground dissolves at 2.2s to reveal it. The name waits for
+     that, then does the entrance it has always done — weight and tracking
+     settling — so it comes up INSIDE the shot rather than before it.
+
+     This replaces a worse arrangement. The overlay used to hold its own copy
+     of the name, matched pixel-for-pixel to this one so the dissolve would
+     not jump, and the hero started already finished behind it. Two names
+     that must agree is a constraint someone will eventually break by editing
+     one of them; one name cannot be. */
   const [introPlaying] = useState(() => introWillPlay());
-  const [entered, setEntered] = useState(reduce || introPlaying);
-  const [instant, setInstant] = useState(reduce || introPlaying);
+  const [entered, setEntered] = useState(reduce);
+  const [instant, setInstant] = useState(reduce);
   useEffect(() => {
-    if (reduce || introPlaying) return;
-    const r = requestAnimationFrame(() => setEntered(true));
-    const t = window.setTimeout(() => {
-      setInstant(true);
-      setEntered(true);
-    }, 2500);
+    if (reduce) return;
+    let raf = 0;
+    let open = 0;
+    const start = () => setEntered(true);
+    if (introPlaying) open = window.setTimeout(start, NAME_IN_MS);
+    else raf = requestAnimationFrame(start);
+    /* The failsafe is measured from whenever the entrance was due, not from
+       mount, or a delayed start would trip it before it had begun. */
+    const t = window.setTimeout(
+      () => {
+        setInstant(true);
+        setEntered(true);
+      },
+      (introPlaying ? NAME_IN_MS : 0) + 2500
+    );
     return () => {
-      cancelAnimationFrame(r);
+      cancelAnimationFrame(raf);
+      window.clearTimeout(open);
       window.clearTimeout(t);
     };
   }, [reduce, introPlaying]);
@@ -202,7 +222,7 @@ export default function Hero() {
       aria-label="Welcome"
     >
       <Suspense fallback={null}>
-        <Anatomy running={!offscreen} reduce={reduce} small={small} />
+        <Anatomy running={!offscreen} reduce={reduce} small={small} cine={introPlaying} />
       </Suspense>
 
 

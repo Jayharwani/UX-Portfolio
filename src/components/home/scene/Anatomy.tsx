@@ -96,6 +96,33 @@ const C = {
   DEPART_AT: 0.25, // fraction of the hero scrolled before it starts coming apart
   DEPART_BY: 0.85, // and fully apart by here
 
+  /* ── THE TITLE MOVE ──
+     What makes a studio opening read as cinematic is not fidelity, it is
+     STAGING: a camera with somewhere to be, arriving there. So on a first
+     visit the camera starts deep inside the stack of frames and pulls back
+     through them, decelerating hard into the exact position the hero holds
+     for the rest of the session. The frames finish assembling at INTRO_MS,
+     well before the camera stops, so the world forms and THEN the camera
+     finds its shot rather than both resolving at once.
+
+     The grade travels with it. Exposure, bloom and aberration all start
+     pushed and settle to their resting values, which is a film camera
+     stopping down as it finds focus. Every one of these is an ease from a
+     punch value to the value the rest of the page already uses, so there is
+     exactly one place to tune the whole sequence. */
+  CINE_MS: 4300,
+  CAM_START_Z: -7.2, // inside the stack, looking out through it
+  CAM_ROLL: 4.5, // degrees, unwinding to level
+  PUNCH_EXPOSURE: 1.85,
+  PUNCH_BLOOM: 0.58,
+  /* 0.20, not the 0.55 this started at. The resting value is 0.09 and the
+     note next to it says why: coloured fringing on a one-pixel line reads as
+     a rendering fault rather than as a lens. Six times that turned the
+     opening frames into separated RGB edges — a real anamorphic push, and
+     the wrong one for geometry made entirely of hairlines. Twice the resting
+     value is enough to feel the glass. */
+  PUNCH_ABERRATION: 0.2,
+
   /* ── the entrance ── */
   INTRO_MS: 2200,
   SCATTER_Z: 26, // how far back the pieces start
@@ -365,9 +392,12 @@ interface Props {
   reduce: boolean;
   /** phones and downgraded machines: fewer frames, smaller buffer */
   small: boolean;
+  /** first visit: run the title move. On a return the camera is simply
+      already where it belongs, because arriving twice is not an arrival. */
+  cine?: boolean;
 }
 
-export default function Anatomy({ running, reduce, small }: Props) {
+export default function Anatomy({ running, reduce, small, cine = false }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const runRef = useRef(running);
   runRef.current = running;
@@ -527,9 +557,24 @@ export default function Anatomy({ running, reduce, small }: Props) {
       /* eased, so the composition lets go slowly and then all at once */
       const d = depart * depart * (3 - 2 * depart);
 
+      /* ── the title move ──
+         One eased number, ce, drives the camera and the whole grade. Quintic
+         ease-out: most of the distance is covered early and the last stretch
+         takes its time, which is what makes a camera look like it is being
+         BROUGHT to rest rather than stopped. */
+      const c = cine ? Math.min(1, (now - t0) / C.CINE_MS) : 1;
+      const ce = 1 - Math.pow(1 - c, 5);
+
       uniforms.uAssemble.value = e * (1 - d);
       uniforms.uFade.value = Math.min(1, p * 1.6) * (1 - d);
-      bloom.strength = C.BLOOM * e * (1 - d);
+
+      /* the grade stops down as the camera settles */
+      renderer.toneMappingExposure =
+        C.EXPOSURE + (C.PUNCH_EXPOSURE - C.EXPOSURE) * (1 - ce);
+      finish.uniforms.uAberration.value =
+        C.ABERRATION + (C.PUNCH_ABERRATION - C.ABERRATION) * (1 - ce);
+      bloom.strength =
+        (C.BLOOM + (C.PUNCH_BLOOM - C.BLOOM) * (1 - ce)) * e * (1 - d);
 
       uniforms.uTime.value = t;
       finish.uniforms.uTime.value = t;
@@ -543,9 +588,14 @@ export default function Anatomy({ running, reduce, small }: Props) {
       camera.position.set(
         ex * C.PARALLAX + driftX,
         -ey * C.PARALLAX * 0.62 + driftY,
-        C.CAMERA_Z
+        C.CAM_START_Z + (C.CAMERA_Z - C.CAM_START_Z) * ce
       );
       camera.lookAt(0, 0, 0);
+      /* AFTER lookAt, which writes the full rotation and would otherwise
+         discard this. A few degrees of roll unwinding to level is the
+         cheapest thing on this list and the one that most reads as a camera
+         rather than a viewport. */
+      camera.rotation.z = (C.CAM_ROLL * Math.PI) / 180 * (1 - ce);
 
       composer.render();
     };

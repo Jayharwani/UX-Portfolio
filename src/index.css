@@ -1795,40 +1795,77 @@
 }
 
 /* ── THE INTRO ─────────────────────────────────────────────────────────────
-   Five acts, and the last one is a match cut.
+   THE SEQUENCE IS NOT IN HERE. It is a camera move through the hero's own
+   WebGL scene: on a first visit the camera starts deep inside the stack of
+   hairline frames and pulls back through them, decelerating into the
+   position it holds for the rest of the session, while exposure, bloom and
+   lens aberration stop down as it settles. See CINE_MS in
+   scene/Anatomy.tsx, and NAME_IN_MS in Hero.tsx for the name that resolves
+   into it.
 
-   A layout grid is laid down. The centre rule draws through it. Corner slugs
-   arrive like a film leader. The name rack-focuses in and a light passes
-   across it. Then the grid retracts, a frame closes around the plate, and
-   the overlay dissolves onto a hero already holding the same name at the
-   same size in the same place — so nothing moves at the join.
+   What lives here is the FRAME around that move: darkness to open on, a
+   layout grid, letterbox bars, and four corner slugs. Two thirds of the way
+   through, the ground dissolves and the move is revealed already in
+   progress, which is the whole trick — a shot you are dropped into reads as
+   a shot, where one that starts in front of you reads as a loading screen.
 
-   THE WHOLE THING IS MADE OF ONE MARK. Hairlines, a frame, and type. The
-   site's conceit is that it looks like a design file that happens to be
-   running, so the opening is that file's own grid arriving, being used, and
-   being cleared away. An opening that introduced a second vocabulary would
-   be a trailer for a different film.
+   There is no title card any more. It used to carry its own copy of the
+   name, matched pixel-for-pixel to the hero's so the dissolve would not
+   jump. Two names that must agree is a constraint; one name is a fact.
 
-   Every delay is written next to the thing it delays, because a title
-   sequence is choreography and choreography is a list of times. Only the
-   dissolve is owned by Intro.tsx, on a setTimeout, because a transition
-   cannot end on a document that never produces a frame and an intro that
-   cannot end is a site that cannot be read. */
+   The exit is still owned by Intro.tsx on a setTimeout, because a
+   transition cannot end on a document that never produces a frame and an
+   intro that cannot end is a site that cannot be read. */
 .intro {
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
-  background: var(--ink);
-  transition: opacity 640ms var(--ease-ui);
+  transition: opacity 620ms var(--ease-ui);
 }
 .intro.is-out { opacity: 0; }
 
-/* ── act one: the grid ──
+/* ── the ground ──
+   Its own element, because it has to dissolve on its own while the
+   letterbox and the slugs stay. A background on .intro could never do that.
+   This is the reveal: at 2.2s the darkness goes and the camera is already
+   halfway through its pull. */
+.intro__ground {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  animation: intro-ground 1500ms var(--ease-ui) 2200ms forwards;
+}
+@keyframes intro-ground {
+  to { opacity: 0; }
+}
+
+/* ── the letterbox ──
+   The most direct way to say "this is a shot", and the only thing here that
+   survives to the last frame. It closes in early and opens at the end, so
+   the sequence is bracketed rather than merely interrupted. */
+.intro__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 11vh;
+  background: var(--ink);
+  transform: scaleY(0);
+  animation: intro-bar-in 900ms var(--ease-ui) 300ms forwards,
+    intro-bar-out 760ms var(--ease-ui) 4400ms forwards;
+}
+.intro__bar--top { top: 0; transform-origin: top center; }
+.intro__bar--bot { bottom: 0; transform-origin: bottom center; }
+@keyframes intro-bar-in {
+  to { transform: scaleY(1); }
+}
+@keyframes intro-bar-out {
+  to { transform: scaleY(0); }
+}
+
+/* ── the grid ──
    Columns sweep down from the top, staggered outward from the centre, and
    retract the same way they came. --d is each column's distance from the
-   middle, so the middle one leads and the outer ones follow. */
+   middle, so the middle leads and the outer ones follow. */
 .intro__grid {
   position: absolute;
   inset: 0;
@@ -1846,11 +1883,11 @@
     var(--on-ink) 84%,
     transparent
   );
-  opacity: 0.1;
+  opacity: 0.12;
   transform: scaleY(0);
   transform-origin: top center;
   animation: intro-col 900ms var(--ease-ui) calc(150ms + var(--d, 0) * 75ms) both,
-    intro-col-out 620ms var(--ease-ui) calc(3350ms + var(--d, 0) * 45ms) forwards;
+    intro-col-out 700ms var(--ease-ui) calc(3600ms + var(--d, 0) * 45ms) forwards;
 }
 @keyframes intro-col {
   to { transform: scaleY(1); }
@@ -1859,9 +1896,9 @@
   to { transform: scaleY(0); opacity: 0; }
 }
 
-/* ── act two: the slugs ──
+/* ── the slugs ──
    The four things a stranger actually wants to know, set where a viewfinder
-   would put them, gone before the reveal. */
+   would put them, gone before the camera comes to rest. */
 .intro__slug {
   position: absolute;
   font-family: var(--font-mono);
@@ -1873,8 +1910,8 @@
   pointer-events: none;
   opacity: 0;
   transform: translateY(6px);
-  animation: intro-slug 700ms var(--ease-ui) calc(1000ms + var(--i, 0) * 95ms) forwards,
-    intro-slug-out 520ms var(--ease-ui) calc(3350ms + var(--i, 0) * 40ms) forwards;
+  animation: intro-slug 700ms var(--ease-ui) calc(900ms + var(--i, 0) * 95ms) forwards,
+    intro-slug-out 560ms var(--ease-ui) calc(3600ms + var(--i, 0) * 40ms) forwards;
 }
 @keyframes intro-slug {
   to { opacity: 1; transform: none; }
@@ -1882,157 +1919,23 @@
 @keyframes intro-slug-out {
   to { opacity: 0; transform: translateY(-6px); }
 }
-.intro__slug--0 { top: clamp(22px, 4vh, 44px); left: clamp(26px, 9vw, 190px); }
-.intro__slug--1 { top: clamp(22px, 4vh, 44px); right: clamp(26px, 9vw, 190px); }
-.intro__slug--2 { bottom: clamp(22px, 4vh, 44px); left: clamp(26px, 9vw, 190px); }
-.intro__slug--3 { bottom: clamp(22px, 4vh, 44px); right: clamp(26px, 9vw, 190px); }
-
-.intro__plate {
-  position: relative;
-  text-align: center;
-  padding: clamp(30px, 4.5vw, 62px) clamp(36px, 7vw, 96px);
-  /* 1.02, not 1.14. Enough momentum to read as a move, small enough that the
-     name still lands on the hero's. */
-  transform: scale(1);
-  transition: transform 720ms var(--ease-ui);
-}
-.intro.is-out .intro__plate { transform: scale(1.02); }
-
-/* the rule, drawn outward from its own centre, retiring before the end so
-   the last thing held on screen is the hero's composition and nothing else */
-.intro__rule {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: var(--on-ink);
-  opacity: 0;
-  transform: scaleX(0);
-  animation: intro-rule 820ms var(--ease-ui) 700ms forwards,
-    intro-rule-out 520ms var(--ease-ui) 3350ms forwards;
-}
-@keyframes intro-rule {
-  from { transform: scaleX(0); opacity: 0.5; }
-  to { transform: scaleX(1); opacity: 0.5; }
-}
-@keyframes intro-rule-out {
-  to { opacity: 0; }
-}
-
-/* ── act five: the frame closes ──
-   THE FRAME DROPS, THE PLATE DOES NOT. The name's line-height is 0.92, so
-   the glyphs overhang their own box and the descender of the y in Jay sits
-   about 10px closer to the bottom border than the caps sit to the top. That
-   room goes on the frame rather than on the plate's padding: the plate is
-   centred, so asymmetric padding would move its contents up by half the
-   difference and the name would no longer land on the hero's — which is the
-   one thing this whole sequence is built on. */
-.intro__frame {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: calc(-1 * clamp(10px, 1.7vw, 26px));
-  border: 1px solid var(--hair-dark);
-  transform: scaleY(0);
-  opacity: 0;
-  animation: intro-frame 760ms var(--ease-ui) 3700ms forwards;
-}
-@keyframes intro-frame {
-  from { transform: scaleY(0); opacity: 0; }
-  to { transform: scaleY(1); opacity: 1; }
-}
-/* corner ticks, the same 9px mark the work grid and the scene use */
-.intro__frame::before,
-.intro__frame::after {
-  content: "";
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border: 1px solid var(--on-ink);
-  opacity: 0.55;
-}
-.intro__frame::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
-.intro__frame::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
-
-/* ── act three: the rack focus ──
-   Blurred, wide and light, resolving to sharp, tight and settled. A fade
-   makes a name appear; this makes it ARRIVE, which is the difference between
-   a title card and a title sequence.
-
-   Geist is loaded variable (wght 400..600), so the weight is real
-   interpolation rather than a swap between two files. The end state is
-   exactly what .entry__name holds, because they are the same declaration. */
-.intro__name {
-  position: relative;
-  opacity: 0;
-  filter: blur(18px);
-  letter-spacing: 0.14em;
-  font-variation-settings: "wght" 400;
-  transform: translateY(0.18em);
-  animation: intro-name 1400ms var(--ease-ui) 1500ms forwards;
-}
-@keyframes intro-name {
-  to {
-    opacity: 1;
-    filter: blur(0);
-    letter-spacing: -0.042em;
-    font-variation-settings: "wght" 500;
-    transform: translateY(0);
-  }
-}
-
-/* ── act four: the light pass ──
-   A copy of the same string, in a brighter ink, revealed through a narrow
-   moving mask. Not a gradient sitting on the type — a light crossing it,
-   which is why the mask moves and the colour does not.
-
-   It runs after the rack focus has settled, so the letterforms it travels
-   across are the final ones. */
-.intro__name::after {
-  content: attr(data-text);
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: #FFFFFF;
-  pointer-events: none;
-  opacity: 0;
-  -webkit-mask-image: linear-gradient(104deg, transparent 43%, #000 50%, transparent 57%);
-  mask-image: linear-gradient(104deg, transparent 43%, #000 50%, transparent 57%);
-  -webkit-mask-size: 280% 100%;
-  mask-size: 280% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  animation: intro-sweep 1150ms var(--ease-ui) 2600ms both;
-}
-@keyframes intro-sweep {
-  0% { opacity: 0; -webkit-mask-position: 170% 0; mask-position: 170% 0; }
-  18% { opacity: 1; }
-  82% { opacity: 1; }
-  100% { opacity: 0; -webkit-mask-position: -70% 0; mask-position: -70% 0; }
-}
-
-.intro__welcome {
-  position: relative;
-  color: var(--on-ink-2);
-  opacity: 0;
-  transform: translateY(8px);
-  animation: intro-sub 640ms var(--ease-ui) 3100ms forwards;
-}
-@keyframes intro-sub {
-  to { opacity: 1; transform: none; }
-}
+/* inset past the letterbox, so they sit inside the frame and not on it */
+.intro__slug--0 { top: calc(11vh + clamp(18px, 3vh, 34px)); left: clamp(26px, 9vw, 190px); }
+.intro__slug--1 { top: calc(11vh + clamp(18px, 3vh, 34px)); right: clamp(26px, 9vw, 190px); }
+.intro__slug--2 { bottom: calc(11vh + clamp(18px, 3vh, 34px)); left: clamp(26px, 9vw, 190px); }
+.intro__slug--3 { bottom: calc(11vh + clamp(18px, 3vh, 34px)); right: clamp(26px, 9vw, 190px); }
 
 @media (max-width: 760px) {
-  .intro__plate { padding: clamp(26px, 5vw, 44px) clamp(24px, 7vw, 56px); }
   .intro__grid { padding: 0 clamp(18px, 7vw, 40px); }
-  /* Four corner slugs at phone width crowd the frame and fight the name, so
-     only the two that say where and what survive. */
+  .intro__bar { height: 8vh; }
+  /* Four corner slugs at phone width crowd the name, so only the two that
+     say where and what survive, stacked at the bottom. */
   .intro__slug--0,
   .intro__slug--1 { display: none; }
-  .intro__slug--2 { left: 0; right: 0; text-align: center; }
-  .intro__slug--3 { display: none; }
+  .intro__slug--2,
+  .intro__slug--3 { left: 0; right: 0; text-align: center; }
+  .intro__slug--2 { bottom: calc(8vh + 52px); }
+  .intro__slug--3 { bottom: calc(8vh + 26px); }
 }
 
 /* Reduced motion never mounts this, but if it somehow renders it must not
@@ -2157,21 +2060,17 @@
 .entry.is-instant .entry__welcome,
 .entry.is-instant .entry__name { transition: none; }
 
-.entry__welcome,
-.intro__welcome {
+.entry__welcome {
   margin: 0 0 clamp(18px, 2.6vh, 30px);
   letter-spacing: 0.34em;
   color: var(--on-ink-2);
 }
 
-/* THE NAME, DECLARED ONCE.
-
-   The intro's name and the hero's name are the same size, weight, tracking
-   and colour in the same place, which is what lets the overlay dissolve
-   without anything appearing to move. Two declarations would work today and
-   drift the first time either was tuned, so there is one. */
-.entry__name,
-.intro__name {
+/* The intro used to carry a second copy of this, matched pixel-for-pixel so
+   its dissolve would not jump. The title card is gone and the sequence
+   resolves onto this element itself, so there is one name again and nothing
+   to keep in sync. */
+.entry__name {
   margin: 0;
   font-size: clamp(3rem, 12.5vw, 11.5rem);
   font-weight: 500;
@@ -2226,8 +2125,7 @@
 }
 
 @media (max-width: 900px) {
-  .entry__welcome,
-  .intro__welcome { letter-spacing: 0.22em; font-size: 10px; }
+  .entry__welcome { letter-spacing: 0.22em; font-size: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2283,10 +2181,8 @@
      width per 1px of size, and a 320px phone leaves 272px after padding —
      so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,
      instead of the 268px it was using. */
-  .entry__name,
-  .intro__name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
-  .entry__welcome,
-  .intro__welcome {
+  .entry__name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
+  .entry__welcome {
     font-size: 11px;
     letter-spacing: 0.24em;
     margin-bottom: clamp(14px, 2.2vh, 22px);

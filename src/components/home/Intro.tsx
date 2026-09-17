@@ -42,22 +42,37 @@ import { useEffect, useRef, useState } from "react";
 const KEY = "jh.intro.v1";
 
 /* ── THE CHOREOGRAPHY ──
-   Five acts. The two numbers below are the only ones this file owns; every
-   other beat is a delay in the stylesheet, next to the thing it delays.
 
-     0.15s  a layout grid is laid down, columns sweeping from the centre out
-     0.70s  the centre rule draws outward through them
-     1.00s  the corner slugs arrive, one after another
-     1.50s  the name rack-focuses in, blurred and wide to sharp and tight
-     2.60s  a light passes across it
-     3.10s  the eyebrow
-     3.35s  the grid retracts and the slugs go, leaving only the plate
-     3.70s  the frame closes around it
-     4.10s  dissolve, on to a hero already holding the same composition */
-/** when the overlay starts dissolving */
-const EXIT_MS = 4100;
+   THIS IS NO LONGER A TITLE CARD IN FRONT OF THE SITE. The hero's WebGL
+   scene runs a camera move on a first visit — starting deep inside its stack
+   of hairline frames and pulling back through them, decelerating into the
+   position it holds for the rest of the session, with exposure, bloom and
+   lens aberration all stopping down as it settles. See CINE_MS in
+   scene/Anatomy.tsx.
+
+   What is left here is the FRAME around that move: darkness to begin with, a
+   layout grid, letterbox bars, and four corner slugs. Two thirds of the way
+   through, the ground dissolves and the move is revealed already in
+   progress, and the name that resolves into it is the hero's own.
+
+   That last part is why the title card went. It used to hold a copy of the
+   name matched pixel-for-pixel to the hero's so the dissolve would not jump.
+   Two names that must agree is a constraint; one name is a fact. The hero
+   owns it, its entrance is simply delayed to land inside the move, and there
+   is nothing left to keep in sync.
+
+     0.15s  the layout grid is laid down, columns sweeping from the centre
+     0.30s  the letterbox closes in
+     0.90s  the corner slugs arrive, one after another
+     2.20s  the ground dissolves — the camera move is revealed, mid-pull
+     2.40s  the hero's name begins to resolve (Hero.tsx owns this)
+     3.60s  the grid retracts and the slugs go
+     4.30s  the camera comes to rest (Anatomy.tsx owns this)
+     4.40s  the letterbox opens and the overlay clears */
+/** when the letterbox opens and the overlay starts clearing */
+const EXIT_MS = 4400;
 /** and when it is gone, no matter what */
-const END_MS = 4800;
+const END_MS = 5100;
 
 /** the corner slugs, in the order they arrive */
 const SLUGS = ["JH", "2026", "Baltimore, MD", "Product designer"] as const;
@@ -159,6 +174,16 @@ export default function Intro() {
 
   return (
     <div className={`intro${state === "out" ? " is-out" : ""}`} aria-hidden="true">
+      {/* The ground, and it is a separate element on purpose: it has to
+          dissolve on its own while the letterbox and the slugs stay, which a
+          background on .intro could never do. */}
+      <span className="intro__ground" />
+
+      {/* Letterbox. The single most direct way to say "this is a shot", and
+          the only element here that survives to the last frame. */}
+      <span className="intro__bar intro__bar--top" />
+      <span className="intro__bar intro__bar--bot" />
+
       {/* The layout grid, laid down and then taken away again. The site's
           whole conceit is that it looks like a design file that happens to
           be running, and this is the file's own grid arriving first. */}
@@ -173,28 +198,12 @@ export default function Intro() {
 
       {/* Corner slugs, the way a film leader or a camera viewfinder carries
           its metadata. They say the four things a stranger actually wants and
-          then get out of the way before the hero is revealed. */}
+          then get out of the way before the camera finds its shot. */}
       {SLUGS.map((t, i) => (
         <span key={t} className={`intro__slug intro__slug--${i}`} style={{ ["--i" as string]: i }}>
           {t}
         </span>
       ))}
-
-      {/* The same two elements the hero plate holds, in the same order, at
-          the same sizes. That is what makes the dissolve a match cut rather
-          than a cut: when the overlay goes, nothing moves. */}
-      <div className="intro__plate">
-        {/* the frame, closing around the plate at the end */}
-        <span className="intro__frame" />
-        {/* the line itself: the site's one mark, drawn before anything else */}
-        <span className="intro__rule" />
-        <p className="micro intro__welcome">Welcome to my portfolio</p>
-        {/* data-text feeds the light sweep, which is a masked copy of the
-            same string sitting exactly on top of it */}
-        <h2 className="intro__name" data-text="Jay Harwani">
-          Jay Harwani
-        </h2>
-      </div>
     </div>
   );
 }
