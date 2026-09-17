@@ -37,6 +37,7 @@ const NS = "http://www.w3.org/2000/svg";
 const LINE1 = "Designs it.";
 const LINE2 = "Then ships it.";
 const STEPS = 16;
+const MASKS = [1, 2, 3] as const;
 /** if the font promise never settles, draw anyway rather than show nothing */
 const FONT_FAILSAFE_MS = 1200;
 
@@ -73,19 +74,22 @@ export function Hero({ field }: { field: React.RefObject<FieldHandle | null> }) 
       layers.push({ el: t, d: i });
     }
 
+    /* Amplitudes are about two-thirds of HERO.md's. The larger figures read as
+       a thing being waved at the cursor; this reads as a solid that happens to
+       have a near side. Same geometry, quieter register. */
     const place = (ax: number, ay: number) => {
-      blk.style.transform = `rotateY(${ax * 9}deg) rotateX(${-ay * 6}deg)`;
+      blk.style.transform = `rotateY(${(ax * 6).toFixed(3)}deg) rotateX(${(-ay * 4).toFixed(3)}deg)`;
       /* far moves AGAINST the rotation while near moves with it. That
          opposition is the parallax; matching their signs flattens the whole
          thing even though the code still runs. */
-      nr.setAttribute("transform", `translate(${ax * 26},${ay * 17})`);
-      fr.setAttribute("transform", `translate(${-ax * 20},${-ay * 13})`);
+      nr.setAttribute("transform", `translate(${ax * 19},${ay * 12})`);
+      fr.setAttribute("transform", `translate(${-ax * 15},${-ay * 9})`);
       /* the body always throws away from the light, and the direction tracks
          the pointer — as though you were walking around a lit solid */
-      const dx = -ax * 2.6 - 1.1;
-      const dy = ay * 2.2 + 1.6;
+      const dx = -ax * 2 - 1;
+      const dy = ay * 1.7 + 1.35;
       for (const k of layers) {
-        k.el.setAttribute("transform", `translate(${ax * 26 + k.d * dx},${ay * 17 + k.d * dy})`);
+        k.el.setAttribute("transform", `translate(${ax * 19 + k.d * dx},${ay * 12 + k.d * dy})`);
       }
     };
 
@@ -107,8 +111,8 @@ export function Hero({ field }: { field: React.RefObject<FieldHandle | null> }) 
 
     let raf = 0;
     const tilt = () => {
-      ax = lerp(ax, tx, 0.05);
-      ay = lerp(ay, ty, 0.05);
+      ax = lerp(ax, tx, 0.035);
+      ay = lerp(ay, ty, 0.035);
       place(ax, ay);
       raf = requestAnimationFrame(tilt);
     };
@@ -167,31 +171,45 @@ export function Hero({ field }: { field: React.RefObject<FieldHandle | null> }) 
             hears it once rather than reading five duplicated <text> nodes */}
         <svg viewBox="0 0 1180 350" role="img" aria-label={`${LINE1} ${LINE2}`}>
           <defs>
-            <clipPath id="v2c1" clipPathUnits="userSpaceOnUse">
-              <rect className="wipe w1" x="-20" y="0" width="1200" height="350" />
-            </clipPath>
-            <clipPath id="v2c2" clipPathUnits="userSpaceOnUse">
-              <rect className="wipe w2" x="-20" y="0" width="1200" height="350" />
-            </clipPath>
-            <clipPath id="v2c3" clipPathUnits="userSpaceOnUse">
-              <rect className="wipe w3" x="-20" y="0" width="1200" height="350" />
-            </clipPath>
+            {/* A soft leading edge instead of a hard clip. The rect is twice
+                the viewBox wide and slides right; the white-to-black ramp sits
+                at its midpoint, so what crosses the glyphs is a gradient, not
+                a knife. This is the difference between type being wiped on and
+                type developing. */}
+            <linearGradient id="v2edge" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#fff" />
+              <stop offset="0.488" stopColor="#fff" />
+              <stop offset="0.5" stopColor="#000" />
+              <stop offset="1" stopColor="#000" />
+            </linearGradient>
+            {MASKS.map((m) => (
+              <mask key={m} id={`v2m${m}`} maskUnits="userSpaceOnUse" x="-1220" y="-40" width="2400" height="430">
+                <rect
+                  className={`sweep s${m}`}
+                  x="-1220"
+                  y="-40"
+                  width="2400"
+                  height="430"
+                  fill="url(#v2edge)"
+                />
+              </mask>
+            ))}
           </defs>
 
           {/* line 2 sits furthest back */}
           <g ref={far}>
-            <text className="outGlow" clipPath="url(#v2c3)" x="0" y="300">{LINE2}</text>
-            <text className="out2" clipPath="url(#v2c3)" x="0" y="300">{LINE2}</text>
+            <text className="outGlow" mask="url(#v2m3)" x="0" y="300">{LINE2}</text>
+            <text className="out2" mask="url(#v2m3)" x="0" y="300">{LINE2}</text>
           </g>
 
           {/* the extruded body, filled in by the effect above */}
-          <g className="xtrude" ref={xtrude} clipPath="url(#v2c2)" />
+          <g className="xtrude" ref={xtrude} mask="url(#v2m2)" />
 
           {/* line 1 front face */}
-          <g ref={near}>
-            <text className="outGlow" clipPath="url(#v2c1)" x="0" y="134">{LINE1}</text>
-            <text className="out" clipPath="url(#v2c1)" x="0" y="134">{LINE1}</text>
-            <text className="ink" clipPath="url(#v2c2)" x="0" y="134">{LINE1}</text>
+          <g className="near" ref={near}>
+            <text className="outGlow" mask="url(#v2m1)" x="0" y="134">{LINE1}</text>
+            <text className="out" mask="url(#v2m1)" x="0" y="134">{LINE1}</text>
+            <text className="ink" mask="url(#v2m2)" x="0" y="134">{LINE1}</text>
           </g>
         </svg>
 

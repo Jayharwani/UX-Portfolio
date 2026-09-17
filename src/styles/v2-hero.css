@@ -88,8 +88,8 @@
   opacity: 0;
   background: radial-gradient(
     closest-side,
-    rgba(233, 197, 139, 0.18),
-    rgba(95, 211, 216, 0.08) 52%,
+    rgba(238, 241, 245, 0.055),
+    rgba(95, 211, 216, 0.028) 52%,
     transparent 74%
   );
 }
@@ -122,11 +122,16 @@
   stroke-width: 2.8;
   paint-order: stroke fill;
 }
+/* Neutral, not mint. The job here is to put the stroke on light so it stops
+   fighting the field — HERO.md is right that removing it washes the outline
+   out. But a saturated green halo at .55 does more than lift the stroke: it
+   colours it, and green neon over the warm bloom below read as club lighting
+   rather than as a drawing. Same function, no hue, half the strength. */
 .v2 .hero .outGlow {
   fill: none;
-  stroke: rgba(95, 216, 164, 0.55);
-  stroke-width: 5;
-  filter: blur(7px);
+  stroke: rgba(238, 241, 245, 0.26);
+  stroke-width: 6;
+  filter: blur(9px);
 }
 .v2 .hero .ink {
   fill: var(--paper);
@@ -134,20 +139,39 @@
 }
 
 /* ── the draw ──
-   Every reveal is a clip rectangle scaling on X: transform only, so it is
-   composited and costs nothing. transform-box: fill-box is required — without
-   it the origin resolves against the SVG viewport rather than the rect, and
-   the wipe starts in the wrong place. */
-.v2 .hero .wipe {
-  transform: scaleX(0);
-  transform-origin: left center;
-  transform-box: fill-box;
+   HERO.md reveals with a clip rect scaling on X, which is cheap and correct
+   but gives the reveal a hard vertical edge: the type is wiped on. These are
+   masks instead, and the rect slides rather than scales, carrying a gradient
+   ramp at its midpoint. What crosses the glyphs is a soft edge, so the line
+   develops behind the nib instead of being uncovered by it — the single
+   biggest difference between this reading as calm and reading as a transition.
+
+   Sliding rather than scaling also means transform-box is no longer load-
+   bearing: a translate has no origin to resolve. The rect spans -1220..1180
+   and the ramp sits at x ≈ -34 at rest, just off the left edge of the glyphs,
+   so 1230 of travel clears the whole line including its overhang. */
+.v2 .hero .sweep {
+  transform: translateX(0);
 }
-.v2 .hero.go .w1 { animation: v2h-wipe 2.4s var(--ease-out) 0.5s forwards; }
-.v2 .hero.go .w3 { animation: v2h-wipe 2.7s var(--ease-out) 1s forwards; }
-.v2 .hero.go .w2 { animation: v2h-wipe 1.9s var(--ease-out) 2.8s forwards; }
-@keyframes v2h-wipe {
-  to { transform: scaleX(1); }
+.v2 .hero.go .s1 { animation: v2h-sweep 2.6s var(--ease-out) 0.5s forwards; }
+.v2 .hero.go .s3 { animation: v2h-sweep 2.9s var(--ease-out) 1s forwards; }
+.v2 .hero.go .s2 { animation: v2h-sweep 2.1s var(--ease-out) 2.8s forwards; }
+@keyframes v2h-sweep {
+  to { transform: translateX(1230px); }
+}
+
+/* ── line one sheds its draft ──
+   Once the ink has landed, the outline and its lift fade off the first line.
+   It stops being a drawn thing with paint inside it and becomes a solid, which
+   is the whole claim — and it leaves the outline language to the second line
+   alone, where it means something. It also halves what is left glowing. */
+.v2 .hero.go .near .outGlow { animation: v2h-undraw 1.6s var(--ease-out) 4.5s forwards; }
+.v2 .hero.go .near .out { animation: v2h-thin 1.6s var(--ease-out) 4.5s forwards; }
+@keyframes v2h-undraw {
+  to { opacity: 0; }
+}
+@keyframes v2h-thin {
+  to { opacity: 0.22; }
 }
 
 /* ── the extruded body ──
@@ -163,12 +187,18 @@
   position: absolute;
   top: -2%;
   bottom: 10%;
-  width: 2.5px;
+  width: 1.5px;
   left: 0;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(to bottom, transparent, var(--mint), var(--cyan), transparent);
-  box-shadow: 0 0 26px rgba(95, 216, 164, 0.9), 0 0 70px rgba(95, 211, 216, 0.5);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(238, 241, 245, 0.92),
+    rgba(238, 241, 245, 0.7),
+    transparent
+  );
+  box-shadow: 0 0 16px rgba(238, 241, 245, 0.34), 0 0 44px rgba(95, 211, 216, 0.14);
 }
 .v2 .hero.go .pen { animation: v2h-pen 3.4s var(--ease-out) 0.5s forwards; }
 @keyframes v2h-pen {
@@ -189,11 +219,11 @@
   background: linear-gradient(
     105deg,
     transparent 41%,
-    rgba(255, 255, 255, 0.32) 50%,
+    rgba(255, 255, 255, 0.13) 50%,
     transparent 59%
   );
 }
-.v2 .hero.go .glint { animation: v2h-glint 2.1s var(--ease-out) 4.6s both; }
+.v2 .hero.go .glint { animation: v2h-glint 2.9s var(--ease-out) 4.9s both; }
 @keyframes v2h-glint {
   from { opacity: 1; transform: translateX(-120%); }
   to { opacity: 1; transform: translateX(120%); }
@@ -230,7 +260,7 @@
    rules above can match and none of this has to outrank them. The headline
    simply starts finished: drawn, inked, extruded, fully readable. */
 @media (prefers-reduced-motion: reduce) {
-  .v2 .hero .wipe { transform: scaleX(1); }
+  .v2 .hero .sweep { transform: translateX(1230px); }
   .v2 .hero .pen,
   .v2 .hero .glint,
   .v2 .hero .bloom { display: none; }
