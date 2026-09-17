@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { useReducedMotion } from "motion/react";
 import Hero from "./home/Hero";
+import Intro from "./home/Intro";
 import { useInView } from "./home/useInView";
 import Route from "./home/Route";
 import { ToolRow } from "./home/toolmarks";
@@ -358,6 +359,7 @@ function WorkCard({
 export function Home() {
   return (
     <main className="s32">
+      <Intro />
       <Hero />
 
       {/* ── work: the whole point ── */}

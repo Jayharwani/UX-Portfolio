@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { useReducedMotion } from "motion/react";
 import { usePerfTier } from "./perfTier";
+import { introWillPlay } from "./Intro";
 
 /* ──────────────────────────────────────────────────────────────────────────
    THE HERO — a name inside a real 3D space.
@@ -94,10 +95,16 @@ export default function Hero() {
      seconds pass without the transition having run, the text lands on its
      end state with no transition at all. setTimeout is not rAF-driven, which
      is the whole point — it fires in the case that breaks everything else. */
-  const [entered, setEntered] = useState(reduce);
-  const [instant, setInstant] = useState(reduce);
+  /* If the title sequence is running, the hero is already finished underneath
+     it. Its own entrance would be playing behind an opaque overlay where
+     nobody can see it, and worse, it would still be mid-transition when the
+     overlay dissolves — so the name would jump at the exact moment the whole
+     sequence is built on it not moving. */
+  const [introPlaying] = useState(() => introWillPlay());
+  const [entered, setEntered] = useState(reduce || introPlaying);
+  const [instant, setInstant] = useState(reduce || introPlaying);
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || introPlaying) return;
     const r = requestAnimationFrame(() => setEntered(true));
     const t = window.setTimeout(() => {
       setInstant(true);
@@ -107,7 +114,7 @@ export default function Hero() {
       cancelAnimationFrame(r);
       window.clearTimeout(t);
     };
-  }, [reduce]);
+  }, [reduce, introPlaying]);
 
   /* ── the departure ──────────────────────────────────────────────────────
      Scrolling out of the hero takes the type with the frames behind it.

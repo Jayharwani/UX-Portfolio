@@ -1418,6 +1418,169 @@
 /* .stage__slide and .stage__text went with the stage. The grid's cards do
    their own arriving, in .wcard above. */
 
+/* ── THE INTRO ─────────────────────────────────────────────────────────────
+   A hairline draws. The name arrives out of focus and sharpens through it. A
+   frame opens. Then the overlay dissolves and the name DOES NOT MOVE,
+   because the hero underneath is already showing the same name at the same
+   size in the same place.
+
+   THAT IS THE WHOLE IDEA. This is not a title card in front of a website; it
+   is the website's own first screen, arriving. The intro plate and the hero
+   plate are the same two elements, and the type below is declared once and
+   used by both so the two can never drift apart by a pixel. When the overlay
+   goes, nothing cuts: the rule and the frame dissolve, the scene fades up
+   behind, and the composition that was already there is simply revealed.
+
+   A push past the camera was the first version. It looked fine and it threw
+   away the match, which was the better idea sitting in the file the whole
+   time.
+
+   The choreography, because a title sequence is a list of times:
+
+     120   the rule draws outward from the centre
+     400   the name rises through it, blurred and wide
+     1150  the eyebrow
+     1400  the frame opens around both
+     1750  the rule retires, so the last held frame is exactly the hero
+     2050  the overlay dissolves
+
+   The one thing NOT expressed here is the exit's guarantee, which lives in
+   Intro.tsx on a setTimeout. A transition cannot end on a document that never
+   produces a frame, and an intro that cannot end is a site that cannot be
+   read. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  transition: opacity 600ms var(--ease-ui);
+}
+.intro.is-out { opacity: 0; }
+
+.intro__plate {
+  position: relative;
+  text-align: center;
+  padding: clamp(30px, 4.5vw, 62px) clamp(36px, 7vw, 96px);
+  /* 1.02, not 1.14. Enough momentum to read as a move, small enough that the
+     name still lands on the hero's. */
+  transform: scale(1);
+  transition: transform 700ms var(--ease-ui);
+}
+.intro.is-out .intro__plate { transform: scale(1.02); }
+
+/* the rule, drawn outward from its own centre, retiring before the end so
+   the last thing held on screen is the hero's composition and nothing else */
+.intro__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--on-ink);
+  opacity: 0;
+  transform: scaleX(0);
+  animation: intro-rule 760ms var(--ease-ui) 120ms forwards,
+             intro-rule-out 520ms var(--ease-ui) 1750ms forwards;
+}
+@keyframes intro-rule {
+  from { transform: scaleX(0); opacity: 0.5; }
+  to   { transform: scaleX(1); opacity: 0.5; }
+}
+@keyframes intro-rule-out {
+  to { opacity: 0; }
+}
+
+/* the frame, opening out of the line it grew from */
+/* THE FRAME DROPS, THE PLATE DOES NOT.
+
+   The name's line-height is 0.92, so the glyphs overhang their own box and
+   the descender of the y in Jay sits about 10px closer to the bottom border
+   than the cap height sits to the top. Optically the frame wants more room
+   underneath.
+
+   That extra room goes on the FRAME, not on the plate's padding. The plate is
+   centred in the viewport, so asymmetric padding would move its contents up
+   by half the difference and the name would no longer land on the hero's —
+   which is the one thing this whole sequence is built on. The frame is
+   decoration and can hang wherever it looks right. */
+.intro__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * clamp(10px, 1.7vw, 26px));
+  border: 1px solid var(--hair-dark);
+  transform: scaleY(0);
+  opacity: 0;
+  animation: intro-frame 720ms var(--ease-ui) 1400ms forwards;
+}
+@keyframes intro-frame {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+/* corner ticks, the same 9px mark the work grid and the scene use */
+.intro__frame::before,
+.intro__frame::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--on-ink);
+  opacity: 0.55;
+}
+.intro__frame::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
+.intro__frame::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+
+/* ── the rack focus ──
+   Blurred, wide and light, resolving to sharp, tight and settled. A fade
+   makes a name appear; this makes it ARRIVE, which is the difference between
+   a title card and a title sequence.
+
+   Geist is loaded variable (wght 400..600), so the weight is real
+   interpolation rather than a swap between two files. The end state is
+   exactly what .entry__name holds, because they are the same declaration. */
+.intro__name {
+  position: relative;
+  opacity: 0;
+  filter: blur(16px);
+  letter-spacing: 0.12em;
+  font-variation-settings: "wght" 400;
+  transform: translateY(0.16em);
+  animation: intro-name 1200ms var(--ease-ui) 400ms forwards;
+}
+@keyframes intro-name {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    letter-spacing: -0.042em;
+    font-variation-settings: "wght" 500;
+    transform: translateY(0);
+  }
+}
+
+.intro__welcome {
+  position: relative;
+  color: var(--on-ink-2);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: intro-sub 620ms var(--ease-ui) 1150ms forwards;
+}
+@keyframes intro-sub {
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 760px) {
+  .intro__plate { padding: clamp(26px, 5vw, 44px) clamp(24px, 7vw, 56px); }
+}
+
+/* Reduced motion never mounts this, but if it somehow renders it must not
+   animate and must not hide anything. */
+@media (prefers-reduced-motion: reduce) {
+  .intro { display: none; }
+}
+
 /* ── THE ENTRANCE ──────────────────────────────────────────────────────────
    A name inside a real 3D space. Two WebGL canvases share one camera — one
    under the type, one over it — and the real <h1> sits between them, which
@@ -1534,13 +1697,21 @@
 .entry.is-instant .entry__welcome,
 .entry.is-instant .entry__name { transition: none; }
 
-.entry__welcome {
+.entry__welcome,
+.intro__welcome {
   margin: 0 0 clamp(18px, 2.6vh, 30px);
   letter-spacing: 0.34em;
   color: var(--on-ink-2);
 }
 
-.entry__name {
+/* THE NAME, DECLARED ONCE.
+
+   The intro's name and the hero's name are the same size, weight, tracking
+   and colour in the same place, which is what lets the overlay dissolve
+   without anything appearing to move. Two declarations would work today and
+   drift the first time either was tuned, so there is one. */
+.entry__name,
+.intro__name {
   margin: 0;
   font-size: clamp(3rem, 12.5vw, 11.5rem);
   font-weight: 500;
@@ -1595,7 +1766,8 @@
 }
 
 @media (max-width: 900px) {
-  .entry__welcome { letter-spacing: 0.22em; font-size: 10px; }
+  .entry__welcome,
+  .intro__welcome { letter-spacing: 0.22em; font-size: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1657,8 +1829,10 @@
      width per 1px of size, and a 320px phone leaves 272px after padding —
      so 14vw with a 2.7rem floor lands at 259px there and 316px at 390,
      instead of the 268px it was using. */
-  .entry__name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
-  .entry__welcome {
+  .entry__name,
+  .intro__name { font-size: clamp(2.7rem, 14vw, 11.5rem); }
+  .entry__welcome,
+  .intro__welcome {
     font-size: 11px;
     letter-spacing: 0.24em;
     margin-bottom: clamp(14px, 2.2vh, 22px);
