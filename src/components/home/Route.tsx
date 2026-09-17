@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import { useInView } from "./useInView";
 
@@ -22,12 +22,18 @@ import { useInView } from "./useInView";
 
    THE ARC DRAWS, IT DOES NOT FADE. pathLength="1" normalises the curve so
    the dash offset is 0 to 1 regardless of its real length — no measuring in
-   JS, no magic number to go stale if the geometry is nudged. The
-   destination node arrives only after the line reaches it, because that is
-   the order the thing being described happened in.
+   JS, no magic number to go stale if the geometry is nudged.
 
-   Everything is one transition on a class. Nothing runs per frame, nothing
-   loops, and the whole graphic is inert once it has arrived.
+   AND IT DRAWS AT THE SPEED YOU SCROLL. It used to fire once on entering the
+   viewport and play out on its own timer, which meant the one graphic on the
+   page about travelling a distance was something you watched rather than
+   something you did. Now the line is tied to scroll position: the journey
+   advances because the reader advances, the kilometre count rises with it,
+   and the Baltimore node lands only when the line actually reaches it.
+
+   THE SCRUB IS A SCROLL LISTENER WRITING A STYLE, not a frame loop reading
+   one. It is correct on its first call, which an observer is not, and the
+   browser already coalesces scroll events to about one per frame.
    ────────────────────────────────────────────────────────────────────────── */
 
 /* viewBox units. The wrapper carries the same ratio in CSS, so the SVG
@@ -42,10 +48,56 @@ const ARC = `M${FROM.x} ${FROM.y} Q260 8 ${TO.x} ${TO.y}`;
 
 const pct = (v: number, total: number) => `${((v / total) * 100).toFixed(3)}%`;
 
+/** great-circle Ahmedabad to Baltimore, rounded. The label counts to this. */
+const KM = 12400;
+
 export default function Route() {
   const reduce = !!useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
+  const arc = useRef<SVGPathElement>(null);
+  const dist = useRef<HTMLParagraphElement>(null);
   const { seen, forced } = useInView(ref, { threshold: 0.3, enabled: !reduce });
+
+  useEffect(() => {
+    const host = ref.current;
+    const path = arc.current;
+    const label = dist.current;
+    if (!host || !path || !label) return;
+
+    const fmt = (n: number) => `${n.toLocaleString("en-US")} km`;
+
+    /* Reduced motion gets the finished drawing and the real number. The
+       graphic is information, so it is never withheld — only the drawing of
+       it is. */
+    if (reduce) {
+      path.style.strokeDashoffset = "0";
+      label.textContent = fmt(KM);
+      return;
+    }
+
+    const onScroll = () => {
+      const b = host.getBoundingClientRect();
+      const vh = window.innerHeight;
+      /* Starts when the top of the drawing has risen a fifth into view and
+         completes as its middle reaches the middle of the screen, so the line
+         finishes while the graphic is still centred rather than on its way
+         out of frame. */
+      const span = b.height * 0.9 + vh * 0.3;
+      const t = Math.min(1, Math.max(0, (vh * 0.8 - b.top) / Math.max(span, 1)));
+      const eased = t * t * (3 - 2 * t);
+      path.style.strokeDashoffset = (1 - eased).toFixed(4);
+      label.textContent = fmt(Math.round(eased * KM));
+      host.classList.toggle("is-arrived", eased > 0.985);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [reduce]);
 
   return (
     <div ref={ref} className={`route${seen ? " is-in" : ""}${forced ? " is-instant" : ""}`}>
@@ -81,7 +133,7 @@ export default function Route() {
           mask="url(#rt-mask)"
         />
 
-        <path className="route__arc" d={ARC} pathLength="1" fill="none" />
+        <path ref={arc} className="route__arc" d={ARC} pathLength="1" fill="none" />
 
         <g className="route__node route__node--from">
           <circle cx={FROM.x} cy={FROM.y} r="11" className="route__ring" fill="none" />
@@ -108,7 +160,10 @@ export default function Route() {
       >
         Baltimore
       </p>
-      <p className="route__dist micro">12,400 km</p>
+      {/* The number is written by the scrub, so the markup carries the
+          zero state rather than a value that would be wrong for most of
+          the scroll. */}
+      <p ref={dist} className="route__dist micro">0 km</p>
     </div>
   );
 }

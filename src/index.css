@@ -841,10 +841,11 @@
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 1;
+  /* Written by the scroll handler in Route.tsx, every event, as a number
+     between 1 and 0. No transition: the reader's scroll IS the easing, and a
+     transition here would be a second animation arguing with the first. */
   stroke-dashoffset: 1;
-  transition: stroke-dashoffset 1700ms cubic-bezier(0.5, 0, 0.2, 1);
 }
-.route.is-in .route__arc { stroke-dashoffset: 0; }
 
 .route__dot { fill: var(--on-ink); }
 .route__ring {
@@ -864,7 +865,12 @@
 /* the destination waits for the line to reach it — the order the thing being
    described actually happened in */
 .route.is-in .route__node--from { transition-delay: 120ms; }
-.route.is-in .route__node--to { transition-delay: 1480ms; }
+/* The arrival is gated on the drawing, not on a delay. It used to be 1480ms,
+   which was the right answer only while the line drew on its own timer; now
+   that the reader draws it, the node lands when the line gets there however
+   fast or slow that is. */
+.route.is-in .route__node--to { opacity: 0; transform: scale(0.4); }
+.route.is-arrived .route__node--to { opacity: 1; transform: none; }
 
 .route__label {
   position: absolute;
@@ -882,17 +888,22 @@
 }
 .route.is-in .route__label { opacity: 1; transform: translate(-50%, 13px); }
 .route.is-in .route__label--from { transition-delay: 260ms; }
-.route.is-in .route__label--to { transition-delay: 1560ms; }
+.route.is-in .route__label--to { opacity: 0; transform: translate(-50%, 22px); }
+.route.is-arrived .route__label--to { opacity: 1; transform: translate(-50%, 13px); }
 
 .route__dist {
   position: absolute;
   left: 50%;
   top: 11%;
   margin: 0;
+  /* It counts from 0 to 12,400 as you scroll. Proportional figures would
+     change the label's width on nearly every frame and the whole thing would
+     shimmer. */
+  font-variant-numeric: tabular-nums;
   transform: translateX(-50%);
   color: var(--on-ink-2);
   opacity: 0;
-  transition: opacity 800ms var(--ease-ui) 980ms;
+  transition: opacity 800ms var(--ease-ui) 200ms;
 }
 .route.is-in .route__dist { opacity: 1; }
 
@@ -1417,6 +1428,120 @@
    is behaviour, not ornament. */
 /* .stage__slide and .stage__text went with the stage. The grid's cards do
    their own arriving, in .wcard above. */
+
+/* ── THE INTENT TAG ────────────────────────────────────────────────────────
+   Each work frame is one large link with no visible affordance. "These
+   previews are live" and "this preview is a door" are two different claims,
+   and only the first one was being made.
+
+   So a label follows the cursor inside the frame. It trails rather than
+   sticking, and the lag is this transition rather than a lerp in the pointer
+   loop: continuous writes into a short transition give weight for free, and
+   land correctly instead of stalling halfway if frames run out.
+
+   scale and transform are separate properties on purpose. The loop owns
+   `transform` (where the cursor is); the class owns `scale` (whether it is
+   here at all). One property with two writers is how a follow and a pop
+   delete each other. */
+.wcard__tag {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  margin: 14px 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: var(--ac, var(--on-ink));
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.7;
+  transition: transform 420ms var(--ease-ui), opacity 200ms var(--ease-ui),
+    scale 260ms var(--ease-ui);
+}
+.wcard__tag.is-on { opacity: 1; scale: 1; }
+.wcard__tag-arrow {
+  display: inline-block;
+  transition: transform 420ms var(--ease-ui);
+}
+.wcard__tag.is-on .wcard__tag-arrow { transform: translate(1px, -1px); }
+
+/* ── THE WIPE ──────────────────────────────────────────────────────────────
+   A link's underline enters from the left and leaves to the right, so the
+   gesture reads as a direction rather than a blink. The resting hairline
+   stays as the track; this is the bright line drawn over it.
+
+   The exit direction is the whole trick and it is two declarations: origin
+   right at rest, origin left on hover. On the way in it grows from the left;
+   on the way out the origin has already flipped back, so it collapses toward
+   the right. No JavaScript, no class to toggle, no leave handler. */
+.link-wipe { position: relative; }
+.link-wipe::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--on-ink);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 460ms var(--ease-ui);
+  pointer-events: none;
+}
+.link-wipe:hover::before,
+.link-wipe:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* Damping for the magnetic pull. Declared here rather than on [data-mag] so
+   it does not replace the transitions those elements already carry: every
+   magnetic element on this page is also a wipe. */
+.link-wipe {
+  transition: transform 260ms var(--ease-ui), border-color 300ms var(--ease-ui),
+    color 300ms var(--ease-ui), opacity 300ms var(--ease-ui);
+}
+
+/* ── ROUTE CHANGES ─────────────────────────────────────────────────────────
+   Opening a case study was a hard cut. It is now a cross-dissolve with a
+   breath of scale, which is the difference between a page replacing another
+   and a page arriving.
+
+   This is the View Transitions API, so it costs nothing where it is not
+   supported: react-router falls back to an ordinary navigation and the site
+   behaves exactly as it did. There is no polyfill and no library. */
+@keyframes vt-out {
+  to { opacity: 0; transform: scale(0.99); }
+}
+@keyframes vt-in {
+  from { opacity: 0; transform: scale(1.012); }
+}
+::view-transition-old(root) {
+  animation: vt-out 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wcard__tag,
+  .wcard__tag-arrow,
+  .link-wipe,
+  .link-wipe::before { transition: none; }
+  /* The transition still runs unless it is cancelled outright, and a
+     cross-dissolve is exactly the kind of thing this setting is about. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
 
 /* ── THE INTRO ─────────────────────────────────────────────────────────────
    A hairline draws. The name arrives out of focus and sharpens through it. A

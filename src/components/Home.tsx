@@ -6,6 +6,7 @@ import Intro from "./home/Intro";
 import { useInView } from "./home/useInView";
 import Route from "./home/Route";
 import { ToolRow } from "./home/toolmarks";
+import { useMagnetic } from "./home/magnetic";
 import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
@@ -199,6 +200,7 @@ function WorkGrid({
     if (!list) return;
     const cards = Array.from(list.querySelectorAll<HTMLElement>(".wcard"));
     const frames = cards.map((c) => c.querySelector<HTMLElement>(".wcard__frame"));
+    const tags = cards.map((c) => c.querySelector<HTMLElement>(".wcard__tag"));
     if (!cards.length) return;
 
     /* every frame's transform is composed from two independent inputs, so
@@ -275,6 +277,35 @@ function WorkGrid({
         const near = Math.max(0, 1 - Math.hypot(nx, ny) / 1.9);
         tilt[k] = [-ny * TILT * near, nx * TILT * near];
         apply(k);
+
+        /* ── the intent tag ──
+           Inside the frame, a label follows the cursor and says what a click
+           will do. The frame is one large link with no visible affordance,
+           and "these previews are live" and "this preview is a door" are two
+           different claims — the second one needed saying.
+
+           It trails rather than sticking to the cursor, and that lag is a CSS
+           transition on the transform rather than a lerp in this loop:
+           continuous writes into a short transition give weight for free, and
+           land correctly rather than stalling if frames run out. */
+        const tag = tags[k];
+        if (!tag) continue;
+        const inside =
+          px >= b.left && px <= b.right && py >= b.top && py <= b.bottom;
+        tag.classList.toggle("is-on", inside);
+        if (inside) {
+          /* Clamped to the frame. The tag sits down-right of the cursor, so
+             near the bottom or right edge it would otherwise hang outside a
+             frame whose whole character is a clean hairline rectangle. */
+          const tw = tag.offsetWidth;
+          const th = tag.offsetHeight;
+          const x = Math.min(px - b.left, b.width - tw - 26);
+          const y = Math.min(py - b.top, b.height - th - 24);
+          tag.style.transform = `translate3d(${Math.max(0, x).toFixed(1)}px, ${Math.max(
+            0,
+            y
+          ).toFixed(1)}px, 0)`;
+        }
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -287,10 +318,18 @@ function WorkGrid({
     const fine = !window.matchMedia("(pointer: coarse)").matches;
     if (!reduce && fine) window.addEventListener("pointermove", onMove, { passive: true });
 
+    /* A pointer that leaves the window stops sending moves, so without this
+       the last tag stays lit over a card nobody is pointing at. */
+    const onLeave = () => {
+      for (const t of tags) t?.classList.remove("is-on");
+    };
+    if (!reduce && fine) document.addEventListener("pointerleave", onLeave);
+
     return () => {
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
       window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerleave", onLeave);
     };
   }, [reduce, onActive]);
 
@@ -318,6 +357,11 @@ function WorkCard({
   return (
     <li className={`wcard${seen ? " is-in" : ""}`} style={{ ["--ac" as string]: w.accent }}>
       <div className="wcard__frame">
+        {/* aria-hidden: the link in the meta row already says this, and
+            saying it twice to a screen reader is worse than not saying it */}
+        <span className="wcard__tag" aria-hidden="true">
+          View case <span className="wcard__tag-arrow">↗</span>
+        </span>
         <div className={`flip${flipped ? " is-flipped" : ""}`}>
           <div className="flip__face flip__face--front">
             <div className="wcard__art">
@@ -348,7 +392,7 @@ function WorkCard({
         <h3 className="wcard__name">{w.name}</h3>
         <div className="wcard__rule" aria-hidden="true" />
         <p className="wcard__line">{w.line}</p>
-        <Link className="wcard__go" to={w.to}>
+        <Link className="wcard__go link-wipe" to={w.to} data-mag viewTransition>
           View case ↗
         </Link>
       </div>
@@ -357,6 +401,8 @@ function WorkCard({
 }
 
 export function Home() {
+  const reduce = !!useReducedMotion();
+  useMagnetic(!reduce);
   return (
     <main className="s32">
       <Intro />
@@ -405,8 +451,18 @@ export function Home() {
           </Reveal>
           <Reveal delay={0.14}>
             <div className="contact__row">
-              <a className="big-link" href={`mailto:${EMAIL}`}>Email</a>
-              <a className="big-link" href={LINKEDIN} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              <a className="big-link link-wipe" href={`mailto:${EMAIL}`} data-mag>
+                Email
+              </a>
+              <a
+                className="big-link link-wipe"
+                href={LINKEDIN}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-mag
+              >
+                LinkedIn ↗
+              </a>
             </div>
           </Reveal>
           <Reveal delay={0.2}>
