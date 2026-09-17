@@ -39,11 +39,35 @@ class Driver {
   private raf = 0;
   private running = false;
   private reduced = false;
+  private ro: ResizeObserver | null = null;
+  private lastH = 0;
 
   constructor() {
     this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.addEventListener("scroll", this.arm, { passive: true });
     window.addEventListener("resize", this.remeasure, { passive: true });
+
+    /* A scene measured at mount is measured before the page has settled: lazy
+       images have not loaded, the webfont has not swapped, and on a long case
+       study everything below the fold then sits hundreds of pixels from where
+       it was recorded. The scene never fires, and it looks exactly like a
+       broken effect rather than a stale number.
+
+       Watching the document's own height catches all of it — images, fonts,
+       reveals adding height — and the height guard keeps this out of a
+       ResizeObserver feedback loop, since the properties written here can
+       change layout inside a scene. */
+    this.lastH = document.documentElement.scrollHeight;
+    if (typeof ResizeObserver !== "undefined") {
+      this.ro = new ResizeObserver(() => {
+        const h = document.documentElement.scrollHeight;
+        if (h === this.lastH) return;
+        this.lastH = h;
+        this.remeasure();
+      });
+      this.ro.observe(document.documentElement);
+    }
+    document.fonts?.ready.then(() => this.remeasure()).catch(() => {});
   }
 
   add(el: HTMLElement, on?: (p: number) => void) {
@@ -118,6 +142,8 @@ class Driver {
     this.running = false;
     window.removeEventListener("scroll", this.arm);
     window.removeEventListener("resize", this.remeasure);
+    this.ro?.disconnect();
+    this.ro = null;
     this.scenes.clear();
   }
 }

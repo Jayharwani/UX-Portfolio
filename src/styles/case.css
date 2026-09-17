@@ -1188,3 +1188,292 @@
   margin-top: 40px;
 }
 .cs .cw-edges p { font-size: 14px; margin: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BUMPER — gold. The sprint, the matrix, the tradeoffs, and the pause.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.cs .cs-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── the six-week sprint ── */
+.cs .bp-sprint {
+  list-style: none;
+  margin: clamp(38px, 6vh, 64px) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cs .bp-sprint li {
+  background: var(--void);
+  padding: 20px 18px;
+}
+.cs .bp-sprint .w {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.cs .bp-sprint b {
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--paper);
+}
+
+/* ── research insights ── */
+.cs .bp-insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 26px;
+}
+.cs .bp-insights > div {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px 22px;
+  background: var(--panel);
+}
+.cs .bp-insights .k {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+.cs .bp-insights h3 { margin: 14px 0 10px; }
+.cs .bp-insights p { font-size: 14px; margin: 0; }
+
+/* ── the competitive matrix ── */
+.cs .bp-table-wrap {
+  margin-top: 40px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.cs .bp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 520px;
+}
+.cs .bp-table th,
+.cs .bp-table td {
+  padding: 15px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.cs .bp-table thead th {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.cs .bp-table tbody th {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.cs .bp-table td { text-align: center; width: 15%; }
+.cs .bp-table thead th:not(:first-child) { text-align: center; }
+.cs .bp-table tr:last-child th,
+.cs .bp-table tr:last-child td { border-bottom: 0; }
+.cs .bp-table .us { background: color-mix(in oklab, var(--accent) 7%, transparent); }
+.cs .bp-table thead .us { color: var(--accent); }
+.cs .bp-table .yes { color: var(--accent); }
+.cs .bp-table .no { color: var(--ink-3); }
+
+/* ── tradeoffs ── */
+.cs .bp-tradeoffs {
+  margin-top: 40px;
+  border-top: 1px solid var(--line);
+}
+.cs .bp-tradeoffs > div {
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cs .bp-tradeoffs h3 { margin-bottom: 14px; }
+.cs .bp-tradeoffs .tension { font-size: 14px; color: var(--ink-3); }
+.cs .bp-tradeoffs .chose { font-size: 14.5px; }
+.cs .bp-tradeoffs .cost {
+  display: block;
+  margin-top: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  color: var(--accent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PAUSE
+
+   Sticky, not a scroll trap. Bumper's own first principle is that the pause
+   slows you down without stopping you — a page that seized the wheel to make
+   that point would be arguing against itself.
+   ══════════════════════════════════════════════════════════════════════════ */
+.cs .bp-pause {
+  height: 240vh;
+  position: relative;
+  border-top: 1px solid var(--line);
+}
+.cs .bp-pause .stick {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 80px var(--gut) 40px;
+  overflow: hidden;
+}
+
+/* the manipulation the intervention covers — it defocuses as the pause takes
+   hold, which is the case study's stated reason for the backdrop blur */
+.cs .bp-pause .urgency {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 26px;
+  text-align: center;
+  font-size: clamp(16px, 3.4vw, 34px);
+  letter-spacing: 0.02em;
+  color: rgba(233, 197, 139, 0.5);
+  filter: blur(calc(clamp(0, (var(--p) - 0.14) * 4, 1) * 13px));
+  opacity: calc(1 - clamp(0, (var(--p) - 0.14) * 4, 1) * 0.62);
+  transform: scale(calc(1 + clamp(0, (var(--p) - 0.14) * 4, 1) * 0.06));
+}
+
+.cs .bp-pause .panel {
+  position: relative;
+  width: min(560px, 100%);
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  padding: clamp(22px, 3.4vw, 34px);
+  background: rgba(8, 11, 18, 0.82);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+  opacity: clamp(0, (var(--p) - 0.12) * 6, 1);
+  transform: translateY(calc((1 - clamp(0, (var(--p) - 0.12) * 6, 1)) * 24px));
+}
+.cs .bp-pause .head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.cs .bp-pause .brand {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+.cs .bp-pause .sub {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.cs .bp-pause h3 {
+  font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.cs .bp-pause .panel > p { font-size: 14px; margin-bottom: 22px; }
+
+.cs .bp-pause .compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cs .bp-pause .side {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.cs .bp-pause .side.dream { border-color: color-mix(in oklab, var(--accent) 40%, transparent); }
+.cs .bp-pause .side .k {
+  font-size: 8.5px;
+  letter-spacing: 0.15em;
+  color: var(--ink-3);
+}
+.cs .bp-pause .side b { font-weight: 400; font-size: 14px; color: var(--paper); }
+.cs .bp-pause .side .amt { font-size: 12.5px; color: var(--ink-2); }
+.cs .bp-pause .side.dream .amt { color: var(--accent); }
+.cs .bp-pause .side .note {
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.cs .bp-pause .bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(238, 241, 245, 0.08);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.cs .bp-pause .bar em {
+  display: block;
+  height: 100%;
+  /* 1,180 of 2,800 is 42%; the panel's own copy says +$302 reaches 53% */
+  width: calc(42% + 11% * clamp(0, (var(--p) - 0.5) * 4, 1));
+  background: var(--accent);
+}
+
+.cs .bp-pause .pull {
+  margin: 22px 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.cs .bp-pause .choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  opacity: clamp(0, (var(--p) - 0.66) * 7, 1);
+}
+.cs .bp-pause .btn {
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.cs .bp-pause .btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+}
+.cs .bp-pause .timer {
+  margin: 18px 0 0;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+@media (max-width: 520px) {
+  .cs .bp-pause .compare { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no hold, no blur, no countdown theatre — the panel is simply there */
+  .cs .bp-pause { height: auto; }
+  .cs .bp-pause .stick { position: static; height: auto; padding: 60px var(--gut); }
+  .cs .bp-pause .urgency { display: none; }
+  .cs .bp-pause .panel { opacity: 1; transform: none; }
+  .cs .bp-pause .choices { opacity: 1; }
+  .cs .bp-pause .bar em { width: 53%; }
+}
