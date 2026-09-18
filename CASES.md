@@ -121,3 +121,46 @@ signal stays in the footer, where `PRODUCT.md` says it belongs.
 2. Headroom, end to end, verified in a browser
 3. Signal, ChronoWeave, Bumper
 4. Full pass: 320 / 768 / 1280 / 1920, keyboard, reduced motion, console
+
+---
+
+## 7. The bolder pass (2026-09-18)
+
+Run through `/impeccable bolder`. The skill's brand reference names a
+saturated aesthetic lane in its reflex-reject list:
+
+> **Editorial-typographic.** Small mono labels, ruled separators,
+> monochromatic restraint, lowercase track-spaced metadata.
+
+That was a description of the first pass, line for line. `PRODUCT.md` has its
+own word for the result and it is not "minimal": anti-reference 4, *"corporate
+and quiet, so restrained it says nothing."* Its prescription is exact, and
+none of it is effects: **information density, asymmetry, typographic command.**
+
+Two absolute bans were also being broken:
+
+- **The hero-metric template.** `Metrics` was big-number / small-label /
+  supporting-stats in a bordered grid, four times across the four pages.
+- **Identical card grids.** `cw-channels`, `cw-edges` and `bp-insights` were
+  the same card repeated at the same size.
+
+### What changed
+
+| | Before | After |
+|---|---|---|
+| Headline | 6.1rem max | 9.5rem max, second line outlined |
+| Scale jump, h1 to body | ~2.7x | ~4.8x |
+| Hero shape | single centred column | 70/30, statement against a spec sheet |
+| Chapter opening | mono number, hairline rule | sticky outlined numeral at headline scale |
+| Chapter separation | a rule between every one | the numeral does it |
+| Outcomes | bordered metric cards | numerals at 4.6rem, no box |
+| Pull quote | rule down the left edge | typographic, at heading scale |
+| Card grids (3) | equal repeated cards | a two-track reading index |
+| Screenshots | equal auto-fit grid | one lead at 1.45x, supports dropped out of line |
+| Signature scenes | inside the reading column | full bleed, escaping the track |
+| Corner radius | 14–16px everywhere | 2–4px |
+| Buttons | pills | squared |
+
+The outlined numerals and the outlined second headline line are the same
+device the homepage uses on "Then ships it.", so the case studies now rhyme
+with the page they open from rather than merely sharing its palette.

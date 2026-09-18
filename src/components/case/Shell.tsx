@@ -112,19 +112,31 @@ export function CaseHero({
   meta,
   title,
   standfirst,
-  children,
+  spec,
 }: {
   meta: ReactNode;
   title: ReactNode;
   standfirst?: ReactNode;
-  children?: ReactNode;
+  /** the datasheet: role, timeline, platform, whatever the page can prove */
+  spec?: Array<[string, string]>;
 }) {
   return (
     <header className="cs-hero cs-wrap">
       <div className="cs-eyebrow">{meta}</div>
       <h1>{title}</h1>
-      {standfirst ? <p className="cs-standfirst">{standfirst}</p> : null}
-      {children}
+      <div className="cs-heroGrid">
+        {standfirst ? <p className="cs-standfirst">{standfirst}</p> : <div />}
+        {spec ? (
+          <dl className="cs-spec">
+            {spec.map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -134,22 +146,23 @@ export function Chapter({
   n,
   label,
   children,
-  wide,
 }: {
   n: string;
   label: string;
   children: ReactNode;
-  wide?: boolean;
 }) {
   const [ref, seen] = useReveal<HTMLElement>();
   return (
     <section className="cs-chapter" ref={ref}>
-      <div className={wide ? "cs-wrap" : "cs-wrap"}>
-        <div className={`cs-rv${seen ? " in" : ""}`}>
-          <div className="cs-num mono">
-            {n} &nbsp;{label}
+      <div className="cs-wrap">
+        <div className={`cs-track cs-rv${seen ? " in" : ""}`}>
+          {/* the numeral is the separator now — the hairline rules between
+              chapters were the fingerprint the brand reference calls out */}
+          <div className="cs-mark" aria-hidden="true">
+            <b>{n}</b>
+            <span>{label}</span>
           </div>
-          {children}
+          <div>{children}</div>
         </div>
       </div>
     </section>
@@ -157,13 +170,25 @@ export function Chapter({
 }
 
 /* ── metrics ── */
-export function Metrics({ items }: { items: Array<[string, string]> }) {
+/**
+ * Measured outcomes at the size their weight deserves. No cards, no borders,
+ * no background: scale separates them. Content-sized columns keep the row
+ * asymmetric rather than a four-up grid.
+ */
+export function Figures({
+  items,
+  accent,
+}: {
+  items: Array<[string, string, string?]>;
+  accent?: boolean;
+}) {
   return (
-    <div className="cs-metrics">
-      {items.map(([value, label]) => (
-        <div className="cs-metric" key={label}>
+    <div className={`cs-figures${accent ? " accent" : ""}`}>
+      {items.map(([value, label, source]) => (
+        <div key={label}>
           <b>{value}</b>
           <span>{label}</span>
+          {source ? <cite>{source}</cite> : null}
         </div>
       ))}
     </div>
@@ -171,11 +196,11 @@ export function Metrics({ items }: { items: Array<[string, string]> }) {
 }
 
 /* ── pull quote ── */
-export function Quote({ children, cite }: { children: ReactNode; cite: string }) {
+export function Statement({ children, cite }: { children: ReactNode; cite: string }) {
   return (
-    <blockquote className="cs-quote">
+    <blockquote className="cs-statement">
       <p>{children}</p>
-      <cite className="mono">{cite}</cite>
+      <cite>{cite}</cite>
     </blockquote>
   );
 }
@@ -217,7 +242,7 @@ export function NextCase({
       style={{ ["--next-accent" as string]: ACCENTS[accent] }}
     >
       <div className="cs-wrap">
-        <span className="lbl mono">NEXT CASE STUDY</span>
+        <span className="lbl">NEXT CASE STUDY</span>
         <div className="inner">
           <h2>{name}</h2>
           <span className="tag mono">{tag}</span>

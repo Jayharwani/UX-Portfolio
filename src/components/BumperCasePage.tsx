@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Metrics, NextCase, Quote } from "./case/Shell";
+import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
 import { Pause } from "./case/Pause";
 import { useReveal } from "./case/useScene";
 
@@ -19,7 +19,7 @@ import { useReveal } from "./case/useScene";
 const STORE =
   "https://chromewebstore.google.com/detail/flnbabigjodkpgapnpeaiepdmganifmp?utm_source=item-share-cb";
 
-const STATS: Array<[string, string, string]> = [
+const STATS: Array<[string, string, string?]> = [
   ["62%", "of online purchases are impulse buys", "CreditCards.com"],
   ["$5,400", "average annual impulse spending per person", "Slickdeals"],
   ["88%", "regret impulse purchases within a week", "RetailMeNot"],
@@ -179,7 +179,15 @@ export function BumperCasePage() {
           </>
         }
         standfirst="A Chrome extension that creates a 30-second mindful pause before impulse purchases — helping you choose dream experiences over instant regret."
-      >
+        spec={[
+          ["ROLE", "Product designer, end to end"],
+          ["SPRINT", "6 weeks, research to ship"],
+          ["PLATFORM", "Chrome extension"],
+          ["STATE", "Live on the Chrome Web Store"],
+        ]}
+      />
+
+      <div className="cs-wrap">
         <ol className="bp-sprint">
           {SPRINT.map(([phase, when], i) => (
             <li key={phase} style={{ ["--i" as string]: i }}>
@@ -188,7 +196,7 @@ export function BumperCasePage() {
             </li>
           ))}
         </ol>
-      </CaseHero>
+      </div>
 
       <Chapter n="01" label="THE CHALLENGE">
         <h2>E-commerce weaponises psychology against your financial goals.</h2>
@@ -198,11 +206,11 @@ export function BumperCasePage() {
           chance to engage. <strong>The result: billions in regretted purchases every year.</strong>
         </p>
 
-        <Quote cite="ORIGIN STORY">
+        <Statement cite="ORIGIN STORY">
           My roommate had a habit — every payday, he&rsquo;d go on a shopping spree. New gadgets,
           clothes, stuff he didn&rsquo;t need. Then came the credit card bill. The anxiety. The
           regret.
-        </Quote>
+        </Statement>
 
         <p>
           That&rsquo;s when I realised: what if there was a pause button? Not to stop people from
@@ -210,40 +218,36 @@ export function BumperCasePage() {
           intention.
         </p>
 
-        <div className="cw-research">
-          {STATS.map(([v, l, src]) => (
-            <div key={src}>
-              <b className="mono">{v}</b>
-              <p>{l}</p>
-              <cite className="mono">{src}</cite>
-            </div>
-          ))}
-        </div>
+        <Figures accent items={STATS} />
 
-        <Quote cite="HOW MIGHT WE">
+        <Statement cite="HOW MIGHT WE">
           Create a moment of reflection at the point of purchase that helps users make intentional
           spending decisions — without shaming them or blocking their autonomy?
-        </Quote>
+        </Statement>
       </Chapter>
 
       <Chapter n="02" label="RESEARCH">
         <h2>Understanding the science of impulse buying.</h2>
-        <div className="cw-channels">
+        <div className="cs-index">
           {RESEARCH.map(([t, b], i) => (
-            <div className="cw-channel" key={t}>
-              <span className="mono n">0{i + 1}</span>
-              <h3>{t}</h3>
+            <div key={t}>
+              <div>
+                <span className="k">0{i + 1}</span>
+                <h3>{t}</h3>
+              </div>
               <p>{b}</p>
             </div>
           ))}
         </div>
 
         <h3 style={{ marginTop: 52 }}>Key research insights</h3>
-        <div className={`bp-insights cs-rv${insightsSeen ? " in" : ""}`} ref={insightsRef}>
+        <div className={`cs-index cs-rv${insightsSeen ? " in" : ""}`} ref={insightsRef}>
           {INSIGHTS.map(([k, t, b]) => (
             <div key={t}>
-              <span className="mono k">{k}</span>
-              <h3>{t}</h3>
+              <div>
+                <span className="k">{k}</span>
+                <h3>{t}</h3>
+              </div>
               <p>{b}</p>
             </div>
           ))}
@@ -291,13 +295,15 @@ export function BumperCasePage() {
           Each principle maps directly to a research finding — ensuring the intervention feels
           helpful, not hostile.
         </p>
-        <div className="cw-channels">
+        <div className="cs-index">
           {PRINCIPLES.map(([t, b, eg], i) => (
-            <div className="cw-channel" key={t}>
-              <span className="mono n">0{i + 1}</span>
-              <h3>{t}</h3>
+            <div key={t}>
+              <div>
+                <span className="k">0{i + 1}</span>
+                <h3>{t}</h3>
+              </div>
               <p>{b}</p>
-              <span className="mono foot">{eg}</span>
+              <span className="foot">{eg}</span>
             </div>
           ))}
         </div>
@@ -327,11 +333,11 @@ export function BumperCasePage() {
           celebration animation. If you choose to buy, it&rsquo;s now a conscious decision — not an
           impulse.
         </p>
-        <Quote cite="DESIGN RATIONALE">
+        <Statement cite="DESIGN RATIONALE">
           Positive reinforcement creates habit formation. Celebrating saves activates the same
           dopamine response that shopping does — redirecting the reward mechanism toward financial
           goals instead of impulse purchases.
-        </Quote>
+        </Statement>
       </Chapter>
 
       <Chapter n="07" label="DESIGN DECISIONS">
@@ -352,19 +358,19 @@ export function BumperCasePage() {
 
       <Chapter n="08" label="IMPACT">
         <h2>Real behaviour change, shipped to production.</h2>
-        <Metrics
+        <Figures
           items={[
-            ["73%", "Impulse save rate — users chose the dream goal over the impulse"],
-            ["30s", "Average decision time in the mindful pause"],
-            ["4.8", "User satisfaction rating"],
-            ["Live", "Shipped to the Chrome Web Store"],
+            ["73%", "Impulse save rate", "CHOSE THE DREAM GOAL"],
+            ["30s", "Average decision time", "INSIDE THE PAUSE"],
+            ["4.8", "User satisfaction", "OUT OF 5"],
+            ["Live", "Chrome Web Store", "SHIPPED"],
           ]}
         />
 
         <h3 style={{ marginTop: 44 }}>Systems thinking: edge cases I designed for</h3>
-        <div className={`cw-edges cs-rv${edgeSeen ? " in" : ""}`} ref={edgeRef}>
+        <div className={`cs-index cs-rv${edgeSeen ? " in" : ""}`} ref={edgeRef}>
           {EDGES.map(([t, b]) => (
-            <div className="cs-panel" key={t}>
+            <div key={t}>
               <h3>{t}</h3>
               <p>{b}</p>
             </div>

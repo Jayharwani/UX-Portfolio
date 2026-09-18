@@ -1,13 +1,5 @@
 import { useEffect } from "react";
-import {
-  CaseShell,
-  CaseHero,
-  CaseFoot,
-  Chapter,
-  Metrics,
-  NextCase,
-  Quote,
-} from "./case/Shell";
+import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
 import { Runway } from "./case/Runway";
 import { useReveal, useTilt } from "./case/useScene";
 
@@ -57,10 +49,10 @@ const VERSIONS: Array<[string, string, string]> = [
   ["06", "White + emerald, locked", "The last 20% — what you remove and harden — is the design."],
 ];
 
-const LIGHTHOUSE: Array<[string, string]> = [
-  ["92", "Lighthouse performance, mobile"],
-  ["95", "Lighthouse accessibility"],
-  ["100", "Lighthouse best practices"],
+const LIGHTHOUSE: Array<[string, string, string?]> = [
+  ["92", "Performance", "LIGHTHOUSE · MOBILE"],
+  ["95", "Accessibility", "LIGHTHOUSE · MOBILE"],
+  ["100", "Best practices", "LIGHTHOUSE · MOBILE"],
 ];
 
 /** A phone screenshot that sits off the surface of its card. */
@@ -71,16 +63,6 @@ function Phone({ src, alt }: { src: string; alt: string }) {
       <div>
         <img className="cs-lift" src={src} alt={alt} loading="lazy" decoding="async" />
       </div>
-    </div>
-  );
-}
-
-function Version({ idx, title, lesson }: { idx: string; title: string; lesson: string }) {
-  return (
-    <div className="hr-version">
-      <span className="mono n">{idx}</span>
-      <h3>{title}</h3>
-      <p>{lesson}</p>
     </div>
   );
 }
@@ -111,18 +93,13 @@ export function HeadroomPage() {
           </>
         }
         standfirst="It shows a number that feels spendable — then rent lands and you're short. Headroom answers the only question that matters: what can I actually spend today?"
-      >
-        <div className="hr-herofoot">
-          <Metrics
-            items={[
-              ["Sole", "Designer and builder"],
-              ["0 → 1", "Shipped PWA"],
-              ["Claude Code", "Design through to build"],
-              ["60s", "Read time"],
-            ]}
-          />
-        </div>
-      </CaseHero>
+        spec={[
+          ["ROLE", "Sole designer and builder"],
+          ["SCOPE", "Zero to a shipped PWA"],
+          ["BUILD", "Design through Claude Code"],
+          ["STATE", "Live, installable, on-device"],
+        ]}
+      />
 
       <Chapter n="01" label="THE PROBLEM">
         <h2>70% quit budgeting within two months. Not bad with money — badly served by software.</h2>
@@ -136,7 +113,9 @@ export function HeadroomPage() {
           <strong>None of them lead with a single forward number.</strong>
         </p>
 
-        <Runway />
+        <div className="cs-bleed">
+          <Runway />
+        </div>
 
         <p className="cs-cap">
           Categories to maintain. Bank linking required. Backward-looking. Three things Headroom
@@ -167,11 +146,17 @@ export function HeadroomPage() {
 
       <Chapter n="03" label="SIX VERSIONS">
         <h2>I threw away five designs to find the sixth.</h2>
-        <div className="hr-versions">
+        <ol className="cs-index hr-versions">
           {VERSIONS.map(([n, t, l]) => (
-            <Version key={n} idx={n} title={t} lesson={l} />
+            <li key={n}>
+              <div>
+                <span className="k">{n}</span>
+                <h3>{t}</h3>
+              </div>
+              <p>{l}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </Chapter>
 
       <Chapter n="04" label="OUTCOME">
@@ -181,12 +166,12 @@ export function HeadroomPage() {
           install from the browser. No accounts, no bank linking, no server holding your money data.
         </p>
 
-        <Quote cite="ON WHAT THE WORK ACTUALLY WAS">
-          The hardest work wasn't the interface. It was deciding what to leave out: simplicity is a
-          series of refusals, not a coat of paint.
-        </Quote>
+        <Statement cite="ON WHAT THE WORK ACTUALLY WAS">
+          The hardest work wasn&rsquo;t the interface. It was deciding what to leave out: simplicity
+          is a series of refusals, not a coat of paint.
+        </Statement>
 
-        <Metrics items={LIGHTHOUSE} />
+        <Figures items={LIGHTHOUSE} />
 
         <h3 style={{ marginTop: 34 }}>What I'd test next</h3>
         <p>

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, NextCase, Quote } from "./case/Shell";
+import { CaseShell, CaseHero, CaseFoot, Chapter, NextCase, Statement } from "./case/Shell";
 import { Coverage } from "./case/Coverage";
 import { useReveal } from "./case/useScene";
 
@@ -62,14 +62,14 @@ const FIT: Array<[string, string]> = [
 function Numbered({ items }: { items: Array<[string, string]> }) {
   const [ref, seen] = useReveal<HTMLOListElement>();
   return (
-    <ol className={`sg-list cs-rv${seen ? " in" : ""}`} ref={ref}>
+    <ol className={`cs-index cs-rv${seen ? " in" : ""}`} ref={ref}>
       {items.map(([title, body], i) => (
-        <li key={title} style={{ ["--i" as string]: i }}>
-          <span className="mono n">{String(i + 1).padStart(2, "0")}</span>
+        <li key={title}>
           <div>
+            <span className="k">{String(i + 1).padStart(2, "0")}</span>
             <h3>{title}</h3>
-            <p>{body}</p>
           </div>
+          <p>{body}</p>
         </li>
       ))}
     </ol>
@@ -100,9 +100,15 @@ export function SignalCasePage() {
           </>
         }
         standfirst="Tech, design, and AI events across DC, Northern Virginia, and Baltimore — with a layer that shows which ones you can actually make."
-      >
-        <p className="sg-meta mono">3 METROS · 6 CATEGORIES · REFRESHED EVERY FEW HOURS</p>
+        spec={[
+          ["COVERAGE", "3 metros, 6 categories"],
+          ["REFRESH", "Every few hours, unattended"],
+          ["STACK", "MapLibre, Protomaps, scheduled ingest"],
+          ["COST", "No backend, no recurring spend"],
+        ]}
+      />
 
+      <div className="cs-wrap">
         {/* the product, running. Not a screenshot of it. */}
         <div className="sg-embed">
           <div className="bar">
@@ -125,8 +131,8 @@ export function SignalCasePage() {
             />
           </div>
         </div>
-        <p className="cs-cap">The running product, embedded — pan it, filter it, load a calendar.</p>
-      </CaseHero>
+        <p className="cs-cap">The running product, embedded. Pan it, filter it, load a calendar.</p>
+      </div>
 
       <Chapter n="01" label="WHY I BUILT IT">
         <h2>SF and NYC have their startup maps. The DMV had none.</h2>
@@ -134,7 +140,9 @@ export function SignalCasePage() {
           And <strong>Baltimore gets quietly dropped from almost every regional list.</strong>
         </p>
 
-        <Coverage />
+        <div className="cs-bleed">
+          <Coverage />
+        </div>
 
         <p style={{ marginTop: 40 }}>
           So the harder question became the interesting one. A directory tells you where events are.
@@ -173,10 +181,10 @@ export function SignalCasePage() {
           ))}
         </ul>
 
-        <Quote cite="ON WHAT THE WORK ACTUALLY WAS">
+        <Statement cite="ON WHAT THE WORK ACTUALLY WAS">
           Designed and built solo. Claude Code did much of the typing; the product decisions were
           the real work.
-        </Quote>
+        </Statement>
 
         <p style={{ marginTop: 30 }}>
           <a className="cs-btn" href={LIVE} target="_blank" rel="noopener noreferrer">

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Metrics, NextCase, Quote } from "./case/Shell";
+import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
 import { Drift } from "./case/Drift";
 import { useReveal, useTilt } from "./case/useScene";
 
@@ -26,7 +26,7 @@ import TimeFeel from "../assets/chronoweave-timefeel.webp";
 
 const PROTOTYPE = "https://revamp-sauna-76244505.figma.site";
 
-const RESEARCH: Array<[string, string, string]> = [
+const RESEARCH: Array<[string, string, string?]> = [
   ["80%", "of adults with ADHD report chronic time management struggles", "ADDitude Magazine, 2023"],
   ["6×", "more likely to miss deadlines due to time perception distortion", "Journal of Attention Disorders"],
   ["70%", "stop using timer apps within 2 weeks due to alert fatigue", "UX Research Survey, 2024"],
@@ -128,26 +128,13 @@ export function ChronoWeavePage() {
           </>
         }
         standfirst="Multi-sensory nudges that help people with ADHD and autism feel time passing — not just see it."
-      >
-        <div className="cs-metrics" style={{ marginTop: "clamp(38px, 6vh, 64px)" }}>
-          <div className="cs-metric">
-            <b style={{ fontSize: "1.15rem" }}>UX Designer</b>
-            <span>My role — design system and visual design</span>
-          </div>
-          <div className="cs-metric">
-            <b style={{ fontSize: "1.15rem" }}>48 hours</b>
-            <span>FigBuild 2026 Hackathon</span>
-          </div>
-          <div className="cs-metric">
-            <b style={{ fontSize: "1.15rem" }}>4 designers</b>
-            <span>Jay, Fran, Deeksha, Honey</span>
-          </div>
-          <div className="cs-metric">
-            <b style={{ fontSize: "1.15rem" }}>Figma AI</b>
-            <span>Built with</span>
-          </div>
-        </div>
-      </CaseHero>
+        spec={[
+          ["ROLE", "UX designer, design system and visual"],
+          ["TIME", "48 hours, FigBuild 2026"],
+          ["TEAM", "Jay, Fran, Deeksha, Honey"],
+          ["TOOLS", "Figma AI"],
+        ]}
+      />
 
       <Chapter n="01" label="THE CHALLENGE">
         <h2>Time blindness isn&rsquo;t about being lazy — it&rsquo;s a neurological disconnect.</h2>
@@ -158,22 +145,16 @@ export function ChronoWeavePage() {
           <strong>users habituate to and ignore within days.</strong>
         </p>
 
-        <Drift />
-
-        <div className="cw-research">
-          {RESEARCH.map(([v, l, src]) => (
-            <div key={src}>
-              <b className="mono">{v}</b>
-              <p>{l}</p>
-              <cite className="mono">{src}</cite>
-            </div>
-          ))}
+        <div className="cs-bleed">
+          <Drift />
         </div>
 
-        <Quote cite="HOW MIGHT WE">
+        <Figures accent items={RESEARCH} />
+
+        <Statement cite="HOW MIGHT WE">
           Help neurodivergent individuals feel the passage of time through multi-sensory feedback —
           creating awareness without relying on disruptive alerts they&rsquo;ll eventually ignore?
-        </Quote>
+        </Statement>
       </Chapter>
 
       <Chapter n="02" label="THE SOLUTION">
@@ -183,13 +164,15 @@ export function ChronoWeavePage() {
           that work together — making time perception tangible and impossible to habituate to.
         </p>
 
-        <div className="cw-channels">
+        <div className="cs-index">
           {CHANNELS.map(([t, b, f], i) => (
-            <div className="cw-channel" key={t} style={{ ["--i" as string]: i }}>
-              <span className="mono n">0{i + 1}</span>
-              <h3>{t}</h3>
+            <div key={t}>
+              <div>
+                <span className="k">0{i + 1}</span>
+                <h3>{t}</h3>
+              </div>
               <p>{b}</p>
-              <span className="mono foot">{f}</span>
+              <span className="foot">{f}</span>
             </div>
           ))}
         </div>
@@ -225,9 +208,9 @@ export function ChronoWeavePage() {
 
       <Chapter n="04" label="SYSTEMS THINKING">
         <h2>Edge cases we designed for.</h2>
-        <div className={`cw-edges cs-rv${edgesSeen ? " in" : ""}`} ref={edgesRef}>
+        <div className={`cs-index cs-rv${edgesSeen ? " in" : ""}`} ref={edgesRef}>
           {EDGES.map(([t, b]) => (
-            <div className="cs-panel" key={t}>
+            <div key={t}>
               <h3>{t}</h3>
               <p>{b}</p>
             </div>
@@ -237,12 +220,12 @@ export function ChronoWeavePage() {
 
       <Chapter n="05" label="OUTCOMES">
         <h2>Concept to prototype in a weekend.</h2>
-        <Metrics
+        <Figures
           items={[
-            ["48hrs", "Concept to prototype · FigBuild 2026"],
-            ["6", "High-fidelity screens · complete user flow"],
-            ["3", "Sensory modalities · haptics, audio, light"],
-            ["5", "Calibration tests · personalised baseline"],
+            ["48hrs", "Concept to prototype", "FIGBUILD 2026"],
+            ["6", "High-fidelity screens", "COMPLETE USER FLOW"],
+            ["3", "Sensory modalities", "HAPTICS, AUDIO, LIGHT"],
+            ["5", "Calibration tests", "PERSONALISED BASELINE"],
           ]}
         />
         <p style={{ marginTop: 34 }}>

@@ -232,247 +232,391 @@
   max-width: var(--measure);
 }
 
-/* ── hero ── */
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SHARED SURFACE — rewritten after /impeccable bolder.
+
+   The first pass landed in a lane the brand reference names outright:
+   "Editorial-typographic — small mono labels, ruled separators, monochromatic
+   restraint, lowercase track-spaced metadata." Every chapter opened with a
+   mono number, a hairline, and a mid-sized heading, and every section looked
+   like the one above it. PRODUCT.md has a word for the result, and it is not
+   minimal: anti-reference 4, "corporate and quiet, so restrained it says
+   nothing."
+
+   Its prescription is specific, and none of it is effects: "interest comes
+   from information density, asymmetry and typographic command."
+
+   So: the scale jumps are 4x rather than 1.5x, the single centred column
+   becomes a two-track asymmetric grid, the uniform rules are gone, and the
+   chapter numeral is a sticky outlined figure the size of a headline. Two
+   absolute bans were also being broken here — the hero-metric template and
+   identical card grids — and both patterns are replaced rather than tuned.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── hero ──
+   Asymmetric, 70/30. The headline runs to 9.5rem and the metadata drops to
+   10px, so they sit at opposite ends of the scale instead of drifting toward
+   each other in the comfortable middle. */
 .cs .cs-hero {
-  min-height: 92svh;
+  min-height: 94svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-top: 90px;
-  padding-bottom: 60px;
+  padding-top: 104px;
+  padding-bottom: clamp(44px, 8vh, 96px);
 }
+
 .cs .cs-eyebrow {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
+  align-items: baseline;
+  gap: 10px 18px;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   color: var(--ink-3);
-  margin-bottom: 30px;
+  margin-bottom: clamp(26px, 4vh, 44px);
 }
 .cs .cs-eyebrow b {
-  font-weight: 400;
+  font-weight: 500;
   color: var(--accent);
 }
-.cs .cs-eyebrow span[data-sep]::before {
-  content: "";
-  display: inline-block;
-  width: 18px;
-  height: 1px;
-  background: var(--line-2);
-  vertical-align: middle;
-  margin-right: 14px;
-}
+/* the dash-chain was the fingerprint; spacing separates these now */
+.cs .cs-eyebrow span[data-sep]::before { content: none; }
 
 .cs h1 {
-  font-size: clamp(2.6rem, 7.2vw, 6.1rem);
+  font-size: clamp(3.1rem, 10.4vw, 9.5rem);
   font-weight: 200;
-  line-height: 0.96;
-  letter-spacing: -0.045em;
+  line-height: 0.86;
+  letter-spacing: -0.05em;
   margin: 0;
-  max-width: 17ch;
+  max-width: 15ch;
+  text-wrap: balance;
 }
 .cs h1 em {
   font-style: normal;
-  color: var(--accent);
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in oklab, var(--paper) 62%, transparent);
+}
+
+/* The hero splits: statement left, specification right. The spec column is
+   the density PRODUCT.md asks for, and it replaces the four-up metric card
+   grid that was breaking the hero-metric ban. */
+.cs .cs-heroGrid {
+  display: grid;
+  gap: clamp(34px, 5vw, 92px);
+  margin-top: clamp(30px, 5vh, 56px);
+  align-items: end;
+}
+@media (min-width: 900px) {
+  .cs .cs-heroGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 27ch);
+  }
 }
 
 .cs .cs-standfirst {
-  margin-top: 34px;
-  max-width: 54ch;
-  font-size: clamp(15px, 1.5vw, 18px);
-  line-height: 1.6;
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(15.5px, 1.6vw, 19px);
+  line-height: 1.65;
   color: var(--ink-2);
 }
 
-/* ── chapters ── */
+/* ── the spec sheet ──
+   A datasheet, not cards. Dense rows, tiny keys, values in the body face.
+   This is what a founder skims in four seconds. */
+.cs .cs-spec {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.cs .cs-spec > div {
+  display: grid;
+  grid-template-columns: minmax(0, 9ch) minmax(0, 1fr);
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+.cs .cs-spec > div:first-child { border-top: 1px solid var(--line); }
+.cs .cs-spec dt {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+}
+.cs .cs-spec dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--paper);
+}
+
+/* ── chapters ──
+   Two tracks. The numeral is an outlined figure at headline scale that stays
+   beside the chapter while it is read, which echoes the homepage's outlined
+   second line and does the separating the hairlines used to do. */
 .cs .cs-chapter {
-  padding: clamp(70px, 11vh, 140px) 0;
+  padding: clamp(74px, 13vh, 180px) 0;
   position: relative;
 }
-.cs .cs-chapter + .cs-chapter { border-top: 1px solid var(--line); }
+.cs .cs-chapter + .cs-chapter { border-top: 0; }
 
-.cs .cs-num {
-  font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: var(--ink-3);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 26px;
+.cs .cs-track {
+  display: grid;
+  gap: clamp(22px, 3vw, 34px);
 }
-.cs .cs-num::before {
-  content: "";
-  width: 22px;
-  height: 1px;
-  background: var(--accent);
+@media (min-width: 1000px) {
+  .cs .cs-track {
+    grid-template-columns: minmax(0, 20ch) minmax(0, 1fr);
+    gap: clamp(30px, 5vw, 88px);
+  }
+}
+
+.cs .cs-mark {
+  position: relative;
+}
+@media (min-width: 1000px) {
+  .cs .cs-mark {
+    position: sticky;
+    top: 104px;
+    align-self: start;
+  }
+}
+.cs .cs-mark b {
+  display: block;
+  font-size: clamp(2.8rem, 6.4vw, 6rem);
+  font-weight: 200;
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+.cs .cs-mark span {
+  display: block;
+  margin-top: 14px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
 }
 
 .cs h2 {
-  font-size: clamp(1.6rem, 3.4vw, 2.7rem);
+  font-size: clamp(1.9rem, 4.6vw, 3.5rem);
   font-weight: 200;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  margin: 0 0 24px;
-  max-width: 22ch;
+  line-height: 1.04;
+  letter-spacing: -0.038em;
+  margin: 0 0 clamp(20px, 3vh, 34px);
+  max-width: 19ch;
+  text-wrap: balance;
 }
 .cs h3 {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  font-weight: 400;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  margin: 0 0 10px;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.32;
+  letter-spacing: -0.005em;
+  margin: 0 0 9px;
+  color: var(--paper);
 }
 .cs p {
-  margin: 0 0 18px;
+  margin: 0 0 19px;
   max-width: var(--measure);
-  font-size: clamp(14.5px, 1.35vw, 16.5px);
-  line-height: 1.68;
+  font-size: clamp(15px, 1.35vw, 16.5px);
+  line-height: 1.72;
   color: var(--ink-2);
 }
 .cs p strong {
-  font-weight: 400;
+  font-weight: 500;
   color: var(--paper);
 }
 .cs p a:not(.cs-btn) {
   color: var(--paper);
-  border-bottom: 1px solid var(--line-2);
-  transition: border-color 0.3s var(--ease);
+  box-shadow: inset 0 -1px 0 var(--line-2);
+  transition: box-shadow 0.3s var(--ease);
 }
-.cs p a:not(.cs-btn):hover { border-color: var(--accent); }
+.cs p a:not(.cs-btn):hover { box-shadow: inset 0 -1px 0 var(--accent); }
 
-/* ── reveal ──
-   One transition, applied to whatever asks for it. Nothing moves more than
-   14px; the point is that the page settles, not that it performs. */
+/* ── reveal ── */
 .cs .cs-rv {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  transform: translateY(18px);
+  transition: opacity 1s var(--ease), transform 1s var(--ease);
 }
 .cs .cs-rv.in {
   opacity: 1;
   transform: none;
 }
 
-/* ── metrics ── */
-.cs .cs-metrics {
+/* ── figures ──
+   Real measured outcomes, at a size that matches their weight. No boxes, no
+   borders, no background: the numerals separate themselves by scale. Column
+   widths are content-sized rather than equal, so the row is asymmetric. */
+.cs .cs-figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  margin: 38px 0;
+  grid-template-columns: repeat(auto-fit, minmax(150px, max-content));
+  justify-content: start;
+  gap: clamp(26px, 4.5vw, 78px);
+  margin: clamp(34px, 5vh, 58px) 0;
 }
-.cs .cs-metric {
-  background: var(--void);
-  padding: 26px 24px;
-}
-.cs .cs-metric b {
+.cs .cs-figures > div { max-width: 26ch; }
+.cs .cs-figures b {
   display: block;
-  font-family: "Geist Mono", ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: clamp(1.7rem, 3vw, 2.4rem);
-  font-weight: 300;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.5rem, 6vw, 4.6rem);
+  font-weight: 200;
+  letter-spacing: -0.055em;
+  line-height: 0.88;
   color: var(--paper);
-  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
-.cs .cs-metric span {
+.cs .cs-figures span {
   display: block;
-  margin-top: 12px;
-  font-size: 11.5px;
-  line-height: 1.45;
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--ink-3);
 }
-
-/* ── pull quote ── */
-.cs .cs-quote {
-  margin: 44px 0;
-  padding-left: clamp(18px, 3vw, 34px);
-  border-left: 1px solid var(--accent);
-}
-.cs .cs-quote p {
-  font-size: clamp(1.05rem, 2vw, 1.5rem);
-  font-weight: 200;
-  line-height: 1.42;
-  letter-spacing: -0.02em;
-  color: var(--paper);
-  max-width: 28ch;
-  margin-bottom: 14px;
-}
-.cs .cs-quote cite {
+.cs .cs-figures cite {
+  display: block;
+  margin-top: 8px;
   font-style: normal;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
+  font-size: 9px;
+  letter-spacing: 0.16em;
   color: var(--ink-3);
+  opacity: 0.75;
+}
+/* a figure that is the argument gets the accent; the rest stay paper */
+.cs .cs-figures.accent b { color: var(--accent); }
+
+/* ── statement ──
+   The pull quote, without the rule down its left edge. A quotation set at
+   heading scale is already marked as a quotation; the border was the
+   editorial-typographic fingerprint and nothing else. */
+.cs .cs-statement {
+  margin: clamp(38px, 6vh, 70px) 0;
+  max-width: 24ch;
+}
+.cs .cs-statement p {
+  font-size: clamp(1.4rem, 3.4vw, 2.6rem);
+  font-weight: 200;
+  line-height: 1.18;
+  letter-spacing: -0.032em;
+  color: var(--paper);
+  max-width: none;
+  margin: 0 0 18px;
+}
+.cs .cs-statement cite {
+  font-style: normal;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+/* ── an index, where cards used to be ──
+   Repeated equal cards are an absolute ban and were being used three times
+   over. This is the same information as a reading structure: title left,
+   body right, separated by space rather than boxes. */
+.cs .cs-index {
+  margin-top: clamp(30px, 4vh, 48px);
+}
+.cs .cs-index > li,
+.cs .cs-index > div {
+  display: grid;
+  gap: 8px clamp(24px, 4vw, 64px);
+  padding: clamp(22px, 3.4vh, 34px) 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+@media (min-width: 760px) {
+  .cs .cs-index > li,
+  .cs .cs-index > div {
+    grid-template-columns: minmax(0, 17ch) minmax(0, 1fr);
+  }
+}
+.cs .cs-index h3 { margin: 0; }
+.cs .cs-index p { margin: 0; font-size: 14.5px; }
+.cs .cs-index .k {
+  display: block;
+  margin-bottom: 8px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.cs .cs-index .foot {
+  grid-column: -2 / -1;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--ink-3);
+  line-height: 1.6;
 }
 
 /* ── panels and figures ── */
 .cs .cs-panel {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 2px;
   background: var(--panel);
-  padding: clamp(20px, 3vw, 34px);
-}
-.cs .cs-figure {
-  margin: 40px 0 0;
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--panel);
-}
-.cs .cs-figure img {
-  display: block;
-  width: 100%;
-  height: auto;
+  padding: clamp(20px, 3vw, 30px);
 }
 .cs .cs-cap {
-  margin-top: 14px;
+  margin-top: 16px;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
+  font-size: 9.5px;
+  letter-spacing: 0.15em;
+  line-height: 1.7;
   color: var(--ink-3);
-  max-width: 60ch;
+  max-width: 54ch;
 }
 
-/* ── the 3D slab ──
-   A card that holds a real artifact and turns toward the pointer. The tilt is
-   written by useTilt as --rx/--ry, so switching it off is a media query away.
-   translateZ on the child is what stops it reading as a rotated picture: the
-   contents sit off the surface. */
-.cs .cs-slab {
-  perspective: 1400px;
+/* ── full bleed ──
+   The signature scenes escape the reading column. They are the argument, not
+   an illustration beside it. */
+.cs .cs-bleed {
+  margin-left: calc(var(--gut) * -1);
+  margin-right: calc(var(--gut) * -1);
 }
+@media (min-width: 1000px) {
+  .cs .cs-track > .cs-bleed,
+  .cs .cs-bleed {
+    margin-left: calc(var(--gut) * -1);
+    margin-right: calc(var(--gut) * -1);
+  }
+}
+
+/* ── the 3D slab ── */
+.cs .cs-slab { perspective: 1500px; }
 .cs .cs-slab > * {
   transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transform-style: preserve-3d;
   transition: transform 0.5s var(--ease);
 }
-.cs .cs-lift {
-  transform: translateZ(38px);
-}
+.cs .cs-lift { transform: translateZ(40px); }
 
-/* ── buttons ── */
+/* ── buttons ──
+   Square, not pill. The pill is the SaaS default and this page is a
+   specification, not a signup. */
 .cs .cs-btn {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 13px 22px;
-  border: 1px solid var(--line-2);
-  border-radius: 999px;
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
-  color: var(--paper);
+  gap: 12px;
+  padding: 15px 24px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--accent);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
+  transition: color 0.45s var(--ease);
 }
 .cs .cs-btn::before {
   content: "";
@@ -481,31 +625,29 @@
   background: var(--accent);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.5s var(--ease);
-  z-index: -1;
+  transition: transform 0.55s var(--ease);
+  z-index: 0;
 }
-.cs .cs-btn span,
-.cs .cs-btn svg { position: relative; z-index: 1; }
-.cs .cs-btn:hover {
-  border-color: var(--accent);
-  color: var(--void);
-}
+.cs .cs-btn > * { position: relative; z-index: 1; }
+.cs .cs-btn:hover { color: var(--void); }
 .cs .cs-btn:hover::before { transform: scaleX(1); }
-.cs .cs-btn.ghost:hover {
-  color: var(--paper);
-  background: transparent;
-}
-.cs .cs-btn.ghost::before { display: none; }
 
-/* ── the handoff ──
-   Replaces the plea every page used to end on. The reader just finished the
-   evidence; the right offer is more evidence, not a sales line. */
+/* ── the handoff ── */
 .cs .cs-next {
   display: block;
   border-top: 1px solid var(--line);
-  padding: clamp(50px, 8vh, 96px) 0;
+  padding: clamp(60px, 11vh, 130px) 0;
   position: relative;
   overflow: hidden;
+}
+.cs .cs-next .lbl {
+  display: block;
+  margin-bottom: clamp(16px, 2.4vh, 26px);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
 }
 .cs .cs-next .inner {
   display: flex;
@@ -514,25 +656,21 @@
   gap: 20px;
   flex-wrap: wrap;
   transform: translate3d(var(--dx, 0px), 0, 0);
-  transition: transform 0.7s var(--ease);
+  transition: transform 0.8s var(--ease);
 }
-.cs .cs-next:hover .inner { transition-duration: 0.3s; }
-.cs .cs-next .lbl {
-  font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: var(--ink-3);
-  display: block;
-  margin-bottom: 16px;
-}
+.cs .cs-next:hover .inner { transition-duration: 0.35s; }
 .cs .cs-next h2 {
   margin: 0;
-  font-size: clamp(2rem, 5.4vw, 4.2rem);
-  transition: color 0.45s var(--ease);
+  max-width: none;
+  font-size: clamp(2.6rem, 8.4vw, 6.4rem);
+  line-height: 0.9;
+  transition: color 0.5s var(--ease);
 }
 .cs .cs-next:hover h2 { color: var(--next-accent, var(--accent)); }
 .cs .cs-next .tag {
-  font-size: 11.5px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
   color: var(--ink-3);
 }
 .cs .cs-next i.glow {
@@ -542,33 +680,30 @@
   height: 1px;
   width: 0;
   background: var(--next-accent, var(--accent));
-  box-shadow: 0 0 16px var(--next-accent, var(--accent));
-  transition: width 0.9s var(--ease);
+  box-shadow: 0 0 18px var(--next-accent, var(--accent));
+  transition: width 1s var(--ease);
 }
 .cs .cs-next:hover i.glow { width: 100%; }
 
 /* ── foot ── */
 .cs .cs-foot {
   border-top: 1px solid var(--line);
-  padding: 34px 0 60px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 28px;
-  font-size: 11.5px;
+  padding: 30px 0 64px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
   color: var(--ink-3);
 }
-.cs .cs-foot a { border-bottom: 1px solid var(--line-2); }
+.cs .cs-foot a { box-shadow: inset 0 -1px 0 var(--line-2); }
 .cs .cs-foot a:hover { color: var(--paper); }
 
-/* ── reduced motion ──
-   Every scene lands on its end state. useScene writes --p: 1 once and never
-   arms its loop; these rules cover what CSS owns. */
+/* ── reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .cs .cs-grain { animation: none; }
   .cs .cs-nav .live i { animation: none; opacity: 1; }
   .cs .cs-rv { opacity: 1; transform: none; transition: none; }
   .cs .cs-slab > * { transform: none; }
-  .cs * { scroll-behavior: auto; }
+  .cs .cs-mark { position: relative; top: auto; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1502,3 +1637,141 @@
   .cs .bp-pause .choices { opacity: 1; }
   .cs .bp-pause .bar em { width: 53%; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AMPLIFICATION — asymmetric compositions, full-bleed scenes.
+
+   The screenshot rows were `repeat(auto-fit, minmax(...))`: identical cards
+   at identical sizes, which is an absolute ban and also wastes the only real
+   imagery these pages have. A lead image at twice the scale of its supports,
+   with the supports dropped out of alignment, reads as composed.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── full-bleed scenes ── */
+.cs .cs-bleed {
+  margin-top: clamp(40px, 6vh, 76px);
+  margin-bottom: clamp(30px, 4vh, 54px);
+}
+@media (min-width: 1000px) {
+  /* inside a chapter track the scene escapes both the track column and the
+     page gutter, so the argument runs wider than the prose that sets it up */
+  .cs .cs-track > div > .cs-bleed {
+    margin-left: calc((20ch + clamp(30px, 5vw, 88px)) * -1);
+    margin-right: calc(var(--gut) * -1);
+  }
+}
+
+/* ── Headroom: one lead phone, two supports ── */
+.cs .hr-screens {
+  display: grid;
+  gap: clamp(26px, 4vw, 54px);
+  margin-top: clamp(38px, 6vh, 64px);
+  align-items: start;
+}
+@media (min-width: 760px) {
+  .cs .hr-screens {
+    grid-template-columns: 1.45fr 1fr 1fr;
+  }
+  /* the supports sit low, so the row has a diagonal rather than a baseline */
+  .cs .hr-screens figure:nth-child(2) { margin-top: clamp(30px, 6vw, 72px); }
+  .cs .hr-screens figure:nth-child(3) { margin-top: clamp(60px, 11vw, 140px); }
+}
+.cs .hr-phone > div {
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 8px;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+}
+.cs .hr-phone img { border-radius: 2px; }
+.cs .hr-screens figcaption { margin-top: 22px; }
+.cs .hr-screens figcaption p { font-size: 13.5px; margin: 0; }
+
+.cs .hr-refusals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 30px;
+  margin-top: clamp(40px, 6vh, 64px);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+}
+
+/* ── ChronoWeave: six screens, three scales ── */
+.cs .cw-screens {
+  display: grid;
+  gap: clamp(22px, 3.4vw, 46px);
+  margin-top: clamp(38px, 6vh, 64px);
+  align-items: start;
+}
+@media (min-width: 720px) {
+  .cs .cw-screens { grid-template-columns: repeat(6, 1fr); }
+  .cs .cw-screen:nth-child(1) { grid-column: span 3; }
+  .cs .cw-screen:nth-child(2) { grid-column: span 3; margin-top: clamp(34px, 6vw, 88px); }
+  .cs .cw-screen:nth-child(3) { grid-column: span 2; }
+  .cs .cw-screen:nth-child(4) { grid-column: span 2; margin-top: clamp(20px, 3vw, 44px); }
+  .cs .cw-screen:nth-child(5) { grid-column: span 2; margin-top: clamp(40px, 7vw, 96px); }
+  .cs .cw-screen:nth-child(6) { grid-column: span 3; }
+}
+.cs .cw-screen .cs-slab > div {
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 7px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+}
+.cs .cw-screen img { border-radius: 2px; }
+.cs .cw-screen figcaption { margin-top: 18px; }
+.cs .cw-screen figcaption p { font-size: 13px; margin: 0; }
+
+/* ── squared corners throughout ──
+   The 14-16px radius everywhere was the soft SaaS default. A 2-4px radius
+   reads as a specification sheet, which is what these pages are. */
+.cs .hr-runway,
+.cs .sg-gap,
+.cs .cw-drift,
+.cs .sg-embed,
+.cs .bp-table-wrap,
+.cs .bp-sprint,
+.cs .cs-figure { border-radius: 3px; }
+.cs .bp-pause .panel { border-radius: 4px; }
+.cs .sg-stack li,
+.cs .sg-legend .chip,
+.cs .bp-pause .btn { border-radius: 2px; }
+
+/* the mono chips lose their pill shape and gain tracking */
+.cs .sg-stack li,
+.cs .sg-legend .chip {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+/* ── the six-week sprint, as a measured bar ── */
+.cs .bp-sprint {
+  margin-top: clamp(34px, 5vh, 56px);
+  border: 0;
+  background: none;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.cs .bp-sprint li {
+  background: none;
+  padding: 18px 20px 18px 0;
+  border-right: 1px solid var(--line);
+}
+.cs .bp-sprint li:last-child { border-right: 0; }
+.cs .bp-sprint li { padding-left: 20px; }
+.cs .bp-sprint li:first-child { padding-left: 0; }
+.cs .bp-sprint .w {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.cs .bp-sprint b { font-weight: 300; font-size: 16px; }
