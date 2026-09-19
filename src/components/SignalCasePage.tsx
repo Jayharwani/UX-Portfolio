@@ -1,5 +1,14 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Colophon, NextCase, Statement } from "./case/Shell";
+import {
+  CaseShell,
+  CaseHero,
+  CaseFoot,
+  Chapter,
+  Colophon,
+  NextCase,
+  Rejected,
+  Statement,
+} from "./case/Shell";
 import { Coverage } from "./case/Coverage";
 import { useReveal } from "./case/useScene";
 
@@ -170,6 +179,16 @@ export function SignalCasePage() {
       <Chapter n="03" label="THE INTERFACE">
         <h2>Three decisions that made the panel work.</h2>
         <Numbered items={INTERFACE} />
+
+        <Rejected
+          items={[
+            [
+              "Calendar controls first",
+              "Events first, tools second",
+              "My first build buried the list behind the calendar controls. Same feature, different hierarchy: events became the permanent content and setup moved behind a single button.",
+            ],
+          ]}
+        />
       </Chapter>
 
       <Chapter n="04" label="BUILT WITH">

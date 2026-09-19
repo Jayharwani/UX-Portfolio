@@ -1818,3 +1818,72 @@
   line-height: 1.6;
   color: var(--ink-2);
 }
+
+/* ── roads not taken ──
+   The rejected option struck through, the arrow, what shipped in the accent.
+   Legible in a glance, which is the point: a reader skimming should register
+   "this person shows their discards" without reading a word of the reason. */
+.cs .cs-rejected {
+  margin-top: clamp(38px, 6vh, 64px);
+}
+.cs .cs-rejected .lbl {
+  display: block;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.cs .cs-rejected ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.cs .cs-rejected li {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cs .cs-rejected .swap {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 9px;
+}
+.cs .cs-rejected s {
+  text-decoration-color: color-mix(in oklab, var(--accent) 70%, transparent);
+  text-decoration-thickness: 1px;
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.cs .cs-rejected i {
+  font-style: normal;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.cs .cs-rejected b {
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--paper);
+}
+.cs .cs-rejected p {
+  margin: 0;
+  font-size: 14px;
+  max-width: 62ch;
+}
+
+/* ── Headroom: which of the six were binned ── */
+.cs .hr-versions .status {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+}
+.cs .hr-versions .binned h3 { color: var(--ink-2); }
+.cs .hr-versions .binned .status { color: var(--ink-3); }
+.cs .hr-versions .shipped h3 { color: var(--accent); }
+.cs .hr-versions .shipped .status { color: var(--accent); }

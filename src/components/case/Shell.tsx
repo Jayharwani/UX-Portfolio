@@ -254,6 +254,46 @@ export function NextCase({
 }
 
 /* --------------------------------------------------------------------------
+   ROADS NOT TAKEN.
+
+   The one thing this portfolio already did better than every portfolio it
+   was measured against: Headroom's "I threw away five designs to find the
+   sixth", with the lesson attached to each. None of the nine showed work
+   they discarded. It was buried in chapter three of one case study.
+
+   This makes it a pattern rather than an accident, so a reader skimming any
+   of the four meets it. Only real discarded directions go in here. A page
+   with nothing to put in it does not get one, because a manufactured regret
+   is worse than an absent section.
+   -------------------------------------------------------------------------- */
+export function Rejected({
+  items,
+  label = "ROADS NOT TAKEN",
+}: {
+  /** [what was rejected, what shipped instead, why] */
+  items: Array<[string, string, string]>;
+  label?: string;
+}) {
+  return (
+    <div className="cs-rejected">
+      <span className="lbl">{label}</span>
+      <ul>
+        {items.map(([no, yes, why]) => (
+          <li key={no}>
+            <div className="swap">
+              <s>{no}</s>
+              <i aria-hidden="true">&rarr;</i>
+              <b>{yes}</b>
+            </div>
+            <p>{why}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------------------
    THE COLOPHON — who did what, and what the machine did.
 
    The portfolios worth learning from are scrupulous about this. Andreas

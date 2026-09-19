@@ -7,6 +7,7 @@ import {
   Colophon,
   Figures,
   NextCase,
+  Rejected,
   Statement,
 } from "./case/Shell";
 import { Pause } from "./case/Pause";
@@ -352,6 +353,27 @@ export function BumperCasePage() {
 
       <Chapter n="07" label="DESIGN DECISIONS">
         <h2>Key tradeoffs, and the reasoning.</h2>
+        <Rejected
+          label="WHAT I RULED OUT"
+          items={[
+            [
+              "A 60-second pause",
+              "30 seconds",
+              "Longer gives more time to reflect and more reason to quit. In testing, 60 seconds led to users closing the extension entirely.",
+            ],
+            [
+              "A generic savings counter",
+              "Dream goals",
+              "Easier to build, and inert. \u201CYou saved $X this month\u201D cannot create the contrast that \u201C45% of your Tokyo flight\u201D does.",
+            ],
+            [
+              "Redirecting to a new tab",
+              "An overlay with backdrop blur",
+              "More room for the intervention, but it breaks the user\u2019s context and reads as aggressive. The overlay keeps the purchase visible and defocused.",
+            ],
+          ]}
+        />
+
         <div className="bp-tradeoffs">
           {TRADEOFFS.map(([t, tension, chose, cost]) => (
             <div key={t}>

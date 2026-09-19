@@ -156,12 +156,17 @@ export function HeadroomPage() {
 
       <Chapter n="03" label="SIX VERSIONS">
         <h2>I threw away five designs to find the sixth.</h2>
+        {/* five of these were thrown away. Marking which is the whole
+            point of the section, and it was reading as a neutral list. */}
         <ol className="cs-index hr-versions">
-          {VERSIONS.map(([n, t, l]) => (
-            <li key={n}>
+          {VERSIONS.map(([n, t, l], i) => (
+            <li key={n} className={i === VERSIONS.length - 1 ? "shipped" : "binned"}>
               <div>
                 <span className="k">{n}</span>
                 <h3>{t}</h3>
+                <span className="status mono">
+                  {i === VERSIONS.length - 1 ? "SHIPPED" : "THROWN AWAY"}
+                </span>
               </div>
               <p>{l}</p>
             </li>
