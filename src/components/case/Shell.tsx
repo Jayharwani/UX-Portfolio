@@ -253,6 +253,41 @@ export function NextCase({
   );
 }
 
+/* --------------------------------------------------------------------------
+   THE COLOPHON — who did what, and what the machine did.
+
+   The portfolios worth learning from are scrupulous about this. Andreas
+   Kruszakin names every teammate and keeps a separate "What I Worked On"
+   section for his own scope; Kenneth Kuh credits by discipline and names his
+   co-lead and his vendors. This site claimed "sole designer and builder" in
+   a single spec row and left it there.
+
+   That matters more here than it would elsewhere, because the whole claim is
+   "designs it, then ships it" — so the first question a reader has is where
+   the person stops and the tooling starts. Answering it plainly is more
+   convincing than not being asked.
+
+   Every line below is drawn from what the case study already states. None of
+   it is a new claim.
+   -------------------------------------------------------------------------- */
+export function Colophon({ rows }: { rows: Array<[string, string]> }) {
+  return (
+    <section className="cs-colophon">
+      <div className="cs-wrap">
+        <h2>How this was built</h2>
+        <dl>
+          {rows.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
 /* ── foot ──
    The employment signal lives here, which is where PRODUCT.md puts it: in the
    footer, so the page itself never has to plead. */

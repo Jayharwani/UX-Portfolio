@@ -1,5 +1,14 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
+import {
+  CaseShell,
+  CaseHero,
+  CaseFoot,
+  Chapter,
+  Colophon,
+  Figures,
+  NextCase,
+  Statement,
+} from "./case/Shell";
 import { Runway } from "./case/Runway";
 import { useReveal, useTilt } from "./case/useScene";
 
@@ -98,6 +107,7 @@ export function HeadroomPage() {
           ["SCOPE", "Zero to a shipped PWA"],
           ["BUILD", "Design through Claude Code"],
           ["STATE", "Live, installable, on-device"],
+          ["DATE", "2026"],
         ]}
       />
 
@@ -194,6 +204,15 @@ export function HeadroomPage() {
           Open it on your phone and add it to your home screen — it installs like a native app.
         </p>
       </Chapter>
+
+      <Colophon
+        rows={[
+          ["DESIGN", "Mine, end to end. Six versions; the sixth shipped."],
+          ["BUILD", "React PWA, written with Claude Code."],
+          ["DATA", "On device only. No accounts, no bank linking, no server."],
+          ["MEASURED", "Lighthouse 92 performance, 95 accessibility, 100 best practices, mobile."],
+        ]}
+      />
 
       <NextCase to="/signal" name="Signal" tag="LIVE EVENT MAP · MAPLIBRE" accent="cyan" />
       <CaseFoot />

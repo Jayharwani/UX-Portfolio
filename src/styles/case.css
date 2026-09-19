@@ -1775,3 +1775,46 @@
   color: var(--accent);
 }
 .cs .bp-sprint b { font-weight: 300; font-size: 16px; }
+
+/* ── the colophon ──
+   Who did what, and what the machine did. A dense two-column datasheet
+   rather than prose, because it is reference material: a reader either wants
+   it badly or skips it entirely, and both should be fast. */
+.cs .cs-colophon {
+  border-top: 1px solid var(--line);
+  padding: clamp(50px, 8vh, 96px) 0 clamp(40px, 6vh, 70px);
+}
+.cs .cs-colophon h2 {
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 200;
+  margin-bottom: clamp(22px, 3vh, 34px);
+  max-width: none;
+}
+.cs .cs-colophon dl {
+  margin: 0;
+  max-width: 78ch;
+  border-top: 1px solid var(--line);
+}
+.cs .cs-colophon dl > div {
+  display: grid;
+  gap: 4px clamp(20px, 4vw, 56px);
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+@media (min-width: 620px) {
+  .cs .cs-colophon dl > div { grid-template-columns: minmax(0, 11ch) minmax(0, 1fr); }
+}
+.cs .cs-colophon dt {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.cs .cs-colophon dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}

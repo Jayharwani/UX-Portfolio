@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, NextCase, Statement } from "./case/Shell";
+import { CaseShell, CaseHero, CaseFoot, Chapter, Colophon, NextCase, Statement } from "./case/Shell";
 import { Coverage } from "./case/Coverage";
 import { useReveal } from "./case/useScene";
 
@@ -105,6 +105,7 @@ export function SignalCasePage() {
           ["REFRESH", "Every few hours, unattended"],
           ["STACK", "MapLibre, Protomaps, scheduled ingest"],
           ["COST", "No backend, no recurring spend"],
+          ["DATE", "2026"],
         ]}
       />
 
@@ -193,6 +194,15 @@ export function SignalCasePage() {
           </a>
         </p>
       </Chapter>
+
+      <Colophon
+        rows={[
+          ["DESIGN", "Mine, solo. The panel hierarchy was inverted after the first build."],
+          ["BUILD", "React and Vite, MapLibre GL, Protomaps tiles."],
+          ["DATA", "A scheduled pipeline every few hours. No backend, no recurring cost."],
+          ["AI", "Claude Code did much of the typing. The product decisions were the real work."],
+        ]}
+      />
 
       <NextCase
         to="/chronoweave"

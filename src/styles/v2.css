@@ -146,3 +146,56 @@
   .v2 .v2work .preview { display: none; }
   .v2 .v2work .m-shot { display: block; }
 }
+
+/* ── the work row gains a second destination ──
+   The row was one <Link> over everything, so there was nowhere to offer the
+   running product without nesting an anchor inside an anchor. The title is
+   the hit area for the case study now; the live link sits in the tag line
+   and stops its click from bubbling. Three of the four projects are actually
+   running somewhere, and that is the fastest proof the site owns. */
+.v2 .item .inner .hit {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+.v2 .item .tag .yr {
+  color: rgba(238, 241, 245, 0.28);
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  margin-right: 4px;
+}
+.v2 .item .tag .live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 14px;
+  padding: 5px 10px;
+  border: 1px solid rgba(238, 241, 245, 0.16);
+  border-radius: 2px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(238, 241, 245, 0.55);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out),
+    border-color 0.3s var(--ease-out), color 0.3s var(--ease-out);
+}
+.v2 .item:hover .tag .live,
+.v2 .item:focus-within .tag .live {
+  opacity: 1;
+  transform: none;
+}
+.v2 .item .tag .live:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* the live link must stay reachable by keyboard even when it is invisible */
+.v2 .item .tag .live:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 700px) {
+  .v2 .item .tag .live { opacity: 1; transform: none; margin-left: 0; }
+  .v2 .item .tag { flex-wrap: wrap; gap: 8px 10px; }
+}

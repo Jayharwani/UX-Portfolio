@@ -1,5 +1,14 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
+import {
+  CaseShell,
+  CaseHero,
+  CaseFoot,
+  Chapter,
+  Colophon,
+  Figures,
+  NextCase,
+  Statement,
+} from "./case/Shell";
 import { Drift } from "./case/Drift";
 import { useReveal, useTilt } from "./case/useScene";
 
@@ -133,6 +142,7 @@ export function ChronoWeavePage() {
           ["TIME", "48 hours, FigBuild 2026"],
           ["TEAM", "Jay, Fran, Deeksha, Honey"],
           ["TOOLS", "Figma AI"],
+          ["DATE", "FigBuild 2026"],
         ]}
       />
 
@@ -239,6 +249,15 @@ export function ChronoWeavePage() {
           </a>
         </p>
       </Chapter>
+
+      <Colophon
+        rows={[
+          ["MY ROLE", "UX design, the design system and the visual design."],
+          ["TEAM", "Four designers: Jay, Fran, Deeksha, Honey. This was not solo work."],
+          ["TOOLS", "Figma AI."],
+          ["SCOPE", "Six high-fidelity screens and a full flow, in 48 hours."],
+        ]}
+      />
 
       <NextCase to="/bumper" name="Bumper" tag="BEHAVIOURAL · EXTENSION" accent="gold" />
       <CaseFoot />

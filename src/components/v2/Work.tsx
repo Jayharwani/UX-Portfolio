@@ -32,13 +32,55 @@ type Item = {
   tag: string;
   href: string;
   rgb: [number, number, number];
+  /** the running thing, not the write-up about it */
+  live?: { href: string; label: string };
+  year: string;
 };
 
 const ITEMS: Item[] = [
-  { key: "headroom", idx: "01", title: "Headroom", tag: "Local-first finance · React", href: "/headroom", rgb: [95, 216, 164] },
-  { key: "signal", idx: "02", title: "Signal", tag: "Live event map · MapLibre", href: "/signal", rgb: [95, 211, 216] },
-  { key: "chrono", idx: "03", title: "ChronoWeave", tag: "ADHD time blindness · Mobile", href: "/chronoweave", rgb: [139, 123, 232] },
-  { key: "bumper", idx: "04", title: "Bumper", tag: "Behavioural · Extension", href: "/bumper", rgb: [233, 197, 139] },
+  {
+    key: "headroom",
+    idx: "01",
+    title: "Headroom",
+    tag: "Local-first finance · React",
+    href: "/headroom",
+    rgb: [95, 216, 164],
+    live: { href: "https://headroom-app.vercel.app", label: "OPEN APP" },
+    year: "2026",
+  },
+  {
+    key: "signal",
+    idx: "02",
+    title: "Signal",
+    tag: "Live event map · MapLibre",
+    href: "/signal",
+    rgb: [95, 211, 216],
+    live: { href: "https://jayharwani.github.io/dmv-map/", label: "OPEN MAP" },
+    year: "2026",
+  },
+  {
+    key: "chrono",
+    idx: "03",
+    title: "ChronoWeave",
+    tag: "ADHD time blindness · Mobile",
+    href: "/chronoweave",
+    rgb: [139, 123, 232],
+    live: { href: "https://revamp-sauna-76244505.figma.site", label: "PROTOTYPE" },
+    year: "2026",
+  },
+  {
+    key: "bumper",
+    idx: "04",
+    title: "Bumper",
+    tag: "Behavioural · Extension",
+    href: "/bumper",
+    rgb: [233, 197, 139],
+    live: {
+      href: "https://chromewebstore.google.com/detail/flnbabigjodkpgapnpeaiepdmganifmp?utm_source=item-share-cb",
+      label: "CHROME STORE",
+    },
+    year: "2026",
+  },
 ];
 
 /** ease a number to `to` over `d` ms, quartic out, writing into the node */
@@ -158,14 +200,14 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
     };
   }, []);
 
-  const onRowMove = (e: React.PointerEvent<HTMLAnchorElement>) => {
+  const onRowMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const inner = e.currentTarget.querySelector<HTMLElement>(".inner");
     if (!inner) return;
     inner.style.setProperty("--dx", `${18 + ((e.clientX - r.left) / r.width) * 10}px`);
     inner.style.setProperty("--dy", `${((e.clientY - r.top) / r.height - 0.5) * 8}px`);
   };
-  const onRowLeave = (e: React.PointerEvent<HTMLAnchorElement>) => {
+  const onRowLeave = (e: React.PointerEvent<HTMLDivElement>) => {
     const inner = e.currentTarget.querySelector<HTMLElement>(".inner");
     inner?.style.setProperty("--dx", "0px");
     inner?.style.setProperty("--dy", "0px");
@@ -196,24 +238,43 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
       <div className="grid">
         <div className="list" id="list" ref={list}>
           {ITEMS.map((it, i) => (
-            <Link
+            /* A WRAPPER, NOT A LINK AROUND A LINK. The row used to be one
+               <Link> over everything, which leaves nowhere to put a second
+               destination: an anchor inside an anchor is invalid and browsers
+               resolve it by dropping one. The row keeps the case study; the
+               live product gets its own control beside it. */
+            <div
               key={it.key}
               className={`item${active === it.key ? " act" : ""}${shown[i] ? " in" : ""}`}
               style={{ transitionDelay: `${i * 70}ms` }}
-              to={it.href}
               onPointerEnter={() => activate(it)}
-              onFocus={() => activate(it)}
               onPointerMove={onRowMove}
               onPointerLeave={onRowLeave}
             >
               <div className="inner">
-                <span>
-                  <span className="idx">{it.idx}</span>
-                  <h3>{it.title}</h3>
-                </span>
+                <Link className="hit" to={it.href} onFocus={() => activate(it)}>
+                  <span>
+                    <span className="idx">{it.idx}</span>
+                    <h3>{it.title}</h3>
+                  </span>
+                </Link>
                 <span className="tag">
+                  <span className="yr mono">{it.year}</span>
                   {it.tag}
                   <em>Case study</em>
+                  {it.live ? (
+                    <a
+                      className="live mono"
+                      href={it.live.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onFocus={() => activate(it)}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {it.live.label}
+                      <span aria-hidden="true">&#8599;</span>
+                    </a>
+                  ) : null}
                 </span>
               </div>
               <i className="glow" />
@@ -222,7 +283,7 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
               <div className="m-shot">
                 <Shot k={it.key} on beat={0} />
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 

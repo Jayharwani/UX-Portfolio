@@ -1,5 +1,14 @@
 import { useEffect } from "react";
-import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
+import {
+  CaseShell,
+  CaseHero,
+  CaseFoot,
+  Chapter,
+  Colophon,
+  Figures,
+  NextCase,
+  Statement,
+} from "./case/Shell";
 import { Pause } from "./case/Pause";
 import { useReveal } from "./case/useScene";
 
@@ -184,6 +193,7 @@ export function BumperCasePage() {
           ["SPRINT", "6 weeks, research to ship"],
           ["PLATFORM", "Chrome extension"],
           ["STATE", "Live on the Chrome Web Store"],
+          ["DATE", "2026"],
         ]}
       />
 
@@ -402,6 +412,15 @@ export function BumperCasePage() {
           </a>
         </p>
       </Chapter>
+
+      <Colophon
+        rows={[
+          ["DESIGN", "Mine, end to end, across a six-week sprint."],
+          ["BUILD", "A Chrome extension on Material Design 3 components."],
+          ["AI", "Antigravity for rapid iteration: six weeks for what would traditionally take six months."],
+          ["SHIPPED", "Live on the Chrome Web Store."],
+        ]}
+      />
 
       <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="mint" />
       <CaseFoot />
