@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { CaseShell, CaseHero, CaseFoot, Chapter, Figures, NextCase, Statement } from "./case/Shell";
 import { Pause } from "./case/Pause";
+import { BumperFilm } from "./case/BumperFilm";
 import { useReveal } from "./case/useScene";
 
 /* --------------------------------------------------------------------------
@@ -186,6 +187,11 @@ export function BumperCasePage() {
           ["STATE", "Live on the Chrome Web Store"],
         ]}
       />
+
+      {/* the thirty-second version, for a reader who will not scroll 11,000px */}
+      <div className="cs-wrap">
+        <BumperFilm />
+      </div>
 
       <div className="cs-wrap">
         <ol className="bp-sprint">

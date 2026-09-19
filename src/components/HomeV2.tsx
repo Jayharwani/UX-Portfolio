@@ -10,6 +10,8 @@ import { Contact } from "./v2/Contact";
 import "../styles/v2.css";
 import "../styles/v2-ported.css";
 import "../styles/v2-hero.css";
+/* the work index can play Bumper's film in its preview panel */
+import "../styles/case.css";
 
 /* --------------------------------------------------------------------------
    THE HOMEPAGE — the handoff design.

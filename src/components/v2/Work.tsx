@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { MOCKUPS, type MockupKey } from "../../data/mockups";
+import { BumperFilm } from "../case/BumperFilm";
 import { useReveal } from "./useReveal";
 
 /* --------------------------------------------------------------------------
@@ -101,6 +102,10 @@ function Shot({ k, on, beat }: { k: MockupKey; on: boolean; beat: number }) {
 export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => void }) {
   const [active, setActive] = useState<MockupKey>("headroom");
   const [beat, setBeat] = useState(0);
+  /* the panel can show a thirty-second film instead of the mockup, for the
+     projects that have one. Reset on every change of project, so arriving at
+     a different row never finds someone else's film still open. */
+  const [film, setFilm] = useState(false);
   const [shown, setShown] = useState<boolean[]>(() => ITEMS.map(() => false));
   const preview = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -111,6 +116,7 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
       setActive((prev) => {
         if (prev === it.key) return prev;
         setBeat((b) => b + 1);
+        setFilm(false);
         return it.key;
       });
       /* On the page root, NOT on documentElement. The reference declares
@@ -234,14 +240,30 @@ export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => voi
           onPointerLeave={onPanelLeave}
         >
           <div className="tint" />
-          {ITEMS.map((it) => (
-            <Shot
-              key={`${it.key}-${active === it.key ? beat : "off"}`}
-              k={it.key}
-              on={active === it.key}
-              beat={beat}
-            />
-          ))}
+          {film && active === "bumper" ? (
+            <div className="filmwrap">
+              <BumperFilm compact />
+            </div>
+          ) : (
+            ITEMS.map((it) => (
+              <Shot
+                key={`${it.key}-${active === it.key ? beat : "off"}`}
+                k={it.key}
+                on={active === it.key}
+                beat={beat}
+              />
+            ))
+          )}
+
+          {/* Bumper is the only project with a film so far; the button only
+              exists where there is something to watch. */}
+          {active === "bumper" && !film ? (
+            <button className="watch mono" type="button" onClick={() => setFilm(true)}>
+              <i aria-hidden="true" />
+              WATCH VIDEO
+              <b>30s</b>
+            </button>
+          ) : null}
         </div>
       </div>
     </section>
