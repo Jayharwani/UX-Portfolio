@@ -23,10 +23,21 @@ const lerp = (a: number, b: number, n: number) => a + (b - a) * n;
 const GX = 13, GY = 6, GZ = 13, SP = 155;
 const SPAN = GZ * SP;
 const FLOOR = ((GY - 1) / 2) * SP + 300;
+/* TWO COLOURS IN THE BACKGROUND: the void, and paper.
+
+   Every nineteenth point used to be painted gold, cyan or violet, and the
+   three volumetric lights were mint, cyan and violet on top of that. Four
+   hues competing behind type that has to be read, and an accent that meant
+   nothing because everything was already coloured.
+
+   The structure is untouched — the same points are still the bright ones, at
+   the same size and the same cadence, so the field moves exactly as it did.
+   Only the hue is gone. Colour now happens in front of the canvas, where it
+   carries the project, and nowhere behind it. */
 const ACC: [number, number, number][] = [
-  [233, 197, 139],
-  [95, 211, 216],
-  [139, 123, 232],
+  [238, 241, 245],
+  [238, 241, 245],
+  [238, 241, 245],
 ];
 
 type Pt = { x: number; y: number; z: number; ph: number; acc: number[] | null };
@@ -47,10 +58,14 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
           acc: (i * 7 + j * 3 + k) % 19 === 0 ? ACC[(i + j + k) % 3] : null,
         });
 
+  /* Same three lights, same drift, same radii. Paper instead of mint, cyan
+     and violet, and each a little dimmer: white at a given alpha reads
+     brighter than a saturated hue at the same alpha, and the point of this
+     change is that the type in front stays legible. */
   const lights = [
-    { c: null as string | null, a: 0.26, ox: 0.28, oy: 0.30, sx: 0.00033, sy: 0.00021, r: 0.55 },
-    { c: '95,211,216',          a: 0.18, ox: 0.74, oy: 0.62, sx: 0.00025, sy: 0.00031, r: 0.48 },
-    { c: '139,123,232',         a: 0.15, ox: 0.48, oy: 0.88, sx: 0.00018, sy: 0.00026, r: 0.44 },
+    { c: '238,241,245', a: 0.185, ox: 0.28, oy: 0.30, sx: 0.00033, sy: 0.00021, r: 0.55 },
+    { c: '238,241,245', a: 0.120, ox: 0.74, oy: 0.62, sx: 0.00025, sy: 0.00031, r: 0.48 },
+    { c: '238,241,245', a: 0.095, ox: 0.48, oy: 0.88, sx: 0.00018, sy: 0.00026, r: 0.44 },
   ];
 
   let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, F = 0;
@@ -58,7 +73,8 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
   let tScroll = 0, smooth = 0, prev = 0, vel = 0, svel = 0;
   let assemble = 0, tm = 0, running = true, raf = 0;
   let pmx = 0.5, pmy = 0.5;
-  let target: [number, number, number] = [95, 216, 164];
+  /* kept, and deliberately unread: setAccent still records what the rail and
+     the work index push, so a tinted field is one line away again. */
   const live: [number, number, number] = [95, 216, 164];
 
   function size() {
@@ -114,7 +130,10 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
     const warp = Math.max(-90, Math.min(90, svel * 3.2));
     const camZ = smooth * 0.55;
 
-    for (let i = 0; i < 3; i++) live[i] = lerp(live[i], target[i], 0.035);
+    /* the accent no longer reaches the canvas, so this is not lerped every
+       frame any more. setAccent still accepts the call: the rail and the work
+       index push the hue and it is kept, so restoring a tinted field later is
+       one line rather than a rewrite. */
 
     g.clearRect(0, 0, W, H);
     g.fillStyle = '#05070C';
@@ -195,7 +214,7 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
   addEventListener('resize', size);
 
   if (reduced) {
-    g.fillStyle = '#0A101A';
+    g.fillStyle = '#05070C';
     g.fillRect(0, 0, canvas.width, canvas.height);
   } else {
     addEventListener('pointermove', onMove, { passive: true });
@@ -205,7 +224,7 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
   }
 
   return {
-    setAccent: (rgb) => { target = rgb; },
+    setAccent: (rgb) => { live[0] = rgb[0]; live[1] = rgb[1]; live[2] = rgb[2]; },
     getScroll: () => smooth,
     getVelocity: () => svel,
     destroy() {

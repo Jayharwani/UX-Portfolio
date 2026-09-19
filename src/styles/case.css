@@ -105,16 +105,22 @@
   100% { transform: translate(1%, 1%); }
 }
 
-/* The accent bleeds into the ground from the top, so the colour that lit the
-   row on the work index is the colour the page opens on. */
+/* TWO COLOURS BEHIND THE TYPE: the void, and paper.
+
+   This used to bleed the project accent into the ground so the page opened
+   on the colour that lit its row. It read as a wash of green or violet behind
+   body copy, which is the same complaint the homepage canvas had. The
+   gradients are unchanged in shape, position and strength; only the hue is
+   gone. The accent still does its work in front — the rail, the numerals, the
+   hairlines, the links — where it means something. */
 .cs .cs-wash {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(120% 70% at 18% -10%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 62%),
-    radial-gradient(90% 60% at 92% 8%, color-mix(in oklab, var(--accent) 5%, transparent), transparent 66%);
+    radial-gradient(120% 70% at 18% -10%, rgba(238, 241, 245, 0.05), transparent 62%),
+    radial-gradient(90% 60% at 92% 8%, rgba(238, 241, 245, 0.022), transparent 66%);
 }
 
 .cs-page {
