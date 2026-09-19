@@ -62,6 +62,7 @@ export function Explainer({
   poster,
   children,
   compact,
+  audioSrc,
 }: {
   scenes: Scene[];
   /** total run time in seconds */
@@ -69,12 +70,20 @@ export function Explainer({
   label: string;
   /** for the work index panel: captions sit over the stage, no transcript */
   compact?: boolean;
+  /**
+   * A real recording. When present it becomes the clock: the picture follows
+   * audio.currentTime rather than a timer, so the film cannot drift from the
+   * voice however long the read actually runs. Drop an mp3 in /public and
+   * pass its path. The browser voice is only the fallback.
+   */
+  audioSrc?: string;
   /** what shows before play: the still frame */
   poster: ReactNode;
   /** the film itself, reading --t (0..1) and --scene from its container */
   children: ReactNode;
 }) {
   const stage = useRef<HTMLDivElement>(null);
+  const audio = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [done, setDone] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -102,6 +111,10 @@ export function Explainer({
     cancelRef.current?.();
     cancelRef.current = undefined;
     window.speechSynthesis?.cancel();
+    if (audio.current) {
+      audio.current.pause();
+      audio.current.currentTime = 0;
+    }
     setPlaying(false);
   }, []);
 
@@ -130,6 +143,21 @@ export function Explainer({
     let spoken = -1;
     const t0 = performance.now();
 
+    /* A recording, if there is one, is a better clock than the wall: it is
+       the thing the reader is actually listening to. Failing back to the
+       wall clock matters because a missing or blocked file must not leave
+       the film frozen on its first shot. */
+    const track = audioSrc ? audio.current : null;
+    if (track) {
+      track.currentTime = 0;
+      track.muted = muted;
+      void track.play().catch(() => {});
+    }
+    const elapsed = () =>
+      track && !track.paused && track.currentTime > 0
+        ? track.currentTime
+        : (performance.now() - t0) / 1000;
+
     /* A TIMER, NOT requestAnimationFrame. rAF is the obvious driver and it is
        the wrong one here: it is starved whenever the compositor decides not to
        paint, and a film that is "playing" with a stop button showing, no
@@ -138,7 +166,7 @@ export function Explainer({
        throttled interval stays honest about where in the film it is; at 40Hz
        the cross-fades and the progress bar are indistinguishable from rAF. */
     const frame = () => {
-      const secs = (performance.now() - t0) / 1000;
+      const secs = elapsed();
       const t = Math.min(1, secs / duration);
       el.style.setProperty("--t", t.toFixed(4));
 
@@ -149,7 +177,7 @@ export function Explainer({
         spoken = i;
         el.dataset.scene = String(i);
         setCaption(scenes[i].line);
-        if (!muted && synth) {
+        if (!track && !muted && synth) {
           const u = new SpeechSynthesisUtterance(scenes[i].line);
           if (voice) u.voice = voice;
           u.rate = 1.02;
@@ -159,6 +187,7 @@ export function Explainer({
 
       if (secs >= duration) {
         window.clearInterval(timer);
+        track?.pause();
         setPlaying(false);
         setDone(true);
       }
@@ -169,7 +198,7 @@ export function Explainer({
 
     /* handed back so the caller can stop a film in progress */
     return () => window.clearInterval(timer);
-  }, [duration, muted, scenes]);
+  }, [audioSrc, duration, muted, scenes]);
 
   const start = () => {
     cancelRef.current?.();
@@ -180,6 +209,7 @@ export function Explainer({
   return (
     <figure className={`ex${compact ? " ex-compact" : ""}${playing ? " on" : ""}${done ? " done" : ""}`}>
       <div className="ex-stage" ref={stage} data-scene="0">
+        {audioSrc ? <audio ref={audio} src={audioSrc} preload="auto" /> : null}
         <div className="ex-poster">{poster}</div>
         <div className="ex-film">{children}</div>
 
@@ -207,12 +237,15 @@ export function Explainer({
           {caption || label}
         </p>
         <div className="ex-tools">
-          {hasVoice ? (
+          {hasVoice || audioSrc ? (
             <button
               className="mono"
               type="button"
               onClick={() => {
-                setMuted((m) => !m);
+                setMuted((m) => {
+                  if (audio.current) audio.current.muted = !m;
+                  return !m;
+                });
                 if (!muted) window.speechSynthesis?.cancel();
               }}
               aria-pressed={muted}
