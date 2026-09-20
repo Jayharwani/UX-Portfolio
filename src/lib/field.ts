@@ -23,17 +23,24 @@ const lerp = (a: number, b: number, n: number) => a + (b - a) * n;
 const GX = 13, GY = 6, GZ = 13, SP = 155;
 const SPAN = GZ * SP;
 const FLOOR = ((GY - 1) / 2) * SP + 300;
-/* TWO COLOURS IN THE BACKGROUND: the void, and paper.
+/* ONE HUE IN THE BACKGROUND, NOT FOUR AND NOT NONE.
 
-   Every nineteenth point used to be painted gold, cyan or violet, and the
-   three volumetric lights were mint, cyan and violet on top of that. Four
-   hues competing behind type that has to be read, and an accent that meant
-   nothing because everything was already coloured.
+   Four hues at once read as a party: mint, cyan and violet lights with gold,
+   cyan and violet sparks on top, all behind type that has to be read. Taking
+   every hue out fixed the noise and killed the atmosphere with it — a flat
+   near-black has nothing to look at while you scroll.
 
-   The structure is untouched — the same points are still the bright ones, at
-   the same size and the same cadence, so the field moves exactly as it did.
-   Only the hue is gone. Colour now happens in front of the canvas, where it
-   carries the project, and nowhere behind it. */
+   So: the stars stay neutral paper, and the atmosphere is a single cool
+   light. docs/TOKENS.md observed the same thing about the palette this site
+   grew out of — "a single-hue palette, varied only by lightness and chroma…
+   it is why the site reads as coherent despite the number of surfaces in
+   play." Depth comes from position, size and alpha, never from a second hue.
+
+   Low chroma is the part that matters. The background must not compete with
+   the accent in front of it, which is the only thing on the page that is
+   allowed to mean something by being coloured. */
+/* the brighter sparks stay neutral, so the starfield reads crisp rather
+   than tinted — colour belongs to the atmosphere, not to the points in it */
 const ACC: [number, number, number][] = [
   [238, 241, 245],
   [238, 241, 245],
@@ -58,14 +65,15 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
           acc: (i * 7 + j * 3 + k) % 19 === 0 ? ACC[(i + j + k) % 3] : null,
         });
 
-  /* Same three lights, same drift, same radii. Paper instead of mint, cyan
-     and violet, and each a little dimmer: white at a given alpha reads
-     brighter than a saturated hue at the same alpha, and the point of this
-     change is that the type in front stays legible. */
+  /* Same three lights, same drift, same radii — one cool hue between them,
+     separated only by alpha. Light rather than murk: the old version was dim
+     AND saturated, which is what made it read as gloom. This is closer to a
+     window at dusk than to a coloured gel. */
+  const ATMOSPHERE = '138,170,205';
   const lights = [
-    { c: '238,241,245', a: 0.185, ox: 0.28, oy: 0.30, sx: 0.00033, sy: 0.00021, r: 0.55 },
-    { c: '238,241,245', a: 0.120, ox: 0.74, oy: 0.62, sx: 0.00025, sy: 0.00031, r: 0.48 },
-    { c: '238,241,245', a: 0.095, ox: 0.48, oy: 0.88, sx: 0.00018, sy: 0.00026, r: 0.44 },
+    { c: ATMOSPHERE, a: 0.175, ox: 0.28, oy: 0.30, sx: 0.00033, sy: 0.00021, r: 0.55 },
+    { c: ATMOSPHERE, a: 0.115, ox: 0.74, oy: 0.62, sx: 0.00025, sy: 0.00031, r: 0.48 },
+    { c: ATMOSPHERE, a: 0.090, ox: 0.48, oy: 0.88, sx: 0.00018, sy: 0.00026, r: 0.44 },
   ];
 
   let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, F = 0;
