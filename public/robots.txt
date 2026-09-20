@@ -1,0 +1,10 @@
+# jayharwani.com
+
+User-agent: *
+Allow: /
+
+# /cards is a development preview of the case study card components, not a
+# page anyone should land on from a search result.
+Disallow: /cards
+
+Sitemap: https://jayharwani.com/sitemap.xml
