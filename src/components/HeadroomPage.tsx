@@ -84,7 +84,7 @@ export function HeadroomPage() {
   const [screensRef, screensSeen] = useReveal<HTMLDivElement>();
 
   return (
-    <CaseShell accent="mint" live={{ href: "https://headroom-app.vercel.app", label: "LIVE" }}>
+    <CaseShell accent="mint" live={{ href: "https://headroom-opal.vercel.app", label: "LIVE" }}>
       <CaseHero
         meta={
           <>
@@ -197,7 +197,7 @@ export function HeadroomPage() {
         <p style={{ marginTop: 34 }}>
           <a
             className="cs-btn"
-            href="https://headroom-app.vercel.app"
+            href="https://headroom-opal.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
           >

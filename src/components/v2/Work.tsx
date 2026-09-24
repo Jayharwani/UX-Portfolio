@@ -45,7 +45,7 @@ const ITEMS: Item[] = [
     tag: "Local-first finance · React",
     href: "/headroom",
     rgb: [95, 216, 164],
-    live: { href: "https://headroom-app.vercel.app", label: "OPEN APP" },
+    live: { href: "https://headroom-opal.vercel.app", label: "OPEN APP" },
     year: "2026",
   },
   {
