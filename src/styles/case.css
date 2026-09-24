@@ -1905,3 +1905,304 @@
 .cs .cs-heroCta {
   margin-top: clamp(18px, 2.4vh, 28px);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FRICTION
+
+   Two scenes. The funnel is the hero's backdrop and runs once on load; the
+   verification scan is scroll-driven like every other scene on the site.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the hero, with a canvas behind it ── */
+.cs .cs-hero.has-backdrop {
+  position: relative;
+  isolation: isolate;
+  /* room for the readout, which is absolutely positioned and so contributes
+     no height of its own. Sized so the readout still clears the fold on a
+     1280x800 laptop, where the whole shot is otherwise wasted: the sequence
+     finishes while the reader is still looking at the hero. */
+  padding-bottom: clamp(92px, 12.5vh, 142px);
+  /* Set here, not through the headlineScale prop: that writes --h1 inline on
+     this element, and an inline custom property outranks every stylesheet
+     rule, so the narrow-screen override below could never win. */
+  --h1: 0.9;
+}
+/* the hero's own content sits above the field, always */
+.cs .cs-hero.has-backdrop > *:not(.fr-funnel) {
+  position: relative;
+  z-index: 1;
+}
+/* a soft well under the reading column so a headline never has to compete
+   with the densest part of the cloud */
+.cs .cs-hero.has-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(58% 46% at 42% 44%, rgba(5, 7, 12, 0.82), transparent 72%);
+  pointer-events: none;
+}
+
+.cs .fr-funnel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  z-index: 0;
+  pointer-events: none;
+}
+.cs .fr-funnel canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── the readout ──
+   Two facts and the five screens between them. No interpolated figure ever
+   appears here: the site publishes the order of the screens, not each one's
+   yield, so the dots do the arithmetic and this only names the steps. */
+.cs .fr-strip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: clamp(20px, 4vh, 44px);
+  width: min(1280px, 100%);
+  padding: 0 var(--gut);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.cs .fr-strip .fr-end {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  transition: color 0.6s var(--ease);
+}
+.cs .fr-strip .fr-end b {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+.cs .fr-strip .fr-end.out { color: var(--ink-3); }
+.cs .fr-strip .fr-end.out b { color: var(--ink-3); transition: color 0.6s var(--ease); }
+
+.cs .fr-strip ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+.cs .fr-strip li {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  white-space: nowrap;
+  transition: color 0.45s var(--ease), border-color 0.45s var(--ease),
+    background-color 0.45s var(--ease);
+}
+
+/* Five literal rules rather than one arithmetic selector. An earlier scene on
+   this site drove state with calc(abs()) and every value resolved through the
+   fallback while CSS.supports() reported both functions as available; the
+   attribute form has no such failure mode. */
+.cs .fr-strip[data-step="1"] li:nth-child(-n + 1),
+.cs .fr-strip[data-step="2"] li:nth-child(-n + 2),
+.cs .fr-strip[data-step="3"] li:nth-child(-n + 3),
+.cs .fr-strip[data-step="4"] li:nth-child(-n + 4),
+.cs .fr-strip[data-step="5"] li:nth-child(-n + 5) {
+  color: var(--paper);
+  border-color: color-mix(in oklab, var(--accent) 46%, transparent);
+  background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+.cs .fr-strip[data-step="5"] .fr-end.out,
+.cs .fr-strip[data-step="5"] .fr-end.out b {
+  color: var(--accent);
+}
+
+/* Narrow: the readout wraps to three lines, so it needs roughly three times
+   the reservation it does on a laptop. Sized from the wrapped height rather
+   than scaled down from the desktop value, which left it overlapping the spec
+   sheet by a few pixels at 390 - close enough to look like a rendering fault
+   rather than a layout one. */
+@media (max-width: 820px) {
+  .cs .cs-hero.has-backdrop { padding-bottom: clamp(122px, 17vh, 156px); }
+  .cs .fr-strip { bottom: 16px; font-size: 9px; gap: 8px 12px; }
+  .cs .fr-strip .fr-end b { font-size: 13px; }
+  .cs .fr-strip li { padding: 4px 7px; font-size: 8.5px; letter-spacing: 0.1em; }
+}
+
+/* ── the permission gate ──
+   Not two cards. A rule down the middle and two lists either side of it, so
+   the contrast is the layout rather than a pair of boxes. */
+.cs .fr-gate {
+  display: grid;
+  gap: 28px 0;
+  margin: 38px 0 6px;
+}
+@media (min-width: 760px) {
+  .cs .fr-gate {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 clamp(32px, 5vw, 64px);
+  }
+  .cs .fr-gate .never {
+    padding-left: clamp(32px, 5vw, 64px);
+    margin-left: calc(clamp(32px, 5vw, 64px) * -1);
+    border-left: 1px solid var(--line);
+  }
+}
+.cs .fr-gate .lbl {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.cs .fr-gate .does .lbl { color: var(--accent); }
+.cs .fr-gate ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.cs .fr-gate li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.cs .fr-gate li::before {
+  content: "";
+  width: 10px;
+  height: 1px;
+  background: var(--accent);
+  transform: translateY(-4px);
+}
+.cs .fr-gate .never li { color: var(--ink-2); }
+/* a struck bar, not a cross: the operation exists and is refused */
+.cs .fr-gate .never li::before {
+  width: 10px;
+  height: 10px;
+  background: none;
+  border-bottom: 1px solid var(--ink-3);
+  transform: translateY(-8px) rotate(-38deg);
+}
+
+/* ── the verification scan ── */
+.cs .fr-verify {
+  margin: 34px 0 10px;
+  padding: clamp(26px, 4vw, 44px) var(--gut);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent);
+}
+.cs .fr-vq {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: clamp(14px, 2.1vw, 21px);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  /* the two halves are one string split in two, so the line cannot reflow as
+     the split point advances */
+  white-space: pre-wrap;
+}
+.cs .fr-vq .ok { color: var(--paper); }
+.cs .fr-vq .rest { color: var(--ink-3); }
+.cs .fr-vq .caret {
+  width: 2px;
+  /* Explicit, not `align-self: stretch`. The row is baseline-aligned and the
+     caret has no content, so stretch resolved to zero height and the scan
+     position was marked by nothing at all. */
+  height: 1.05em;
+  align-self: center;
+  margin: 0 1px;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 70%, transparent);
+  transition: opacity 0.3s var(--ease);
+}
+.cs .fr-vq[data-done="1"] .caret { opacity: 0; }
+
+.cs .fr-prov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+}
+.cs .fr-prov li {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+.cs .fr-prov[data-stage="1"] li:nth-child(-n + 1),
+.cs .fr-prov[data-stage="2"] li:nth-child(-n + 2),
+.cs .fr-prov[data-stage="3"] li:nth-child(-n + 3),
+.cs .fr-prov[data-stage="4"] li:nth-child(-n + 4),
+.cs .fr-prov[data-stage="5"] li:nth-child(-n + 5),
+.cs .fr-prov[data-stage="6"] li {
+  opacity: 1;
+  transform: none;
+}
+.cs .fr-vfoot {
+  margin: 18px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+  color: var(--ink-3);
+  max-width: 62ch;
+}
+.cs .fr-vfoot b {
+  font-weight: 500;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs .fr-strip li,
+  .cs .fr-strip .fr-end,
+  .cs .fr-prov li,
+  .cs .fr-vq .caret {
+    transition: none;
+  }
+}
+
+/* Very narrow. Two separate problems appear together at 360x640: the shared
+   headline clamp bottoms out at its 3rem floor, which breaks "10,000
+   complaints." across two lines and turns a two-line headline into a ragged
+   three; and the readout wraps to four lines, leaving one pixel between it
+   and the spec sheet. Both are sized here rather than by loosening the
+   shared clamp, which the other four case studies depend on. */
+@media (max-width: 480px) {
+  .cs .cs-hero.has-backdrop { --h1: 0.72; padding-bottom: clamp(130px, 20vh, 160px); }
+  .cs .fr-strip { gap: 6px 10px; }
+  .cs .fr-strip li { padding: 3px 6px; font-size: 8px; }
+}

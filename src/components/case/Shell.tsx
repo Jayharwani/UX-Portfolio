@@ -12,13 +12,17 @@ import "../../styles/case.css";
    the four pages drifting apart again.
    -------------------------------------------------------------------------- */
 
-export type CaseAccent = "mint" | "cyan" | "violet" | "gold";
+export type CaseAccent = "mint" | "cyan" | "violet" | "gold" | "teal";
 
 export const ACCENTS: Record<CaseAccent, string> = {
   mint: "#5FD8A4",
   cyan: "#5FD3D8",
   violet: "#8B7BE8",
   gold: "#E9C58B",
+  /* Friction's own primary, hue 172, taken from the live site rather than
+     picked to fit the set. It is deeper and greener than mint and colder than
+     cyan, which is the only reason five accents still read as five. */
+  teal: "#3FB9A6",
 };
 
 /** Progress hairline. Its scene is the document, so --p is read scroll depth. */
@@ -115,6 +119,8 @@ export function CaseHero({
   spec,
   cta,
   headlineScale,
+  backdrop,
+  children,
 }: {
   meta: ReactNode;
   title: ReactNode;
@@ -130,12 +136,21 @@ export function CaseHero({
   cta?: { href: string; label: string };
   /** headline scale, for titles long enough to need setting smaller */
   headlineScale?: number;
+  /**
+   * A layer painted behind the hero, full-bleed. The four original pages have
+   * none and are unaffected; Friction puts its funnel canvas here rather than
+   * growing a second hero implementation beside this one.
+   */
+  backdrop?: ReactNode;
+  /** anything that belongs under the spec row, still inside the hero */
+  children?: ReactNode;
 }) {
   return (
     <header
-      className="cs-hero cs-wrap"
+      className={`cs-hero cs-wrap${backdrop ? " has-backdrop" : ""}`}
       style={headlineScale ? ({ ["--h1" as string]: headlineScale } as React.CSSProperties) : undefined}
     >
+      {backdrop}
       <div className="cs-eyebrow">{meta}</div>
       <h1>{title}</h1>
       <div className="cs-heroGrid">
@@ -164,6 +179,7 @@ export function CaseHero({
           </dl>
         ) : null}
       </div>
+      {children}
     </header>
   );
 }
