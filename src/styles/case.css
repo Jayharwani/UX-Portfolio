@@ -2206,3 +2206,265 @@
   .cs .fr-strip { gap: 6px 10px; }
   .cs .fr-strip li { padding: 3px 6px; font-size: 8px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FRICTION — the narrative blocks.
+
+   One per section, because a case study about visual design that is a column
+   of text undercuts itself. Most of these lean on vocabulary that already
+   exists here — the gate, the rejected list, the index — rather than adding
+   a new shape for every section.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── §02 the dead end ──
+   Everything ruled out before the assumption underneath it was. Struck, in
+   order, with the outcome sitting outside the list. */
+.cs .fr-dead {
+  margin: 34px 0 30px;
+  padding: clamp(22px, 3vw, 30px) clamp(22px, 3vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent);
+}
+.cs .fr-dead .lbl {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.cs .fr-dead ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cs .fr-dead li {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  text-decoration-thickness: 1px;
+}
+.cs .fr-dead .out {
+  margin: 18px 0 0;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--paper);
+}
+
+/* ── §03 what each source gives you ──
+   The gate again, but the divider belongs to the richer side, which here is
+   the second column rather than the first. */
+@media (min-width: 760px) {
+  .cs .fr-src .never {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: 0;
+  }
+  .cs .fr-src .does {
+    padding-left: clamp(32px, 5vw, 64px);
+    margin-left: calc(clamp(32px, 5vw, 64px) * -1);
+    border-left: 1px solid var(--line);
+  }
+}
+/* the thin side is the one being argued against here, so it takes the
+   struck marker and the rich side takes the accent dash */
+.cs .fr-src .never li { color: var(--ink-3); }
+.cs .fr-src .does li { color: var(--ink-1); }
+.cs .fr-src .does .lbl { color: var(--accent); }
+.cs .fr-src .never .lbl { color: var(--ink-3); }
+
+/* ── §05 before and after ── */
+.cs .fr-ba {
+  display: grid;
+  gap: clamp(28px, 4vw, 46px);
+  margin: 34px 0 30px;
+}
+@media (min-width: 880px) {
+  .cs .fr-ba { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.cs .fr-ba figure { margin: 0; }
+.cs .fr-ba figcaption { margin-top: 18px; }
+.cs .fr-ba figcaption p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 46ch;
+}
+.cs .fr-ba .tag {
+  display: inline-block;
+  margin-bottom: 9px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+}
+.cs .fr-ba figure:last-child .tag { color: var(--accent); }
+
+.cs .fr-shot { border-radius: 10px; }
+.cs .fr-shot > div {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+}
+.cs .fr-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── §06 built, then deleted ──
+   Two timestamps. The second one is the decision, so it is the one that
+   carries the strike and the accent. */
+.cs .fr-cut {
+  margin: 32px 0 6px;
+  border-top: 1px solid var(--line);
+}
+.cs .fr-cut > div {
+  display: grid;
+  gap: 4px 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 680px) {
+  .cs .fr-cut > div { grid-template-columns: minmax(0, 15ch) minmax(0, 1fr); align-items: baseline; }
+}
+.cs .fr-cut .when {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.cs .fr-cut b {
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--paper);
+}
+.cs .fr-cut .gone b {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--accent) 70%, transparent);
+  text-decoration-thickness: 1px;
+}
+.cs .fr-cut .gone .when { color: var(--accent); }
+.cs .fr-cut .note {
+  margin: 15px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── §07 the offending row, as it read on the live site ── */
+.cs .fr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 18px;
+  margin: 26px 0;
+  /* it is a <p>, so it inherits the reading measure and wrapped three deep.
+     This row is a specimen of a layout, not prose. */
+  max-width: none;
+  padding: 18px clamp(16px, 2.4vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.cs .fr-row span {
+  margin-left: auto;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+  border-radius: 2px;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--paper);
+  white-space: nowrap;
+}
+
+/* ── §08 one lens, at full size ──
+   The limitation is the point of the card, so it is the part that is lit
+   rather than the part that is tucked under a disclosure. */
+.cs .fr-lens {
+  margin: 32px 0 28px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.028), transparent);
+}
+.cs .fr-lens .hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px clamp(18px, 2.6vw, 28px);
+  border-bottom: 1px solid var(--line);
+}
+.cs .fr-lens .hd .k {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+.cs .fr-lens .hd .n {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.cs .fr-lens ul {
+  margin: 0;
+  padding: clamp(18px, 2.6vw, 26px) clamp(18px, 2.6vw, 28px);
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.cs .fr-lens li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.cs .fr-lens li::before {
+  content: "";
+  width: 9px;
+  height: 1px;
+  background: var(--accent);
+  transform: translateY(-4px);
+}
+.cs .fr-lens .lim {
+  margin: 0;
+  padding: clamp(16px, 2.4vw, 22px) clamp(18px, 2.6vw, 28px);
+  border-top: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+  background: color-mix(in oklab, var(--accent) 7%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+.cs .fr-lens .lim .lbl {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+/* ── §11 what I'd do differently ──
+   The index, without numerals. Three rows, plain, because the honesty is
+   the point and a counter would dress it up. */
+.cs .fr-diff > li:first-child { border-top: 0; padding-top: 0; }
+.cs .fr-diff h3 { color: var(--accent); font-size: 17px; }

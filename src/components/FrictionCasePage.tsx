@@ -7,37 +7,93 @@ import {
   Colophon,
   Figures,
   NextCase,
+  Rejected,
   Statement,
 } from "./case/Shell";
 import { Funnel } from "./case/Funnel";
 import { Verify } from "./case/Verify";
+import { useReveal, useTilt } from "./case/useScene";
 
 /* --------------------------------------------------------------------------
    FRICTION — the fifth case study.
 
-   Two chapters and an opening shot. The brief was that a recruiter should
-   have the project in ten seconds and be finished in twenty, which rules out
-   the five-chapter shape the other four use: what is left is the ratio, and
-   the constraint that makes the ratio trustworthy.
+   Rewritten from three sections to eleven. The first version explained what
+   the product does three times over; a reader finished it knowing the
+   product and nothing about the person. This one is the decisions: a dead
+   registration form, a source swapped under duress, a test every friend
+   failed, a label that was insulting people, and a screen deleted seventeen
+   hours after it was built.
 
-   The signature is the funnel — the page runs the sieve the product runs.
-   See Funnel.tsx for which of its numbers are claims and which are pacing.
+   EVERY FIGURE HERE WAS CHECKED against friction's own git history, and
+   several of the numbers are Jay's own measurements quoted from commit
+   bodies — 2,521 words, 774 to 101, 161ms. The GummySearch closure is
+   checked against its own shutdown notice. Where the source brief and the
+   repository disagreed, the repository won; see THE CUT below.
 
-   Every figure, quote and date on this page is taken from the live site.
+   The signature is still the funnel. See Funnel.tsx for which of its
+   numbers are claims and which are pacing.
    -------------------------------------------------------------------------- */
 
 const LIVE = "https://jayharwani.github.io/friction/";
 
-const SCALE: Array<[string, string, string?]> = [
-  ["9,994", "Reviews read in the last scan", "FRICTION · 20 SEPT 2026"],
-  ["150", "The cap on what reaches a model", "FRICTION · HOW IT WORKS"],
-  ["25", "Recurring challenges on record", "FRICTION · ACROSS 15 APPS"],
+/* §01 — why the free tier is the only version allowed to exist */
+const BET: Array<[string, string, string?]> = [
+  ["140,000", "Users the category leader had when it closed", "GUMMYSEARCH · 30 NOV 2025"],
+  ["0", "Credentials the public store feeds require", "APP STORE · PUBLIC HTTP"],
 ];
+
+/* §02 — everything ruled out before the assumption itself was */
+const RULED_OUT = ["verified email", "ad blockers", "account age", "rate limits"];
+
+/* §07 — the rename, exactly as the commit records it */
+const LABELS: Array<[string, string, string]> = [
+  [
+    "Worth building",
+    "Strong signal",
+    "The threshold is unchanged: the higher of 70 and the 80th percentile of active scores.",
+  ],
+  ["Watch", "Recurring", "Same arithmetic, describing the evidence rather than the opportunity."],
+  [
+    "Too small",
+    "Thin evidence",
+    "Anything under four distinct reviewers, regardless of score. It was reading as a verdict on the complaint.",
+  ],
+];
+
+/* §11 */
+const DIFFERENTLY: Array<[string, string]> = [
+  [
+    "Test earlier",
+    "I ran the first user test after the site was live. Two rounds of redesign would not have happened if I had shown three people a static screen in week one.",
+  ],
+  [
+    "Cut before polishing",
+    "The method page reached 2,521 words and ten sections before I measured it. Every design pass I made on it was polish applied to something that should have been a quarter of the size.",
+  ],
+  [
+    "Build the boring thing first",
+    "The 3D terrain came before the homepage explained what the site was. I built the interesting problem instead of the necessary one.",
+  ],
+];
+
+/** a screenshot that sits off the surface of its card */
+function Shot({ src, alt }: { src: string; alt: string }) {
+  const ref = useTilt<HTMLDivElement>(7);
+  return (
+    <div className="cs-slab fr-shot" ref={ref}>
+      <div>
+        <img className="cs-lift" src={src} alt={alt} loading="lazy" decoding="async" />
+      </div>
+    </div>
+  );
+}
 
 export function FrictionCasePage() {
   useEffect(() => {
     document.title = "Friction — Product design case study";
   }, []);
+
+  const [baRef, baSeen] = useReveal<HTMLDivElement>();
 
   return (
     <CaseShell accent="teal" live={{ href: LIVE, label: "LIVE" }}>
@@ -53,26 +109,302 @@ export function FrictionCasePage() {
         }
         title={
           <>
-            {/* Numerals, and short ones. Spelled out, either line overran its
-                own measure and wrapped to three lines against a headline
-                written for two — and the figure is the argument here anyway. */}
             10,000 complaints.
             <br />
             <em>25 that repeat.</em>
           </>
         }
-        standfirst="Friction reads ten thousand public app store reviews a week and groups the ones that repeat. Every number on it is calculated in code; almost nothing is written."
+        standfirst="Friction reads ten thousand public app store reviews a week and groups the ones that repeat. It took two data sources, nine rounds of redesign, and deleting the homepage's best screen seventeen hours after building it."
         spec={[
           ["ROLE", "Sole designer and builder"],
           ["SCOPE", "Pipeline, site, and the rules the model runs under"],
           ["BUILD", "Astro and TypeScript, written with Claude Code"],
+          ["REDESIGNS", "9 rounds, 2 of them after user testing failed"],
           ["STATE", "Live · 15 apps · 25 challenges"],
           ["DATE", "2026"],
         ]}
         cta={{ href: LIVE, label: "Open Friction" }}
       />
 
-      <Chapter n="01" label="THE FUNNEL">
+      <Chapter n="01" label="THE BET">
+        <h2>The market leader had just died. That was the interesting part.</h2>
+        <p>
+          I started from a paid tool that finds startup ideas in public complaints. It hides its
+          evidence behind a paywall and scores each idea 0 to 100 with no visible rubric — two
+          quotes and a number in the nineties.
+        </p>
+        <p>
+          While researching it I found that the largest tool in the category had shut down in
+          November 2025. Not for lack of demand. It could not reach terms that fit Reddit&rsquo;s
+          data policies, and a commercial licence made continuous scanning uneconomic for a small
+          operation.
+        </p>
+        <p>
+          That reframed the project.{" "}
+          <strong>
+            The free, non-commercial tier is the only version of this tool structurally allowed to
+            exist right now.
+          </strong>{" "}
+          My constraint was my position.
+        </p>
+
+        <Figures items={BET} accent />
+      </Chapter>
+
+      <Chapter n="02" label="THE WALL">
+        <h2>I lost a day to a registration form.</h2>
+        <p>
+          The plan was Reddit. Free tier, non-commercial use, a hundred queries a minute — enough
+          for a weekly scan of fifteen communities.
+        </p>
+        <p>
+          I could not create the app. Registration kept failing, and after working through every
+          cause I could think of, I still had no credentials. At that point the choice was to keep
+          fighting the form or to question the assumption underneath it.
+        </p>
+
+        <div className="fr-dead">
+          <span className="lbl mono">RULED OUT, IN ORDER</span>
+          <ul className="mono">
+            {RULED_OUT.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+          <p className="mono out">still no credentials</p>
+        </div>
+
+        <p>
+          I had assumed forums were the best source of complaints{" "}
+          <strong>because that is where the competitors look.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="03" label="THE PIVOT">
+        <h2>The second-choice source turned out to be the better one.</h2>
+        <p>
+          App Store review feeds are public HTTP. No credentials, no approval, no registration.
+          Google Play reads from public pages, so I built it as an optional enhancement — if it
+          fails, the scan still completes on Apple data alone.
+        </p>
+        <p>Then the thing I had not planned for.</p>
+
+        <div className="fr-gate fr-src">
+          <div className="never">
+            <span className="lbl mono">A FORUM POST GIVES YOU</span>
+            <ul>
+              <li>That someone was annoyed</li>
+            </ul>
+          </div>
+          <div className="does">
+            <span className="lbl mono">A STORE REVIEW GIVES YOU</span>
+            <ul>
+              <li>A star rating</li>
+              <li>The app version</li>
+              <li>The country</li>
+              <li>The date</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          That metadata answers questions a forum-based tool structurally cannot: did this start
+          after a specific release, is it one platform or both, is it getting worse.{" "}
+          <strong>Those are the questions that decide whether a problem is worth anyone&rsquo;s time.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="04" label="THE COST">
+        <h2>Store reviews have no permanent link. I decided not to hide that.</h2>
+        <p>
+          Neither store gives an individual review a stable public URL. I could have linked to
+          something plausible and hoped nobody checked.
+        </p>
+        <p>
+          Instead every quote is labelled as a snapshot with the date it was captured, the link goes
+          to the app&rsquo;s review listing rather than the review, and the limitation is stated on
+          the method page rather than buried.
+        </p>
+
+        <div className="cs-bleed">
+          <Verify />
+        </div>
+
+        <p>
+          The site&rsquo;s entire argument is that you can check its work.{" "}
+          <strong>A single faked link would have cost more than the feature was worth.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="05" label="THE TEST THAT FAILED">
+        <h2>I had to explain my own product to everyone who opened it.</h2>
+        <p>
+          I put the first working version in front of friends. Every one of them either opened the
+          About page or asked me what they were looking at.
+        </p>
+        <p>
+          The cause was not visual. The homepage led with an unlabelled heatmap and used ridges,
+          problems, scores, verdicts and &ldquo;the last scan&rdquo; — every one a term I had never
+          defined. I had built an internal tool and forgotten that nobody else had been in the room.
+        </p>
+
+        <div className={`fr-ba cs-rv${baSeen ? " in" : ""}`} ref={baRef}>
+          <figure>
+            <Shot src="/friction/home-before.png" alt="Friction's homepage before the rebuild" />
+            <figcaption>
+              <span className="mono tag">BEFORE</span>
+              <p>
+                Opens on a heatmap with no key, under four words nobody had been taught. The first
+                sentence of explanation is 500px down the page.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <Shot src="/friction/home-after.png" alt="Friction's homepage after the rebuild" />
+            <figcaption>
+              <span className="mono tag">AFTER</span>
+              <p>
+                Opens on a sentence saying what the thing does, three counted figures, then one
+                challenge shown whole rather than described.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          The fix was ordering. The first screen now teaches the unit before it shows any output:
+          reviews come in, repeats get grouped, the group gets four ways to act on it. The WebGL
+          terrain I was proudest of moved off the front door to the method page, because{" "}
+          <strong>the first screen is not where you put the thing that needs explaining.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="06" label="THE CUT">
+        <h2>I deleted the homepage&rsquo;s best screen seventeen hours after building it.</h2>
+        <p>
+          The wall of voices: twenty-seven real quotes on a curved CSS-3D wall, the promise over it,
+          the first thing anyone saw. It was the best screen on the site.
+        </p>
+        <p>
+          It was blamed for freezing the tab. I could never reproduce the freeze, and the first five
+          reports of it predate the wall existing — so I had no evidence against it and cut it
+          anyway. It made the site&rsquo;s one job, measurement, harder to read, and that is worth
+          more than the effect.
+        </p>
+
+        <div className="fr-cut">
+          <div>
+            <span className="mono when">23 SEPT · 02:45</span>
+            <b>the wall of voices, and three screens behind it</b>
+          </div>
+          <div className="gone">
+            <span className="mono when">23 SEPT · 19:42</span>
+            <b>the cut — four sections, one door, and the wall deleted</b>
+          </div>
+          <p className="mono note">Home went from 774 words to 101 in the same commit.</p>
+        </div>
+
+        <Statement cite="ON WHAT THE JOB ACTUALLY IS">
+          A screen that makes the measurement harder to read is not paying for itself, however good
+          it is.
+        </Statement>
+      </Chapter>
+
+      <Chapter n="07" label="THE WORDS">
+        <h2>One label was quietly insulting people.</h2>
+        <p>Reading the live site, I hit this row:</p>
+
+        <p className="fr-row mono">
+          Refunds are refused, delayed, or issued as credit that cannot be used
+          <span>Too small</span>
+        </p>
+
+        <p>
+          The verdict is a statement about how much evidence exists. Read cold, next to a real
+          complaint, it looks like the site judging the complaint as unimportant.
+        </p>
+
+        <Rejected items={LABELS} label="RENAMED, SAME ARITHMETIC" />
+
+        <p>
+          Same thresholds, same numbers, four characters of schema migration.{" "}
+          <strong>The words now describe the evidence rather than the person.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="08" label="THE MISSING HALF">
+        <h2>It told you what was broken and never what to do about it.</h2>
+        <p>
+          Someone looking at the site asked what they were supposed to build from any of it. There
+          was no answer, because the site was an archive of problems with no opportunity layer.
+        </p>
+        <p>
+          Two things closed it. Patterns — computed, not written — surface a complaint category
+          appearing across several apps. <strong>A complaint in one app is a bug; the same complaint
+          across seven is a market.</strong> And every challenge now carries four lenses.
+        </p>
+
+        <div className="fr-lens">
+          <div className="hd">
+            <span className="mono k">BUILD IT</span>
+            <span className="mono n">3 points</span>
+          </div>
+          <ul>
+            <li>Write each keystroke to local storage, not only on save</li>
+            <li>Restore the caret and scroll position after a forced restart</li>
+            <li>Start with the close-and-reopen path reviewers keep describing</li>
+          </ul>
+          <p className="lim">
+            <span className="mono lbl">WHY IT MIGHT NOT WORK</span>
+            A mobile OS can kill a backgrounded app before it finishes writing anything to disk.
+          </p>
+        </div>
+
+        <p>
+          Each lens ends with why it might not work.{" "}
+          <strong>
+            Four cards of enthusiasm is what every AI idea generator produces, and why none of them
+            are trusted.
+          </strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="09" label="THE CONSTRAINT">
+        <h2>It may group and quote. It may not score, rank, or prioritise.</h2>
+        <p>
+          A tool that ranks complaints is handing you its judgement and asking you to trust it.
+          Friction&rsquo;s value is that it has none. The model is allowed two jobs, and the rest of
+          the site is arithmetic over the reviews themselves.
+        </p>
+
+        <div className="fr-gate">
+          <div className="does">
+            <span className="lbl mono">THE MODEL DOES</span>
+            <ul>
+              <li>Group reviews describing the same struggle</li>
+              <li>Copy one short verbatim quote from each</li>
+            </ul>
+          </div>
+          <div className="never">
+            <span className="lbl mono">THE MODEL NEVER</span>
+            <ul>
+              <li>Produces a score</li>
+              <li>Produces a rank</li>
+              <li>Produces a priority</li>
+            </ul>
+          </div>
+        </div>
+
+        <Statement cite="FRICTION, ON ITS OWN METHOD">
+          Every number here is calculated; almost nothing is written.
+        </Statement>
+
+        <p>
+          Every quote is verified character by character against its source before publishing.{" "}
+          <strong>One failure stops the run and last week&rsquo;s data stays up.</strong>
+        </p>
+      </Chapter>
+
+      <Chapter n="10" label="THE FUNNEL">
         <h2>Ten thousand in, a hundred out.</h2>
         <p>
           Almost every review is noise: too old, too short, a star rating with no sentence attached,
@@ -84,7 +416,14 @@ export function FrictionCasePage() {
           is the difference between a tool that reads reviews and a tool that summarises a vibe.
         </p>
 
-        <Figures items={SCALE} accent />
+        <Figures
+          items={[
+            ["9,994", "Reviews read in the last scan", "FRICTION · 20 SEPT 2026"],
+            ["150", "The cap on what reaches a model", "FRICTION · HOW IT WORKS"],
+            ["25", "Recurring challenges on record", "FRICTION · ACROSS 15 APPS"],
+          ]}
+          accent
+        />
 
         {/* the product, running. Not a screenshot of it. */}
         <div className="cs-bleed">
@@ -115,49 +454,18 @@ export function FrictionCasePage() {
         </p>
       </Chapter>
 
-      <Chapter n="02" label="THE RESTRAINT">
-        <h2>It may group and quote. It may not score, rank, or prioritise.</h2>
-        <p>
-          A tool that ranks complaints is handing you its judgement and asking you to trust it.
-          Friction&rsquo;s value is that it has none. The model is allowed two jobs, and the rest of
-          the site is arithmetic over the reviews themselves.
-        </p>
-
-        <div className="fr-gate">
-          <div className="does">
-            <span className="lbl mono">THE MODEL DOES</span>
-            <ul>
-              <li>Group reviews describing the same struggle</li>
-              <li>Copy one short verbatim quote from each</li>
-            </ul>
-          </div>
-          <div className="never">
-            <span className="lbl mono">THE MODEL NEVER</span>
-            <ul>
-              <li>Produces a score</li>
-              <li>Produces a rank</li>
-              <li>Produces a priority</li>
-            </ul>
-          </div>
-        </div>
-
-        <p>
-          That constraint only holds if the quotes are real, so every one is checked against its
-          source before it is allowed on the page.
-        </p>
-
-        <div className="cs-bleed">
-          <Verify />
-        </div>
-
-        <Statement cite="FRICTION, ON ITS OWN METHOD">
-          Every number here is calculated; almost nothing is written.
-        </Statement>
-
-        <p>
-          The few written sentences carry a badge and a date, so a reader can tell at a glance which
-          line a person wrote and which the arithmetic produced.
-        </p>
+      <Chapter n="11" label="WHAT I'D DO DIFFERENTLY">
+        <h2>Three things.</h2>
+        <ol className="cs-index fr-diff">
+          {DIFFERENTLY.map(([t, body]) => (
+            <li key={t}>
+              <div>
+                <h3>{t}</h3>
+              </div>
+              <p>{body}</p>
+            </li>
+          ))}
+        </ol>
       </Chapter>
 
       <Colophon
@@ -166,6 +474,7 @@ export function FrictionCasePage() {
           ["BUILD", "Astro and TypeScript, written with Claude Code. Source is public."],
           ["DATA", "Public app store reviews only. No accounts, no ads, no payments."],
           ["THE MODEL", "Groups and quotes. Never scores, ranks or prioritises."],
+          ["TESTED", "3 rounds of informal user testing. All three changed the product."],
           ["MEASURED", "9,994 reviews read in the scan of 20 September 2026."],
         ]}
       />
