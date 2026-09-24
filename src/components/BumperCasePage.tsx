@@ -446,7 +446,7 @@ export function BumperCasePage() {
         ]}
       />
 
-      <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="mint" />
+      <NextCase to="/friction" name="Friction" tag="REVIEW MINING · ASTRO" accent="teal" />
       <CaseFoot />
     </CaseShell>
   );

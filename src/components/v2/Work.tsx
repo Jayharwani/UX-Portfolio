@@ -39,8 +39,18 @@ type Item = {
 
 const ITEMS: Item[] = [
   {
-    key: "headroom",
+    key: "friction",
     idx: "01",
+    title: "Friction",
+    tag: "Review mining · Astro",
+    href: "/friction",
+    rgb: [63, 185, 166],
+    live: { href: "https://jayharwani.github.io/friction/", label: "OPEN SITE" },
+    year: "2026",
+  },
+  {
+    key: "headroom",
+    idx: "02",
     title: "Headroom",
     tag: "Local-first finance · React",
     href: "/headroom",
@@ -50,7 +60,7 @@ const ITEMS: Item[] = [
   },
   {
     key: "signal",
-    idx: "02",
+    idx: "03",
     title: "Signal",
     tag: "Live event map · MapLibre",
     href: "/signal",
@@ -60,7 +70,7 @@ const ITEMS: Item[] = [
   },
   {
     key: "chrono",
-    idx: "03",
+    idx: "04",
     title: "ChronoWeave",
     tag: "ADHD time blindness · Mobile",
     href: "/chronoweave",
@@ -70,7 +80,7 @@ const ITEMS: Item[] = [
   },
   {
     key: "bumper",
-    idx: "04",
+    idx: "05",
     title: "Bumper",
     tag: "Behavioural · Extension",
     href: "/bumper",
@@ -141,7 +151,7 @@ function Shot({ k, on, beat }: { k: MockupKey; on: boolean; beat: number }) {
 }
 
 export function Work({ onHue }: { onHue?: (rgb: [number, number, number]) => void }) {
-  const [active, setActive] = useState<MockupKey>("headroom");
+  const [active, setActive] = useState<MockupKey>("friction");
   const [beat, setBeat] = useState(0);
   const [shown, setShown] = useState<boolean[]>(() => ITEMS.map(() => false));
   const preview = useRef<HTMLDivElement>(null);

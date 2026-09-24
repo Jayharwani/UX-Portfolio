@@ -93,6 +93,17 @@ def walk(block: str) -> str:
 
 ported = walk(css)
 
+# ── the resting accent is ours, not the reference's ───────────────────────
+# The reference declares `--accent: var(--mint)` because its first work row is
+# Headroom. Ours is Friction, and the row that is active on arrival decides
+# what colour the first preview paints in. That is a fact about our content,
+# not about the reference, so the declaration is dropped here and v2.css owns
+# it outright — leaving both in place is a silent tie broken by import order,
+# which is how this was wrong in the first place.
+ported, dropped = re.subn(r"\n\s*--accent:\s*var\(--mint\);", "", ported, count=1)
+if not dropped:
+    print("  note: no --accent declaration found to drop")
+
 # ── collision rename ───────────────────────────────────────────────────────
 # Scoping the ported rules under .v2 stops them reaching the rest of the site.
 # It does NOT stop the rest of the site reaching THEM: the old design's global
@@ -138,6 +149,8 @@ header = f"""/* ─────────────────────�
        site declares sixteen of its own and several names collide
      {", ".join(COLLIDE)} are renamed too: the old stylesheet declares those
        class names globally, and a bare .rv {{ opacity: 0 }} blanks a section
+     the resting --accent is dropped; v2.css owns it, because it depends on
+       which project sits first in the work index
    ────────────────────────────────────────────────────────────────────────── */
 
 """

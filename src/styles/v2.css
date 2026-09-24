@@ -22,7 +22,12 @@
   --cyan: #5FD3D8; /* accent 2 · Signal */
   --violet: #8B7BE8; /* accent 3 · ChronoWeave */
   --mint: #5FD8A4; /* accent 4 · Headroom, "open" */
-  --accent: var(--mint); /* live, swapped at runtime */
+  --teal: #3FB9A6; /* accent 5 · Friction */
+  /* Live, swapped at runtime by Work.tsx on hover or focus. The resting value
+     has to be the accent of whichever row is active on arrival, or the first
+     preview paints in the previous row's colour until the pointer lands on
+     something. Friction is 01, so this is teal. */
+  --accent: var(--teal);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --gut: clamp(22px, 5vw, 64px);
@@ -198,4 +203,68 @@
 @media (max-width: 700px) {
   .v2 .item .tag .live { opacity: 1; transform: none; margin-left: 0; }
   .v2 .item .tag { flex-wrap: wrap; gap: 8px 10px; }
+}
+
+/* ── Friction's preview: the sieve ──
+   Twelve review lines; nine collapse to nothing and three survive into the
+   accent. Authored here rather than in v2-ported.css, which is regenerated
+   from reference/index.html by scripts/port-reference-css.py and would drop
+   anything hand-added to it. */
+.v2 .frows {
+  display: grid;
+  gap: 5px;
+  margin: 20px 0 16px;
+}
+.v2 .frows i {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(238, 241, 245, 0.16);
+  transform-origin: left center;
+}
+.v2 .on .frows i { animation: v2-sift 0.62s var(--ease-out) forwards; }
+.v2 .on .frows i.k { animation: v2-keep 0.62s var(--ease-out) forwards; }
+.v2 .on .frows i:nth-child(1) { animation-delay: 0.30s; }
+.v2 .on .frows i:nth-child(2) { animation-delay: 0.34s; }
+.v2 .on .frows i:nth-child(3) { animation-delay: 0.38s; }
+.v2 .on .frows i:nth-child(4) { animation-delay: 0.42s; }
+.v2 .on .frows i:nth-child(5) { animation-delay: 0.46s; }
+.v2 .on .frows i:nth-child(6) { animation-delay: 0.50s; }
+.v2 .on .frows i:nth-child(7) { animation-delay: 0.54s; }
+.v2 .on .frows i:nth-child(8) { animation-delay: 0.58s; }
+.v2 .on .frows i:nth-child(9) { animation-delay: 0.62s; }
+.v2 .on .frows i:nth-child(10) { animation-delay: 0.66s; }
+.v2 .on .frows i:nth-child(11) { animation-delay: 0.70s; }
+.v2 .on .frows i:nth-child(12) { animation-delay: 0.74s; }
+
+@keyframes v2-sift {
+  from { transform: scaleX(1); opacity: 1; }
+  to { transform: scaleX(0.05); opacity: 0.14; }
+}
+@keyframes v2-keep {
+  from { background: rgba(238, 241, 245, 0.16); }
+  to {
+    background: var(--accent);
+    box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 55%, transparent);
+  }
+}
+
+.v2 .fout {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(238, 241, 245, 0.1);
+}
+.v2 .fout b {
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.v2 .fout span {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: rgba(238, 241, 245, 0.45);
 }

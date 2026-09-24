@@ -13,12 +13,13 @@
        site declares sixteen of its own and several names collide
      rv, work, route, foot are renamed too: the old stylesheet declares those
        class names globally, and a bare .rv { opacity: 0 } blanks a section
+     the resting --accent is dropped; v2.css owns it, because it depends on
+       which project sits first in the work index
    ────────────────────────────────────────────────────────────────────────── */
 
 .v2 {
   --void:#05070C; --paper:#EEF1F5;
   --gold:#E9C58B; --cyan:#5FD3D8; --violet:#8B7BE8; --mint:#5FD8A4;
-  --accent:var(--mint);
   --ease-out:cubic-bezier(.16,1,.3,1);
   --gut:clamp(22px,5vw,64px);
 }

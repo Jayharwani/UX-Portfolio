@@ -14,9 +14,14 @@
    which is the only reason dangerouslySetInnerHTML is defensible.
    -------------------------------------------------------------------------- */
 
-export type MockupKey = "headroom" | "signal" | "chrono" | "bumper";
+export type MockupKey = "friction" | "headroom" | "signal" | "chrono" | "bumper";
 
 export const MOCKUPS: Record<MockupKey, string> = {
+  /* Friction: ten thousand reviews sifted to the hundred and fifty that
+     reach a model. Authored here rather than extracted, because Friction
+     post-dates reference/index.html and has no row in it. */
+  friction:
+    "<div class=\"card\"><div class=\"cap\"><span>LAST SCAN</span><span class=\"dotlive\"><i></i>WEEKLY</span></div><div class=\"amt\"><span data-count=\"9994\">0</span></div><div class=\"sub\">public reviews read</div><div class=\"frows\"><i style=\"width:92%\"></i><i class=\"k\" style=\"width:74%\"></i><i style=\"width:86%\"></i><i style=\"width:58%\"></i><i style=\"width:96%\"></i><i class=\"k\" style=\"width:68%\"></i><i style=\"width:80%\"></i><i style=\"width:64%\"></i><i style=\"width:90%\"></i><i class=\"k\" style=\"width:52%\"></i><i style=\"width:76%\"></i><i style=\"width:88%\"></i></div><div class=\"fout\"><b>150</b><span>TO THE MODEL</span></div></div>",
   headroom:
     "<div class=\"card\"><div class=\"cap\"><span>SAFE TO SPEND</span><span class=\"dotlive\"><i></i>LIVE</span></div><div class=\"amt\"><small>$</small><span data-count=\"412\">0</span></div><div class=\"sub\">4 days until payday</div><div class=\"week\"><i></i><i></i><i></i><i class=\"now\"></i><i></i></div><div class=\"dlab\"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span></div></div>",
   signal:
