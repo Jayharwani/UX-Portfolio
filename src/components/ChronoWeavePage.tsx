@@ -144,6 +144,7 @@ export function ChronoWeavePage() {
           ["TOOLS", "Figma AI"],
           ["DATE", "FigBuild 2026"],
         ]}
+        cta={{ href: PROTOTYPE, label: "View the prototype" }}
       />
 
       <Chapter n="01" label="THE CHALLENGE">

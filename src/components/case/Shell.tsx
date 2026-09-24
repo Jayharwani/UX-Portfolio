@@ -113,19 +113,46 @@ export function CaseHero({
   title,
   standfirst,
   spec,
+  cta,
+  headlineScale,
 }: {
   meta: ReactNode;
   title: ReactNode;
   standfirst?: ReactNode;
   /** the datasheet: role, timeline, platform, whatever the page can prove */
   spec?: Array<[string, string]>;
+  /**
+   * The running thing, offered before the argument rather than after it.
+   * A reader who wants to try it should not have to scroll several thousand
+   * pixels to find the link, and one who wants to read is not delayed by a
+   * button sitting beside the standfirst.
+   */
+  cta?: { href: string; label: string };
+  /** headline scale, for titles long enough to need setting smaller */
+  headlineScale?: number;
 }) {
   return (
-    <header className="cs-hero cs-wrap">
+    <header
+      className="cs-hero cs-wrap"
+      style={headlineScale ? ({ ["--h1" as string]: headlineScale } as React.CSSProperties) : undefined}
+    >
       <div className="cs-eyebrow">{meta}</div>
       <h1>{title}</h1>
       <div className="cs-heroGrid">
-        {standfirst ? <p className="cs-standfirst">{standfirst}</p> : <div />}
+        <div>
+          {standfirst ? <p className="cs-standfirst">{standfirst}</p> : null}
+          {cta ? (
+            <a
+              className="cs-btn cs-heroCta"
+              href={cta.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>{cta.label}</span>
+              <span aria-hidden="true">&#8599;</span>
+            </a>
+          ) : null}
+        </div>
         {spec ? (
           <dl className="cs-spec">
             {spec.map(([k, v]) => (

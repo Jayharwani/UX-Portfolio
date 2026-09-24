@@ -116,6 +116,7 @@ export function SignalCasePage() {
           ["COST", "No backend, no recurring spend"],
           ["DATE", "2026"],
         ]}
+        cta={{ href: LIVE, label: "Open the map" }}
       />
 
       <div className="cs-wrap">

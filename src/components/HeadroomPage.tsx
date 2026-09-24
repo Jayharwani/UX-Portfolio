@@ -109,6 +109,7 @@ export function HeadroomPage() {
           ["STATE", "Live, installable, on-device"],
           ["DATE", "2026"],
         ]}
+        cta={{ href: "https://headroom-opal.vercel.app", label: "Open Headroom" }}
       />
 
       <Chapter n="01" label="THE PROBLEM">

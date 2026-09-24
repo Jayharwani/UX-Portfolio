@@ -268,8 +268,11 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-top: 104px;
-  padding-bottom: clamp(44px, 8vh, 96px);
+  /* 104px of top padding was generous for a 50px nav, and on the longest
+     headline it pushed the hero CTA below the fold at 1280x800 — a MacBook
+     Air, which is not an edge case. */
+  padding-top: 82px;
+  padding-bottom: clamp(40px, 7vh, 88px);
 }
 
 .cs .cs-eyebrow {
@@ -291,8 +294,12 @@
 /* the dash-chain was the fingerprint; spacing separates these now */
 .cs .cs-eyebrow span[data-sep]::before { content: none; }
 
+/* --h1 lets a page set its headline smaller. Bumper's runs to four lines at
+   full size and pushed its own call to action off a 1280x800 screen; a longer
+   headline being set smaller is ordinary typography, not a special case. */
+.cs .cs-hero { --h1: 1; }
 .cs h1 {
-  font-size: clamp(3.1rem, 10.4vw, 9.5rem);
+  font-size: calc(clamp(3rem, 9.5vw, 8.8rem) * var(--h1, 1));
   font-weight: 200;
   line-height: 0.86;
   letter-spacing: -0.05em;
@@ -312,7 +319,7 @@
 .cs .cs-heroGrid {
   display: grid;
   gap: clamp(34px, 5vw, 92px);
-  margin-top: clamp(30px, 5vh, 56px);
+  margin-top: clamp(22px, 3.4vh, 42px);
   align-items: end;
 }
 @media (min-width: 900px) {
@@ -1893,3 +1900,8 @@
 .cs .hr-versions .binned .status { color: var(--ink-3); }
 .cs .hr-versions .shipped h3 { color: var(--accent); }
 .cs .hr-versions .shipped .status { color: var(--accent); }
+
+/* the hero's call to action sits under the standfirst, in the reading column */
+.cs .cs-heroCta {
+  margin-top: clamp(18px, 2.4vh, 28px);
+}

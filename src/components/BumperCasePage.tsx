@@ -196,6 +196,8 @@ export function BumperCasePage() {
           ["STATE", "Live on the Chrome Web Store"],
           ["DATE", "2026"],
         ]}
+        headlineScale={0.78}
+        cta={{ href: STORE, label: "Get it on Chrome" }}
       />
 
       <div className="cs-wrap">
