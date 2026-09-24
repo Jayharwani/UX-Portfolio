@@ -12,7 +12,7 @@ import {
 } from "./case/Shell";
 import { Funnel } from "./case/Funnel";
 import { Verify } from "./case/Verify";
-import { useReveal, useTilt } from "./case/useScene";
+import { Compare, ContactSheet, Figure, type Round } from "./case/Artifact";
 
 /* --------------------------------------------------------------------------
    FRICTION — the fifth case study.
@@ -76,24 +76,26 @@ const DIFFERENTLY: Array<[string, string]> = [
   ],
 ];
 
-/** a screenshot that sits off the surface of its card */
-function Shot({ src, alt }: { src: string; alt: string }) {
-  const ref = useTilt<HTMLDivElement>(7);
-  return (
-    <div className="cs-slab fr-shot" ref={ref}>
-      <div>
-        <img className="cs-lift" src={src} alt={alt} loading="lazy" decoding="async" />
-      </div>
-    </div>
-  );
-}
+/** Nine builds of the same homepage, each checked out of git and shot at
+    1440x900 by one script, so the only thing differing between frames is the
+    design. The two marked `test` are the rounds that happened because three
+    people could not tell what the site was. */
+const ROUNDS: Round[] = [
+  { n: "01", date: "19 Sep", note: "the first pipeline run" },
+  { n: "02", date: "20 Sep", note: "rebuilt around comprehension", test: true },
+  { n: "03", date: "20 Sep", note: "Hallmark tokens, OKLCH" },
+  { n: "04", date: "20 Sep", note: "the WebGL field" },
+  { n: "05", date: "20 Sep", note: "teach the concept first", test: true },
+  { n: "06", date: "21 Sep", note: "the patterns layer" },
+  { n: "07", date: "22 Sep", note: "a cool ground" },
+  { n: "08", date: "23 Sep", note: "the wall of voices" },
+  { n: "09", date: "24 Sep", note: "current" },
+];
 
 export function FrictionCasePage() {
   useEffect(() => {
     document.title = "Friction — Product design case study";
   }, []);
-
-  const [baRef, baSeen] = useReveal<HTMLDivElement>();
 
   return (
     <CaseShell accent="teal" live={{ href: LIVE, label: "LIVE" }}>
@@ -247,28 +249,15 @@ export function FrictionCasePage() {
           defined. I had built an internal tool and forgotten that nobody else had been in the room.
         </p>
 
-        <div className={`fr-ba cs-rv${baSeen ? " in" : ""}`} ref={baRef}>
-          <figure>
-            <Shot src="/friction/home-before.png" alt="Friction's homepage before the rebuild" />
-            <figcaption>
-              <span className="mono tag">BEFORE</span>
-              <p>
-                Opens on a heatmap with no key, under four words nobody had been taught. The first
-                sentence of explanation is 500px down the page.
-              </p>
-            </figcaption>
-          </figure>
-          <figure>
-            <Shot src="/friction/home-after.png" alt="Friction's homepage after the rebuild" />
-            <figcaption>
-              <span className="mono tag">AFTER</span>
-              <p>
-                Opens on a sentence saying what the thing does, three counted figures, then one
-                challenge shown whole rather than described.
-              </p>
-            </figcaption>
-          </figure>
-        </div>
+        <Compare
+          before="/friction/home-before.webp"
+          after="/friction/home-after.webp"
+          beforeAlt="Friction's homepage on 19 September: an unlabelled heatmap above the words Last scan, Methodology and Archive"
+          afterAlt="Friction's homepage on 20 September, rebuilt: a plain sentence saying what the site does, three counted figures, then one challenge shown whole"
+          w={1100}
+          h={688}
+          caption="Drag. Left is the version nobody could read."
+        />
 
         <p>
           The fix was ordering. The first screen now teaches the unit before it shows any output:
@@ -290,6 +279,16 @@ export function FrictionCasePage() {
           anyway. It made the site&rsquo;s one job, measurement, harder to read, and that is worth
           more than the effect.
         </p>
+
+        <Figure
+          src="/friction/wall-of-voices.webp"
+          alt="The deleted wall of voices: twenty-seven real app store complaints on a curved three-dimensional wall behind the headline Thousands of people already told you what to build"
+          w={1280}
+          h={800}
+          width="full"
+          past
+          caption="Rebuilt from the commit that deleted it. Twenty-seven real quotes."
+        />
 
         <div className="fr-cut">
           <div>
@@ -454,7 +453,21 @@ export function FrictionCasePage() {
         </p>
       </Chapter>
 
-      <Chapter n="11" label="WHAT I'D DO DIFFERENTLY">
+      <Chapter n="11" label="NINE ROUNDS">
+        <h2>Every portfolio claims iteration. This is nine builds of one page.</h2>
+        <p>
+          Each frame is the Friction homepage checked out of git at that commit, built, and
+          screenshotted at 1440&thinsp;&times;&thinsp;900 by the same script.{" "}
+          <strong>The only thing that changes between frames is the design.</strong>
+        </p>
+
+        <ContactSheet
+          rounds={ROUNDS}
+          caption="Nine rounds. Two of them because three people could not tell what the site was."
+        />
+      </Chapter>
+
+      <Chapter n="12" label="WHAT I'D DO DIFFERENTLY">
         <h2>Three things.</h2>
         <ol className="cs-index fr-diff">
           {DIFFERENTLY.map(([t, body]) => (

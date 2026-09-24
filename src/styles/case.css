@@ -2473,3 +2473,211 @@
    the point and a counter would dress it up. */
 .cs .fr-diff > li:first-child { border-top: 0; padding-top: 0; }
 .cs .fr-diff h3 { color: var(--accent); font-size: 17px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ARTIFACTS — one frame, three widths, one caption style.
+
+   Consistency across a dozen screenshots is what makes a page look designed
+   rather than assembled, so everything here is shared: the same hairline,
+   the same radius, the same muted mono caption. Historical artifacts are
+   desaturated; current ones are not. That single rule lets a reader tell
+   past from present without reading a word.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.cs .fr-fig,
+.cs .fr-cmp {
+  margin: clamp(30px, 4.5vh, 52px) 0;
+}
+.cs .fr-fig .shell,
+.cs .fr-cmp .shell {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.022);
+  line-height: 0;
+}
+.cs .fr-fig img,
+.cs .fr-cmp img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* three widths, no arbitrary sizes */
+.cs .fr-fig.is-half { max-width: 45%; }
+.cs .fr-fig.is-wide { max-width: 70%; }
+.cs .fr-fig.is-full {
+  max-width: none;
+  margin-left: calc(var(--gut) * -1);
+  margin-right: calc(var(--gut) * -1);
+}
+@media (max-width: 860px) {
+  .cs .fr-fig.is-half,
+  .cs .fr-fig.is-wide { max-width: none; }
+}
+/* the past, at a glance */
+.cs .fr-fig.past img { filter: saturate(0.3); }
+
+.cs .fr-fig figcaption,
+.cs .fr-cmp figcaption {
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  color: var(--ink-3);
+  max-width: 52ch;
+}
+
+/* ── before / after ── */
+.cs .fr-cmp .shell { cursor: ew-resize; touch-action: pan-y; }
+.cs .fr-cmp .over {
+  position: absolute;
+  inset: 0;
+  /* the after image is revealed from the left as the split grows */
+  clip-path: inset(0 calc(100% - var(--split, 50%)) 0 0);
+}
+.cs .fr-cmp .over img { height: 100%; object-fit: cover; }
+.cs .fr-cmp .bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split, 50%);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--accent) 60%, transparent);
+  pointer-events: none;
+}
+.cs .fr-cmp .bar::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--void) 70%, transparent);
+}
+.cs .fr-cmp input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+}
+/* the ring belongs to the visible handle, since the real control is invisible */
+.cs .fr-cmp .shell:has(input:focus-visible) .bar::after {
+  outline: 2px solid var(--paper);
+  outline-offset: 3px;
+}
+.cs .fr-cmp .tag {
+  position: absolute;
+  top: 12px;
+  padding: 5px 9px;
+  border-radius: 2px;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  background: color-mix(in oklab, var(--void) 78%, transparent);
+  color: var(--ink-2);
+  pointer-events: none;
+  line-height: 1;
+}
+.cs .fr-cmp .tag.a { left: 12px; }
+.cs .fr-cmp .tag.b { right: 12px; color: var(--accent); }
+.cs .sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── the contact sheet ──
+   Nine builds of one homepage. Full-bleed, because this is the artifact the
+   whole case study has been trying to say in sentences. */
+.cs .fr-sheet {
+  margin: clamp(34px, 5vh, 60px) 0 10px;
+  margin-left: calc(var(--gut) * -1);
+  margin-right: calc(var(--gut) * -1);
+  padding: 0 var(--gut);
+}
+.cs .fr-sheet ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 1100px) {
+  .cs .fr-sheet ol { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; }
+}
+.cs .fr-sheet li {
+  position: relative;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+.cs .fr-sheet.in li { opacity: 1; transform: none; }
+.cs .fr-sheet img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  filter: saturate(0.3);
+  transition: transform 0.35s var(--ease), filter 0.35s var(--ease),
+    border-color 0.35s var(--ease);
+  transform-origin: center bottom;
+}
+/* hovering lifts one out of the row and restores its colour */
+.cs .fr-sheet li:hover img,
+.cs .fr-sheet li:focus-within img {
+  transform: scale(1.4);
+  filter: saturate(1);
+  border-color: var(--accent);
+  position: relative;
+  z-index: 3;
+}
+.cs .fr-sheet li:hover,
+.cs .fr-sheet li:focus-within { z-index: 3; }
+/* the last one is the site as it stands */
+.cs .fr-sheet li:last-child img { filter: saturate(1); border-color: var(--line-2); }
+/* the two that happened because nobody could read the page */
+.cs .fr-sheet li.test .meta b { color: var(--accent); }
+.cs .fr-sheet .meta {
+  display: block;
+  margin-top: 8px;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.cs .fr-sheet .meta b {
+  display: block;
+  font-weight: 500;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.cs .fr-sheet .cap {
+  margin: 20px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  max-width: 60ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs .fr-sheet li,
+  .cs .fr-sheet img { transition: none; }
+  .cs .fr-sheet li:hover img,
+  .cs .fr-sheet li:focus-within img { transform: none; }
+}
