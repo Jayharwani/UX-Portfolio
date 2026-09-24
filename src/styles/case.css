@@ -510,7 +510,12 @@
    editorial-typographic fingerprint and nothing else. */
 .cs .cs-statement {
   margin: clamp(38px, 6vh, 70px) 0;
-  max-width: 24ch;
+  /* The measure belongs on the quote, not on this box. `24ch` here resolved
+     against this element's 16px and capped the block at 255px, while the text
+     inside it sets at up to 42px - so every pull quote on every case study
+     broke at roughly six characters a line and ran down the page as a ribbon.
+     The intent was always 24 characters of the quote's own size. */
+  max-width: none;
 }
 .cs .cs-statement p {
   font-size: clamp(1.4rem, 3.4vw, 2.6rem);
@@ -518,7 +523,7 @@
   line-height: 1.18;
   letter-spacing: -0.032em;
   color: var(--paper);
-  max-width: none;
+  max-width: 24ch;
   margin: 0 0 18px;
 }
 .cs .cs-statement cite {
