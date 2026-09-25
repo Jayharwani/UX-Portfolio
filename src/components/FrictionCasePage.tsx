@@ -13,6 +13,7 @@ import {
 import { Funnel } from "./case/Funnel";
 import { Verify } from "./case/Verify";
 import { Compare, ContactSheet, Figure, type Round } from "./case/Artifact";
+import { DeadEnd } from "./case/DeadEnd";
 
 /* --------------------------------------------------------------------------
    FRICTION — the fifth case study.
@@ -20,8 +21,8 @@ import { Compare, ContactSheet, Figure, type Round } from "./case/Artifact";
    Rewritten from three sections to eleven. The first version explained what
    the product does three times over; a reader finished it knowing the
    product and nothing about the person. This one is the decisions: a dead
-   registration form, a source swapped under duress, a test every friend
-   failed, a label that was insulting people, and a screen deleted seventeen
+   registration form nobody could pass, a source swapped under duress, a test
+   every friend failed, a label that was insulting people, and a screen deleted seventeen
    hours after it was built.
 
    EVERY FIGURE HERE WAS CHECKED against friction's own git history, and
@@ -150,6 +151,25 @@ export function FrictionCasePage() {
           My constraint was my position.
         </p>
 
+        <div className="fr-pair">
+          <Figure
+            src="/friction/competitor.webp"
+            alt="PainOnSocial's homepage, scoring three Reddit pain points 90, 90 and 85 with no rubric shown"
+            w={1100}
+            h={727}
+            past
+            caption="The tool I started from. Scores nobody can check."
+          />
+          <Figure
+            src="/friction/gummysearch.webp"
+            alt="GummySearch's shutdown notice dated November 6th 2025, explaining it could not reach an agreement on Reddit's Data API terms"
+            w={1100}
+            h={739}
+            past
+            caption="The category leader closing, in its founder's words."
+          />
+        </div>
+
         <Figures items={BET} accent />
       </Chapter>
 
@@ -160,20 +180,27 @@ export function FrictionCasePage() {
           for a weekly scan of fifteen communities.
         </p>
         <p>
-          I could not create the app. Registration kept failing, and after working through every
-          cause I could think of, I still had no credentials. At that point the choice was to keep
-          fighting the form or to question the assumption underneath it.
+          I could not create the app. Every field completed and then{" "}
+          <strong>Reddit&rsquo;s own CAPTCHA never passed</strong> — a fault on their side, not
+          mine. The form could not be submitted, so no credentials were ever issued.
         </p>
 
+        <DeadEnd />
+
         <div className="fr-dead">
-          <span className="lbl mono">RULED OUT, IN ORDER</span>
+          <span className="lbl mono">RULED OUT FIRST</span>
           <ul className="mono">
             {RULED_OUT.map((r) => (
               <li key={r}>{r}</li>
             ))}
           </ul>
-          <p className="mono out">still no credentials</p>
+          <p className="mono out">the gate itself was broken</p>
         </div>
+
+        <p>
+          At that point the choice was to keep fighting a form I did not control, or to question the
+          assumption underneath it.
+        </p>
 
         <p>
           I had assumed forums were the best source of complaints{" "}
@@ -226,6 +253,14 @@ export function FrictionCasePage() {
           to the app&rsquo;s review listing rather than the review, and the limitation is stated on
           the method page rather than buried.
         </p>
+
+        <Figure
+          src="/friction/quote-card.webp"
+          alt="A quote card from Friction: the review text, then iOS, version 1.7.338, 1 star, United States, 17 Sept 2026, captured on 20 Sept 2026"
+          w={782}
+          h={168}
+          caption="One quote, with everything needed to check it."
+        />
 
         <div className="cs-bleed">
           <Verify />
@@ -342,21 +377,14 @@ export function FrictionCasePage() {
           across seven is a market.</strong> And every challenge now carries four lenses.
         </p>
 
-        <div className="fr-lens">
-          <div className="hd">
-            <span className="mono k">BUILD IT</span>
-            <span className="mono n">3 points</span>
-          </div>
-          <ul>
-            <li>Write each keystroke to local storage, not only on save</li>
-            <li>Restore the caret and scroll position after a forced restart</li>
-            <li>Start with the close-and-reopen path reviewers keep describing</li>
-          </ul>
-          <p className="lim">
-            <span className="mono lbl">WHY IT MIGHT NOT WORK</span>
-            A mobile OS can kill a backgrounded app before it finishes writing anything to disk.
-          </p>
-        </div>
+        <Figure
+          src="/friction/lens-card.webp"
+          alt="A Build it lens card from Friction, opened to show three specifics and a section headed why it might not work"
+          w={420}
+          h={429}
+          width="half"
+          caption="A real lens, opened. The limitation is part of the card."
+        />
 
         <p>
           Each lens ends with why it might not work.{" "}
