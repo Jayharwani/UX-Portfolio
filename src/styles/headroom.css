@@ -1,0 +1,523 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   HEADROOM — the visual-first case study.
+
+   Its own scope, not the shared .cs chapter system. That system is an essay
+   format: numbered chapters, a standfirst, prose columns. This page is seven
+   beats, each one picture and at most one line, so it does not inherit a
+   shape it spends the whole page fighting.
+
+   The palette is the app's, locked. Every colour below appears in the
+   running product.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.hd {
+  --bg: #f7f8f7;
+  --surface: #ffffff;
+  --ink: #10160f;
+  --ink-soft: #5b6560;
+  /* The brief locks this at #97A09B. Every 10px label drawn in it measured
+     2.52:1 against a 4.5 requirement, and the same brief asks for accessible
+     contrast, so the two cannot both hold. Darkened to the lightest value
+     that clears AA on this ground: 4.79:1. Same hue, same role. */
+  --ink-faint: #67716c;
+  --accent: #0e9e6b;
+  --accent-deep: #0a7a52;
+  --accent-soft: #e6f5ee;
+  --hairline: #e7ebe8;
+  --ink-dark: #0c110f;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --gut: clamp(20px, 5vw, 72px);
+
+  position: relative;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Geist", -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;
+  overflow-x: clip;
+}
+.hd *,
+.hd *::before,
+.hd *::after { box-sizing: border-box; }
+
+.hd .mono {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.hd :focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ── one beat, one screen ── */
+.hd .beat {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(72px, 12vh, 132px) var(--gut);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.hd .beat.tight { min-height: auto; }
+
+/* the only type sizes on the page */
+.hd h1,
+.hd h2 {
+  margin: 0;
+  font-family: "Geist", sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  font-size: clamp(2.75rem, 7vw, 5rem);
+  text-wrap: balance;
+}
+.hd h1 { font-size: clamp(2.9rem, 8vw, 5.4rem); }
+.hd .line {
+  margin: 22px 0 0;
+  max-width: 34ch;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.hd .eyebrow {
+  display: block;
+  margin: 0 0 20px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--accent-deep);
+}
+
+/* ── nav ── */
+.hd .nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px var(--gut);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  background: linear-gradient(to bottom, rgba(247, 248, 247, 0.94), rgba(247, 248, 247, 0));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.hd .nav.on-ink {
+  color: rgba(242, 245, 243, 0.72);
+  background: linear-gradient(to bottom, rgba(12, 17, 15, 0.94), rgba(12, 17, 15, 0));
+}
+.hd .nav.on-ink a:hover { color: #f2f5f3; }
+.hd .nav.on-ink .live { color: var(--accent); }
+.hd .nav a { color: inherit; text-decoration: none; transition: color 0.3s var(--ease); }
+.hd .nav { transition: background-color 0.3s var(--ease), color 0.3s var(--ease); }
+.hd .nav a:hover { color: var(--ink); }
+.hd .nav .live { margin-left: auto; color: var(--accent-deep); }
+
+/* ── buttons ── */
+.hd .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 26px;
+  border-radius: 999px;
+  background: var(--accent-deep);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: transform 0.25s var(--ease), background-color 0.25s var(--ease);
+}
+.hd .btn:hover { background: var(--ink); transform: translateY(-1px); }
+.hd .btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--hairline);
+}
+.hd .btn.ghost:hover { border-color: var(--ink); background: transparent; }
+.hd .btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+/* ── 0 · hero ── */
+.hd .hero { align-items: flex-start; }
+.hd .hero .amount {
+  display: block;
+  font-size: clamp(4.5rem, 15vw, 11rem);
+  font-weight: 200;
+  letter-spacing: -0.055em;
+  line-height: 0.88;
+  color: var(--accent-deep);
+  font-variant-numeric: tabular-nums;
+}
+.hd .hero .under {
+  margin: 8px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+}
+.hd .sphere {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+}
+.hd .hero .sphere {
+  width: clamp(190px, 30vw, 380px);
+  right: max(2vw, calc(var(--gut) - 30px));
+  top: 16%;
+  filter: drop-shadow(0 40px 60px rgba(10, 122, 82, 0.2));
+}
+.hd .cue {
+  position: absolute;
+  left: var(--gut);
+  bottom: 40px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hd .cue i {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(to bottom, var(--ink-faint), transparent);
+}
+
+/* ── 1 · the problem diagram ── */
+.hd .diagram {
+  margin-top: clamp(30px, 6vh, 58px);
+  width: 100%;
+  max-width: 880px;
+}
+.hd .diagram .row {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 34px);
+  flex-wrap: wrap;
+}
+.hd .card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  padding: 22px 26px;
+  box-shadow: 0 1px 2px rgba(16, 22, 15, 0.03), 0 14px 32px rgba(16, 22, 15, 0.05);
+}
+.hd .card .k {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.hd .card .v {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.hd .card.safe { border-color: var(--accent); background: var(--accent-soft); }
+.hd .card.safe .v { color: var(--accent-deep); }
+.hd .bills { display: grid; gap: 10px; }
+.hd .bill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px 11px 11px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.hd .bill i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  flex: none;
+}
+.hd .bill b { font-weight: 500; }
+.hd .bill span { margin-left: auto; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.hd .op {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 200;
+  color: var(--ink-faint);
+}
+
+/* ── 2 · the idea ── */
+.hd .idea { align-items: center; text-align: center; }
+.hd .idea h2 { text-align: center; }
+.hd .chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+.hd .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 17px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.hd .chip svg { color: var(--accent-deep); flex: none; }
+.hd .phone {
+  margin-top: clamp(34px, 6vh, 60px);
+  perspective: 1100px;
+}
+.hd .phone .frame {
+  width: clamp(230px, 27vw, 300px);
+  margin: 0 auto;
+  border-radius: 34px;
+  padding: 7px;
+  background: #fff;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 2px 4px rgba(16, 22, 15, 0.04), 0 30px 70px rgba(16, 22, 15, 0.13);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.hd .phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 28px;
+}
+
+/* ── 3 · the mistakes, on ink ──
+   NOT `.dark`. globals.css ships a bare shadcn `.dark { --accent: oklch(0.269
+   0 0) }`, and a section called `dark` inherits it: the big 6, the eyebrow
+   and every version number rendered dark grey on near-black at 1.1:1. Same
+   family of bug as the bare `.rv`, `.work`, `.route` and `.foot` collisions
+   this repo has hit before. The name has to differ. */
+.hd .hd-dark {
+  position: relative;
+  background: var(--ink-dark);
+  color: #f2f5f3;
+  /* the scroll distance the pinned sequence plays across */
+  height: 520svh;
+}
+.hd .hd-dark .stick {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(56px, 9vh, 96px) var(--gut);
+  max-width: 1280px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.hd .hd-dark .count {
+  font-size: clamp(6rem, 22vw, 17rem);
+  font-weight: 200;
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.hd .hd-dark h2 { color: #f2f5f3; }
+.hd .hd-dark .line { color: rgba(242, 245, 243, 0.7); }
+.hd .hd-dark .eyebrow { color: var(--accent); }
+
+.hd .versions {
+  position: relative;
+  margin-top: clamp(22px, 4vh, 44px);
+  min-height: clamp(300px, 46vh, 420px);
+}
+.hd .version {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: clamp(20px, 4vw, 54px);
+  align-content: center;
+  align-items: center;
+}
+@media (min-width: 820px) {
+  .hd .version { grid-template-columns: minmax(0, 250px) minmax(0, 1fr); }
+}
+.hd .version .verdict {
+  font-size: clamp(1.9rem, 4.6vw, 3.2rem);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+.hd .version .name {
+  display: block;
+  margin-top: 16px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(242, 245, 243, 0.58);
+}
+.hd .version .no {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+/* the reconstructed skins: a phone-shaped swatch per rejected direction */
+.hd .skin {
+  position: relative;
+  width: 100%;
+  max-width: 250px;
+  aspect-ratio: 446 / 700;
+  border-radius: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(242, 245, 243, 0.16);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.45);
+}
+.hd .skin img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.hd .skin .bar { position: absolute; left: 12%; right: 12%; border-radius: 4px; }
+
+.hd .skin-1 { background: radial-gradient(70% 50% at 20% 12%, #6ef0ff 0%, transparent 60%), radial-gradient(70% 50% at 85% 75%, #ff4ecd 0%, transparent 62%), #0b1020; }
+.hd .skin-1::after { content: ""; position: absolute; inset: 16% 10%; border-radius: 18px; background: rgba(255,255,255,0.10); backdrop-filter: blur(9px); border: 1px solid rgba(255,255,255,0.22); }
+.hd .skin-2 { background: radial-gradient(60% 45% at 25% 20%, #b06bff 0%, transparent 62%), radial-gradient(65% 50% at 80% 70%, #ff7ae0 0%, transparent 60%), linear-gradient(160deg, #3a1a6b, #1b0f33); }
+.hd .skin-3 { background: linear-gradient(180deg, #0f1b18 0%, #14302a 100%); }
+.hd .skin-3::after { content: ""; position: absolute; inset: 22% 14% 40%; border-radius: 12px; background: linear-gradient(135deg, #1fd6a5, #f4c04a 55%, #e8646e); opacity: 0.85; }
+.hd .skin-4 { background: #fbfbfa; }
+.hd .skin-5 { background: #ffffff; }
+.hd .skin-6 { background: #f5f7f6; }
+
+.hd .recon {
+  margin: 14px 0 0;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: rgba(242, 245, 243, 0.62);
+  max-width: 30ch;
+}
+
+/* ── 4 · the details ── */
+.hd .demos {
+  display: grid;
+  gap: clamp(16px, 2.4vw, 26px);
+  margin-top: clamp(30px, 5vh, 54px);
+}
+@media (min-width: 720px) { .hd .demos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.hd .demo {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  padding: 24px;
+  min-height: 178px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.hd .demo .cap {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+}
+.hd .demo .big {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-deep);
+}
+.hd .demo .pill {
+  align-self: flex-start;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fdf2dd;
+  color: #8a5d00;
+}
+.hd .demo .sheet {
+  height: 62px;
+  border-radius: 14px 14px 0 0;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-bottom: 0;
+}
+.hd .demo .press {
+  align-self: flex-start;
+  padding: 12px 22px;
+  border-radius: 12px;
+  background: var(--accent-deep);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 5 · the system ── */
+.hd .tiles { display: grid; gap: clamp(16px, 2.4vw, 26px); margin-top: clamp(30px, 5vh, 54px); }
+@media (min-width: 760px) { .hd .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hd .tile {
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 26px;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.hd .tile .sw { height: 92px; border-radius: 12px; background: var(--accent); }
+.hd .tile .spec { font-size: 3.2rem; font-weight: 200; letter-spacing: -0.05em; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
+.hd .tile .track { height: 2px; background: var(--hairline); position: relative; border-radius: 2px; }
+.hd .tile .track i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 2px; }
+.hd .tile .cap { font-size: 10px; letter-spacing: 0.16em; color: var(--ink-faint); margin-top: 18px; }
+
+/* ── 6 · try it ── */
+.hd .end { align-items: center; text-align: center; }
+.hd .end h2 { text-align: center; max-width: 18ch; }
+.hd .end .sphere {
+  position: relative;
+  width: clamp(120px, 18vw, 190px);
+  margin: 0 auto clamp(26px, 5vh, 46px);
+  filter: drop-shadow(0 28px 44px rgba(10, 122, 82, 0.22));
+}
+.hd .end .line { margin-left: auto; margin-right: auto; }
+.hd .foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  padding: 30px var(--gut) 44px;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--hairline);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.hd .foot a { color: inherit; }
+
+.hd .sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .hd .hd-dark { height: auto; }
+  .hd .hd-dark .stick { position: static; height: auto; }
+  .hd .versions { min-height: 0; }
+  .hd .version { position: static; margin-bottom: 44px; }
+}
