@@ -60,6 +60,7 @@ export function Mistakes() {
           <span className="eyebrow">SIX VERSIONS</span>
           <div className="count mono">6</div>
           <h2>I redesigned it six times.</h2>
+          <p className="line">Getting to simple meant removing things, not adding them.</p>
           <div className="versions">
             {VERSIONS.map(([name, verdict], n) => (
               <div className="version" key={name}>
@@ -88,6 +89,7 @@ export function Mistakes() {
           <CountUp to={6} format={(n) => String(Math.round(n))} duration={1.4} />
         </div>
         <h2>I redesigned it six times.</h2>
+        <p className="line">Getting to simple meant removing things, not adding them.</p>
 
         <div className="versions">
           <AnimatePresence mode="wait">

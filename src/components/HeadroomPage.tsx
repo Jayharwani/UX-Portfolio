@@ -1,46 +1,47 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CountUp, Reveal, Sphere, Tilt } from "./headroom/atoms";
+import { CountUp, Reveal, Sphere } from "./headroom/atoms";
 import { Problem } from "./headroom/Problem";
+import { Screens } from "./headroom/Screens";
+import { Decisions } from "./headroom/Decisions";
 import { Mistakes } from "./headroom/Mistakes";
-import { Demos } from "./headroom/Demos";
 import "../styles/headroom.css";
 
 /* --------------------------------------------------------------------------
-   HEADROOM — seven beats.
+   HEADROOM — seven beats, each one explained.
 
-   Off the shared .cs chapter system, which is an essay format: numbered
-   chapters, a standfirst, columns of prose. This is one picture and at most
-   one line per screen, which is a different shape, so it has its own scope.
+   The previous pass went too far the other way. It was one picture and no
+   sentence, which reads as confident and communicates nothing: a lone
+   "$1,730" over a floating sphere tells a stranger neither what the product
+   is nor why the number matters. A visual without meaning is worse than a
+   sentence, so every beat here states its one idea and then shows it.
 
-   NUMBERS. $2,500, Rent $650, Wifi $120 and $1,730 are all read off the
-   running app's Plan and Today screens. The brief asked for $1,200 counting
-   to $885: $885 is real — it is the figure on the onboarding card — but it
-   is not the result of this subtraction, and $1,200 is in the product
-   nowhere. The brief also says not to invent metrics, so the page uses the
-   set that reconciles.
+   The order is the order a reader's questions arrive in: what is this, who
+   hurts and why, what is the idea, what did you build, what did you decide,
+   what went wrong, would I trust you.
+
+   Cut on the way: the micro-interaction demos and the design-system tiles.
+   Both were craft aimed at other designers — the tiles said "ONE ACCENT
+   #0A7A52" to people who do not know what an accent is — and neither
+   answered a reader question. The never-red decision they carried now lives
+   on the home screen's line, where the green status pill is visible above it.
+
+   NUMBERS. $2,500, Rent $650, Wifi $120 and $1,730 are read off the running
+   app's Plan and Today screens. The brief's line said "rent, wifi and three
+   bills"; the app lists two, so the line says two.
    -------------------------------------------------------------------------- */
 
 const LIVE = "https://headroom-opal.vercel.app/";
 
-const CHIPS = [
-  ["no categories", "M3 8h10M3 12h10M3 16h6"],
-  ["no bank login", "M4 8h12v9H4zM7 8V6a3 3 0 0 1 6 0v2"],
-  ["on-device", "M6 3h8v14H6zM9 15h2"],
-] as const;
-
 export function HeadroomPage() {
-  /* The nav carries a pale scrim so it stays legible over the page. The ink
-     section runs under it for five screens, where that scrim is a white
-     smear. A one-pixel observer band at the nav line says which ground is
-     under it, which costs nothing and needs no scroll listener. */
-  const ink = useRef<HTMLElement | null>(null);
+  /* The nav carries a pale scrim so it stays legible. The ink section runs
+     under it for several screens, where that scrim is a white smear. A
+     one-pixel observer band at the nav line says which ground is under it. */
   const [onInk, setOnInk] = useState(false);
 
   useEffect(() => {
     const el = document.querySelector(".hd-dark");
     if (!el) return;
-    ink.current = el as HTMLElement;
     const NAV = 54;
     const io = new IntersectionObserver(([e]) => setOnInk(e.isIntersecting), {
       rootMargin: `-${NAV}px 0px -${Math.max(0, window.innerHeight - NAV - 1)}px 0px`,
@@ -70,18 +71,21 @@ export function HeadroomPage() {
         </a>
       </nav>
 
-      {/* 0 · hero */}
+      {/* 1 · what it is */}
       <header className="beat hero">
         <Sphere className="sphere" depth={70} />
         <Reveal y={22}>
           <span className="eyebrow">HEADROOM · PRODUCT DESIGN</span>
-          <span className="amount mono">
-            <CountUp to={1730} duration={2} />
-          </span>
-          <span className="under mono">SAFE TO SPEND TODAY</span>
-          <h1 className="line" style={{ maxWidth: "22ch", color: "var(--ink)", fontSize: "clamp(1.2rem,2.4vw,1.75rem)" }}>
-            A money app that answers one question.
-          </h1>
+          <h1>Know what you can actually spend.</h1>
+          <p className="line">
+            A money app that shows what&rsquo;s safe to spend today &mdash; before payday.
+          </p>
+          <div className="figure">
+            <span className="amount mono">
+              <CountUp to={1730} duration={2} />
+            </span>
+            <span className="under mono">SAFE TO SPEND TODAY, NOT THE $2,500 IN THE ACCOUNT</span>
+          </div>
           <div className="btns">
             <a className="btn" href={LIVE} target="_blank" rel="noopener noreferrer">
               Try it live <span aria-hidden="true">&#8599;</span>
@@ -94,82 +98,63 @@ export function HeadroomPage() {
         </span>
       </header>
 
-      {/* 1 · the problem */}
+      {/* 2 · who hurts, and why */}
       <section className="beat">
         <Reveal>
           <h2>Your balance lies.</h2>
-          <p className="line">So I built the number it hides.</p>
+          <p className="line wide">
+            Your bank says <b>$2,500</b>. But rent and wifi are due before your next paycheck.
+            Most apps still show you the $2,500 &mdash; so you spend it, and come up short.
+          </p>
         </Reveal>
         <Problem />
       </section>
 
-      {/* 2 · the idea */}
-      <section className="beat idea">
+      {/* 3 · the idea */}
+      <section className="beat insight">
         <Reveal>
-          <h2>One number. No chores.</h2>
-          <div className="chips">
-            {CHIPS.map(([label, d]) => (
-              <span className="chip" key={label}>
-                <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d={d} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {label}
-              </span>
-            ))}
-          </div>
+          <h2>People don&rsquo;t need a budget.</h2>
+          <p className="line wide">
+            They need to know what&rsquo;s safe to spend today. So I designed the whole app around
+            one number &mdash; not categories, not charts.
+          </p>
         </Reveal>
-        <Tilt className="phone" max={8}>
-          <img
-            src="/headroom/today-healthy.png"
-            alt="Headroom's home screen: $1,730 safe to spend, $87 a day, 20 days to payday, with Rent and Wifi listed under Coming up"
-            width={446}
-            height={1000}
-            loading="lazy"
-            decoding="async"
-          />
-        </Tilt>
       </section>
 
-      {/* 3 · the mistakes */}
+      {/* 4 · what I built */}
+      <section className="beat">
+        <Reveal>
+          <h2>Three screens, one job each.</h2>
+          <p className="line wide">
+            The whole product is here. Nothing to set up before it tells you something useful.
+          </p>
+        </Reveal>
+        <Screens />
+      </section>
+
+      {/* 5 · what I decided */}
+      <section className="beat">
+        <Reveal>
+          <h2>What I chose to leave out.</h2>
+          <p className="line wide">
+            Every rival asks for these before it will help you. Removing them was the design.
+          </p>
+        </Reveal>
+        <Decisions />
+      </section>
+
+      {/* 6 · what went wrong */}
       <Mistakes />
 
-      {/* 4 · the details */}
-      <section className="beat">
-        <Reveal>
-          <h2>The stuff you feel but never notice.</h2>
-        </Reveal>
-        <Demos />
-      </section>
-
-      {/* 5 · the system */}
-      <section className="beat">
-        <Reveal>
-          <h2>One identity, everywhere.</h2>
-        </Reveal>
-        <div className="tiles">
-          <Reveal className="tile" delay={0.05}>
-            <div className="sw" />
-            <span className="cap mono">ONE ACCENT. #0A7A52.</span>
-          </Reveal>
-          <Reveal className="tile" delay={0.12}>
-            <span className="spec mono">$1,730</span>
-            <span className="cap mono">TABULAR FIGURES ALWAYS.</span>
-          </Reveal>
-          <Reveal className="tile" delay={0.19}>
-            <div className="track">
-              <i style={{ width: "62%" }} />
-            </div>
-            <span className="cap mono">ONE CURVE. 300&ndash;700MS.</span>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* 6 · try it */}
+      {/* 7 · would I trust you */}
       <section className="beat end">
         <Sphere className="sphere" depth={40} />
         <Reveal>
-          <h2>Headroom — what you can actually spend.</h2>
-          <p className="line">A real, installable app. Built solo with AI. Every design call mine.</p>
+          <h2>A real app, not a mockup.</h2>
+          <p className="line">
+            Shipped as a live, installable app. Built solo, using AI to write the code &mdash;
+            every design decision mine. Self-initiated, so there are no user numbers to quote yet.
+          </p>
           <div className="btns" style={{ justifyContent: "center" }}>
             <a className="btn" href={LIVE} target="_blank" rel="noopener noreferrer">
               Try it live <span aria-hidden="true">&#8599;</span>
