@@ -12,7 +12,7 @@ import "../../styles/case.css";
    the four pages drifting apart again.
    -------------------------------------------------------------------------- */
 
-export type CaseAccent = "mint" | "cyan" | "violet" | "gold" | "teal";
+export type CaseAccent = "mint" | "cyan" | "violet" | "gold" | "teal" | "emerald";
 
 export const ACCENTS: Record<CaseAccent, string> = {
   mint: "#5FD8A4",
@@ -23,6 +23,15 @@ export const ACCENTS: Record<CaseAccent, string> = {
      picked to fit the set. It is deeper and greener than mint and colder than
      cyan, which is the only reason five accents still read as five. */
   teal: "#3FB9A6",
+  /* Headroom's emerald, sampled from the running app. Mint is the same brand
+     colour tuned for a dark ground and is what the work index still lights
+     that row with; on paper it has nowhere near enough contrast, so the light
+     case study takes the app's own value, sampled from the 1,882 pixels of
+     "$1,730" on its first screen. A lighter guess at it failed small text on
+     paper at 3.99:1; this is 4.91:1. This is a named accent rather than
+     an override in the light theme block, because the shell writes --accent
+     inline and an inline custom property outranks every stylesheet rule. */
+  emerald: "#0A7A52",
 };
 
 /** Progress hairline. Its scene is the document, so --p is read scroll depth. */
@@ -67,10 +76,21 @@ function Rail() {
 export function CaseShell({
   accent,
   live,
+  theme = "dark",
   children,
 }: {
   accent: CaseAccent;
   live?: { href: string; label: string };
+  /**
+   * The ground the case study is printed on.
+   *
+   * Four of these pages are dark and that was never argued for — it was
+   * inherited. Headroom's product is a warm off-white app whose whole manner
+   * is calm and unshaming, and a black case study about it was describing
+   * one thing while looking like another. The theme is a property of the
+   * project now, not of the template.
+   */
+  theme?: "dark" | "light";
   children: ReactNode;
 }) {
   /* The page ground is dark. body is white underneath — all four case studies
@@ -80,15 +100,18 @@ export function CaseShell({
      into the rest of the site. */
   useEffect(() => {
     const prev = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = "#05070C";
+    document.body.style.backgroundColor = theme === "light" ? "#F5F7F6" : "#05070C";
     window.scrollTo(0, 0);
     return () => {
       document.body.style.backgroundColor = prev;
     };
-  }, []);
+  }, [theme]);
 
   return (
-    <div className="cs" style={{ ["--accent" as string]: ACCENTS[accent] }}>
+    <div
+      className={`cs${theme === "light" ? " cs-light" : ""}`}
+      style={{ ["--accent" as string]: ACCENTS[accent] }}
+    >
       <div className="cs-wash" aria-hidden="true" />
       <div className="cs-grain" aria-hidden="true" />
       <Rail />

@@ -18,9 +18,17 @@ reference disagree, the reference wins. Open it in a browser before you start.
 - React + TypeScript + Vite
 - Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
   CSS-in-JS, or a UI kit.**
-- No animation libraries. No GSAP, Framer Motion, Lenis, Three.js, Lottie.
-  Everything is CSS transitions, CSS keyframes, `requestAnimationFrame`, and
-  one 2D canvas. This is deliberate, not an oversight.
+- **The homepage stays library-free.** CSS transitions, CSS keyframes,
+  `requestAnimationFrame`, and one 2D canvas. No Lenis, no scroll-jacking, no
+  transform-based smooth-scroll wrapper. This is deliberate, not an oversight.
+- **Case studies may use what is already in `package.json`** — GSAP (with
+  ScrollTrigger, Flip, SplitText, Observer) and matter-js — and must import
+  them dynamically so they never reach the homepage bundle. The earlier rule
+  banned these outright while `gsap`, `three`, `@react-three/fiber`, `motion`
+  and `matter-js` all sat in dependencies and `motion` was imported in
+  eighteen files, so it described an intention rather than the repo.
+- **Do not add new animation or UI dependencies** without asking. Tailwind is
+  installed but unused in `src/`; leave it that way. No component kits.
 - Only external dependency allowed: Geist + Geist Mono from Google Fonts.
 
 ## Hard rules
@@ -39,8 +47,16 @@ reference disagree, the reference wins. Open it in a browser before you start.
    Smoothness comes from lerping the scroll *value*, not from moving the page.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **Locked palette.** Use the tokens in SPEC.md. Do not add colours.
-7. **Accessibility.** Visible focus rings, real `<a>` elements for links, no
+6. **Locked palette on the homepage.** Use the tokens in SPEC.md. Do not add
+   colours there.
+7. **A case study is themed by its own product, not by the template.**
+   `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
+   light because the app is a warm off-white with a deep emerald; its accent
+   `#0A7A52` is sampled from the running product, not chosen. When adding a
+   theme, re-point the existing tokens rather than writing new rules per
+   component, and re-run the contrast audit — ink on paper needs more alpha
+   than paper on ink to reach the same ratio.
+8. **Accessibility.** Visible focus rings, real `<a>` elements for links, no
    text under 10.5px, no interactive element under 24×24px.
 
 ## Working style

@@ -2799,3 +2799,183 @@
   .cs .fr-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 .cs .fr-pair .fr-fig { margin: 0; max-width: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE LIGHT GROUND.
+
+   Every token below is the same token the dark pages use, re-pointed. No
+   component knows which theme it is in: the shell sets one class and the
+   variables do the rest, so the chapter numerals, the figures, the gate, the
+   rejected list and the artifact frames all re-skin without a line of their
+   own.
+
+   Headroom's product is a warm off-white app with a deep emerald and a great
+   deal of air, and its case study was black like everything else — arguing
+   for calm in the voice of a terminal. This is the product's own skin.
+   ══════════════════════════════════════════════════════════════════════════ */
+.cs.cs-light {
+  --void: #f5f7f6; /* the app's own ground, sampled from it */
+  --paper: #101512; /* near-black ink, never pure */
+  /* --accent is NOT set here: the shell writes it inline and inline custom
+     properties beat stylesheet rules. Headroom asks for accent="emerald". */
+
+  --ink-1: rgba(16, 21, 18, 0.92);
+  /* Darker than the dark theme's equivalents. Ink on paper needs more alpha
+     than paper on ink to reach the same contrast: at 0.42 the small mono
+     labels measured 2.70:1 against a 4.5 requirement. */
+  --ink-2: rgba(16, 21, 18, 0.72);
+  --ink-3: rgba(16, 21, 18, 0.6);
+  --line: rgba(16, 21, 18, 0.12);
+  --line-2: rgba(16, 21, 18, 0.22);
+  --panel: rgba(16, 21, 18, 0.025);
+}
+
+/* the grain is an overlay blend tuned for a dark ground; on paper it reads as
+   dirt, so it goes */
+.cs.cs-light .cs-grain { display: none; }
+
+/* one soft warm lift instead of two cool glows */
+.cs.cs-light .cs-wash {
+  background:
+    radial-gradient(120% 70% at 18% -10%, rgba(14, 138, 95, 0.05), transparent 62%),
+    radial-gradient(90% 60% at 92% 4%, rgba(16, 21, 18, 0.025), transparent 66%);
+}
+
+/* surfaces sit above the ground rather than glowing out of it */
+.cs.cs-light .cs-slab > *,
+.cs.cs-light .fr-fig .shell,
+.cs.cs-light .fr-cmp .shell,
+.cs.cs-light .sg-embed {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 21, 18, 0.04), 0 14px 34px rgba(16, 21, 18, 0.07);
+}
+.cs.cs-light .cs-panel,
+.cs.cs-light .fr-dead,
+.cs.cs-light .fr-lens,
+.cs.cs-light .fr-verify {
+  background: #ffffff;
+}
+
+/* a filled button on paper inverts the other way round */
+.cs.cs-light .cs-btn { border-color: var(--accent); color: var(--accent); }
+.cs.cs-light .cs-btn::before { background: var(--accent); }
+.cs.cs-light .cs-btn:hover { color: #ffffff; }
+
+/* the rail is a hairline of ink, not of light */
+.cs.cs-light .cs-rail { background: rgba(16, 21, 18, 0.07); }
+
+/* The fixed nav carries a near-black scrim so white chrome stays legible
+   over a dark page. On paper that is a black smear across the top of the
+   hero, so it becomes a pale one. */
+.cs.cs-light .cs-nav {
+  color: var(--ink-2);
+  background: linear-gradient(to bottom, rgba(245, 247, 246, 0.92), rgba(245, 247, 246, 0));
+}
+
+/* The outlined second line is drawn in stroke only, and a stroke that reads
+   as a whisper on ink is nearly invisible on paper. Measured at 0.34 alpha it
+   disappeared at hero size; this is the weight the dark theme's stroke
+   actually has against its own ground. */
+.cs.cs-light h1 em {
+  -webkit-text-stroke: 1.15px rgba(16, 21, 18, 0.5);
+}
+
+/* ── Headroom: the subtraction ──
+   Nine refusals over one number. The number is present from the start and
+   revealed by --reveal as the chips leave, so nothing pops into being. */
+.cs .hr-sub {
+  --reveal: 0;
+  margin: clamp(30px, 5vh, 56px) 0 24px;
+}
+.cs .hr-sub .lbl {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+  margin: 0 0 22px;
+}
+.cs .hr-sub .stage {
+  position: relative;
+  border-radius: 16px;
+  padding: clamp(26px, 4vw, 40px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  /* they fall out of the frame, which is the whole metaphor, so the frame
+     clips them rather than letting them rain over the next section */
+  overflow: hidden;
+  /* room to fall past the number before they leave */
+  min-height: clamp(420px, 56vh, 560px);
+}
+.cs .hr-sub .chips {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  z-index: 2;
+}
+.cs .hr-sub .chip {
+  display: inline-block;
+  padding: 11px 17px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--void);
+  font-size: 14.5px;
+  line-height: 1;
+  color: var(--ink-2);
+  white-space: nowrap;
+  will-change: transform;
+  transition: opacity 0.4s var(--ease), color 0.4s var(--ease),
+    text-decoration-color 0.4s var(--ease);
+}
+.cs .hr-sub .chip.falling {
+  /* lifted off the surface while it is in the air */
+  box-shadow: 0 10px 26px rgba(16, 21, 18, 0.14);
+  z-index: 3;
+}
+/* reduced motion: they are struck through in the same order instead */
+.cs .hr-sub .chip.gone {
+  opacity: 0.32;
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1px;
+}
+
+/* what is left */
+.cs .hr-sub .out {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(34px, 6vh, 64px);
+  text-align: center;
+  opacity: calc(0.12 + var(--reveal) * 0.88);
+  transform: translateY(calc((1 - var(--reveal)) * 10px));
+}
+.cs .hr-sub .out b {
+  display: block;
+  font-size: clamp(3.4rem, 11vw, 7rem);
+  font-weight: 200;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.cs .hr-sub .out span {
+  display: block;
+  margin-top: 14px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+}
+.cs .hr-sub .cap {
+  margin: 18px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs .hr-sub .chip { transition: none; }
+  .cs .hr-sub .out { transition: none; }
+}

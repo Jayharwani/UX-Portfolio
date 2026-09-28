@@ -10,39 +10,44 @@ import {
   Statement,
 } from "./case/Shell";
 import { Runway } from "./case/Runway";
+import { Subtract } from "./case/Subtract";
 import { useReveal, useTilt } from "./case/useScene";
 
 /* --------------------------------------------------------------------------
-   HEADROOM — CASES.md.
+   HEADROOM — rebuilt on its own ground.
 
-   Redesigned onto the shared case-study system: the homepage's ground, Geist,
-   and mint, which is the accent the work index already lights this row with.
-   The copy is carried over sentence for sentence; what changed is everything
-   around it.
+   This page was black, like the other four, and that was inherited rather
+   than argued for. Headroom is a warm off-white app with a deep emerald and
+   a great deal of air, whose entire manner is calm and unshaming; a case
+   study about it set in a dark terminal was describing one thing while
+   looking like another. It is printed on the product's own skin now.
 
-   The signature is the runway — the page performs the subtraction the product
-   exists to perform. See Runway.tsx.
+   THE SPINE IS SUBTRACTION. The product's claim is not that it does more,
+   it is that it refuses nearly everything the category treats as mandatory
+   and shows one number instead. So the page performs the refusals — see
+   Subtract.tsx — rather than asserting them, and the chapter count came down
+   from four to three on the same principle.
+
+   Every figure is the running product's: $2,500 in the account, $770 of
+   bills in Rent and Wifi, $1,730 safe to spend. Open the app and they are
+   the numbers on the first screen.
    -------------------------------------------------------------------------- */
 
-const SHOT = {
-  today: "/headroom/today-healthy.png",
-  plan: "/headroom/plan.png",
-  add: "/headroom/add-sheet.png",
-};
+const LIVE = "https://headroom-opal.vercel.app";
 
 const SCREENS = [
   {
-    src: SHOT.today,
+    src: "/headroom/today-healthy.png",
     title: "One number",
     body: "Open it, see what's safe. No setup ritual before you get value.",
   },
   {
-    src: SHOT.plan,
+    src: "/headroom/plan.png",
     title: "Enter bills once",
     body: "Set your money once; it does the forward maths every day after.",
   },
   {
-    src: SHOT.add,
+    src: "/headroom/add-sheet.png",
     title: "Never shaming",
     body: "No streaks, no red alarms — just a heads-up before you dip.",
   },
@@ -70,7 +75,15 @@ function Phone({ src, alt }: { src: string; alt: string }) {
   return (
     <div className="cs-slab hr-phone" ref={ref}>
       <div>
-        <img className="cs-lift" src={src} alt={alt} loading="lazy" decoding="async" />
+        <img
+          className="cs-lift"
+          src={src}
+          alt={alt}
+          width={446}
+          height={1000}
+          loading="lazy"
+          decoding="async"
+        />
       </div>
     </div>
   );
@@ -84,7 +97,7 @@ export function HeadroomPage() {
   const [screensRef, screensSeen] = useReveal<HTMLDivElement>();
 
   return (
-    <CaseShell accent="mint" live={{ href: "https://headroom-opal.vercel.app", label: "LIVE" }}>
+    <CaseShell accent="emerald" theme="light" live={{ href: LIVE, label: "LIVE" }}>
       <CaseHero
         meta={
           <>
@@ -101,41 +114,51 @@ export function HeadroomPage() {
             <em>is lying to you.</em>
           </>
         }
-        standfirst="It shows a number that feels spendable — then rent lands and you're short. Headroom answers the only question that matters: what can I actually spend today?"
+        standfirst="It shows a number that feels spendable. Then rent lands and you're short. Headroom shows the one number that is actually yours."
         spec={[
           ["ROLE", "Sole designer and builder"],
           ["SCOPE", "Zero to a shipped PWA"],
-          ["BUILD", "Design through Claude Code"],
+          ["VERSIONS", "Six. Five thrown away."],
           ["STATE", "Live, installable, on-device"],
           ["DATE", "2026"],
         ]}
-        cta={{ href: "https://headroom-opal.vercel.app", label: "Open Headroom" }}
+        cta={{ href: LIVE, label: "Open Headroom" }}
       />
 
-      <Chapter n="01" label="THE PROBLEM">
-        <h2>70% quit budgeting within two months. Not bad with money — badly served by software.</h2>
+      <Chapter n="01" label="THE LIE">
+        <h2>Your account says $2,500. Seven hundred of it is already spent.</h2>
         <p>
-          The problem was never arithmetic. It's timing — money disappearing between payday and the
-          end of the month.
-        </p>
-        <p>
-          Every rival optimises the same thing: a beautiful ledger of the past. YNAB, Monarch and
-          Copilot all ask for categories, rules and upkeep first. Mint simply shut down.{" "}
-          <strong>None of them lead with a single forward number.</strong>
+          The problem was never arithmetic. It&rsquo;s timing — money disappearing between payday
+          and the end of the month, against a number that looks available and isn&rsquo;t.
         </p>
 
         <div className="cs-bleed">
           <Runway />
         </div>
 
-        <p className="cs-cap">
-          Categories to maintain. Bank linking required. Backward-looking. Three things Headroom
-          refuses to ask for.
+        <p>
+          Every rival optimises the same thing: a beautiful ledger of the past. YNAB, Monarch and
+          Copilot all ask for categories, rules and upkeep before they tell you anything. Mint
+          simply shut down. <strong>None of them lead with a single forward number.</strong>
         </p>
       </Chapter>
 
-      <Chapter n="02" label="WHAT IT DOES">
-        <h2>Three screens. No categories, no bank login, no chore.</h2>
+      <Chapter n="02" label="THE REFUSALS">
+        <h2>Simplicity is a series of refusals.</h2>
+        <p>
+          Not a coat of paint. Every feature I didn&rsquo;t build is a decision I had to defend,
+          and this is the list.
+        </p>
+
+        <Subtract />
+
+        <div className="hr-refusals mono">
+          <span>FULLY ON-DEVICE</span>
+          <span>NO ACCOUNTS</span>
+          <span>INSTALLABLE PWA</span>
+          <span>WORKS OFFLINE</span>
+        </div>
+
         <div className={`hr-screens cs-rv${screensSeen ? " in" : ""}`} ref={screensRef}>
           {SCREENS.map((s) => (
             <figure key={s.title}>
@@ -147,18 +170,10 @@ export function HeadroomPage() {
             </figure>
           ))}
         </div>
-        <div className="hr-refusals mono">
-          <span>FULLY ON-DEVICE</span>
-          <span>NO ACCOUNTS</span>
-          <span>INSTALLABLE PWA</span>
-          <span>WORKS OFFLINE</span>
-        </div>
       </Chapter>
 
       <Chapter n="03" label="SIX VERSIONS">
         <h2>I threw away five designs to find the sixth.</h2>
-        {/* five of these were thrown away. Marking which is the whole
-            point of the section, and it was reading as a neutral list. */}
         <ol className="cs-index hr-versions">
           {VERSIONS.map(([n, t, l], i) => (
             <li key={n} className={i === VERSIONS.length - 1 ? "shipped" : "binned"}>
@@ -173,35 +188,21 @@ export function HeadroomPage() {
             </li>
           ))}
         </ol>
-      </Chapter>
-
-      <Chapter n="04" label="OUTCOME">
-        <h2>Shipped, installable, and fully on-device.</h2>
-        <p>
-          Designed and built end-to-end — design through Claude Code — into a working PWA you can
-          install from the browser. No accounts, no bank linking, no server holding your money data.
-        </p>
 
         <Statement cite="ON WHAT THE WORK ACTUALLY WAS">
-          The hardest work wasn&rsquo;t the interface. It was deciding what to leave out: simplicity
-          is a series of refusals, not a coat of paint.
+          The hardest work wasn&rsquo;t the interface. It was deciding what to leave out.
         </Statement>
 
-        <Figures items={LIGHTHOUSE} />
+        <Figures items={LIGHTHOUSE} accent />
 
-        <h3 style={{ marginTop: 34 }}>What I'd test next</h3>
+        <h3 style={{ marginTop: 34 }}>What I&rsquo;d test next</h3>
         <p>
-          Whether the heads-up before you dip actually changes behaviour — the one claim I can't
-          validate without real users.
+          Whether the heads-up before you dip actually changes behaviour — the one claim I
+          can&rsquo;t validate without real users.
         </p>
 
         <p style={{ marginTop: 34 }}>
-          <a
-            className="cs-btn"
-            href="https://headroom-opal.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a className="cs-btn" href={LIVE} target="_blank" rel="noopener noreferrer">
             <span>Open Headroom</span>
             <span aria-hidden="true">&#8599;</span>
           </a>
