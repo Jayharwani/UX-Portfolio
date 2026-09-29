@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CountUp, Reveal, Sphere } from "./headroom/atoms";
+import { Reveal, Sphere } from "./headroom/atoms";
+import { LivePhone } from "./headroom/LivePhone";
+import { Embed } from "./headroom/Embed";
 import { Problem } from "./headroom/Problem";
 import { Screens } from "./headroom/Screens";
 import { Decisions } from "./headroom/Decisions";
@@ -71,27 +73,24 @@ export function HeadroomPage() {
         </a>
       </nav>
 
-      {/* 1 · what it is */}
+      {/* 1 · what it is — and the thing itself, running */}
       <header className="beat hero">
-        <Sphere className="sphere" depth={70} />
-        <Reveal y={22}>
+        <Reveal className="said" y={22}>
           <span className="eyebrow">HEADROOM · PRODUCT DESIGN</span>
           <h1>Know what you can actually spend.</h1>
           <p className="line">
             A money app that shows what&rsquo;s safe to spend today &mdash; before payday.
           </p>
-          <div className="figure">
-            <span className="amount mono">
-              <CountUp to={1730} duration={2} />
-            </span>
-            <span className="under mono">SAFE TO SPEND TODAY, NOT THE $2,500 IN THE ACCOUNT</span>
-          </div>
           <div className="btns">
             <a className="btn" href={LIVE} target="_blank" rel="noopener noreferrer">
               Try it live <span aria-hidden="true">&#8599;</span>
             </a>
           </div>
         </Reveal>
+        <div className="shown">
+          <Sphere className="sphere" depth={44} />
+          <LivePhone to={1730} />
+        </div>
         <span className="cue mono" aria-hidden="true">
           <i />
           SCROLL
@@ -107,7 +106,29 @@ export function HeadroomPage() {
             Most apps still show you the $2,500 &mdash; so you spend it, and come up short.
           </p>
         </Reveal>
-        <Problem />
+        <div className="painPair">
+          <Problem />
+          <Reveal className="alongside" delay={0.1}>
+            <div className="shotPhone">
+              <div className="frame">
+                <div className="screen">
+                  <img
+                    src="/headroom/onboard-clarity.png"
+                    alt="Headroom's onboarding screen, reading: See what's actually yours. Your balance lies. Headroom subtracts what's coming so you know what's safe to spend right now."
+                    width={446}
+                    height={1000}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="what">
+              The app makes the same argument on its first screen. The figure there is its own
+              illustration, not this balance.
+            </p>
+          </Reveal>
+        </div>
       </section>
 
       {/* 3 · the idea */}
@@ -124,12 +145,17 @@ export function HeadroomPage() {
       {/* 4 · what I built */}
       <section className="beat">
         <Reveal>
-          <h2>Three screens, one job each.</h2>
+          <h2>See what I actually built.</h2>
           <p className="line wide">
-            The whole product is here. Nothing to set up before it tells you something useful.
+            The whole product is two screens and a sheet. Nothing to set up before it tells you
+            something useful.
           </p>
         </Reveal>
         <Screens />
+        <Reveal>
+          <h3 className="sub">And here it is, running.</h3>
+        </Reveal>
+        <Embed />
       </section>
 
       {/* 5 · what I decided */}
