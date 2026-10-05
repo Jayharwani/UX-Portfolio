@@ -104,3 +104,254 @@
   overflow: hidden;
 }
 .fr .cell .dots { height: clamp(280px, 38vh, 420px); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PAGE.
+
+   Eight sections, one screen and one idea each. Space is the instrument
+   here — far more of it than feels comfortable — so every beat is at least
+   90vh with its content vertically centred in a 62ch column, and the dot
+   canvases run full-bleed behind or beneath the words.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.fr .nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px var(--gut);
+  background: linear-gradient(to bottom, oklch(15% 0.02 255 / 0.94), transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.fr .nav a { color: var(--text-3); text-decoration: none; transition: color var(--fast) var(--effects); }
+.fr .nav a:hover { color: var(--text); }
+.fr .nav .live { margin-left: auto; color: var(--accent); }
+
+.fr .beat {
+  position: relative;
+  min-height: 90svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(96px, 14vh, 190px) var(--gut);
+  /* The section is as wide as the display type needs; 62ch is a reading
+     measure and belongs on the prose. Applied to the section it resolved
+     against the 16px root — a 496px column — and broke a 104px headline to
+     one word a line. */
+  max-width: min(1120px, 94vw);
+  margin: 0 auto;
+}
+/* the reading measure, where reading actually happens */
+.fr .beat > div > p,
+.fr .beat > p { max-width: 62ch; }
+.fr .beat h1 { max-width: 17ch; }
+.fr .beat h2 { max-width: 20ch; }
+.fr .beat > * { position: relative; z-index: 1; }
+.fr .hook { min-height: 100svh; }
+
+/* the dot canvases: behind the words, or beneath them on a plate */
+.fr .dots.bleed {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  z-index: 0;
+}
+.fr .plate {
+  margin: clamp(38px, 7vh, 74px) 0 0;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  max-width: 100vw;
+}
+.fr .plate .dots { height: clamp(300px, 46vh, 460px); }
+.fr .plate.short .dots { height: clamp(200px, 28vh, 300px); }
+.fr .plate figcaption {
+  display: block;
+  text-align: center;
+  margin-top: 22px;
+}
+
+.fr .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: clamp(28px, 4vh, 42px);
+  padding: 15px 28px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 16px;
+  text-decoration: none;
+  transition: border-color var(--fast) var(--effects), color var(--fast) var(--effects),
+    transform var(--fast) var(--spatial);
+}
+.fr .btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.fr .btn:active { transform: translateY(0); }
+
+/* the meta strip */
+.fr .meta {
+  display: grid;
+  gap: 18px 34px;
+  margin: clamp(44px, 8vh, 86px) 0 0;
+}
+@media (min-width: 720px) { .fr .meta { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fr .meta dt { margin-bottom: 7px; }
+.fr .meta dd { margin: 0; }
+
+/* 04 · the lenses */
+.fr .lenses {
+  list-style: none;
+  margin: clamp(34px, 6vh, 60px) 0 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(20px, 3vw, 32px);
+}
+@media (min-width: 680px) { .fr .lenses { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fr .lenses li {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  padding: 22px 20px 24px;
+  text-align: center;
+}
+.fr .persona { display: block; width: 100%; max-width: 96px; margin: 0 auto 8px; }
+.fr .lenses .mark { display: block; margin: 0 auto 10px; line-height: 0; }
+.fr .lenses b { display: block; font-size: 19px; font-weight: 400; margin-bottom: 4px; }
+
+/* 05 · the gate */
+.fr .gate {
+  display: grid;
+  gap: clamp(26px, 4vw, 44px);
+  margin: clamp(34px, 6vh, 60px) 0 0;
+}
+@media (min-width: 680px) { .fr .gate { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fr .gate .label { display: block; margin-bottom: 18px; }
+.fr .gate .may .label { color: var(--accent); }
+.fr .gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.fr .gate li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.fr .gate li svg { margin-top: 2px; }
+.fr .gate s { text-decoration-color: var(--text-3); text-decoration-thickness: 1px; }
+
+/* 06 · the only screenshots on the page */
+.fr .screens {
+  display: grid;
+  gap: clamp(20px, 3vw, 30px);
+  margin: clamp(34px, 6vh, 60px) 0 0;
+  width: min(100vw, 1240px);
+  margin-left: calc(50% - min(50vw, 620px));
+}
+@media (min-width: 760px) { .fr .screens { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fr .screens figure { margin: 0; }
+.fr .screens img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+}
+
+/* 07 · the whole process, one graphic */
+.fr .timeline {
+  margin: clamp(34px, 6vh, 60px) 0 0;
+  width: min(100vw, 1320px);
+  margin-left: calc(50% - min(50vw, 660px));
+  padding: 0 var(--gut);
+}
+.fr .timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 1000px) { .fr .timeline ol { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 9px; } }
+.fr .timeline li { position: relative; }
+.fr .timeline figure { margin: 0; }
+.fr .timeline img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  filter: saturate(0.35);
+  transition: transform var(--mid) var(--spatial), filter var(--mid) var(--effects),
+    border-color var(--mid) var(--effects);
+  transform-origin: center bottom;
+}
+.fr .timeline li:hover img,
+.fr .timeline li:focus-within img {
+  transform: scale(1.5);
+  filter: saturate(1);
+  border-color: var(--accent);
+  position: relative;
+  z-index: 5;
+}
+.fr .timeline li:hover, .fr .timeline li:focus-within { z-index: 5; }
+.fr .timeline li.now img { filter: saturate(1); }
+.fr .timeline li.marked img { border-color: oklch(82% 0.12 200 / 0.55); }
+.fr .timeline figcaption { display: flex; align-items: baseline; gap: 7px; margin-top: 9px; }
+.fr .timeline .tag { font-size: 14px; color: var(--accent); }
+.fr .timeline .mark {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* the diary, kept whole, behind one disclosure */
+.fr .long { margin: clamp(48px, 9vh, 96px) 0 0; border-top: 1px solid var(--line); }
+.fr .long summary {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 26px 0;
+  cursor: pointer;
+  font-size: 19px;
+  color: var(--text);
+  list-style: none;
+}
+.fr .long summary::-webkit-details-marker { display: none; }
+.fr .long summary::before {
+  content: "+";
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+}
+.fr .long[open] summary::before { content: "\2212"; }
+.fr .longBody {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  border-top: 1px solid var(--line);
+}
+
+.fr .foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 30px;
+  padding: 34px var(--gut) 52px;
+  max-width: 1320px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.fr .foot a { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fr * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .fr .timeline img, .fr .btn { transition: none; }
+  .fr .timeline li:hover img, .fr .timeline li:focus-within img { transform: none; }
+}

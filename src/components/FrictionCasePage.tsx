@@ -93,13 +93,13 @@ const ROUNDS: Round[] = [
   { n: "09", date: "24 Sep", note: "current" },
 ];
 
-export function FrictionCasePage() {
+export function FrictionCasePage({ embedded = false }: { embedded?: boolean } = {}) {
   useEffect(() => {
     document.title = "Friction — Product design case study";
   }, []);
 
   return (
-    <CaseShell accent="teal" live={{ href: LIVE, label: "LIVE" }}>
+    <CaseShell accent="teal" chrome={!embedded} live={{ href: LIVE, label: "LIVE" }}>
       <CaseHero
         backdrop={<Funnel />}
         meta={
@@ -520,8 +520,12 @@ export function FrictionCasePage() {
         ]}
       />
 
-      <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="mint" />
-      <CaseFoot />
+      {embedded ? null : (
+        <>
+          <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="mint" />
+          <CaseFoot />
+        </>
+      )}
     </CaseShell>
   );
 }

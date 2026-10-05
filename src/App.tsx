@@ -11,7 +11,7 @@ const SignalCasePage = lazy(() => import("./components/SignalCasePage").then((m)
 const BumperCasePage = lazy(() => import("./components/BumperCasePage").then((m) => ({ default: m.BumperCasePage })));
 const ChronoWeavePage = lazy(() => import("./components/ChronoWeavePage").then((m) => ({ default: m.ChronoWeavePage })));
 const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => ({ default: m.HeadroomPage })));
-const FrictionCasePage = lazy(() => import("./components/FrictionCasePage").then((m) => ({ default: m.FrictionCasePage })));
+const FrictionPage = lazy(() => import("./components/FrictionPage").then((m) => ({ default: m.FrictionPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
 /* A preview of the 3D case-study cards, on their own route so they can be
@@ -58,7 +58,7 @@ export default function App() {
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/chronoweave" element={<ChronoWeavePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />
-            <Route path="/friction" element={<FrictionCasePage />} />
+            <Route path="/friction" element={<FrictionPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/cards" element={<CardsPreview />} />
             <Route path="/dots" element={<DotsLab />} />

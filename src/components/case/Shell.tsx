@@ -77,6 +77,7 @@ export function CaseShell({
   accent,
   live,
   theme = "dark",
+  chrome = true,
   children,
 }: {
   accent: CaseAccent;
@@ -91,6 +92,13 @@ export function CaseShell({
    * project now, not of the template.
    */
   theme?: "dark" | "light";
+  /**
+   * False renders the page body only: no fixed nav, no progress rail, and no
+   * writing to document.body. Friction's rebuild keeps the original write-up
+   * verbatim inside a disclosure, and a second fixed nav and a second scroll
+   * rail inside another page is not a thing that can work.
+   */
+  chrome?: boolean;
   children: ReactNode;
 }) {
   /* The page ground is dark. body is white underneath — all four case studies
@@ -99,13 +107,14 @@ export function CaseShell({
      restoring it on the way out keeps the flash out without leaking the colour
      into the rest of the site. */
   useEffect(() => {
+    if (!chrome) return;
     const prev = document.body.style.backgroundColor;
     document.body.style.backgroundColor = theme === "light" ? "#F5F7F6" : "#05070C";
     window.scrollTo(0, 0);
     return () => {
       document.body.style.backgroundColor = prev;
     };
-  }, [theme]);
+  }, [theme, chrome]);
 
   return (
     <div
@@ -114,8 +123,9 @@ export function CaseShell({
     >
       <div className="cs-wash" aria-hidden="true" />
       <div className="cs-grain" aria-hidden="true" />
-      <Rail />
+      {chrome ? <Rail /> : null}
 
+      {chrome ? (
       <nav className="cs-nav">
         <Link to="/">
           <span className="arrow">&larr;</span>
@@ -128,6 +138,7 @@ export function CaseShell({
           </a>
         ) : null}
       </nav>
+      ) : null}
 
       <div className="cs-page">{children}</div>
     </div>
