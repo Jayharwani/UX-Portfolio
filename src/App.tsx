@@ -17,6 +17,9 @@ const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ def
 /* A preview of the 3D case-study cards, on their own route so they can be
    looked at without committing the homepage to them. Lazy, so nothing about
    them reaches the homepage bundle until they are actually wired in. */
+/* scratch route for the Friction dot engine; not linked, not indexed */
+const DotsLab = lazy(() => import("./components/DotsLab").then((m) => ({ default: m.DotsLab })));
+
 const CardsPreview = lazy(() =>
   import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
 );
@@ -58,6 +61,7 @@ export default function App() {
             <Route path="/friction" element={<FrictionCasePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/cards" element={<CardsPreview />} />
+            <Route path="/dots" element={<DotsLab />} />
           </Routes>
         </Suspense>
       </div>

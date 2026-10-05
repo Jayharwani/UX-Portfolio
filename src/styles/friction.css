@@ -1,0 +1,106 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FRICTION — its own ground.
+
+   A quiet instrument in a dark room, not a dashboard. Deep slate blue,
+   never black; one accent; light weights at large sizes, because heavy
+   headlines on a dark page read as shouting.
+
+   Every text token is solid. Carrying text colour as opacity is what put
+   the shared case-study system at 2.76:1 without anything in the stylesheet
+   showing the ratio.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.fr {
+  --bg: oklch(15% 0.02 255);
+  --surface: oklch(20% 0.022 255);
+  --surface-2: oklch(25% 0.024 255);
+  --line: oklch(32% 0.02 255);
+
+  --text: oklch(97% 0.005 255);
+  --text-2: oklch(80% 0.012 255);
+  --text-3: oklch(68% 0.014 255);
+
+  --accent: oklch(82% 0.12 200);
+  --dot-dim: oklch(42% 0.015 255);
+  --dot-live: oklch(82% 0.12 200);
+
+  /* four lenses: one lightness, one chroma, hue rotated across a cool arc,
+     so they read as a set rather than a rainbow */
+  --lens-1: oklch(82% 0.12 200);
+  --lens-2: oklch(82% 0.12 243);
+  --lens-3: oklch(82% 0.12 286);
+  --lens-4: oklch(82% 0.12 329);
+
+  --spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+  --effects: cubic-bezier(0.34, 0.8, 0.34, 1);
+  --fast: 260ms;
+  --mid: 480ms;
+  --slow: 700ms;
+
+  --gut: clamp(22px, 5vw, 80px);
+
+  position: relative;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Geist", -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;
+  overflow-x: clip;
+}
+.fr *, .fr *::before, .fr *::after { box-sizing: border-box; }
+
+/* ── type: light weights, large sizes, nothing under 14px ── */
+.fr h1 {
+  margin: 0;
+  font-size: clamp(56px, 7vw, 104px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.fr h2 {
+  margin: 0;
+  font-size: clamp(36px, 4.5vw, 60px);
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+.fr p { margin: 0; font-size: 19px; line-height: 1.65; color: var(--text-2); }
+.fr .sub { font-size: 19px; line-height: 1.6; color: var(--text-2); }
+.fr .secondary { font-size: 16px; line-height: 1.6; color: var(--text-2); }
+.fr .label {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+/* ── the dot canvas ── */
+.fr .dots { position: relative; width: 100%; }
+.fr .dots canvas { display: block; width: 100%; height: 100%; }
+
+/* ── the lab ── */
+.fr .lab { padding: clamp(30px, 6vw, 72px) var(--gut) 120px; max-width: 1400px; margin: 0 auto; }
+.fr .lab h1 { font-size: clamp(34px, 4vw, 54px); margin-bottom: 10px; }
+.fr .lab > p { max-width: 62ch; margin-bottom: 54px; }
+.fr .cell { margin-bottom: 64px; }
+.fr .cell .head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.fr .cell .head b { font-size: 19px; font-weight: 400; }
+.fr .cell .head span { font-size: 16px; color: var(--text-2); }
+.fr .cell .stage {
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.fr .cell .dots { height: clamp(280px, 38vh, 420px); }
