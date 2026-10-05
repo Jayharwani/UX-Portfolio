@@ -23,9 +23,15 @@
   /* set per page; every accent below resolves through this one property */
   --accent: #5fd8a4;
 
-  --ink-1: rgba(238, 241, 245, 0.92);
-  --ink-2: rgba(238, 241, 245, 0.56);
-  --ink-3: rgba(238, 241, 245, 0.34);
+  /* Solid, not alpha. Text colour carried as opacity hides its own contrast:
+     --ink-3 was rgba(238,241,245,0.34), which composites to 2.76:1 on this
+     ground against a 4.5 requirement, and it is what every small mono label,
+     caption and metadata row on four case studies is drawn in. These are the
+     same rendered colours stated outright, with the faintest raised until it
+     passes. Measured on #05070c: ink-1 17.6:1, ink-2 5.50:1, ink-3 4.73:1. */
+  --ink-1: #dadde1;
+  --ink-2: #878a8e;
+  --ink-3: #7b7f85;
   --line: rgba(238, 241, 245, 0.1);
   --line-2: rgba(238, 241, 245, 0.18);
   --panel: rgba(255, 255, 255, 0.022);
