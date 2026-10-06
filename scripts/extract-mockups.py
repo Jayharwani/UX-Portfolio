@@ -56,7 +56,7 @@ HEAD = """/* -------------------------------------------------------------------
    which is the only reason dangerouslySetInnerHTML is defensible.
    -------------------------------------------------------------------------- */
 
-export type MockupKey = "headroom" | "signal" | "chrono" | "bumper";
+export type MockupKey = "headroom" | "signal" | | "bumper";
 
 export const MOCKUPS: Record<MockupKey, string> = {
 """

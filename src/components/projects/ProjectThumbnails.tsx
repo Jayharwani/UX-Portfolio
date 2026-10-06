@@ -133,68 +133,6 @@ export function HeadroomThumbnail() {
   );
 }
 
-/* ── 03 · CHRONOWEAVE ───────────────────────────────────────────────────── */
-export function ChronoWeaveThumbnail() {
-  /* a segmented ring: one dash pattern, no per-segment markup */
-  const R = 52;
-  const C = 2 * Math.PI * R;
-
-  return (
-    <div className="absolute inset-0 [transform-style:preserve-3d]">
-      <Ground className="bg-[radial-gradient(120%_120%_at_50%_18%,#241B45_0%,#150F2A_55%,#0A0715_100%)]" />
-      <Ground className="bg-[radial-gradient(48%_42%_at_50%_45%,rgba(167,139,250,0.20),transparent_70%)]" />
-
-      <Depth z={46} className="absolute inset-0 grid place-items-center">
-        <div className="relative grid place-items-center">
-          <svg viewBox="0 0 140 140" className="h-[150px] w-[150px] -rotate-90">
-            {/* the track */}
-            <circle
-              cx="70"
-              cy="70"
-              r={R}
-              fill="none"
-              stroke="rgba(255,255,255,0.09)"
-              strokeWidth="7"
-              strokeDasharray="3 7"
-              strokeLinecap="round"
-            />
-            {/* the elapsed arc, glowing */}
-            <circle
-              cx="70"
-              cy="70"
-              r={R}
-              fill="none"
-              stroke="#A78BFA"
-              strokeWidth="7"
-              strokeLinecap="round"
-              strokeDasharray={`${C * 0.62} ${C}`}
-              style={{ filter: "drop-shadow(0 0 10px rgba(167,139,250,0.75))" }}
-            />
-          </svg>
-
-          <div className="absolute grid place-items-center text-center">
-            <span className="text-[1.75rem] font-medium leading-none tabular-nums text-white">
-              24:00
-            </span>
-            <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-white/45">
-              Remaining
-            </span>
-          </div>
-        </div>
-      </Depth>
-
-      {/* the nudge, nearer than the ring so it reads as arriving on top of it */}
-      <Depth z={70} className="absolute bottom-[11%] left-1/2 w-[70%] -translate-x-1/2">
-        <div className="rounded-xl border border-white/10 bg-[#1A1430]/90 px-4 py-3 shadow-2xl shadow-black/60 backdrop-blur-md">
-          <p className="text-[12px] font-medium text-white">Gentle nudge</p>
-          <p className="mt-0.5 text-[11px] leading-snug text-white/55">
-            Halfway through. Feel the pulse.
-          </p>
-        </div>
-      </Depth>
-    </div>
-  );
-}
 
 /* ── 04 · BUMPER ────────────────────────────────────────────────────────── */
 export function BumperThumbnail() {

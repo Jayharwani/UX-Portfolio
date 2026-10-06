@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Seven public pages. /cards is deliberately absent: it is a development
+  Six public pages. /cards is deliberately absent: it is a development
   preview of the case study card components, not a destination, and it is
   disallowed in robots.txt for the same reason.
 
@@ -29,12 +29,6 @@
   </url>
   <url>
     <loc>https://jayharwani.com/signal</loc>
-    <lastmod>2026-09-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://jayharwani.com/chronoweave</loc>
     <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

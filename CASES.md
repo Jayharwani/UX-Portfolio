@@ -13,7 +13,6 @@ Measured, not asserted:
 |---|---|---|---|
 | Headroom | Syne | white | 8,432px |
 | Signal | Instrument Serif | near-black green | 4,116px |
-| ChronoWeave | Syne | navy | 6,633px |
 | Bumper | Syne | dark | 12,044px |
 
 Four case studies, three headline faces, two grounds, and none of them the
@@ -56,7 +55,6 @@ the colour that lit the row is the colour that lights the page it opens:
 |---|---|---|
 | Headroom | mint `#5FD8A4` | |
 | Signal | cyan `#5FD3D8` | |
-| ChronoWeave | violet `#8B7BE8` | |
 | Bumper | gold `#E9C58B` | |
 
 **But colour is the weakest kind of identity.** Each page also gets one
@@ -69,8 +67,7 @@ physical:
 - **Signal — the gap.** The differentiator is Baltimore coverage; the
   incumbent skews DC and NoVA. The map draws as you scroll and the Baltimore
   half fills in last, so the reader watches the gap close rather than reading
-  a sentence claiming it does.
-- **ChronoWeave — elastic time.** Time blindness is subjective time coming
+  a sentence claiming it does. Time blindness is subjective time coming
   loose from clock time. A ruler whose ticks compress and stretch against an
   even scroll lets the reader feel the distortion the product treats.
 - **Bumper — the pause.** The product inserts friction before a purchase. The
@@ -119,7 +116,7 @@ signal stays in the footer, where `PRODUCT.md` says it belongs.
 
 1. Foundation — `src/styles/case.css`, `src/components/case/*`
 2. Headroom, end to end, verified in a browser
-3. Signal, ChronoWeave, Bumper
+3. Signal, Bumper
 4. Full pass: 320 / 768 / 1280 / 1920, keyboard, reduced motion, console
 
 ---

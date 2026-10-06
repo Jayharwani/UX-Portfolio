@@ -12,12 +12,11 @@ import "../../styles/case.css";
    the four pages drifting apart again.
    -------------------------------------------------------------------------- */
 
-export type CaseAccent = "mint" | "cyan" | "violet" | "gold" | "teal" | "emerald";
+export type CaseAccent = "mint" | "cyan" | "gold" | "teal" | "emerald";
 
 export const ACCENTS: Record<CaseAccent, string> = {
   mint: "#5FD8A4",
   cyan: "#5FD3D8",
-  violet: "#8B7BE8",
   gold: "#E9C58B",
   /* Friction's own primary, hue 172, taken from the live site rather than
      picked to fit the set. It is deeper and greener than mint and colder than

@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { ProjectCard3D } from "./ProjectCard";
 import {
   BumperThumbnail,
-  ChronoWeaveThumbnail,
   HeadroomThumbnail,
   SignalThumbnail,
 } from "./ProjectThumbnails";
@@ -52,15 +51,6 @@ export const PROJECTS: Project[] = [
     href: "/headroom",
     accent: "#34D399",
     thumbnail: <HeadroomThumbnail />,
-  },
-  {
-    slug: "chronoweave",
-    number: "03",
-    title: "ChronoWeave",
-    description: "Helping people with ADHD feel time pass.",
-    href: "/chronoweave",
-    accent: "#A78BFA",
-    thumbnail: <ChronoWeaveThumbnail />,
   },
   {
     slug: "bumper",

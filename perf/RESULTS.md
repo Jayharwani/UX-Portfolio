@@ -23,7 +23,7 @@ One physical world, one light source. Verified in the production build at
 | headline wrapped lines | **0** | **0** | **0** |
 | horizontal scroll | none | none | none |
 | status strip legible | 3 cells, stacked | 3 cells | 3 cells, closes at y=158 |
-| every card names a real project | Headroom · Signal · Bumper · Intent · ChronoWeave · Intent |
+| every card names a real project | Headroom · Signal · Bumper · Intent · Intent |
 
 ## Craft (§11)
 

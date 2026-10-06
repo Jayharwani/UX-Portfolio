@@ -224,12 +224,7 @@ export function SignalCasePage() {
         ]}
       />
 
-      <NextCase
-        to="/chronoweave"
-        name="ChronoWeave"
-        tag="ADHD TIME BLINDNESS · MOBILE"
-        accent="violet"
-      />
+      <NextCase to="/bumper" name="Bumper" tag="BEHAVIOURAL · EXTENSION" accent="gold" />
       <CaseFoot />
     </CaseShell>
   );

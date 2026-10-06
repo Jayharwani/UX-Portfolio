@@ -20,7 +20,6 @@
   --paper: #EEF1F5; /* text, cool white */
   --gold: #E9C58B; /* accent 1 · route, Bumper */
   --cyan: #5FD3D8; /* accent 2 · Signal */
-  --violet: #8B7BE8; /* accent 3 · ChronoWeave */
   --mint: #5FD8A4; /* accent 4 · Headroom, "open" */
   --teal: #3FB9A6; /* accent 5 · Friction */
   /* Live, swapped at runtime by Work.tsx on hover or focus. The resting value

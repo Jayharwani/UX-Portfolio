@@ -17,7 +17,6 @@ rather than filled, so the headline visually separates design from build.
 --paper:  #EEF1F5;   /* text, cool white              */
 --gold:   #E9C58B;   /* accent 1 · route, Bumper      */
 --cyan:   #5FD3D8;   /* accent 2 · Signal             */
---violet: #8B7BE8;   /* accent 3 · ChronoWeave        */
 --mint:   #5FD8A4;   /* accent 4 · Headroom, "open"   */
 --accent: var(--mint);  /* live, swapped at runtime   */
 
@@ -140,7 +139,6 @@ Four projects, each with a hand-built animated mockup (see `src/data/projects.ts
 |---|---|---|
 | Headroom | mint | Amount counts to $412, five day-columns fill, today ringed |
 | Signal | cyan | Six event pins drop with halos, tooltip resolves, counter to 14 |
-| ChronoWeave | violet | Ring draws, digits tick down live from 24:00, wave pulses |
 | Bumper | gold | Cart loads, interstitial pops from blur, cursor presses the button |
 
 Below 1000px the sticky panel is dropped and each mockup stacks under its own
@@ -166,5 +164,5 @@ reveals the section name. Also functions as navigation.
 ## 8. Content
 
 Copy lives in `src/data/`. Do not invent metrics, testimonials, or client logos.
-Case study routes: `/headroom`, `/signal`, `/chronoweave`, `/bumper`.
+Case study routes: `/headroom`, `/signal`, `/bumper`.
 Email: harwanijay9498@gmail.com · LinkedIn: in/jay-harwani

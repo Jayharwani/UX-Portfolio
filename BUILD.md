@@ -45,8 +45,8 @@ passes. Compare against `reference/index.html` at every step.
 - [ ] Index rows + sticky preview above 1000px, stacked mockups below
 - [ ] Hover activates: accent swap, glow bar, dim siblings, magnetic indent
 - [ ] Mockup animations **replay** on each activation (re-inject markup)
-- [ ] Links to `/headroom`, `/signal`, `/chronoweave`, `/bumper`
-- **Check:** ChronoWeave's clock actually counts down; Headroom counts to 412;
+- [ ] Links to `/headroom`, `/signal`, `/bumper`
+- **Check:** Headroom counts to 412;
   no animation left running when a panel is hidden
 
 ## 7 · Contact

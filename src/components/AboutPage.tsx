@@ -20,7 +20,6 @@ const buildArtifacts = [
   "src/components/home/FlyerGame.tsx",
   "src/components/AboutPage.tsx",
   "src/components/HeadroomPage.tsx",
-  "src/components/ChronoWeavePage.tsx",
   "src/components/BumperCasePage.tsx",
   "src/components/Footer.tsx",
   "src/index.css",

@@ -970,76 +970,6 @@ function HeadroomPreview({ active }: { active: boolean }) {
   );
 }
 
-/* ChronoWeave preview: nudge slides in, haptic dots pulse */
-function ChronoWeavePreview({ active }: { active: boolean }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="relative w-full h-full flex items-center justify-center"
-      style={{ background: "radial-gradient(120% 120% at 30% 20%, #1A1430 0%, #110D20 60%, #0C0916 100%)", minHeight: "inherit" }}
-    >
-      <div style={{ width: 168, borderRadius: 26, padding: 6, background: "#0B0D12", border: "1px solid #241E38", boxShadow: "0 24px 50px -18px rgba(0,0,0,0.6)", margin: "28px 0" }}>
-        <div style={{ borderRadius: 21, background: "#120E22", overflow: "hidden", padding: "16px 14px 44px", position: "relative" }}>
-          <p style={{ fontFamily: V.mono, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#A79FC9" }}>
-            Focus block
-          </p>
-          {/* time ring */}
-          <div className="relative mx-auto" style={{ width: 92, height: 92, marginTop: 10 }}>
-            <svg width="92" height="92" viewBox="0 0 92 92">
-              <circle cx="46" cy="46" r="38" fill="none" stroke="#241E38" strokeWidth="6" />
-              <motion.circle
-                cx="46"
-                cy="46"
-                r="38"
-                fill="none"
-                stroke="#A78BFA"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 38}
-                animate={{ strokeDashoffset: active ? 2 * Math.PI * 38 * 0.35 : 2 * Math.PI * 38 * 0.78 }}
-                transition={{ duration: 0.9, ease: EASE }}
-                transform="rotate(-90 46 46)"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span style={{ fontFamily: V.display, fontSize: 20, fontWeight: 600, color: "#EDEAF7", fontVariantNumeric: "tabular-nums" }}>
-                24:00
-              </span>
-              <span style={{ fontFamily: V.mono, fontSize: 9, color: "#A79FC9", letterSpacing: "0.1em" }}>REMAINING</span>
-            </div>
-          </div>
-          {/* haptic dots */}
-          <div className="flex items-center justify-center gap-2" style={{ marginTop: 10 }}>
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                style={{ width: 5, height: 5, borderRadius: 999, background: "#A78BFA" }}
-                animate={active ? { opacity: [0.3, 1, 0.3], scale: [1, 1.35, 1] } : { opacity: 0.3, scale: 1 }}
-                transition={{ duration: 0.9, repeat: active ? Infinity : 0, delay: i * 0.14 }}
-              />
-            ))}
-          </div>
-          {/* nudge toast */}
-          <motion.div
-            className="absolute left-2.5 right-2.5"
-            style={{
-              bottom: 10,
-              borderRadius: 10,
-              padding: "8px 10px",
-              background: "#2A2247",
-              border: "1px solid rgba(167,139,250,0.5)",
-            }}
-            animate={{ y: active ? 0 : 40, opacity: active ? 1 : 0 }}
-            transition={{ duration: 0.45, ease: EASE }}
-          >
-            <p style={{ fontFamily: V.body, fontSize: 10, fontWeight: 600, color: "#E4DEFA" }}>Gentle nudge</p>
-            <p style={{ fontFamily: V.body, fontSize: 9.5, color: "#B7ACE4", marginTop: 1 }}>Halfway through. Feel the pulse.</p>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* Bumper preview: intercept card slides up over a checkout */
 function BumperPreview({ active }: { active: boolean }) {
@@ -1143,15 +1073,6 @@ const PROJECTS: Project[] = [
     tags: ["PWA", "On-Device", "No Bank Login"],
     accent: "#34D399",
     Preview: HeadroomPreview,
-  },
-  {
-    slug: "chronoweave",
-    to: "/chronoweave",
-    name: "ChronoWeave",
-    line: "Multi-sensory nudges that help people with ADHD feel time pass. Haptics, audio, light.",
-    tags: ["Mobile App", "Haptics", "Multi-Sensory"],
-    accent: "#A78BFA",
-    Preview: ChronoWeavePreview,
   },
   {
     slug: "bumper",

@@ -13,7 +13,6 @@ import { sourceOf, Highlight, lineCount } from "./home/source";
 import {
   SignalPreview,
   HeadroomPreview,
-  ChronoWeavePreview,
   BumperPreview,
 } from "./home/previews";
 
@@ -68,7 +67,6 @@ const LINKEDIN = "https://www.linkedin.com/in/jay-harwani/";
 const WORK = [
   { n: "01", name: "Signal", line: "A live map of DMV tech events.", to: "/signal", accent: "#1F9D55", Preview: SignalPreview, fn: "SignalPreview", beat: 6200 },
   { n: "02", name: "Headroom", line: "Can I spend this, right now?", to: "/headroom", accent: "#34D399", Preview: HeadroomPreview, fn: "HeadroomPreview", beat: 7100 },
-  { n: "03", name: "ChronoWeave", line: "Helping people with ADHD feel time pass.", to: "/chronoweave", accent: "#A78BFA", Preview: ChronoWeavePreview, fn: "ChronoWeavePreview", beat: 8000 },
   { n: "04", name: "Bumper", line: "Catches impulse buys before you regret them.", to: "/bumper", accent: "#14B8A6", Preview: BumperPreview, fn: "BumperPreview", beat: 8900 },
 ];
 
