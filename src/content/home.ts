@@ -85,12 +85,22 @@ export const hero = {
   secondary: { label: "Email me" },
 } as const;
 
-export const nav = [
+export interface NavItem {
+  label: string;
+  href: string;
+  /** leaves the site, so it opens in a new tab and says so */
+  external?: boolean;
+}
+
+/* `as const` would give each entry its own literal type and only one of them
+   an `external` field, so reading item.external over the union fails to
+   compile. The interface is what makes the array uniform. */
+export const nav: readonly NavItem[] = [
   { label: "Work", href: "#work" },
   { label: "About", href: "#about" },
   { label: "Resume", href: "/resume.pdf", external: true },
   { label: "Contact", href: "#contact" },
-] as const;
+];
 
 /* --------------------------------------------------------------------------
    THE ACCENTS ARE DERIVED, NOT PICKED.

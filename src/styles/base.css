@@ -120,10 +120,20 @@ img, svg, video, canvas { display: block; max-width: 100%; }
   font-size: var(--t-small);
   font-weight: 500;
   border-radius: var(--r-2);
-  box-shadow: var(--shadow-pop);
   transform: translateY(calc(-100% - var(--s-5)));
 }
-.skip-link:focus-visible { transform: none; }
+/* :focus, not :focus-visible. Chrome does not grant focus-visible to a link
+   focused without a keyboard interaction, and the heuristic is the one thing a
+   skip link cannot afford to be wrong about. Nothing but a keyboard ever
+   reaches this element anyway, since parked it is off screen and unclickable.
+
+   The shadow only exists when the link does. Parked, the box sits 8px above
+   the viewport, but --shadow-pop reaches 18px past its bottom edge, so the
+   blur hung over the top-left corner of every first paint as a grey smudge. */
+.skip-link:focus {
+  transform: none;
+  box-shadow: var(--shadow-pop);
+}
 
 /* ── content gaps ─────────────────────────────────────────────────────────
    Any [FILL: ...] or [VERIFY: ...] still in src/content renders like this in

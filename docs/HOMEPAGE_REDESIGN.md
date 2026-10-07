@@ -2397,3 +2397,72 @@ second route.
   the new homepage links to it, and Phase 8 owns it.
 - **Tailwind is still in the build.** 19 files use its utilities, `App.tsx` and
   `v2/Work.tsx` among them. Phase 8.
+
+---
+
+## 24. Phase 2 record (October 7, 2026)
+
+The header and the hero in its resting state. No motion: Phase 3 adds the
+intro and the spec layer.
+
+### 24.1 Acceptance, measured on the preview build
+
+| Check | Result |
+|---|---|
+| Five-second contract at 390 and 1440 | **Pass**, all five items in the first frame |
+| H1 accessible name | **Pass**, exactly "Designs it. Then ships it." |
+| CLS | **Pass**, 0.0002 mobile and 0.0001 desktop against a budget of 0.02 |
+| LCP element | **Pass**, `<p class="hero-sub">` |
+
+Lighthouse on the preview build, median of three: performance 98 mobile and
+100 desktop, accessibility **100** (was 93), SEO 100, best practices 96. TBT
+15 to 29 ms. LCP 1.99 s mobile under Lighthouse's own throttling, which is a
+local number and not comparable to the 3.60 s the live v4 page measured.
+
+The two accessibility failures in the Phase 0 baseline, colour contrast and
+heading order, are both gone.
+
+### 24.2 Measurements worth keeping
+
+- **The type maths holds.** At 1440 the hero sets at 168 px and the inline box
+  measures 219 px against the 1.3 em (218 px) the metrics predict, within the
+  2 px tolerance the Phase 3 spec layer tests for before it draws its guides.
+  Line 1's descender bottom and line 2's cap top are **8 px apart, 0.048 em**,
+  which is what §4.2 derived.
+- **"Then ships it." measures 952 px at 168 px**, inside a 1320 px content
+  width; 321 px at 390 px wide inside 350 px; 263 px at 320 px inside 280 px.
+  No horizontal scroll at 320, 390, 768 or 1440.
+- **The static face was the right call.** At 1:1 there are no internal contour
+  lines inside the stroked glyphs. The notches visible in a downscaled capture
+  are the downscaling.
+- **Forced colours hold.** Both lines fall back to `CanvasText` with the stroke
+  off, so the outline line does not disappear. Verified under emulated
+  `forced-colors: active`.
+
+### 24.3 Decisions taken inside Phase 2
+
+- **No scroll listener.** The header's frosted state comes from an 8 px
+  sentinel pinned at the document origin and watched by an
+  IntersectionObserver, not from reading scrollY. The one scroll listener the
+  rules allow stays reserved for the showcase engine.
+- **The nav indicator is one 1 px bar.** It is scaled to the active link's
+  measured width and moved with translateX, so it never touches layout.
+  Measured again after `fonts.ready` and on resize.
+- **`:focus`, not `:focus-visible`, on the skip link.** Chrome does not grant
+  focus-visible to a link focused without a keyboard interaction, and a skip
+  link cannot afford that heuristic. Verified with a real Tab press through
+  the DevTools Protocol: one Tab reveals it, two reach the brand.
+- **The skip link's shadow is only applied on focus.** Parked, the box sits
+  8 px above the viewport but `--shadow-pop` reaches 18 px past its bottom
+  edge, so the blur hung over the top left corner of every first paint.
+
+### 24.4 Open
+
+- **`/favicon.ico` still 404s**, and it is now the only thing keeping best
+  practices off 100. Fixing it means choosing a mark, which is Jay's call. The
+  smallest options are a real icon, or `<link rel="icon" href="data:,">` to
+  stop the request without one.
+- **The skeleton's links carry a scaffold rule.** The placeholder anchors in
+  `#work`, `#more-work` and `#contact` measured 21 px tall, under the 24 px
+  minimum. A labelled block at the foot of `home.css` gives them the floor and
+  is deleted by the phase that designs the last of those sections.

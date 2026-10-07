@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
-import { about, contact, flagship, footer, head, hero, moreWork, site } from "../content/home";
+import { about, contact, flagship, footer, head, moreWork, site } from "../content/home";
 import { NOW_STALE_DAYS, now } from "../content/now";
+import { Header } from "./v5/Header";
+import { Hero } from "./v5/Hero";
 import { Marker } from "./v5/Marker";
+import "../styles/home.css";
 
 /* --------------------------------------------------------------------------
    THE HOMEPAGE, PHASE 1.
@@ -41,21 +44,10 @@ export function HomeV5() {
         Skip to content
       </a>
 
+      <Header />
+
       <main id="content" className="shell">
-        {/* ── hero ─────────────────────────────────────────── Phase 2 and 3 */}
-        <section aria-labelledby="hero-title">
-          <h1 id="hero-title">
-            <span>{hero.line1}</span> <span>{hero.line2}</span>
-          </h1>
-          <p>{hero.subline}</p>
-          <p>
-            <a href={hero.primary.href}>{hero.primary.label}</a>{" "}
-            <a href={`mailto:${site.email}`}>{hero.secondary.label}</a>
-          </p>
-          <p>
-            <span>{site.status}</span> <span>{site.location}</span>
-          </p>
-        </section>
+        <Hero />
 
         {/* ── selected work ───────────────────────────────────── Phase 4 and 5 */}
         <section id="work" aria-labelledby="work-title">
