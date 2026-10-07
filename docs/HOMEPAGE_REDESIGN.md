@@ -2466,3 +2466,79 @@ heading order, are both gone.
   `#work`, `#more-work` and `#contact` measured 21 px tall, under the 24 px
   minimum. A labelled block at the foot of `home.css` gives them the floor and
   is deleted by the phase that designs the last of those sections.
+
+---
+
+## 25. Phase 3 record (October 7, 2026)
+
+The hero intro, the measured spec layer, and the ink fill.
+
+### 25.1 Acceptance
+
+| Check | Result |
+|---|---|
+| Trace matches §7.2 within 50 ms | **Pass**, every mark at **0 ms** drift |
+| LCP within 50 ms of Phase 2 | **Pass**, -8 ms mobile and +5 ms desktop |
+| No contour lines inside glyphs at 400% | **Pass**, checked at deviceScaleFactor 4 |
+| Reduced motion: final state, no spec layer | **Pass** |
+| The intro never runs twice in one session | **Pass**, over three loads in one tab |
+
+The schedule, read back off the live `Animation` objects:
+
+| Mark | §7.2 | Measured |
+|---|---|---|
+| Guides, scaleX from the left | 80 ms, 420 ms | 80 ms, 420 ms |
+| Selection box and handles | 200 ms, 240 ms | 200 ms, 240 ms |
+| Chip A | 300 ms, 200 ms | 300 ms, 200 ms |
+| Dimension line and its W label | 340 ms, 200 ms | 340 ms, 200 ms |
+| Chip B | 380 ms, 200 ms | 380 ms, 200 ms |
+| Line 2, ink fill, and the scanline on it | 520 ms, 760 ms | 520 ms, 760 ms |
+| The layer retracts | 1280 ms, 120 ms | 1280 ms, 120 ms |
+
+Also measured: a real keydown, wheel and pointerdown each take the hero to its
+final state; the hover reveal measures lazily and opens over `--d-2`; under
+emulated forced colours the layer is not rendered at all; Lighthouse holds at
+98 mobile and 100 desktop, accessibility 100, CLS 0.0002.
+
+### 25.2 Three bugs the measurements found
+
+- **Every measured mark ran 48 ms behind the ink fill.** The spec layer anchors
+  itself to the CSS animation's `startTime` so the scanline can ride the fill
+  edge, but a CSS animation has no `startTime` until it has been committed, and
+  reading it too early fell through to `timeline.currentTime`. Awaiting
+  `animation.ready` first took the drift to zero.
+- **The layer faded in as a whole on top of its own choreography.** The
+  `transition` that opens it on hover also fired when the intro set
+  `data-spec`, putting a second 120 ms fade over marks that were already
+  animating one at a time. It is suppressed in intro mode.
+- **The exits were filling backwards.** They are created after the entrances,
+  so `fill: both` let each one win the animation cascade and pin its element to
+  its pre-exit value from t0. The scanline sat at the left edge of line 2 from
+  first paint. Exits now fill forwards only.
+
+### 25.3 Deviation from §6.2, and why
+
+§6.2 step 1 says to skip the intro entirely if the display font is not ready
+within 300 ms. Here the race gates the **spec layer** instead, and the ink fill
+always runs.
+
+The fill is a CSS animation on text that is already painted, so it holds back
+nothing and needs no font to be correct: the line is `nowrap`, so a swap cannot
+reflow it. What genuinely needs the font is the measurement, because guides
+drawn against a fallback's metrics are confidently wrong. Skipping the whole
+intro on a slow font would instead mean line 2 snapping from outline to solid
+ink at 300 ms, which is a worse thing to watch than the thing the rule exists
+to prevent.
+
+### 25.4 Two notes for later phases
+
+- **`document.getAnimations()` is the trace.** Sleeping between
+  `Page.captureScreenshot` calls cannot verify a 1400 ms timeline, because a
+  capture costs more than a frame and the wall clock runs past the end of the
+  animation. Pausing every animation and setting `currentTime` photographs an
+  exact moment. `scratchpad/intro.mjs` does this, and holds the teardown open
+  by blocking the one 1400 ms timer.
+- **`sessionStorage` is per origin, and `about:blank` has an opaque one.**
+  Clearing it there does not clear it for the site, so a harness that navigates
+  away and back gets one intro and then a run of identical "finished page"
+  frames. Clear it on the page, then reload.

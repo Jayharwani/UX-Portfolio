@@ -127,6 +127,7 @@
 /* ══ hero ═════════════════════════════════════════════════════════ §6.2 ══ */
 
 .hero {
+  position: relative;
   min-height: min(88svh, 980px);
   /* the sticky header already takes its height in the flow; adding it again
      would push the first frame out of the first screen */
@@ -168,6 +169,152 @@
     -webkit-text-stroke: 0;
     background: none;
   }
+}
+
+/* ── the ink fill ────────────────────────────────────────────── §6.2, §7.2 ──
+   During the intro both lines are outlines and line 2 fills from the left.
+   Pure CSS, so the headline never waits on a script and the animation is
+   already running at first paint: the spec layer anchors itself to this
+   animation's startTime rather than the other way round.
+
+   The 0.6% between the two gradient stops is the fill's edge. Hard-stopping
+   it would alias into a stair on the diagonals of "h" and "s". */
+.hero.is-intro .hero-line--ship {
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--ink) var(--ink-fill),
+    transparent calc(var(--ink-fill) + 0.6%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: ink-fill 760ms var(--ease-in-out) 520ms both;
+}
+
+/* ── the spec layer ──────────────────────────────────────────────── §6.2 ──
+   Blue marks over line 1, every position written by lib/heroSpec.ts from a
+   live measurement. Nothing here has a size of its own.
+
+   Hidden at rest, which is the one exception to the hero's no-opacity-zero
+   rule: it is the only thing in the hero that is not text. */
+.spec-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--z-spec);
+  transition: opacity var(--d-1) var(--ease-in);
+}
+.hero[data-spec] .spec-layer { opacity: 1; }
+/* The intro animates the marks one at a time. Letting the layer transition in
+   as a whole put a second 120ms fade over the top of them. */
+.hero[data-spec="intro"] .spec-layer { transition: none; }
+.hero[data-spec="hover"] .spec-layer {
+  transition-duration: var(--d-2);
+  transition-timing-function: var(--ease-out);
+}
+/* the metrics check failed, so the guides would be confidently wrong */
+.spec-layer[data-guides="off"] .sl-guide { display: none; }
+
+.sl-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--spec-line);
+  transform-origin: left center;
+  opacity: 0.6;
+}
+.sl-guide--base { opacity: 1; }
+
+.sl-box {
+  position: absolute;
+  border: 1px solid var(--spec-line);
+}
+/* Four real elements, children of the box, so each corner is placed by the
+   box's own geometry. The first attempt drew two of them with a box-shadow
+   offset by 100cqw, which is the layer's width and not the box's. */
+.sl-h {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: var(--paper);
+  border: 1px solid var(--spec-line);
+}
+.sl-h:nth-child(1) { left: -3.5px; top: -3.5px; }
+.sl-h:nth-child(2) { right: -3.5px; top: -3.5px; }
+.sl-h:nth-child(3) { right: -3.5px; bottom: -3.5px; }
+.sl-h:nth-child(4) { left: -3.5px; bottom: -3.5px; }
+
+.sl-dim {
+  position: absolute;
+  height: 1px;
+  background: var(--spec-line);
+}
+/* 6px end ticks */
+.sl-dim::before,
+.sl-dim::after {
+  content: "";
+  position: absolute;
+  width: 1px;
+  height: 6px;
+  top: -3px;
+  background: var(--spec-line);
+}
+.sl-dim::before { left: 0; }
+.sl-dim::after { right: 0; }
+
+.sl-chip {
+  position: absolute;
+  padding: 2px 6px;
+  border-radius: var(--r-1);
+  background: var(--spec);
+  color: var(--paper);
+  font-family: var(--font-spec);
+  font-size: var(--t-spec);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+/* centred on the dimension line, which passes behind it */
+.sl-chip--w { transform: translate(-50%, -50%); }
+/* centred on the x-height guide */
+.sl-chip--b { transform: translateY(-50%); }
+
+/* rides the fill edge; --ship-w is line 2's measured width */
+.sl-scan {
+  position: absolute;
+  width: 1px;
+  background: var(--spec-line);
+  opacity: 0;
+}
+
+/* Below 640 there is room for the guides, the box and one chip (§6.2.6). */
+@media (max-width: 639px) {
+  .sl-dim,
+  .sl-chip--w,
+  .sl-chip--b { display: none; }
+}
+
+/* The layer is measurement drawn in thin blue lines. Forced colours have no
+   way to render that as anything but more text-coloured rules over the
+   headline, so it does not appear at all. */
+@media (forced-colors: active) {
+  .spec-layer { display: none; }
+}
+
+/* §7.6: the intro is skipped entirely, and the layer never shows. The class
+   is not applied under reduced motion, but a reader who turns the setting on
+   mid-animation gets the final state on the next frame rather than a frozen
+   half-filled line. */
+@media (prefers-reduced-motion: reduce) {
+  .hero.is-intro .hero-line--ship {
+    color: var(--ink);
+    background-image: none;
+    animation: none;
+  }
+  .spec-layer { display: none; }
 }
 
 .hero-sub {
