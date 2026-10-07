@@ -3,60 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jay Harwani. Product designer who ships AI as code.</title>
-    <meta name="description" content="I design AI products and ship them as working code. HCI research at UMBC. Open to product design roles." />
-    <meta property="og:title" content="Jay Harwani. Product designer who ships AI as code." />
-    <meta property="og:description" content="I design AI products and ship them as working code. HCI research at UMBC." />
+
+    <title>Jay Harwani, product designer who writes the front end</title>
+    <meta name="description" content="I design products and build them in React and TypeScript. Four are live. MS in Human-Centered Computing, UMBC. Open to product design roles." />
+    <link rel="canonical" href="https://jayharwani.com/" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="color-scheme" content="light" />
+
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://jayharwani.com" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Jay Harwani. Product designer who ships AI as code." />
-    <meta name="twitter:description" content="I design AI products and ship them as working code. HCI research at UMBC." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <meta property="og:site_name" content="Jay Harwani" />
+    <meta property="og:title" content="Jay Harwani, product designer who writes the front end" />
+    <meta property="og:description" content="I design products and build them in React and TypeScript. Four are live." />
+    <meta property="og:url" content="https://jayharwani.com/" />
+    <meta property="og:image" content="https://jayharwani.com/og/home.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Designs it. Then ships it. Jay Harwani, product designer." />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <!--
-      Font loading is split by priority.
+      Type is self-hosted and subset to Latin, so the homepage makes no
+      third-party request before LCP. Three files, 39 KB in total, built by
+      scripts/fonts.sh from the geist package and committed.
 
-      Fontshare carries Clash Display + General Sans — the --font-display and
-      --font-body tokens the hero renders in. That one stays render-blocking so
-      the first thing a visitor sees is already in the right typeface.
+      Only the display face is preloaded: it carries the H1, which is the LCP
+      element. The text face swaps in behind the metric-matched fallback in
+      tokens.css, and the mono face is wanted by the spec layer and the case
+      studies, neither of which is above the fold.
 
-      Google carries the secondary/case-study faces. It loads async (media=print
-      flipped to all on load) so first paint is never gated on a second
-      third-party round trip. Everything below the fold has swapped in long
-      before it is scrolled to.
-
-      Removed here: Archivo (0 uses), Archivo Expanded (0 uses, and not a real
-      Google family — the request was always discarded), Caveat (0 uses).
-      Playfair is requested at 400..500 only, in italic and upright: every use
-      in the app is italic, but the old URL asked for six upright weights and no
-      italic at all, so the browser was downloading faces it never used and
-      faking the slant. Variable ranges (400..700) fetch one file per family
-      instead of one per weight.
+      What left here: the Fontshare stylesheet (Clash Display, General Sans)
+      and the Google one (DM Sans, Geist, Geist Mono, Instrument Serif, Inter,
+      Playfair Display). Eight declared families, of which every live route
+      used exactly two, Geist and Geist Mono. The Fontshare link was
+      render-blocking.
     -->
-    <link
-      href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist:wght@200..600&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all';this.onload=null"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist:wght@200..600&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&display=swap"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Geist:wght@200..600&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400..700&family=Playfair+Display:ital,wght@0,400..500;1,400..500&display=swap"
-      />
-    </noscript>
+    <link rel="preload" href="/fonts/Geist-SemiBold-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>

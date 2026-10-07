@@ -1,0 +1,159 @@
+/* v5 tokens. Locked palette: do not add colours.
+   HOMEPAGE_REDESIGN.md §4. */
+
+@font-face {
+  font-family: "Geist Display";
+  src: url("/fonts/Geist-SemiBold-latin.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono Spec";
+  src: url("/fonts/GeistMono-Medium-latin.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+/* The same file under the name the five case studies already ask for. All of
+   them set `font-family: "Geist Mono"` in their own `.mono` rule, and that name
+   used to resolve through the Google Fonts stylesheet this phase removes.
+   One extra @font-face, same URL, so no extra request: still three files. */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Medium-latin.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+/* Metric-matched fallback. Values computed from Geist Regular against an
+   Arial-metric font. Verify CLS <= 0.02 on a throttled load (§11.3). */
+@font-face {
+  font-family: "Geist Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  size-adjust: 102.4%;
+  ascent-override: 98.1%;
+  descent-override: 28.8%;
+  line-gap-override: 0%;
+}
+
+/* The scroll engine's four drivers, registered so they can be interpolated.
+   --draw is the brief's --spec, renamed. A registered property rejects a value
+   that does not match its syntax, so declaring `--spec: #1d5fe0` against
+   `syntax: "<number>"` made the colour compute to the initial value 0 and
+   turned every focus ring, chip and spec-blue text pure black. Measured in
+   Chrome before renaming: `color: var(--spec)` resolved to rgb(0, 0, 0).
+   The driver is the cheaper rename; the colour is referenced throughout §4,
+   §6 and §10. */
+@property --ink-fill { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --reveal   { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --enter    { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --exit     { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --draw     { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+:root {
+  color-scheme: light;
+
+  /* Colour */
+  --paper: #ffffff;
+  --paper-2: #f4f5f7;
+  --line: #e3e5e8;
+  --line-strong: #d0d4d9;
+  --ink: #000000;
+  --ink-1: #1c1f24;
+  --ink-2: #565d67;
+  --ink-3: #6b7280;
+  --spec: #1d5fe0;
+  --spec-line: #3d7bff;
+  --live: #16a34a;
+
+  /* Type */
+  --font-display: "Geist Display", "Geist", "Geist Fallback", system-ui, sans-serif;
+  --font-text: "Geist", "Geist Fallback", system-ui, sans-serif;
+  --font-spec: "Geist Mono Spec", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --t-hero: clamp(44px, 14.5vw, 168px);
+  --t-display: clamp(32px, 4.4vw, 64px);
+  --t-title: clamp(30px, 3.4vw, 48px);
+  --t-name: 24px;
+  --t-lead: clamp(18px, 1.45vw, 21px);
+  --t-body: 16px;
+  --t-small: 15px;
+  --t-meta: 13px;
+  --t-spec: 12px;
+
+  --track-hero: -0.045em;
+  --track-display: -0.03em;
+  --track-title: -0.025em;
+  --track-lead: -0.011em;
+  --track-body: -0.006em;
+
+  /* Layout */
+  --max: 1320px;
+  --margin: clamp(20px, 5vw, 72px);
+  --gutter: 16px;
+  --header-h: 56px;
+  --section-gap: clamp(96px, 12vw, 160px);
+  --segment: 85svh; /* showcase scroll distance per project */
+
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;  --s-5: 20px;
+  --s-6: 24px;  --s-7: 32px;  --s-8: 40px;  --s-9: 48px;  --s-10: 64px;
+  --s-11: 80px; --s-12: 96px; --s-13: 128px; --s-14: 160px;
+
+  /* Shape and elevation */
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-3: 16px;
+  --r-device: 40px;
+  --shadow-frame:
+    0 0 0 1px rgb(16 24 40 / 0.06),
+    0 1px 2px rgb(16 24 40 / 0.04),
+    0 12px 32px -8px rgb(16 24 40 / 0.12),
+    0 32px 72px -24px rgb(16 24 40 / 0.14);
+  --shadow-pop:
+    0 0 0 1px rgb(16 24 40 / 0.08),
+    0 6px 16px -4px rgb(16 24 40 / 0.16);
+
+  /* Motion */
+  --d-1: 120ms;
+  --d-2: 200ms;
+  --d-3: 320ms;
+  --d-4: 520ms;
+  --d-hero: 1400ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Sampled from the Material 3 Expressive spatial springs: standard is
+     stiffness 700 at damping 0.9 (~0.15% overshoot), expressive is 380 at 0.8
+     (~1.5%). Spatial only. Opacity and colour never use a spring (§4.5). */
+  --spring-standard: linear(0, 0.049, 0.161, 0.295, 0.43, 0.553, 0.659, 0.746, 0.815,
+    0.868, 0.909, 0.938, 0.96, 0.975, 0.985, 0.992, 0.996, 0.999, 1, 1.001, 1.001,
+    1.002, 1.001, 1.001, 1);
+  --spring-standard-d: 320ms;
+  --spring-expressive: linear(0, 0.052, 0.17, 0.316, 0.463, 0.597, 0.712, 0.804,
+    0.875, 0.927, 0.963, 0.987, 1.002, 1.011, 1.014, 1.015, 1.014, 1.012, 1.01,
+    1.008, 1.006, 1.004, 1.003, 1.002, 1);
+  --spring-expressive-d: 440ms;
+
+  /* Layers */
+  --z-frame: 1;
+  --z-spec: 2;
+  --z-header: 50;
+  --z-toast: 60;
+  --z-specmode: 70;
+  --z-skip: 100;
+}
+
+@media (min-width: 640px) {
+  :root { --t-body: 17px; }
+}
+@media (min-width: 768px) {
+  :root { --gutter: 24px; --header-h: 64px; }
+}

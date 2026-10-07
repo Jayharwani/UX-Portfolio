@@ -20,6 +20,12 @@ import { useDiorama, Ambience, MobileScroll3D, useOnScreen } from "./home/motion
 import { usePerfTier, useTierReady } from "./home/perfTier";
 import MemoryParticles from "./home/MemoryParticles";
 
+/* The v3 homepage keeps its own stylesheet and the shadcn theme it was built
+   against. Both left src/index.css when v5 took over the CSS entry, so they
+   now ship only if this component is imported again. */
+import "../styles/globals.css";
+import "../styles/legacy-v3.css";
+
 const IconPlayground = lazy(() => import("./home/IconPlayground"));
 const HeroScene = lazy(() => import("./home/scene/HeroScene"));
 const FlyerGame = lazy(() => import("./home/FlyerGame"));

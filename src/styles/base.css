@@ -1,0 +1,157 @@
+/* v5 base: reset, typography, focus, the two utilities every section needs.
+   Tokens come from tokens.css. No colours are declared here. */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  /* So an anchor jump, and anything that receives focus, never lands under the
+     sticky header (§4.3). */
+  scroll-padding-top: calc(var(--header-h) + 16px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  /* `clip`, not `hidden`. Carried over from globals.css, where it was load
+     bearing and documented as such: per spec overflow-x:hidden forces
+     overflow-y from visible to auto, which made BODY the scroll container.
+     window.scrollY then sits at 0 forever and every scroll-driven effect on
+     the site silently does nothing. `clip` is the one value that clips one
+     axis without promoting the other. The showcase's sticky stage depends on
+     the document being the scroller, so this has to stay. */
+  overflow-x: clip;
+  background: var(--paper);
+  color: var(--ink-1);
+  font-family: var(--font-text);
+  font-size: var(--t-body);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: var(--track-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
+}
+
+/* Headings carry their own size at every use site, so the element defaults are
+   cleared rather than restyled. Display face and weight are the shared part. */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+p { margin: 0; }
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Inherit rather than reset: a button that forgets the page's face is the most
+   common reason a control looks pasted in. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button { background: none; border: none; padding: 0; cursor: pointer; }
+
+a { color: inherit; text-decoration: none; }
+
+img, svg, video, canvas { display: block; max-width: 100%; }
+
+/* Numbers that change or align never reflow their neighbours. */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* The spec layer and Spec mode, and nothing else (§4.2). */
+.mono-spec {
+  font-family: var(--font-spec);
+  font-size: var(--t-spec);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+/* ── focus ────────────────────────────────────────────────────────────────
+   outline, not box-shadow: box-shadow is dropped in forced-colors mode and the
+   ring would disappear for exactly the users who need it most (§10.1). */
+:focus-visible {
+  outline: 2px solid var(--spec);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── utilities ────────────────────────────────────────────────────────────
+   Clipped, not hidden: display:none and visibility:hidden both take the text
+   out of the accessibility tree, which is the opposite of the point. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* First focusable element on the page (§6.8). */
+.skip-link {
+  position: fixed;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: var(--z-skip);
+  padding: var(--s-3) var(--s-4);
+  background: var(--paper);
+  color: var(--ink-1);
+  font-size: var(--t-small);
+  font-weight: 500;
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-pop);
+  transform: translateY(calc(-100% - var(--s-5)));
+}
+.skip-link:focus-visible { transform: none; }
+
+/* ── content gaps ─────────────────────────────────────────────────────────
+   Any [FILL: ...] or [VERIFY: ...] still in src/content renders like this in
+   development, so a gap is visible on the page and not only in a build log.
+   scripts/check-content.mjs stops the production build while any remain, so
+   this can never reach a deploy (§9.4). */
+mark.todo {
+  background: none;
+  color: var(--spec);
+  font-family: var(--font-spec);
+  /* no relative size here: 0.9em inside a 12px .mono-spec paragraph resolved to
+     10.8px, under the 12px floor the type rule sets for every text on the page.
+     The mono face already tells a marker apart from the copy around it. */
+  outline: 1px dashed var(--spec);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+/* ── the grid ─────────────────────────────────────────────────────────────
+   One 12-column container, left aligned, used by every section (§4.3). */
+.shell {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--margin);
+}
+.grid12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--gutter);
+}

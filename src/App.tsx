@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { lazy, Suspense } from "react";
-/* The previous homepage lives on in HomePage.tsx, unimported. Nothing
-   references it, so it and everything it pulled in — the particle canvas,
-   the WebGL hero, matter-js — tree-shake out of the bundle entirely, and it
-   is one import away if this direction is ever reversed. */
+/* Two superseded homepages live on unimported: HomePage.tsx (v3, with its own
+   legacy-v3.css) and Home.tsx. Nothing references either, so they and
+   everything they pull in tree-shake out of the bundle entirely, and each is
+   one import away if a direction is ever reversed. */
 import { ScrollToTop } from "./components/ScrollToTop";
 
 /* Case-study pages split into their own chunks so the homepage loads light */
@@ -13,9 +13,6 @@ const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => 
 const FrictionPage = lazy(() => import("./components/FrictionPage").then((m) => ({ default: m.FrictionPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
-/* A preview of the 3D case-study cards, on their own route so they can be
-   looked at without committing the homepage to them. Lazy, so nothing about
-   them reaches the homepage bundle until they are actually wired in. */
 /* scratch route for the Friction dot engine; not linked, not indexed */
 const DotsLab = lazy(() => import("./components/DotsLab").then((m) => ({ default: m.DotsLab })));
 
@@ -23,50 +20,39 @@ const CardsPreview = lazy(() =>
   import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
 );
 
-/* The handoff design. It IS the homepage now; the previous one is still in
-   components/Home.tsx, one import away, and in git if this is ever reversed. */
-const HomeV2 = lazy(() => import("./components/HomeV2").then((m) => ({ default: m.HomeV2 })));
+/* v5, the white build. HomeV2 and its dark chrome are gone from the tree:
+   the canvas field, the side rail and the title sequence were deleted with it
+   (HOMEPAGE_REDESIGN.md §11.2). */
+const HomeV5 = lazy(() => import("./components/HomeV5").then((m) => ({ default: m.HomeV5 })));
 
+/* The paper the whole site now sits on. Each case study still paints its own
+   ground in its own scope and sets the body colour in an effect, so none of
+   them shows through to this. */
 function RouteFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0A0E16" }}>
-      <span
-        style={{
-          fontFamily: "'Geist Mono', ui-monospace, monospace",
-          fontSize: 12,
-          letterSpacing: "0.12em",
-          color: "#6A7488",
-          textTransform: "uppercase",
-        }}
-      >
-        loading…
-      </span>
-    </div>
-  );
+  return <div style={{ minHeight: "100svh", background: "var(--paper)" }} />;
 }
 
 export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<HomeV2 />} />
-            <Route path="/signal" element={<SignalCasePage />} />
-            <Route path="/bumper" element={<BumperCasePage />} />
-            <Route path="/headroom" element={<HeadroomPage />} />
-            <Route path="/friction" element={<FrictionPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/cards" element={<CardsPreview />} />
-            <Route path="/dots" element={<DotsLab />} />
-            {/* /chronoweave was indexed before the project was removed, and an
-                unmatched path rendered nothing at all. Anything unknown goes
-                home rather than to a blank page. */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </div>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<HomeV5 />} />
+          <Route path="/signal" element={<SignalCasePage />} />
+          <Route path="/bumper" element={<BumperCasePage />} />
+          <Route path="/headroom" element={<HeadroomPage />} />
+          <Route path="/friction" element={<FrictionPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/cards" element={<CardsPreview />} />
+          <Route path="/dots" element={<DotsLab />} />
+          {/* /chronoweave was indexed before the project was removed, and an
+              unmatched path rendered nothing at all. Anything unknown goes
+              home rather than to a blank page. Phase 9 replaces this with a
+              real 404 that answers with a 404. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

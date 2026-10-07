@@ -1,0 +1,42 @@
+/* v5 motion: the shared keyframes, and the reduced-motion floor.
+   Each phase adds the keyframes it uses; §7.6 is the contract they honour. */
+
+/* In-page anchor jumps only. Native scroll is never wrapped (§8.1). */
+html { scroll-behavior: smooth; }
+
+/* ── the reduced-motion floor ─────────────────────────────────────────────
+   A floor, not the whole contract. Every animated element still needs its own
+   collapsed state, because this rule can only stop motion: it cannot tell a
+   component that its frame should start shipped rather than spec, or that the
+   hero should skip its intro. §7.6 lists what each one does instead, and the
+   components implement it. What this guarantees is that nothing a phase forgets
+   can move.
+
+   Durations collapse to 1ms rather than to `none`, so transitionend and
+   animationend still fire and a component waiting on one does not hang.
+
+   Colour and opacity feedback becomes instant, which §7.6 allows: it caps
+   reduced-motion feedback at --d-1, and instant is inside that. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+/* ── the ink fill ─────────────────────────────────────────────────────────
+   "Then ships it." filling left to right is the one thing the hero does, and
+   it is pure CSS so the headline never waits on a script (§7.2). Driven by the
+   registered --ink-fill, which is why it can be interpolated at all; the
+   element it runs on is in Phase 3. */
+@keyframes ink-fill {
+  from { --ink-fill: 0%; }
+  to { --ink-fill: 100%; }
+}

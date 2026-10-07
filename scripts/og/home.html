@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>og:home</title>
+    <!--
+      The source of public/og/home.png. Rendered by scripts/og.mjs at exactly
+      1200x630, which is why nothing here is responsive.
+
+      HOMEPAGE_REDESIGN.md §12.2: white paper, "Designs it." as an outline and
+      "Then ships it." in ink at about 120px, one spec-blue baseline guide under
+      line 1, the byline at 32px bottom left, and a 60px safe area all round.
+
+      The page it advertises, in one frame: the spec, then the thing shipped.
+
+      Fonts are read straight out of public/fonts with a relative URL, so this
+      file renders correctly from file:// with no server.
+    -->
+    <style>
+      @font-face {
+        font-family: "Geist Display";
+        src: url("../../public/fonts/Geist-SemiBold-latin.woff2") format("woff2");
+        font-weight: 600;
+      }
+      @font-face {
+        font-family: "Geist Text";
+        src: url("../../public/fonts/Geist-Variable-latin.woff2") format("woff2");
+        font-weight: 100 900;
+      }
+
+      :root {
+        --paper: #ffffff;
+        --ink: #000000;
+        --ink-2: #565d67;
+        --spec-line: #3d7bff;
+        --safe: 60px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        background: var(--paper);
+        font-family: "Geist Text", sans-serif;
+        overflow: hidden;
+      }
+
+      .card {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: var(--safe);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .line {
+        display: block;
+        position: relative;
+        width: max-content;
+        font-family: "Geist Display", sans-serif;
+        font-weight: 600;
+        font-size: 120px;
+        line-height: 0.92;
+        letter-spacing: -0.045em;
+        -webkit-text-stroke: 1.44px var(--ink); /* 0.012em at 120px */
+      }
+      /* the spec */
+      .line--design { color: transparent; }
+      /* shipped */
+      .line--ship { color: var(--ink); }
+
+      /* One guide, on line 1's baseline. Geist's descent is 0.295em, so the
+         baseline sits that far above the bottom of the inline box. */
+      .guide {
+        position: absolute;
+        left: 0;
+        bottom: calc(0.295em - 0.5px);
+        width: calc(100% + 96px);
+        height: 1px;
+        background: var(--spec-line);
+      }
+
+      .byline {
+        position: absolute;
+        left: var(--safe);
+        bottom: var(--safe);
+        font-size: 32px;
+        font-weight: 400;
+        letter-spacing: -0.011em;
+        color: var(--ink-2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <span class="line line--design">Designs it.<i class="guide"></i></span>
+      <span class="line line--ship">Then ships it.</span>
+      <span class="byline">Jay Harwani, product designer</span>
+    </div>
+  </body>
+</html>

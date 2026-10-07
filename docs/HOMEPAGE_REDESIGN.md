@@ -50,7 +50,7 @@ Jay has not answered the open questions yet. Build on these assumptions and keep
 | A1 | Animation engine | GSAP 3.15 (core and ScrollTrigger only) is allowed for the showcase, loaded after first paint. The hero uses CSS only. Scroll stays native. | Use Path B (Section 8.4). Nothing else changes. |
 | A2 | Signature moment | The pinned Spec to Ship showcase (Section 6.3). | Use the stacked layout (Section 6.3.5) at every width. |
 | A3 | Hero meaning | "Designs it." is the outline. "Then ships it." fills with ink. This inverts v4 on purpose. | Swap the two line classes. |
-| A4 | Projects | Showcase: Friction, Headroom, Signal, Bumper. "More work" index: ChronoWeave, Intent, Welspun GCC dashboards, UMBC Cards Lab dashboard. Private work gets a written summary only. | Edit `src/content/home.ts`. |
+| A4 | Projects | Showcase: Friction, Headroom, Signal, Bumper. "More work" index: Intent, Welspun GCC dashboards, UMBC Cards Lab dashboard. ChronoWeave was removed from the site in 84ce7fa and stays removed. Private work gets a written summary only. | Edit `src/content/home.ts`. |
 | A5 | Positioning | "Product designer who writes the front end." GitHub link hidden by a content flag. | Change the copy and set `showGitHub: true`. |
 | A6 | Resume | Public PDF at `/resume.pdf`, with no phone number or street address. | Remove the resume entry in `home.ts`. |
 | A7 | Photo | About shows a portrait when `public/about/portrait.avif` exists. The layout works without it. | Delete the file. |
@@ -370,7 +370,7 @@ A spring's shape depends only on its damping ratio; stiffness sets its duration.
 @property --reveal  { syntax: "<number>"; inherits: true; initial-value: 0; }
 @property --enter   { syntax: "<number>"; inherits: true; initial-value: 0; }
 @property --exit    { syntax: "<number>"; inherits: true; initial-value: 0; }
-@property --spec    { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --draw    { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 :root {
   color-scheme: light;
@@ -747,7 +747,7 @@ Purpose: proof. Each of the four flagship products appears as a spec, then ships
 - Frame box: `width: 100%; aspect-ratio: 16 / 11; max-height: calc(100svh - var(--header-h) - 176px); align-self: center;`.
   - Browser frames fill the box.
   - Phone frames are centered at 100% of the box height with `aspect-ratio: 9 / 19.5`.
-- All four copy blocks and all four frames share one grid cell each, stacked in place. The motion engine writes `--enter`, `--exit`, `--spec` and `--reveal` on each project's copy and frame elements (Section 8.2).
+- All four copy blocks and all four frames share one grid cell each, stacked in place. The motion engine writes `--enter`, `--exit`, `--draw` and `--reveal` on each project's copy and frame elements (Section 8.2).
 - The stage label "Selected work" is an h2 styled at `--t-small` in `--ink-2`, top left of the stage.
 
 #### 6.3.3 Project copy block
@@ -851,7 +851,6 @@ Layout:
 
 | Name | Description (at most 70 characters) | Kind | Link | Year |
 |---|---|---|---|---|
-| ChronoWeave | A time tool for ADHD, built in a 48-hour hackathon. | Case study | `/chronoweave` | `[FILL]` |
 | Intent | One productivity app, built in React Native and in Kotlin. | `[FILL: case study, repository or private]` | `[FILL]` | `[FILL]` |
 | Welspun GCC dashboards | Enterprise dashboards for `[FILL: team or function]`. | Private work | none | `[FILL]` |
 | UMBC Cards Lab | A surveillance dashboard for military robot operators. | `[FILL]` | `[FILL]` | `[FILL]` |
@@ -1156,7 +1155,7 @@ The scroll engine writes four unitless custom properties per project, plus one p
 |---|---|---|---|
 | `--enter` | `copies[i]` and `frames[i]` | 0 to 1 | The project enters (copy lines rise, frame fades in) |
 | `--exit` | `copies[i]` and `frames[i]` | 0 to 1 | The project leaves (copy lines rise out, frame fades out) |
-| `--spec` | `frames[i]` | 0 to 1 | Annotations are drawn |
+| `--draw` | `frames[i]` | 0 to 1 | Annotations are drawn |
 | `--reveal` | `frames[i]` | 0 to 1 | The live layer is revealed left to right |
 | `--fill` | `fills[i]` | 0 to 1 | Progress nav fill |
 
@@ -1180,7 +1179,7 @@ CSS turns the numbers into transforms and clip-paths. Because CSS is the source 
   .progress .fill { transform: scaleX(var(--fill)); transform-origin: left center; }
 }
 
-/* Both layouts. The stacked layout sets --spec and --reveal from component state. */
+/* Both layouts. The stacked layout sets --draw and --reveal from component state. */
 .frame { container-type: inline-size; }
 .frame .layer-live { clip-path: inset(0 calc((1 - var(--reveal)) * 100%) 0 0); }
 .frame .scanline {
@@ -1190,13 +1189,13 @@ CSS turns the numbers into transforms and clip-paths. Because CSS is the source 
 /* --x is each annotation's left edge as a fraction of the frame width, set once by JS.
    An annotation stays visible until the scanline passes it, then fades over 10% of the width. */
 .frame .annotation {
-  opacity: calc(var(--spec) * clamp(0, 1 - (var(--reveal) - var(--x)) * 10, 1));
+  opacity: calc(var(--draw) * clamp(0, 1 - (var(--reveal) - var(--x)) * 10, 1));
 }
 
 /* Stacked layout states (below 1024px, or with reduced motion at any width).
-   The pinned layout never sets data-state: there the engine owns --spec and --reveal. */
-.frame-link[data-state="spec"]    { --spec: 1; --reveal: 0; }
-.frame-link[data-state="shipped"] { --spec: 1; --reveal: 1; }
+   The pinned layout never sets data-state: there the engine owns --draw and --reveal. */
+.frame-link[data-state="spec"]    { --draw: 1; --reveal: 0; }
+.frame-link[data-state="shipped"] { --draw: 1; --reveal: 1; }
 @media (prefers-reduced-motion: no-preference) {
   .frame-link[data-state] { transition: --reveal var(--d-4) var(--ease-in-out); }
 }
@@ -1230,7 +1229,7 @@ export function mountShowcaseMotion({ section, copies, frames, fills }: Els, onS
         tl.fromTo([copies[i - 1], frames[i - 1]], { "--exit": 0 }, { "--exit": 1, duration: 0.12 }, i);
         tl.fromTo([copy, frames[i]], { "--enter": 0 }, { "--enter": 1, duration: 0.12 }, i);
       }
-      tl.fromTo(frames[i], { "--spec": 0 }, { "--spec": 1, duration: 0.1 }, i + 0.12);
+      tl.fromTo(frames[i], { "--draw": 0 }, { "--draw": 1, duration: 0.1 }, i + 0.12);
       tl.fromTo(frames[i], { "--reveal": 0 }, { "--reveal": 1, duration: 0.28 }, i + 0.4);
       tl.fromTo(fills[i], { "--fill": 0 }, { "--fill": 1, duration: 1 }, i);
       tl.call(() => {
@@ -1279,7 +1278,7 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
 
 type Els = { section: HTMLElement; copies: HTMLElement[]; frames: HTMLElement[]; fills: HTMLElement[] };
-const PROPS = ["--enter", "--exit", "--spec", "--reveal", "--fill"];
+const PROPS = ["--enter", "--exit", "--draw", "--reveal", "--fill"];
 
 export function mountShowcaseMotionNative({ section, copies, frames, fills }: Els, onShip: (i: number) => void) {
   const mq = window.matchMedia("(min-width: 1024px) and (prefers-reduced-motion: no-preference)");
@@ -1299,7 +1298,7 @@ export function mountShowcaseMotionNative({ section, copies, frames, fills }: El
         el.style.setProperty("--enter", String(i === 0 ? 1 : seg(p, 0, 0.12)));
         el.style.setProperty("--exit", String(seg(p, 1, 1.12)));
       }
-      frames[i].style.setProperty("--spec", String(seg(p, 0.12, 0.22)));
+      frames[i].style.setProperty("--draw", String(seg(p, 0.12, 0.22)));
       frames[i].style.setProperty("--reveal", String(seg(p, 0.4, 0.68)));
       fills[i].style.setProperty("--fill", String(seg(p, 0, 1)));
       if (p >= 0.68 && !shipped.has(i)) { shipped.add(i); onShip(i); }
@@ -1759,10 +1758,6 @@ Acceptance: `curl -sI https://jayharwani.com/does-not-exist` returns `404`.
 - [Signal](https://jayharwani.com/signal): a live map of DMV tech and design events. Live: https://jayharwani.github.io/dmv-map/
 - [Bumper](https://jayharwani.com/bumper): a Chrome extension that adds a pause at checkout before an impulse buy.
 
-## More work
-
-- [ChronoWeave](https://jayharwani.com/chronoweave): a time tool for ADHD, built in a 48-hour hackathon.
-
 ## Contact
 
 - Email: harwanijay9498@gmail.com
@@ -1772,7 +1767,7 @@ Acceptance: `curl -sI https://jayharwani.com/does-not-exist` returns `404`.
 
 ### 12.7 Sitemap and robots
 
-- `public/sitemap.xml` lists `/`, `/friction`, `/headroom`, `/signal`, `/bumper` and `/chronoweave`.
+- `public/sitemap.xml` lists `/`, `/friction`, `/headroom`, `/signal`, `/bumper` and `/about`. There is no `/chronoweave`.
 - `public/robots.txt` allows everything and points to the sitemap.
 
 ---
@@ -2200,7 +2195,7 @@ Each row shows the assumption in force until Jay answers.
 | Q1 | Allow GSAP (lazy, showcase only), or stay library-free? | A1: allow GSAP |
 | Q2 | Is the pinned Spec to Ship showcase the right signature moment? | A2: yes |
 | Q3 | Invert v4, so "Designs it." is the outline and "Then ships it." is ink? | A3: yes |
-| Q4 | Which projects lead? Should ChronoWeave, Intent, Welspun and UMBC Cards Lab appear in the index? | A4 |
+| Q4 | Which projects lead? Should Intent, Welspun and UMBC Cards Lab appear in the index? Answered for ChronoWeave: it stays removed. | A4 |
 | Q5 | Product designer, design engineer, or both? Show a GitHub link? | A5: product designer who writes the front end, GitHub hidden |
 | Q6 | Public resume PDF without a phone number? Which version? | A6 |
 | Q7 | Portrait photo in About? | A7: only if provided |
@@ -2209,7 +2204,7 @@ Each row shows the assumption in force until Jay answers.
 | Q10 | Keep Geist, or try a more distinctive display face? | A10: Geist |
 | Q11 | When must v5 be live? | A11: Phases 0 to 6 first |
 | Q12 | Which analytics provider for custom events, if any? | None until chosen |
-| Q13 | Years and kinds for ChronoWeave, Intent, Welspun and UMBC Cards Lab | `[FILL]` |
+| Q13 | Years and kinds for Intent, Welspun and UMBC Cards Lab | `[FILL]` |
 | Q14 | Friction's one-line description, and how Signal collects its events | `[VERIFY]` and `[FILL]` |
 | Q15 | Is "I usually reply within a day." true? | `[VERIFY]` |
 
@@ -2257,27 +2252,34 @@ Each row shows the assumption in force until Jay answers.
 Recorded by Claude Code during Phase 0. Section 0.2 says the codebase wins on
 facts and that disagreements stop for Jay. These are the disagreements.
 
-### 22.1 Blocking: ChronoWeave was deleted from the repository
+### 22.1 Resolved: ChronoWeave stays deleted
 
 `chore: remove ChronoWeave` (commit 84ce7fa, on `main`, deployed) removed the
 project, its route, its eleven files, its sitemap entry and its accent token.
 This file still lists it in Section 6.4 (More work), Section 9.3, Section 12.6
 (`llms.txt`) and Section 12.7 (sitemap), and assumption A4 names it.
 
-Nothing is built from those sections until Jay says whether ChronoWeave comes
-back or stays deleted.
+Jay's answer, October 7: it stays gone. Those sections are corrected above,
+`src/content/home.ts` has no ChronoWeave entry, and the sitemap already did
+not list one.
 
-### 22.2 `--spec` is declared twice, as two different types
+### 22.2 Resolved: the showcase driver is `--draw`, the colour keeps `--spec`
 
 Section 4.1 defines `--spec: #1D5FE0`, a color. Section 4.6 registers
 `@property --spec { syntax: "<number>"; initial-value: 0 }` for the showcase
 driver, then sets `--spec: #1d5fe0` in `:root`.
 
-A registered custom property rejects a value that does not match its syntax, so
-`--spec` would compute to `0` everywhere: every `color: var(--spec)`, every
-focus ring and every spec chip would be invalid. Resolve before Phase 1 by
-renaming one of the two. The driver is the cheaper rename, since the color is
-referenced throughout Sections 4, 6 and 10.
+A registered custom property rejects a value that does not match its syntax,
+so `--spec` computed to `0` everywhere. Measured in Chrome against the exact
+token block: `--spec` resolved to the string `"0"` and `color: var(--spec)` to
+`rgb(0, 0, 0)`, while the unregistered `--spec-line` resolved correctly to
+`rgb(61, 123, 255)`. Every focus ring, spec chip and spec-blue text would have
+rendered black.
+
+Jay's answer, October 7: rename the driver. It is `--draw` throughout Sections
+4.6, 6.3.2, 8.2, 8.3 and 8.4 above, and in `src/styles/tokens.css`. `--spec`
+is the colour and nothing else. `--draw` also reads better beside `--reveal`:
+one draws the annotations, the other reveals the live layer.
 
 ### 22.3 Facts corrected against the repository
 
@@ -2325,3 +2327,73 @@ components. `src/data/mockups.ts` holds four HTML strings, generated from
 `dangerouslySetInnerHTML`, and animated by CSS keyframes in the generated
 `src/styles/v2-ported.css`. Phase 4 is therefore a rewrite into real React
 components, not a port, and both generators retire with v4.
+
+---
+
+## 23. Phase 1 record (October 7, 2026)
+
+What the foundation measured once it was in place.
+
+### 23.1 Budgets
+
+| Metric | Before | After | Budget |
+|---|---|---|---|
+| Homepage JS | 69.4 KB gzip | **62.1 KB gzip** | 85 |
+| Homepage CSS | 26.9 KB gzip | **12.2 KB gzip** | not budgeted |
+| Font files | 2 requests, 51 KB, third party | **3 files, 40 KB, same origin** | 3 files, 45 KB |
+| Third-party requests | 5 (Google Fonts, Fontshare, Cloudflare) | **0** | 0 |
+| Smallest text on the page | 8 px | **12 px** | 12 px floor |
+| SVG `<text>` nodes in the H1 | 21 | **0** | |
+
+The subsets measured 12, 18 and 10 KB against the 12, 17 and 9 the brief
+predicted. "Then ships it." renders 680 px wide at 120 px in the share image,
+which is 5.67 em: the figure Section 4.2 derived from HarfBuzz, confirmed by a
+second route.
+
+### 23.2 Decisions taken inside Phase 1
+
+- **A `Geist Mono` alias.** All five case studies set `font-family: "Geist Mono"`
+  in their own `.mono` rule, and that name used to resolve through the Google
+  stylesheet this phase removes. `tokens.css` declares a fourth `@font-face`
+  under that name pointing at the same subset file, so no case study loses its
+  monospace and no fourth file is fetched.
+- **Clash Display was already dead.** Line 64 of `case.css` is a comment about
+  having removed it, not a rule. Every live route used exactly two faces, Geist
+  and Geist Mono, so dropping both third-party stylesheets cost nothing. The
+  six unused families went with them.
+- **Project accents are derived, not chosen.** Three of the four were tuned for
+  a dark ground and read 1.64:1 to 2.41:1 on paper. Each is darkened at
+  constant OKLCH hue, holding as much chroma as the gamut allows, until it
+  clears 4.5:1. Running the same operation on Headroom's dark mint returns hue
+  163 at 4.51:1 against the hand-sampled #0A7A52 at hue 162 and 5.36:1, so the
+  method reproduces a human's choice. `src/content/home.ts` carries the
+  working. Friction lands at hue 181 and Signal at 199, close enough to be
+  worth a look in Phase 4.
+- **`src/index.css` is now four imports.** Its other 2,216 lines were the v3
+  homepage's stylesheet and moved to `legacy-v3.css`, imported by
+  `HomePage.tsx` alone. `styles/globals.css`, a stock shadcn theme no live
+  route uses, left the entry with it; its bare `.dark` block was the collision
+  that once rendered Headroom's section number at 1.1:1. One rule was load
+  bearing and is carried into `base.css`: `body { overflow-x: clip }`.
+- **The homepage is a content skeleton.** `HomeV5.tsx` renders every section
+  from `src/content/home.ts` as semantic markup on the tokens, and nothing
+  else. Phases 2 to 6 replace each stand-in. The v4 sections it supersedes are
+  not deleted yet: `v2/Work.tsx` is what Phase 4 ports from and `v2/RouteMap.tsx`
+  and `v2/Contact.tsx` are what Phase 6 does, so they stay orphaned until the
+  phase that replaces them.
+
+### 23.3 Open, not fixed in this phase
+
+- **`/favicon.ico` 404s** on every route. It did before this phase too, so it
+  is not a regression, but the definition of done asks for zero failed
+  requests. It needs a mark, which is Jay's call rather than mine.
+- **The display font preload reaches every route.** `index.html` is shared by
+  all of them in a single-page app, and three of the four case studies do not
+  use Geist Display, so they fetch 12 KB they discard. It buys the homepage's
+  LCP, which is the budget that matters most, and Phase 9's per-route HTML
+  removes the waste structurally.
+- **`/about` is still a v3 page.** Its headings asked for Clash Display and now
+  fall through to a system sans. It is not in the v5 section list, nothing on
+  the new homepage links to it, and Phase 8 owns it.
+- **Tailwind is still in the build.** 19 files use its utilities, `App.tsx` and
+  `v2/Work.tsx` among them. Phase 8.
