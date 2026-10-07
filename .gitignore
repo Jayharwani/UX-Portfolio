@@ -6,6 +6,6 @@ dist
 .env
 .env.*
 
-# a working copy of reference/index.html, served by vite so it can be compared
-# against during the build. The committed source of truth is reference/.
+# a working copy of the v4 reference, served by vite so it can be compared
+# against during the build. The committed source is docs/archive/v4/reference/.
 public/_ref/

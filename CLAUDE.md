@@ -1,70 +1,55 @@
 # CLAUDE.md
 
-Project instructions for Claude Code. Read this before touching anything.
+Project rules for Claude Code. Read this and docs/HOMEPAGE_REDESIGN.md before touching anything.
 
 ## What this is
 
-Jay Harwani's portfolio homepage (jayharwani.com). A single dark, cinematic
-page: a letterbox title sequence, a live 3D canvas background, a migration
-route graphic, a work index with animated project previews, and a contact
-section.
-
-`reference/index.html` is a **working, self-contained implementation** of the
-finished design. It is the visual source of truth. When the spec and the
-reference disagree, the reference wins. Open it in a browser before you start.
+Jay Harwani's portfolio (jayharwani.com). v5 is a white, ink-on-paper design. The homepage
+concept is "Spec to Ship": each project appears as a spec, then ships into a live product.
+docs/HOMEPAGE_REDESIGN.md is the source of truth for the redesign.
 
 ## Stack
 
-- React + TypeScript + Vite
-- Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
-  CSS-in-JS, or a UI kit.**
-- **The homepage stays library-free.** CSS transitions, CSS keyframes,
-  `requestAnimationFrame`, and one 2D canvas. No Lenis, no scroll-jacking, no
-  transform-based smooth-scroll wrapper. This is deliberate, not an oversight.
-- **Case studies may use what is already in `package.json`** — GSAP (with
-  ScrollTrigger, Flip, SplitText, Observer) and matter-js — and must import
-  them dynamically so they never reach the homepage bundle. The earlier rule
-  banned these outright while `gsap`, `three`, `@react-three/fiber`, `motion`
-  and `matter-js` all sat in dependencies and `motion` was imported in
-  eighteen files, so it described an intention rather than the repo.
-- **Do not add new animation or UI dependencies** without asking. Tailwind is
-  installed but unused in `src/`; leave it that way. No component kits.
-- Only external dependency allowed: Geist + Geist Mono from Google Fonts.
+- React 18.3, TypeScript and Vite, with React Router 7. Hosted on Cloudflare.
+- Plain CSS with custom properties. Tokens live in src/styles/tokens.css.
+  Do not introduce Tailwind, styled-components, CSS-in-JS or a UI kit.
+- Animation uses CSS, the Web Animations API and requestAnimationFrame.
+  GSAP core and ScrollTrigger are allowed only inside the lazy showcase motion module.
+  Not allowed: Framer Motion or Motion, Lenis or any smooth-scroll wrapper, ScrollSmoother,
+  the ScrollTrigger pin option, Three.js, Lottie.
+- Fonts: Geist and Geist Mono only, as self-hosted Latin subsets in public/fonts.
 
 ## Hard rules
 
-1. **Performance.** Animate only `transform`, `opacity`, `filter`, and canvas.
-   Never animate `width`, `height`, `top`, or `left` in a loop.
-   Cap canvas DPR at 2. Pause the render loop on `document.hidden`.
-   Target 60fps on a 2019 laptop.
-2. **No debug code in production.** No `console.log`, no commented-out blocks,
-   no `TODO` left in shipped files.
-3. **Scroll observation uses IntersectionObserver**, never a `scroll` event
-   listener for reveals. One `scroll` listener is permitted, for the smoothed
-   scroll value that drives the canvas camera.
-4. **Native scroll stays native.** Do not add a transform-based smooth-scroll
-   wrapper — it breaks the `position: sticky` preview panel in the work section.
-   Smoothness comes from lerping the scroll *value*, not from moving the page.
-5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
-   collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **Locked palette on the homepage.** Use the tokens in SPEC.md. Do not add
-   colours there.
-7. **A case study is themed by its own product, not by the template.**
-   `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
-   light because the app is a warm off-white with a deep emerald; its accent
-   `#0A7A52` is sampled from the running product, not chosen. When adding a
-   theme, re-point the existing tokens rather than writing new rules per
-   component, and re-run the contrast audit — ink on paper needs more alpha
-   than paper on ink to reach the same ratio.
-8. **Accessibility.** Visible focus rings, real `<a>` elements for links, no
-   text under 10.5px, no interactive element under 24×24px.
+1. Performance. Animate only transform, opacity, clip-path, background-color and the
+   registered custom properties that feed them. Budgets are in Section 11 of the redesign doc.
+2. No debug code in production: no console output, no commented-out blocks, no TODOs.
+3. Reveals use IntersectionObserver. At most one scroll listener, and it only schedules a frame.
+4. Native scroll stays native. Pinning uses position: sticky.
+5. prefers-reduced-motion is not optional. Follow the reduced motion contract (Section 7.6).
+6. Locked palette and type. Use tokens only. Do not add colors, fonts or radius values.
+7. Accessibility is WCAG 2.2 AA: visible focus rings, real links and buttons, no text under
+   12px, targets at least 24 by 24px, and one H1 whose name matches its visible text.
+8. Content lives in src/content. Never invent facts or numbers. Use [FILL: ...] or
+   [VERIFY: ...]. The prebuild content check must pass before any production build.
+9. Copy rules: plain English, sentence case, no em dashes or en dashes, no all-caps labels,
+   no numbering unless the content is a real sequence, no middle-dot meta strings.
+10. One bold moment per page. No fade-and-slide-up on sections. No custom cursors.
 
 ## Working style
 
-- Build one section at a time and check it against `reference/index.html`.
-- Extract shared logic into `src/lib/` and `src/hooks/`. Do not inline the
-  canvas engine into a component.
-- Keep components under ~150 lines. If one grows past that, split it.
-- Clean up every `requestAnimationFrame`, `IntersectionObserver`, and event
-  listener in the `useEffect` return. Leaks here cause the page to slow down
-  after route changes.
+- Work one phase at a time (Section 16). Stop after each phase and report its acceptance
+  checks as pass or fail, with screenshots at 390, 768 and 1440px.
+- Shared logic goes in src/lib and src/hooks. Keep components under about 150 lines.
+- Clean up every animation frame, observer, listener and GSAP context in effect cleanups.
+- If the spec and the codebase disagree on a fact, stop and ask.
+
+## Where v4 went
+
+The dark cinematic build is archived, not deleted:
+
+- docs/archive/v4/SPEC.md, docs/archive/v4/BUILD.md
+- docs/archive/v4/reference/index.html, the v4 visual source of truth.
+  scripts/extract-mockups.py and scripts/port-reference-css.py read it from
+  that path and generate src/data/mockups.ts and src/styles/v2-ported.css.
+  Those two generated files belong to v4 and are retired with it.

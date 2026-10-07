@@ -21,7 +21,7 @@ import sys
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SRC = "reference/index.html"
+SRC = "docs/archive/v4/reference/index.html"
 OUT = "src/styles/v2-ported.css"
 PREFIX = ".v2"
 KF_PREFIX = "v2-"
