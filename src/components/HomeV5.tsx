@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { Link } from "react-router";
-import { about, contact, flagship, footer, head, moreWork, site } from "../content/home";
+import { about, contact, footer, head, moreWork, site } from "../content/home";
 import { NOW_STALE_DAYS, now } from "../content/now";
 import { Header } from "./v5/Header";
 import { Hero } from "./v5/Hero";
+import { Showcase } from "./v5/Showcase";
 import { Marker } from "./v5/Marker";
 import "../styles/home.css";
 
@@ -49,37 +49,7 @@ export function HomeV5() {
       <main id="content" className="shell">
         <Hero />
 
-        {/* ── selected work ───────────────────────────────────── Phase 4 and 5 */}
-        <section id="work" aria-labelledby="work-title">
-          <h2 id="work-title">Selected work</h2>
-          {flagship.map((p) => (
-            <article key={p.slug} aria-labelledby={`p-${p.slug}`}>
-              <h3 id={`p-${p.slug}`}>{p.name}</h3>
-              <p>{p.problem}</p>
-              <dl>
-                <dt className="visually-hidden">Role</dt>
-                <dd>{p.role}</dd>
-                <dt className="visually-hidden">Stack</dt>
-                <dd>{p.stack}</dd>
-                <dt className="visually-hidden">Year</dt>
-                <dd className="tnum">{p.year}</dd>
-              </dl>
-              <p>
-                <Marker>{p.outcome}</Marker>
-              </p>
-              <p className="mono-spec">
-                <Marker>{p.specNote}</Marker>
-              </p>
-              <p>
-                <Link to={p.caseStudyHref}>Read case study</Link>{" "}
-                <a href={p.liveHref} target="_blank" rel="noopener noreferrer">
-                  {p.liveLabel}
-                  <span className="visually-hidden"> (opens in a new tab)</span>
-                </a>
-              </p>
-            </article>
-          ))}
-        </section>
+        <Showcase />
 
         {/* ── more work ───────────────────────────────────────────── Phase 6 */}
         <section id="more-work" aria-labelledby="more-title">

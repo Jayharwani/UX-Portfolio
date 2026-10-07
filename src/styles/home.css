@@ -401,15 +401,17 @@
 }
 
 /* ══ scaffolding ══════════════════════════════════════════════════════════
-   The sections below the hero are still the Phase 1 content skeleton. Their
-   links are bare inline anchors, which at 15px over a 1.6 line box measure
-   21px tall: under the 24px minimum target (§10.1), measured at 390px.
+   More work and Contact are still the Phase 1 content skeleton. Their links
+   are bare inline anchors, which at 15px over a 1.6 line box measure 21px
+   tall: under the 24px minimum target (§10.1), measured at 390px.
 
-   Phases 4 and 6 replace every one of them with a designed control, and this
-   block goes with the last of them. Until then it keeps the branch from
-   carrying a target-size failure through four phases.
+   Phase 6 replaces both with designed controls and this block goes with them.
+   #work left the list in Phase 4, which gave it real controls that carry
+   their own target size. Leaving it in cost an hour: `display: inline-block`
+   on every anchor in the section also hit .frame-link, so every frame was
+   shrink-to-fit and Headroom's phone, whose content is absolutely positioned,
+   collapsed to its 20px of padding.
    ═══════════════════════════════════════════════════════════════════════ */
-#work a,
 #more-work a,
 #contact a {
   display: inline-block;

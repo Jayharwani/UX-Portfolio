@@ -2542,3 +2542,87 @@ to prevent.
   Clearing it there does not clear it for the site, so a harness that navigates
   away and back gets one intro and then a run of identical "finished page"
   frames. Clear it on the page, then reload.
+
+---
+
+## 26. Phase 4 record (October 7, 2026)
+
+The showcase, static. Four products, each as a spec and then as itself.
+
+### 26.1 Acceptance
+
+| Check | Result |
+|---|---|
+| All four render both states at 390, 768, 1440 | **Pass** |
+| The segmented control works by keyboard | **Pass**, Enter, Space, ArrowLeft and ArrowRight, with real key dispatch |
+| Counters show their final values in the DOM | **Pass**, the figure is the final value, never a zero |
+| The contrast checks pass | **Pass**, 21 text colours measured, 0 failures |
+
+Lighthouse: performance 98 mobile and 100 desktop, accessibility **100** with
+no failing audits, SEO 100, CLS 0.0002. LCP moved +32 ms on mobile and +7 ms
+on desktop for four added frames. No text under 12 px and no target under
+24 px at any of the three widths.
+
+### 26.2 One tree, two states
+
+The spec layer is not a second drawing of each screen. It is the screen's own
+tree rendered with `wire` set: a line of text becomes a 6 px bar, a filled area
+becomes dashed paper, colour drops out. Two drawings would be two things to
+keep in step and would stop matching the first time a preview changed.
+
+The shipped layer paints its own `--paper` and is clipped over the spec one, so
+the reveal is a wipe rather than a crossfade, and the dot grid fades out on the
+same `--reveal` that drives it.
+
+### 26.3 The numbers are the case studies' own
+
+- **Friction** reads 9,994 and 150 because section 02 of `/friction` reads
+  "9,994, 3,319, 150".
+- **Headroom** reads $1,730 over rent $650 and wifi $120, which is the
+  arithmetic `HeadroomPage.tsx` says was read off the running app, and the
+  figure its own hero counts to.
+- **Signal** counts the real thing. The map publishes `events.json` with CORS
+  open, so §6.3.6's live-data path applies: 267 events, 46 of them inside seven
+  days of the file's own `generatedAt`, from five named sources all reporting
+  ok. The fetch lands in about 430 ms and the dated reading in content is the
+  fallback, not the value on screen. That file also answers half of Signal's
+  open question, so its spec note now names the five sources and the refresh
+  cadence is the part still unknown.
+- **Bumper** carries its own words and no cart total. The v4 preview showed
+  $89.00, which is a number nobody measured.
+
+### 26.4 Three deviations from §6.3, and why
+
+- **The logic note sits beside the frame, not inside it.** §6.3.6 makes it one
+  of the four in-frame annotations. A preview is `aria-hidden` and `inert`, so
+  a note inside one is a sentence no screen reader will ever read. Outside, it
+  is real text in the document.
+- **The measured annotations are not drawn yet.** Phase 4's task was to add the
+  `data-spec` attributes, and they are there and resolving: Friction's figure
+  reports `type=88/88`, Headroom's `type=35/35`, Bumper's buttons `target=58`.
+  Drawing them is the spec phase of the §7.3 scroll map, which is Phase 5.
+- **No target annotation on a Headroom bill row.** The annotation measures the
+  element as drawn, and a row that is 17 px tall in a 270 px preview would put
+  "Target 17" on screen: true of the picture, false about the product.
+
+### 26.5 Two bugs worth naming
+
+- **Every frame was shrink-to-fit, and the phone collapsed to 20 px.** The
+  Phase 2 scaffold rule gave `display: inline-block` to every anchor in `#work`,
+  which also caught `.frame-link`. Headroom's content is absolutely positioned,
+  so with no intrinsic width its frame rendered as its own padding. `#work` has
+  real controls now and left the scaffold rule, which §24.4 had said would
+  happen in the phase that designed the section.
+- **Both layers painted at once.** `--draw` had been wired to the spec layer's
+  opacity, but it gates annotations; the layer underneath is meant to be
+  occluded by an opaque shipped layer, and the shipped layer had no background,
+  so the wireframe showed through every gap in the real screen.
+
+### 26.6 A measurement note
+
+A contrast audit resolved 13 false failures before it resolved any real ones:
+the 1x1 canvas used to resolve `color-mix` and `oklab` was never cleared, so a
+transparent `fillStyle` left the previous pixel and every colour after the
+first transparent one read as that stale value. `globalCompositeOperation =
+"copy"` makes the fill replace rather than composite. The same trap as reading
+`oklch()` with a number regex, one layer down.

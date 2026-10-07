@@ -33,6 +33,8 @@ export interface FlagshipProject {
   specNote: string;
   /** only where a public JSON endpoint exists */
   liveDataUrl?: string;
+  /** the figure the shipped preview shows, and what it counts */
+  figure?: { value: number; label: string; prefix?: string; asOf?: string };
 }
 
 export interface IndexItem {
@@ -140,6 +142,9 @@ export const flagship: FlagshipProject[] = [
     frame: "browser",
     specNote:
       "[VERIFY: Reads public App Store and Google Play reviews every week and groups the complaints that repeat.]",
+    /* the case study's own figure: 9,994 read, 3,319 past the rules, 150 to
+       the model. The preview shows the first of the three. */
+    figure: { value: 9994, label: "public reviews read" },
   },
   {
     slug: "headroom",
@@ -155,6 +160,9 @@ export const flagship: FlagshipProject[] = [
     accent: "#0A7A52", // sampled off the running app, hue 162, 5.36:1 on paper
     frame: "phone",
     specNote: "Safe to spend is your balance minus the bills due before payday.",
+    /* $2,500 balance less rent $650 and wifi $120, read off the running app.
+       The same arithmetic and the same figure as the /headroom hero. */
+    figure: { value: 1730, label: "safe to spend", prefix: "$" },
   },
   {
     slug: "signal",
@@ -169,7 +177,14 @@ export const flagship: FlagshipProject[] = [
     liveLabel: "Open the map",
     accent: "#008489", // from cyan #5FD3D8, hue 199, 4.51:1 on paper
     frame: "browser",
-    specNote: "[FILL: how Signal collects its events, and how often they update]",
+    /* Read off the map's own events.json, which reports five sources, all of
+       them reporting ok, across the dc and baltimore metros. How often it
+       regenerates is not in the file, so that half is still open. */
+    specNote: "[VERIFY: Collects from five public event sources across DC and Baltimore.]",
+    /* The map publishes its own data, so the preview counts the real thing
+       and falls back to this reading if the fetch fails (6.3.6). */
+    liveDataUrl: "https://jayharwani.github.io/dmv-map/events.json",
+    figure: { value: 46, label: "events this week", asOf: "October 2026" },
   },
   {
     slug: "bumper",
@@ -187,6 +202,8 @@ export const flagship: FlagshipProject[] = [
     accent: "#927139", // from gold #E9C58B, hue 79, 4.51:1 on paper
     frame: "browser",
     specNote: "Asks one question at checkout before an impulse buy.",
+    /* no figure: the cart in the preview is set dressing, and a total on it
+       would be a number nobody measured */
   },
 ];
 

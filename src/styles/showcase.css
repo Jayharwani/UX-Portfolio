@@ -1,0 +1,450 @@
+/* Selected work. HOMEPAGE_REDESIGN.md §6.3, §6.8.
+
+   Phase 4 is the stacked layout at every width: both states, both controls,
+   no scroll choreography. Phase 5 adds the pinned stage above 1024px and the
+   engine that drives --enter, --exit, --draw and --reveal. */
+
+.showcase { margin-top: var(--section-gap); }
+
+.stage-label {
+  font-family: var(--font-text);
+  font-size: var(--t-small);
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+/* reachable by keyboard, invisible to everyone else until it has focus */
+.skip-inline { position: absolute; left: -9999px; }
+.skip-inline:focus {
+  position: static;
+  display: inline-block;
+  margin-bottom: var(--s-4);
+  font-size: var(--t-small);
+  font-weight: 500;
+}
+
+.project {
+  display: grid;
+  gap: var(--s-7);
+  margin-top: var(--s-10);
+  padding-top: var(--s-10);
+  border-top: 1px solid var(--line);
+}
+.project:first-child { border-top: 0; }
+
+@media (min-width: 768px) {
+  .project {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+  }
+  .project-copy { grid-column: 1 / 6; }
+  .project-frame { grid-column: 6 / 13; }
+}
+@media (min-width: 1024px) {
+  .project { margin-top: var(--s-13); padding-top: var(--s-13); }
+}
+
+.project-copy h3 {
+  font-size: var(--t-title);
+  letter-spacing: var(--track-title);
+  color: var(--ink);
+}
+.project-problem {
+  max-width: 28ch;
+  margin-top: var(--s-4);
+  font-size: var(--t-lead);
+  line-height: 1.45;
+  letter-spacing: var(--track-lead);
+  color: var(--ink-1);
+  text-wrap: pretty;
+}
+.project-meta {
+  margin-top: var(--s-6);
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.project-meta dd { margin: 0; }
+.project-outcome {
+  margin-top: var(--s-5);
+  font-size: var(--t-small);
+  color: var(--ink-1);
+}
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+}
+
+/* ══ the frame ═══════════════════════════════════════════════ §6.3.4 ══ */
+
+.frame-link { display: block; }
+
+.frame {
+  width: 100%;
+  background: var(--paper);
+  box-shadow: var(--shadow-frame);
+  overflow: hidden;
+}
+.frame[data-kind="browser"] { border-radius: var(--r-3); }
+.frame[data-kind="phone"] {
+  width: min(100%, 290px);
+  margin-inline: auto;
+  padding: 10px;
+  border-radius: var(--r-device);
+  background: var(--paper-2);
+  box-shadow: var(--shadow-frame), inset 0 0 0 1px var(--line);
+}
+.frame[data-kind="phone"] .frame-body {
+  overflow: hidden;
+  border-radius: calc(var(--r-device) - 10px);
+  background: var(--paper);
+}
+
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding-inline: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.chrome i {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.chrome .url {
+  margin-left: var(--s-3);
+  font-size: var(--t-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Everything inside a preview sizes in cqw, so one screen is one layout at
+   290px and at 760px rather than a layout plus a pile of breakpoints. */
+.screen {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 16 / 11;
+}
+.frame[data-kind="phone"] .screen { aspect-ratio: 9 / 19.5; }
+
+.layer-spec,
+.layer-live { position: absolute; inset: 0; }
+
+/* The spec is the ground and the shipped screen wipes across it, which is
+   why the live layer needs a background of its own: without one the
+   wireframe showed through every gap in the real screen and the two states
+   were painted on top of each other.
+
+   --draw is not an opacity on this layer. It gates the annotations (§8.2),
+   and the layer underneath is simply occluded once --reveal reaches 1. */
+.layer-live {
+  background: var(--paper);
+  clip-path: inset(0 calc((1 - var(--reveal)) * 100%) 0 0);
+}
+
+/* the grid belongs to the spec state and goes as the ink arrives (§7.3) */
+.dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--spec-line) 0.5px, transparent 0.5px);
+  background-size: 16px 16px;
+  opacity: calc((1 - var(--reveal)) * 0.25);
+}
+
+.scanline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  pointer-events: none;
+  background: var(--spec-line);
+  transform: translateX(calc(var(--reveal) * 100cqw));
+  /* visible only while it is travelling: 0 at both ends, 1 in the middle */
+  opacity: calc(var(--reveal) * (1 - var(--reveal)) * 4);
+}
+
+/* The stacked layout sets data-state. Above 1024 with motion the engine owns
+   the two drivers directly and never writes the attribute (§8.2). */
+.frame-link[data-state="spec"] { --draw: 1; --reveal: 0; }
+.frame-link[data-state="shipped"] { --draw: 1; --reveal: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .frame-link[data-state] { transition: --reveal var(--d-4) var(--ease-in-out); }
+}
+
+/* ══ preview primitives ═══════════════════════════════════════════════════
+   One tree renders both states, so these are the pieces that know how to be
+   their own wireframe. */
+
+.pv {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 7cqw;
+  /* cqw so one screen is one layout at 270px and at 760px. The floor is the
+     12px minimum from §4.2: the phone's screen is 270px wide, where 3.6cqw
+     resolves to 9.7px. A preview is inert and aria-hidden, but "no text
+     anywhere under 12px" does not have an exception for pictures. */
+  font-size: max(12px, 3.6cqw);
+  line-height: 1.4;
+  color: var(--ink-1);
+}
+.pv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4cqw;
+}
+.pv-eyebrow { color: var(--ink-3); }
+.pv-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4cqw;
+  font-weight: 500;
+  color: var(--accent);
+}
+.pv-dot {
+  width: 1.6cqw;
+  height: 1.6cqw;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.pv-figure { margin-top: 4cqw; }
+.pv-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13cqw;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.pv-num small { font-size: 0.56em; }
+.pv-cap { display: block; margin-top: 1.6cqw; color: var(--ink-3); }
+
+.pv-bar {
+  display: block;
+  height: 6px;
+  margin-block: 3px;
+  border-radius: 3px;
+  background: var(--line);
+}
+.pv-bar--big { height: 13cqw; border-radius: 4px; background: var(--line-strong); }
+.pv-bar--r { margin-left: auto; }
+.pv-block[data-wire] {
+  background: var(--paper-2);
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -1px;
+}
+
+/* ── Friction ── */
+.pv-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1cqw;
+  margin-top: auto;
+  padding-block: 4cqw;
+}
+.pv-bars i { height: 1.8cqw; border-radius: 999px; background: var(--line); }
+.pv-bars i.on { background: var(--accent); }
+.layer-spec .pv-bars i.on { background: var(--line); }
+.pv-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 1.8cqw;
+  padding-top: 3cqw;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+}
+.pv-foot b { font-size: 5cqw; color: var(--ink); }
+
+/* ── Headroom ── */
+.pv-sub {
+  display: block;
+  margin-top: 9cqw;
+  padding-bottom: 2.4cqw;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+}
+.pv-bills { display: flex; flex-direction: column; gap: 2.4cqw; margin-top: 3cqw; }
+.pv-bill { display: flex; align-items: center; justify-content: space-between; gap: 2cqw; }
+
+/* ── Signal ── */
+.pv--signal { padding: 0; }
+.pv-map { position: absolute; inset: 0; background: var(--paper-2); }
+.pv-land { position: absolute; border-radius: 6px; background: var(--paper); }
+.pv-land--a { left: 8%; top: 18%; width: 46%; height: 52%; }
+.pv-land--b { left: 54%; top: 46%; width: 38%; height: 44%; }
+.layer-live .pv-land { outline: 1px solid var(--line); outline-offset: -1px; }
+.pv-pin {
+  position: absolute;
+  width: 2.4cqw;
+  height: 2.4cqw;
+  margin: -1.2cqw 0 0 -1.2cqw;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.4cqw color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.layer-spec .pv-pin { background: var(--line-strong); box-shadow: none; }
+.pv-chip {
+  position: absolute;
+  left: 5cqw;
+  top: 5cqw;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4cqw;
+  padding: 1.6cqw 2.6cqw;
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink-1);
+  white-space: nowrap;
+}
+.pv-chip b,
+.pv-chip .pv-dot { color: var(--accent); }
+.layer-spec .pv-chip { box-shadow: none; outline: 1px dashed var(--line-strong); }
+
+/* ── Bumper ── */
+.pv--bumper { padding: 0; justify-content: flex-end; }
+.pv-cart {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+  padding: 5cqw;
+}
+.pv-thumb {
+  width: 14cqw;
+  height: 14cqw;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--paper-2);
+}
+.pv-lines { flex: 1; display: flex; flex-direction: column; gap: 1.6cqw; }
+.pv-lines .pv-t {
+  display: block;
+  height: 1.8cqw;
+  border-radius: 999px;
+  background: var(--line);
+}
+.pv-sheet {
+  margin: 5cqw;
+  padding: 4cqw;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
+}
+.layer-spec .pv-sheet { box-shadow: none; outline: 1px dashed var(--line-strong); }
+.pv-ask {
+  margin-top: 1.6cqw;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.pv-btns { display: flex; gap: 2cqw; margin-top: 3.4cqw; }
+.pv-btn {
+  padding: 1.8cqw 3.4cqw;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pv-btn--a { background: var(--accent); color: var(--paper); }
+.pv-btn--b { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.layer-spec .pv-btn {
+  min-width: 18cqw;
+  min-height: 6cqw;
+  background: var(--paper-2);
+  color: transparent;
+  box-shadow: none;
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -1px;
+}
+
+/* ══ the switch ══════════════════════════════════════════════ §6.8 ══ */
+
+.project-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+}
+.project-note { max-width: 44ch; color: var(--ink-2); }
+
+.seg {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--r-2);
+  background: var(--paper-2);
+}
+.seg button {
+  position: relative;
+  z-index: 1;
+  min-width: 44px;
+  min-height: 30px;
+  padding-inline: var(--s-4);
+  border-radius: calc(var(--r-2) - 3px);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: color var(--d-2) var(--ease-out);
+}
+.seg button[aria-pressed="true"] { color: var(--ink-1); }
+@media (pointer: coarse) {
+  .seg button { min-height: 38px; }
+}
+.seg-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: calc(var(--r-2) - 3px);
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
+  transform: translateX(0);
+  transition: transform var(--spring-standard-d) var(--spring-standard);
+}
+.seg[data-value="shipped"] .seg-thumb { transform: translateX(100%); }
+
+/* ══ external link ═══════════════════════════════════════════ §6.8 ══ */
+
+.link-ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--ink-1);
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+}
+.link-ext svg {
+  width: 12px;
+  height: 12px;
+  transition: transform var(--d-2) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .link-ext:hover svg { transform: translate(2px, -2px); }
+}
+
+/* ══ progress nav ════════════════════════════════════════ §6.3.7 ══
+   Markup only in Phase 4. It is the pinned layout's control, and that layout
+   does not exist until Phase 5. */
+.progress { display: none; }
