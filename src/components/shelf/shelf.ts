@@ -1,3 +1,5 @@
+import { shelfPalette } from "./shelfPalette";
+
 /* --------------------------------------------------------------------------
    THE SHELF — one place for what the scene is made of.
 
@@ -43,9 +45,9 @@ export const PROJECTS: Project[] = [
     href: "/friction",
     live: { href: "https://jayharwani.github.io/friction/", label: "Open site" },
     year: "2026",
-    cloth: "#C2694A",
-    ink: "#F6E4D2",
-    paper: "#F2EADC",
+    cloth: shelfPalette.clothFriction,
+    ink: shelfPalette.foil,
+    paper: shelfPalette.paper,
     height: 1.12,
     thickness: 0.255,
     lean: 0,
@@ -58,9 +60,9 @@ export const PROJECTS: Project[] = [
     href: "/headroom",
     live: { href: "https://headroom-opal.vercel.app", label: "Open app" },
     year: "2026",
-    cloth: "#A8BA9B",
-    ink: "#FBF7EE",
-    paper: "#F2EADC",
+    cloth: shelfPalette.clothHeadroom,
+    ink: shelfPalette.foil,
+    paper: shelfPalette.paper,
     height: 1.05,
     thickness: 0.225,
     lean: 0,
@@ -73,9 +75,9 @@ export const PROJECTS: Project[] = [
     href: "/signal",
     live: { href: "https://jayharwani.github.io/dmv-map/", label: "Open map" },
     year: "2026",
-    cloth: "#4B5A8E",
-    ink: "#FBFAF6",
-    paper: "#EFE7D8",
+    cloth: shelfPalette.clothSignal,
+    ink: shelfPalette.foil,
+    paper: shelfPalette.paper,
     height: 1.09,
     thickness: 0.2,
     lean: 1.4,
@@ -91,9 +93,9 @@ export const PROJECTS: Project[] = [
       label: "Chrome Web Store",
     },
     year: "2026",
-    cloth: "#E2B23F",
-    ink: "#4A3310",
-    paper: "#F2EADC",
+    cloth: shelfPalette.clothBumper,
+    ink: shelfPalette.inkOnOchre,
+    paper: shelfPalette.paper,
     height: 1.16,
     thickness: 0.235,
     lean: 0,
@@ -101,33 +103,21 @@ export const PROJECTS: Project[] = [
 ];
 
 /* ── the room ─────────────────────────────────────────────────────────────
-   Everything is matte. The look in the reference is a miniature: objects that
-   would be glossy at real scale read as clay at doll scale, because the
-   highlight on a 4cm mug is a dot rather than a sweep. Roughness stays high
-   and metalness stays at zero except on the two things that are actually
-   metal, and even those are brushed rather than polished. */
+   Colour now lives in shelfPalette.ts, locked. PALETTE maps the old prop
+   names onto it so the set dressing keeps reading, and so that the places
+   that wanted four shades of oak get one: a board is one colour, and what
+   made the old scene look like four different woods was four albedos doing
+   a job that belongs to the light. */
 export const PALETTE = {
-  wall: "#EDE7DE",
-  oak: "#DDB683",
-  oakDark: "#C79C68",
-  oakEdge: "#E7C796",
-  clay: "#D2BBA4",
-  clayDeep: "#B9815F",
-  stone: "#CFC8BC",
-  cream: "#EFE7DA",
-  leaf: "#8FA886",
-  leafDeep: "#6E8C6B",
-  brass: "#C9A356",
-  steel: "#8E9094",
-  graphite: "#3B3B3F",
-  ink: "#4A4036",
-} as const;
-
-export const LIGHT = {
-  sun: "#FFF4E2",
-  sky: "#E8EEF5",
-  ground: "#C9A880",
-  lamp: "#FFB65E",
+  wall: shelfPalette.wall,
+  walnut: shelfPalette.walnutFlat,
+  stoneware: shelfPalette.stoneware,
+  brass: shelfPalette.brass,
+  leaf: shelfPalette.eucalyptus,
+  ivy: shelfPalette.ivy,
+  /* the procedural camera is interim; Phase 4 swaps it for a model that
+     brings its own textures, and these two go with it */
+  bodyDark: shelfPalette.fog,
 } as const;
 
 /* ── dimensions ───────────────────────────────────────────────────────────
@@ -167,3 +157,34 @@ export function layout(projects: Project[], at = -1.15) {
 }
 
 export type PlacedProject = ReturnType<typeof layout>[number];
+
+/* ── the lamp, and what it points at ──────────────────────────────────────
+   One source of truth for both the model and the light inside it.
+
+   IT CLAMPS TO THE FRONT EDGE, which is the whole reason it works. Standing
+   beside the books at spine height, the lamp lit the right-hand edge of
+   Bumper and Bumper shadowed the other three -- the row is a wall when you
+   light it from the end. The spines face the reader, so the light has to come
+   from where the reader is: in front of the board's nose, high, reaching back
+   and across. */
+const BOOK_TIER = SHELF.tiers[SHELF.bookTier];
+
+export const LAMP = {
+  /** where the lamp stands, on the books' own board, to their right */
+  at: [0.5, BOOK_TIER, 0.42] as [number, number, number],
+  /** turned to face back across the books */
+  rotY: Math.PI,
+  /** the emitting disc, in the Lamp component's own coordinates */
+  bulbLocal: [0.536, 0.906, 0] as [number, number, number],
+} as const;
+
+/** the bulb in world space, with LAMP.rotY applied (pi, so x and z negate) */
+export const BULB: [number, number, number] = [
+  LAMP.at[0] - LAMP.bulbLocal[0],
+  LAMP.at[1] + LAMP.bulbLocal[1],
+  LAMP.at[2] - LAMP.bulbLocal[2],
+];
+
+/** the middle of the four books: what the key is aimed at, and what the
+    depth of field focuses on */
+export const BOOKS_CENTER: [number, number, number] = [-1.15, BOOK_TIER + 0.55, 0];

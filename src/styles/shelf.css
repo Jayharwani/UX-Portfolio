@@ -5,8 +5,8 @@
   position: relative;
   min-height: 100svh;
   overflow: hidden;
-  background: #efe9e0;
-  color: #342c24;
+  background: #0e1218;
+  color: #f2eadf;
   font-family: "Geist", -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -296,3 +296,14 @@
 .mlede-2 { font-size: 15.5px; line-height: 1.5; color: #6b5c4c; }
 
 .mwrap .mshelf { position: static; bottom: auto; }
+
+/* development only: the value meter's badge. ValueMeter is tree-shaken out of
+   a production build, so this rule never matches there. */
+.shelf-meter {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(10 8 6 / 0.82);
+  color: #f0b867;
+  font: 500 12px/1 "Geist Mono", ui-monospace, monospace;
+  white-space: nowrap;
+}

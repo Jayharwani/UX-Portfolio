@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { RoundedBox } from "@react-three/drei";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import * as THREE from "three";
-import { LIGHT, PALETTE } from "../shelf";
+import { PALETTE } from "../shelf";
+import { shelfPalette } from "../shelfPalette";
 import { plaque } from "../textures";
 
 /* --------------------------------------------------------------------------
@@ -55,22 +56,22 @@ function hollow(r: number, h: number, waist: number, mouth: number) {
   ];
 }
 
-export function Bowl({ r = 0.3, h = 0.2, color = PALETTE.clay, ...rest }: Thrown) {
+export function Bowl({ r = 0.3, h = 0.2, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.82, 1), 26), [r, h]);
   return <mesh geometry={geo} material={mat(color, 0.9)} castShadow receiveShadow {...rest} />;
 }
 
-export function Vase({ r = 0.22, h = 0.62, color = PALETTE.cream, ...rest }: Thrown) {
+export function Vase({ r = 0.22, h = 0.62, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 1, 0.62), 26), [r, h]);
   return <mesh geometry={geo} material={mat(color, 0.86)} castShadow receiveShadow {...rest} />;
 }
 
-export function Pot({ r = 0.26, h = 0.3, color = PALETTE.clayDeep, ...rest }: Thrown) {
+export function Pot({ r = 0.26, h = 0.3, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.88, 1.04), 24), [r, h]);
   return <mesh geometry={geo} material={mat(color, 0.95)} castShadow receiveShadow {...rest} />;
 }
 
-export function Mug({ r = 0.14, h = 0.24, color = PALETTE.stone, ...rest }: Thrown) {
+export function Mug({ r = 0.14, h = 0.24, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.98, 1), 20), [r, h]);
   return (
     <group {...rest}>
@@ -149,7 +150,7 @@ export function Foliage({
   const geo = useMemo(() => bake(sprigs), [sprigs]);
   return (
     <group {...rest}>
-      <mesh geometry={geo.stems} material={mat(PALETTE.leafDeep, 0.95)} />
+      <mesh geometry={geo.stems} material={mat(PALETTE.ivy, 0.95)} />
       <mesh geometry={geo.leaves} material={mat(color, 0.96)} castShadow />
     </group>
   );
@@ -169,7 +170,7 @@ export function fan(n: number, len: number, size = 0.072, leaves = 5): SprigSpec
 export function PottedPlant({
   r = 0.24,
   h = 0.3,
-  pot = PALETTE.clayDeep,
+  pot = PALETTE.stoneware,
   sprigs = 3,
   len = 0.8,
   leaf = PALETTE.leaf,
@@ -179,7 +180,7 @@ export function PottedPlant({
   return (
     <group {...rest}>
       <Pot r={r} h={h} color={pot} />
-      <mesh position={[0, h * 0.86, 0]} material={mat("#4A3A2C", 1)}>
+      <mesh position={[0, h * 0.86, 0]} material={mat(PALETTE.walnut, 1)}>
         <cylinderGeometry args={[r * 0.84, r * 0.84, 0.03, 16]} />
       </mesh>
       <Foliage sprigs={spec} color={leaf} position={[0, h * 0.88, 0]} />
@@ -193,33 +194,41 @@ export function PottedPlant({
    bulb blows out everything within half a unit of it, so the glow is painted
    and the light it casts is set separately and kept low. */
 export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
-  const brass = mat(PALETTE.brass, 0.42, 0.65);
+  const brass = mat(PALETTE.brass, 0.32, 1);
   return (
     <group {...rest}>
+      {/* clamp foot */}
       <mesh material={brass} castShadow receiveShadow>
-        <cylinderGeometry args={[0.2, 0.22, 0.045, 22]} />
+        <cylinderGeometry args={[0.19, 0.21, 0.05, 22]} />
       </mesh>
-      <mesh position={[0, 0.32, 0]} material={brass} castShadow>
-        <cylinderGeometry args={[0.022, 0.026, 0.64, 10]} />
+      {/* upright */}
+      <mesh position={[0, 0.5, 0]} material={brass} castShadow>
+        <cylinderGeometry args={[0.021, 0.025, 1.0, 10]} />
       </mesh>
-      <mesh position={[0.1, 0.62, 0]} rotation={[0, 0, -0.72]} material={brass} castShadow>
-        <cylinderGeometry args={[0.022, 0.022, 0.34, 10]} />
+      <mesh position={[0, 1.0, 0]} material={brass} castShadow>
+        <sphereGeometry args={[0.038, 12, 10]} />
       </mesh>
-      <group position={[0.26, 0.72, 0]} rotation={[0, 0, -0.95]}>
+      {/* THE REACH. A short arm put the head a unit and a half from the books,
+          and inverse-square did the rest: the board under the lamp came out
+          four times brighter than the thing the lamp is supposed to be
+          lighting. The arm carries the head out over the run instead. */}
+      <mesh position={[0.31, 0.972, 0]} rotation={[0, 0, -1.45]} material={brass} castShadow>
+        <cylinderGeometry args={[0.019, 0.019, 0.62, 10]} />
+      </mesh>
+      <group position={[0.62, 0.96, 0]} rotation={[0, 0, -1]}>
         <mesh material={brass} castShadow>
-          <cylinderGeometry args={[0.2, 0.1, 0.24, 20, 1, true]} />
+          <cylinderGeometry args={[0.175, 0.095, 0.21, 20, 1, true]} />
         </mesh>
-        <mesh position={[0, -0.09, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.17, 18]} />
+        <mesh position={[0, -0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.15, 18]} />
           <meshStandardMaterial
-            color={on ? "#FFE2AE" : "#D8D2C6"}
-            emissive={on ? LIGHT.lamp : "#000000"}
-            emissiveIntensity={on ? 2.4 : 0}
+            color={on ? shelfPalette.bulb : PALETTE.stoneware}
+            emissive={on ? shelfPalette.bulb : "#000000"}
+            emissiveIntensity={on ? 12 : 0}
             roughness={1}
           />
         </mesh>
       </group>
-      {on ? <pointLight color={LIGHT.lamp} intensity={1.5} distance={2.6} decay={2} position={[0.3, 0.52, 0.12]} /> : null}
     </group>
   );
 }
@@ -229,8 +238,8 @@ export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
    thing that makes it read is the lens barrel stepping out in three
    diameters rather than one. */
 export function FilmCamera(rest: Thrown) {
-  const body = mat(PALETTE.graphite, 0.72);
-  const steel = mat(PALETTE.steel, 0.4, 0.55);
+  const body = mat(PALETTE.bodyDark, 0.72);
+  const steel = mat(PALETTE.brass, 0.4, 0.55);
   return (
     <group {...rest}>
       <RoundedBox args={[0.56, 0.3, 0.2]} radius={0.035} smoothness={3} position={[0, 0.15, 0]} material={body} castShadow receiveShadow />
@@ -248,7 +257,7 @@ export function FilmCamera(rest: Thrown) {
         <mesh position={[0, 0.08, 0]} material={steel} castShadow>
           <cylinderGeometry args={[0.1, 0.108, 0.05, 20]} />
         </mesh>
-        <mesh position={[0, 0.115, 0]} material={mat("#1B2430", 0.18, 0.2)}>
+        <mesh position={[0, 0.115, 0]} material={mat(PALETTE.bodyDark, 0.18, 0.2)}>
           <cylinderGeometry args={[0.082, 0.082, 0.02, 20]} />
         </mesh>
       </group>
@@ -264,7 +273,7 @@ export function Plaque({ text, w = 2.1, ...rest }: Thrown & { text: string; w?: 
     const bump = plaque(text, "bump");
     return new THREE.MeshStandardMaterial({ map: art, bumpMap: bump, bumpScale: 3, roughness: 0.9 });
   }, [text]);
-  const plain = mat(PALETTE.oakEdge, 0.9);
+  const plain = mat(PALETTE.walnut, 0.9);
   return (
     <group {...rest}>
       <RoundedBox args={[w, w / 8.5, 0.09]} radius={0.016} smoothness={3} material={plain} castShadow receiveShadow />
@@ -279,7 +288,7 @@ export function Stack({
   n = 3,
   w = 0.62,
   d = 0.46,
-  colors = [PALETTE.cream, PALETTE.clay, PALETTE.stone],
+  colors = [PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware],
   ...rest
 }: Thrown & { n?: number; w?: number; d?: number; colors?: string[] }) {
   return (
@@ -306,10 +315,10 @@ export function Stack({
 
 export function PencilCup({ r = 0.15, h = 0.3, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 1, 1), 18), [r, h]);
-  const tips = [PALETTE.clayDeep, PALETTE.graphite, PALETTE.leafDeep, "#D9A441"];
+  const tips = [PALETTE.stoneware, PALETTE.bodyDark, PALETTE.ivy, PALETTE.brass];
   return (
     <group {...rest}>
-      <mesh geometry={geo} material={mat(PALETTE.cream, 0.92)} castShadow receiveShadow />
+      <mesh geometry={geo} material={mat(PALETTE.stoneware, 0.92)} castShadow receiveShadow />
       {tips.map((c, i) => (
         <mesh
           key={i}
@@ -325,7 +334,7 @@ export function PencilCup({ r = 0.15, h = 0.3, ...rest }: Thrown) {
   );
 }
 
-export function Jar({ r = 0.17, h = 0.34, fill = "#6B4A2E", ...rest }: Thrown & { fill?: string }) {
+export function Jar({ r = 0.17, h = 0.34, fill = PALETTE.walnut, ...rest }: Thrown & { fill?: string }) {
   return (
     <group {...rest}>
       <mesh position={[0, h * 0.42, 0]} material={mat(fill, 0.95)}>
@@ -333,16 +342,16 @@ export function Jar({ r = 0.17, h = 0.34, fill = "#6B4A2E", ...rest }: Thrown & 
       </mesh>
       <mesh position={[0, h / 2, 0]}>
         <cylinderGeometry args={[r, r, h, 18, 1, true]} />
-        <meshStandardMaterial color="#E9EEF0" roughness={0.12} transparent opacity={0.34} side={THREE.DoubleSide} />
+        <meshStandardMaterial color={PALETTE.stoneware} roughness={0.12} transparent opacity={0.34} side={THREE.DoubleSide} />
       </mesh>
-      <mesh position={[0, h + 0.03, 0]} material={mat(PALETTE.oakEdge, 0.9)} castShadow>
+      <mesh position={[0, h + 0.03, 0]} material={mat(PALETTE.walnut, 0.9)} castShadow>
         <cylinderGeometry args={[r * 1.04, r * 1.04, 0.07, 18]} />
       </mesh>
     </group>
   );
 }
 
-export function Geo({ r = 0.17, color = PALETTE.clay, ...rest }: Thrown) {
+export function Geo({ r = 0.17, color = PALETTE.stoneware, ...rest }: Thrown) {
   return (
     <mesh material={mat(color, 0.88)} castShadow receiveShadow {...rest}>
       <icosahedronGeometry args={[r, 0]} />
@@ -351,7 +360,7 @@ export function Geo({ r = 0.17, color = PALETTE.clay, ...rest }: Thrown) {
 }
 
 export function Figurine(rest: Thrown) {
-  const m = mat(PALETTE.steel, 0.38, 0.6);
+  const m = mat(PALETTE.brass, 0.38, 0.6);
   return (
     <group {...rest}>
       <mesh position={[0, 0.02, 0]} material={m} castShadow>

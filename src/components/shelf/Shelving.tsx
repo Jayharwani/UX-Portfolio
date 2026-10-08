@@ -40,11 +40,11 @@ const DIVIDERS: Array<[number, number]> = [
 
 export function Shelving() {
   const mats = useMemo(() => {
-    const grain = wood(PALETTE.oak, 2);
+    const grain = wood(PALETTE.walnut, 2);
     grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
     grain.repeat.set(3, 1);
 
-    const endGrain = wood(PALETTE.oakDark, 6);
+    const endGrain = wood(PALETTE.walnut, 6);
     endGrain.wrapS = endGrain.wrapT = THREE.RepeatWrapping;
 
     return {

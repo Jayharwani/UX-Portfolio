@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
-import { Bloom, DepthOfField, EffectComposer, Noise, Vignette } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { Bloom, DepthOfField, EffectComposer, Noise, ToneMapping, Vignette } from "@react-three/postprocessing";
+import { BlendFunction, ToneMappingMode } from "postprocessing";
 import { useNavigate } from "react-router";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -10,8 +10,10 @@ import { Book, type BookHandle } from "./Book";
 import { Shelving } from "./Shelving";
 import { Decor } from "./props/Decor";
 import { disposeProps } from "./props/shapes";
-import { LIGHT, PROJECTS, SHELF, layout } from "./shelf";
-import { disposeTextures, windowGobo } from "./textures";
+import { BOOKS_CENTER, BULB, PROJECTS, SHELF, layout } from "./shelf";
+import { ShelfLights } from "./ShelfLights";
+import { shelfPalette } from "./shelfPalette";
+import { disposeTextures } from "./textures";
 
 /* --------------------------------------------------------------------------
    THE SCENE.
@@ -30,6 +32,12 @@ import { disposeTextures, windowGobo } from "./textures";
 
 const DEG = Math.PI / 180;
 const books = layout(PROJECTS);
+
+/* The value meter is how the look is tuned: dark share, mean luma and clipped
+   share, read off the finished frame. It is gated on DEV so it never reaches
+   the bundle, which also means acceptance numbers for a production build come
+   from screenshots of that build rather than from here. */
+const ValueMeter = import.meta.env.DEV ? lazy(() => import("./dev/ValueMeter")) : null;
 const BOOK_Y = SHELF.tiers[SHELF.bookTier];
 
 /* Where the camera rests. Kept as a direction and a distance rather than a
@@ -97,69 +105,6 @@ function Rig({ locked, reduce, room }: { locked: boolean; reduce: boolean; room:
   return null;
 }
 
-/* ── light ────────────────────────────────────────────────────────────────
-   One sun, one sky, one window. The window is a spotlight carrying a drawn
-   gobo: a glazing bar and some leaves, thrown across the wall and over the
-   boards. It casts no shadows of its own -- it is a pattern, not a shadow
-   caster, and a second shadow map for a decorative light is a frame budget
-   spent on nothing. */
-function Lights() {
-  const gobo = useMemo(() => windowGobo(), []);
-  const spot = useRef<THREE.SpotLight>(null);
-  const { scene } = useThree();
-
-  useEffect(() => {
-    const s = spot.current;
-    if (!s) return;
-    /* aimed at the stretch of wall that is actually in shot, above the top
-       board on the left, rather than at the middle of a scene whose middle is
-       entirely occupied by shelving */
-    s.target.position.set(-3.2, 1.7, SHELF.wallZ);
-    scene.add(s.target);
-    return () => {
-      scene.remove(s.target);
-    };
-  }, [scene]);
-
-  return (
-    <>
-      <hemisphereLight color={LIGHT.sky} groundColor={LIGHT.ground} intensity={0.98} />
-      <ambientLight color={LIGHT.sun} intensity={0.28} />
-      <directionalLight
-        color={LIGHT.sun}
-        intensity={1.55}
-        position={[-7.5, 9.5, 7]}
-        castShadow
-        shadow-mapSize={[1536, 1536]}
-        shadow-camera-near={2}
-        shadow-camera-far={34}
-        shadow-camera-left={-11}
-        shadow-camera-right={11}
-        shadow-camera-top={9}
-        shadow-camera-bottom={-9}
-        shadow-bias={-0.0013}
-        shadow-normalBias={0.02}
-      />
-      {/* Intensity is in candela and falls off with the square of distance,
-          so a light sixteen units out needs a number in the hundreds. The
-          first pass used 14 with decay 1.1 and arrived at the wall at about
-          0.6 against a key of 1.55 -- present in the render, invisible to the
-          eye. */}
-      <spotLight
-        ref={spot}
-        color={LIGHT.sun}
-        intensity={430}
-        distance={44}
-        angle={0.56}
-        penumbra={0.85}
-        decay={2}
-        position={[-7.6, 6.4, 8.2]}
-        map={gobo}
-      />
-    </>
-  );
-}
-
 export function BookshelfScene({
   onHover,
   reduce,
@@ -174,6 +119,7 @@ export function BookshelfScene({
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<string | null>(null);
+  const [reading, setReading] = useState<{ dark: number; mean: number; clipped: number } | null>(null);
   const handles = useRef(new Map<string, BookHandle>());
   const camRef = useRef<THREE.Camera | null>(null);
   const controls = useRef<React.ElementRef<typeof OrbitControls> | null>(null);
@@ -312,7 +258,7 @@ export function BookshelfScene({
          stutters. */
       shadows={!lite}
       dpr={dpr}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      gl={{ antialias: false, powerPreference: "high-performance" }}
       camera={{
         fov: 26,
         near: 0.3,
@@ -321,13 +267,27 @@ export function BookshelfScene({
       }}
       onCreated={({ camera, gl }) => {
         camRef.current = camera;
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.02;
+        /* AgX here too, not just in the chain. The composer disables the
+           renderer's tone mapping while it renders, so this value only shows
+           up on a frame drawn WITHOUT the composer -- a poster capture, or the
+           lite path. Matching them means those frames do not look like a
+           different scene. */
+        gl.toneMapping = THREE.AgXToneMapping;
+        gl.toneMappingExposure = 1;
       }}
     >
-      <color attach="background" args={["#EFE9E0"]} />
+      {/* The background is the fog colour, so the wall does not end at a seam
+          where geometry stops. fogExp2 rather than linear: the falloff a dark
+          room has is exponential, and linear fog reads as a grey wash. */}
+      <color attach="background" args={[shelfPalette.fog]} />
+      <fogExp2 attach="fog" args={[shelfPalette.fog, 0.035]} />
       <Rig locked={busy} reduce={reduce} room={room} />
-      <Lights />
+      <ShelfLights bulb={BULB} focus={BOOKS_CENTER} highTier={!lite} />
+      {ValueMeter ? (
+        <Suspense fallback={null}>
+          <ValueMeter onReading={(r) => setReading(r)} />
+        </Suspense>
+      ) : null}
 
       <group ref={room}>
         <Shelving />
@@ -366,6 +326,15 @@ export function BookshelfScene({
         ) : null}
       </group>
 
+      {ValueMeter && reading ? (
+        <Html position={BOOKS_CENTER} center={false} zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
+          <div className="shelf-meter">
+            dark {(reading.dark * 100).toFixed(1)}% &middot; mean {reading.mean.toFixed(0)} &middot; clip{" "}
+            {(reading.clipped * 100).toFixed(2)}%
+          </div>
+        </Html>
+      ) : null}
+
       {/* ── the lens ──────────────────────────────────────────────────────
           What makes a miniature read as a miniature is depth of field. A real
           camera 40cm from a real shelf has the whole thing sharp; one 40cm
@@ -394,9 +363,18 @@ export function BookshelfScene({
             bokehScale={0.9}
             height={480}
           />
-          <Bloom intensity={0.12} luminanceThreshold={0.86} luminanceSmoothing={0.3} mipmapBlur height={300} />
-          <Noise opacity={0.025} blendFunction={BlendFunction.OVERLAY} />
-          <Vignette offset={0.36} darkness={0.32} eskil={false} />
+          {/* A threshold of 1 only works because the composer renders in half
+              float: the one thing in the scene above 1 is the HDR bulb, so
+              nothing else glows. */}
+          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.55} />
+          {/* THE EFFECT THAT WAS MISSING. @react-three/postprocessing sets
+              gl.toneMapping to NoToneMapping for as long as the composer is
+              mounted, so the ACES configured on the renderer never ran: the
+              page shipped raw linear-to-sRGB, which is why 5.5% of its pixels
+              were clipped and nothing had any shape. */}
+          <ToneMapping mode={ToneMappingMode.AGX} />
+          <Vignette offset={0.28} darkness={0.62} eskil={false} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.18} />
         </EffectComposer>
       )}
 
