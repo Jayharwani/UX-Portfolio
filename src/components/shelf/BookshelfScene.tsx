@@ -378,7 +378,7 @@ export function BookshelfScene({
           {/* A threshold of 1 only works because the composer renders in half
               float: the one thing in the scene above 1 is the HDR bulb, so
               nothing else glows. */}
-          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.55} />
+          <Bloom mipmapBlur levels={5} luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.55} />
           {/* THE EFFECT THAT WAS MISSING. @react-three/postprocessing sets
               gl.toneMapping to NoToneMapping for as long as the composer is
               mounted, so the ACES configured on the renderer never ran: the

@@ -101,7 +101,9 @@ function hollow(r: number, h: number, waist: number, mouth: number) {
 
 export function Bowl({ r = 0.3, h = 0.2, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.82, 1), 26), [r, h]);
-  return <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} castShadow receiveShadow {...rest} />;
+  /* no castShadow: every bowl here is on a board the key never reaches, so
+     its shadow costs a draw call and renders nothing */
+  return <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} receiveShadow {...rest} />;
 }
 
 export function Vase({ r = 0.22, h = 0.62, color = PALETTE.stoneware, ...rest }: Thrown) {
@@ -118,8 +120,8 @@ export function Mug({ r = 0.14, h = 0.24, color = PALETTE.stoneware, ...rest }: 
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.98, 1), 20), [r, h]);
   return (
     <group {...rest}>
-      <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} castShadow receiveShadow />
-      <mesh position={[r * 1.02, h * 0.58, 0]} rotation={[Math.PI / 2, 0, 0]} material={mat(color, 0.55, 0, "glaze")} castShadow>
+      <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} receiveShadow />
+      <mesh position={[r * 1.02, h * 0.58, 0]} rotation={[Math.PI / 2, 0, 0]} material={mat(color, 0.55, 0, "glaze")}>
         <torusGeometry args={[r * 0.52, r * 0.17, 8, 16, Math.PI * 1.25]} />
       </mesh>
     </group>
@@ -231,6 +233,68 @@ export function PottedPlant({
   );
 }
 
+/* -- trailing ivy --------------------------------------------------------
+   Two vines hanging off the top board, and their only job is to frame. They
+   enter at a corner, fall past the edge of the shot, and never cross the
+   books: foliage over a title is the fastest way to make a page look busy
+   and a project look unimportant.
+
+   Baked like the sprigs, for the same reason -- sixteen leaves on a curve is
+   sixteen draw calls modelled honestly and two when the transforms are in
+   the vertices. */
+export function Vine({
+  len = 2.2,
+  leaves = 14,
+  spread = 0.5,
+  seed = 1,
+  color = PALETTE.ivy,
+  ...rest
+}: Thrown & { len?: number; leaves?: number; spread?: number; seed?: number }) {
+  const geo = useMemo(() => {
+    let s = seed * 7919;
+    const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(spread * 0.4, -len * 0.3, 0.1),
+      new THREE.Vector3(-spread * 0.2, -len * 0.62, 0.05),
+      new THREE.Vector3(spread * 0.5, -len, -0.05),
+    ]);
+    const stem = new THREE.TubeGeometry(curve, 24, 0.009, 5, false);
+
+    /* a heart is a sphere squashed flat with a notch; at 90px on screen the
+       notch is what the eye reads, so it is worth the four extra triangles */
+    const leaf = new THREE.SphereGeometry(1, 9, 7);
+    const parts: THREE.BufferGeometry[] = [];
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    for (let i = 0; i < leaves; i++) {
+      const t = 0.08 + (i / leaves) * 0.9;
+      const p = curve.getPointAt(t);
+      const side = i % 2 ? 1 : -1;
+      const sc = (0.7 + rnd() * 0.5) * 0.055;
+      q.setFromEuler(new THREE.Euler(rnd() * 0.5 - 0.25, i * 1.3, side * 0.7 + (rnd() - 0.5) * 0.9));
+      const g = leaf.clone();
+      g.applyMatrix4(
+        m.compose(
+          new THREE.Vector3(p.x + side * sc * 1.1, p.y, p.z + (rnd() - 0.5) * sc),
+          q,
+          new THREE.Vector3(sc, sc * 1.25, sc * 0.16)
+        )
+      );
+      parts.push(g);
+    }
+    leaf.dispose();
+    return { stem, leaves: mergeGeometries(parts, false) as THREE.BufferGeometry };
+  }, [len, leaves, spread, seed]);
+
+  return (
+    <group {...rest}>
+      <mesh geometry={geo.stem} material={mat(PALETTE.ivy, 0.7, 0, "leaf")} />
+      <mesh geometry={geo.leaves} material={mat(color, 0.55, 0, "leaf")} castShadow receiveShadow />
+    </group>
+  );
+}
+
 /* -- the lamp ------------------------------------------------------------
    The only light source in frame. The bulb is an emissive disc inside the
    shade rather than a real one: a point light bright enough to look like a
@@ -246,40 +310,36 @@ export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
     m.side = THREE.DoubleSide;
     return m;
   }, [brassMat]);
+
+  /* Foot, upright, elbow and arm never move relative to one another, so they
+     are one geometry. The shade stays separate because it needs a two-sided
+     material, and the bulb because it needs a basic one. */
+  const body = useMemo(() => {
+    const m = new THREE.Matrix4();
+    const parts = [
+      new THREE.CylinderGeometry(0.19, 0.21, 0.05, 22).applyMatrix4(m.makeTranslation(0, 0, 0)).clone(),
+      new THREE.CylinderGeometry(0.021, 0.025, 1.0, 10).applyMatrix4(m.makeTranslation(0, 0.5, 0)).clone(),
+      new THREE.SphereGeometry(0.038, 12, 10).applyMatrix4(m.makeTranslation(0, 1.0, 0)).clone(),
+    ];
+    const arm = new THREE.CylinderGeometry(0.019, 0.019, 0.62, 10);
+    arm.applyMatrix4(
+      new THREE.Matrix4().makeTranslation(0.31, 0.972, 0).multiply(new THREE.Matrix4().makeRotationZ(-1.45))
+    );
+    parts.push(arm);
+    return mergeGeometries(parts, false) as THREE.BufferGeometry;
+  }, []);
+
   return (
     <group {...rest}>
-      {/* clamp foot */}
-      <mesh material={brassMat} castShadow receiveShadow>
-        <cylinderGeometry args={[0.19, 0.21, 0.05, 22]} />
-      </mesh>
-      {/* upright */}
-      <mesh position={[0, 0.5, 0]} material={brassMat} castShadow>
-        <cylinderGeometry args={[0.021, 0.025, 1.0, 10]} />
-      </mesh>
-      <mesh position={[0, 1.0, 0]} material={brassMat} castShadow>
-        <sphereGeometry args={[0.038, 12, 10]} />
-      </mesh>
-      {/* THE REACH. A short arm put the head a unit and a half from the books,
-          and inverse-square did the rest: the board under the lamp came out
-          four times brighter than the thing the lamp is supposed to be
-          lighting. The arm carries the head out over the run instead. */}
-      <mesh position={[0.31, 0.972, 0]} rotation={[0, 0, -1.45]} material={brassMat} castShadow>
-        <cylinderGeometry args={[0.019, 0.019, 0.62, 10]} />
-      </mesh>
-      <group position={[0.62, 0.96, 0]} rotation={[0, 0, -1]}>
+      <mesh geometry={body} material={brassMat} castShadow receiveShadow />
+      <group position={[0.62, 0.96, 0]} rotation={[0, 0, -1.3]}>
         {/* THE INSIDE OF A SHADE IS THE PART YOU SEE. An open cylinder with a
             front-side material draws only its outer wall, and the outer wall
             faces away from the key, so the shade rendered as a black cone with
-            a bright dot under it. Double-sided, the interior catches the bulb
-            and the lamp reads as lit from within. */}
+            a bright dot under it. */}
         <mesh material={shadeMat} castShadow>
           <cylinderGeometry args={[0.175, 0.095, 0.21, 20, 1, true]} />
         </mesh>
-        {/* A LIT BULB IS NOT A SHADED SURFACE. As a standard material with
-            emissive it still went through the lighting model and came out at
-            luma 61 where the ladder wants 230 or more. Basic, with the colour
-            scaled past 1, makes it the one thing in the scene above the bloom
-            threshold -- which is the only reason anything glows. */}
         <mesh position={[0, -0.1, 0]} rotation={[Math.PI / 2, 0, 0]} material={on ? HOT : COLD}>
           <circleGeometry args={[0.15, 18]} />
         </mesh>
@@ -322,18 +382,27 @@ export function FilmCamera(rest: Thrown) {
 
 /* -- flat things ---------------------------------------------------------- */
 
-export function Plaque({ text, w = 2.1, ...rest }: Thrown & { text: string; w?: number }) {
+export function Plaque({
+  line1,
+  line2,
+  w = 1.5,
+  ...rest
+}: Thrown & { line1: string; line2: string; w?: number }) {
   const m = useMemo(() => {
-    const art = plaque(text);
-    const bump = plaque(text, "bump");
-    return new THREE.MeshStandardMaterial({ map: art, bumpMap: bump, bumpScale: 3, roughness: 0.9 });
-  }, [text]);
+    const art = plaque(line1, line2);
+    const bump = plaque(line1, line2, "bump");
+    /* a negative bumpScale, because the letters are CUT into the block and
+       filled with brass rather than raised off it */
+    return new THREE.MeshStandardMaterial({
+      map: art, bumpMap: bump, bumpScale: -2.5, roughness: 0.72, metalness: 0.15, envMapIntensity: 1.4,
+    });
+  }, [line1, line2]);
   const plain = mat(PALETTE.walnut, 0.9);
   return (
     <group {...rest}>
-      <RoundedBox args={[w, w / 8.5, 0.09]} radius={0.016} smoothness={3} material={plain} castShadow receiveShadow />
+      <RoundedBox args={[w, w / 4, 0.09]} radius={0.016} smoothness={3} material={plain} castShadow receiveShadow />
       <mesh position={[0, 0, 0.046]} material={m}>
-        <planeGeometry args={[w - 0.03, w / 8.5 - 0.02]} />
+        <planeGeometry args={[w - 0.03, w / 4 - 0.02]} />
       </mesh>
     </group>
   );
@@ -343,50 +412,53 @@ export function Stack({
   n = 3,
   w = 0.62,
   d = 0.46,
-  colors = [PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware],
+  colors = [PALETTE.stoneware],
   ...rest
 }: Thrown & { n?: number; w?: number; d?: number; colors?: string[] }) {
-  return (
-    <group {...rest}>
-      {Array.from({ length: n }, (_, i) => {
-        const t = 0.07 + ((i * 29) % 7) / 190;
-        return (
-          <RoundedBox
-            key={i}
-            args={[w - i * 0.015, t, d - i * 0.012]}
-            radius={0.012}
-            smoothness={2}
-            position={[((i * 53) % 9) / 190 - 0.02, i * 0.082 + t / 2, ((i * 31) % 9) / 220 - 0.018]}
-            rotation={[0, (((i * 17) % 11) - 5) / 55, 0]}
-            material={mat(colors[i % colors.length], 0.95)}
-            castShadow
-            receiveShadow
-          />
-        );
-      })}
-    </group>
-  );
+  /* BAKED, like the foliage. A stack is four boxes that never move relative to
+     one another, and four boxes is four draw calls and four more in the shadow
+     pass. Merged, a stack costs one. With five stacks on these shelves that is
+     thirty draw calls back for no visible change. */
+  const geo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    for (let i = 0; i < n; i++) {
+      const t = 0.07 + ((i * 29) % 7) / 190;
+      const g = new THREE.BoxGeometry(w - i * 0.015, t, d - i * 0.012);
+      q.setFromEuler(new THREE.Euler(0, (((i * 17) % 11) - 5) / 55, 0));
+      g.applyMatrix4(
+        m.compose(
+          new THREE.Vector3(((i * 53) % 9) / 190 - 0.02, i * 0.082 + t / 2, ((i * 31) % 9) / 220 - 0.018),
+          q,
+          new THREE.Vector3(1, 1, 1)
+        )
+      );
+      parts.push(g);
+    }
+    return mergeGeometries(parts, false) as THREE.BufferGeometry;
+  }, [n, w, d]);
+
+  return <mesh geometry={geo} material={mat(colors[0], 0.95)} receiveShadow {...rest} />;
 }
 
 export function PencilCup({ r = 0.15, h = 0.3, ...rest }: Thrown) {
-  const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 1, 1), 18), [r, h]);
-  const tips = [PALETTE.stoneware, PALETTE.bodyDark, PALETTE.ivy, PALETTE.brass];
-  return (
-    <group {...rest}>
-      <mesh geometry={geo} material={mat(PALETTE.stoneware, 0.92)} castShadow receiveShadow />
-      {tips.map((c, i) => (
-        <mesh
-          key={i}
-          position={[Math.cos(i * 1.9) * 0.05, h * 0.78, Math.sin(i * 1.9) * 0.05]}
-          rotation={[((i % 3) - 1) * 0.1, 0, ((i % 2) - 0.5) * 0.18]}
-          material={mat(c, 0.86)}
-          castShadow
-        >
-          <cylinderGeometry args={[0.016, 0.016, 0.52, 6]} />
-        </mesh>
-      ))}
-    </group>
-  );
+  /* cup and pencils baked together: five draw calls become one, and nothing
+     in here ever moves independently */
+  const geo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [new THREE.LatheGeometry(hollow(r, h, 1, 1), 18)];
+    const m = new THREE.Matrix4();
+    for (let i = 0; i < 4; i++) {
+      const g = new THREE.CylinderGeometry(0.016, 0.016, 0.52, 6);
+      g.applyMatrix4(
+        m.makeTranslation(Math.cos(i * 1.9) * 0.05, h * 0.78, Math.sin(i * 1.9) * 0.05)
+          .multiply(new THREE.Matrix4().makeRotationZ(((i % 2) - 0.5) * 0.18))
+      );
+      parts.push(g);
+    }
+    return mergeGeometries(parts, false) as THREE.BufferGeometry;
+  }, [r, h]);
+  return <mesh geometry={geo} material={mat(PALETTE.stoneware, 0.55, 0, "glaze")} receiveShadow {...rest} />;
 }
 
 export function Jar({ r = 0.17, h = 0.34, fill = PALETTE.walnut, ...rest }: Thrown & { fill?: string }) {

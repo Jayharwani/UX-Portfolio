@@ -77,9 +77,12 @@ export function ShelfLights({ bulb, focus, highTier }: Rig) {
         shadow-camera-far={12}
       />
 
-      {/* the shade's own glow, so the lamp looks lit from inside rather than
-          like a dark object with a bright disc stuck to it */}
-      <pointLight position={bulb} color={shelfPalette.shadeGlow} intensity={2.4} distance={1.2} decay={2} />
+      {/* The shade's own glow, so the lamp reads as lit from inside rather
+          than as a dark object with a bright disc stuck to it. Its reach is
+          deliberately shorter than the lamp is tall: at 1.2 it struck the
+          brass foot directly below, and a specular that bright inside a bloom
+          threshold reads as a second light source sitting on the shelf. */}
+      <pointLight position={bulb} color={shelfPalette.shadeGlow} intensity={2.4} distance={0.55} decay={2} />
 
       {/* cool fill from the front left. It is what keeps the shadows readable
           and, because it is cool against a warm key, what makes the warm read
@@ -103,7 +106,10 @@ export function ShelfLights({ bulb, focus, highTier }: Rig) {
           diffuse term at all: every photon it shows came from the environment,
           so at 0.25 the lamp rendered at luma 24 against a target of 90-100.
           This is the light that makes the brass brass. */}
-      <Environment resolution={128} environmentIntensity={0.8}>
+      {/* frames={1}: the two lightformers never move, so the cubemap they bake
+          is the same every frame. Left to re-render it costs six faces a
+          frame for an image that cannot change. */}
+      <Environment frames={1} resolution={128} environmentIntensity={0.8}>
         <Lightformer form="rect" color={shelfPalette.lampWarm} intensity={5} position={[3, 2, 2]} scale={[2, 1, 1]} />
         <Lightformer form="rect" color={shelfPalette.fillCool} intensity={1.2} position={[-4, 3, 3]} scale={[4, 2, 1]} />
       </Environment>

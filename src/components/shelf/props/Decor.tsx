@@ -1,121 +1,92 @@
 import { LAMP, PALETTE, SHELF } from "../shelf";
-import {
-  Bookend,
-  Bowl,
-  Figurine,
-  FilmCamera,
-  Geo,
-  Jar,
-  Lamp,
-  Mug,
-  PencilCup,
-  Plaque,
-  Pot,
-  PottedPlant,
-  Foliage,
-  Stack,
-  Vase,
-} from "./shapes";
+import { Bookend, Bowl, Foliage, Lamp, Mug, PencilCup, Plaque, Stack, Vine } from "./shapes";
+import { FilmCamera, StonewareVase } from "./Models";
 
 /* --------------------------------------------------------------------------
-   WHAT IS ON THE SHELVES.
+   WHAT IS ON THE SHELVES, AND WHAT IS NOT.
 
-   Everything stands ON a board, so every y here is a tier and nothing is
-   floated by hand. The z values stay between -0.42 and 0.08: the boards run
-   from the wall at -0.84 to a nose at +0.52, and a prop near the nose at this
-   camera angle hangs over the edge in a way that reads as a mistake rather
-   than as styling.
+   Mostly what is not. The old arrangement had thirty-odd objects: stacked
+   pastel bowls, two faceted gems, lavender mugs, a glass jar, a chess pawn,
+   duplicate pencil cups. None of them said anything about whose shelf this
+   is, and together they turned the frame into a search puzzle with four books
+   hidden in it.
 
-   The arrangement is deliberately uneven. Objects grouped in twos and threes
-   with real gaps between the groups read as a shelf somebody uses; evenly
-   spaced objects read as a product grid, which is the one thing a room like
-   this must not look like.
+   The limits are the design. Six objects on the books' board, four on the one
+   above and four below, and at least a third of every board left empty.
+   Empty walnut in a pool of light is not wasted space; it is the thing that
+   makes the pool read as light.
 
-   It is also weighted. The camera sits close and looks across the run, so
-   roughly x -5 to +3 is what anyone actually sees; the best props go there
-   and the far ends get quiet filler that only shows up if a reader orbits.
+   Every y here is a tier, so nothing is floated by hand, and z stays between
+   -0.42 and +0.45: the boards run from the wall at -0.84 to a nose at +0.52,
+   and a prop at the nose hangs over the edge at this camera angle in a way
+   that reads as a mistake rather than as styling.
    -------------------------------------------------------------------------- */
 
-const [FLOOR, LOW, MID, BOOKS, TOP] = SHELF.tiers;
+const [, LOW, MID, BOOKS, TOP] = SHELF.tiers;
 
-/* module scope, so the baked geometry is built once rather than on every
-   render of the component that holds it */
-const VASE_SPRIGS = [
-  { len: 0.7, leaves: 5, size: 0.072, tilt: 0.16, spin: 0.3 },
-  { len: 0.6, leaves: 4, size: 0.07, tilt: 0.3, spin: 2.4 },
-  { len: 0.5, leaves: 4, size: 0.066, tilt: 0.42, spin: 4.5 },
-];
-const TALL_SPRIGS = [
-  { len: 0.86, leaves: 6, size: 0.075, tilt: 0.1, spin: 0.2 },
-  { len: 0.72, leaves: 5, size: 0.072, tilt: 0.26, spin: 2.2 },
-  { len: 0.6, leaves: 4, size: 0.068, tilt: 0.4, spin: 4.1 },
+/* eucalyptus for the vase: three sprigs, splayed, a few leaves catching the
+   lamp. Module scope so the merged geometry is built once. */
+const EUCALYPTUS = [
+  { len: 0.66, leaves: 5, size: 0.075, tilt: 0.14, spin: 0.3 },
+  { len: 0.56, leaves: 4, size: 0.07, tilt: 0.3, spin: 2.4 },
+  { len: 0.47, leaves: 4, size: 0.066, tilt: 0.44, spin: 4.5 },
 ];
 
 export function Decor() {
   return (
     <group>
-      {/* ── top board ─────────────────────────────────────────────────── */}
-      <Bowl position={[-4.5, TOP, -0.16]} r={0.4} h={0.17} color={PALETTE.walnut} />
-      <Bowl position={[-4.47, TOP + 0.15, -0.14]} r={0.32} h={0.15} color={PALETTE.walnut} />
-      <Mug position={[-3.5, TOP, -0.04]} r={0.15} h={0.26} color={PALETTE.stoneware} />
-      <Bowl position={[-3.47, TOP, -0.04]} r={0.25} h={0.045} color={PALETTE.stoneware} />
-      <Bowl position={[-2.5, TOP, -0.12]} r={0.38} h={0.19} color={PALETTE.stoneware} />
-      <Bowl position={[-2.47, TOP + 0.17, -0.1]} r={0.31} h={0.17} color={PALETTE.stoneware} />
-      <Bowl position={[-1.35, TOP, -0.1]} r={0.29} h={0.15} color={PALETTE.stoneware} />
-      <Bowl position={[-1.32, TOP + 0.13, -0.08]} r={0.24} h={0.14} color={PALETTE.stoneware} />
-      <PottedPlant position={[-0.25, TOP, -0.12]} r={0.24} h={0.29} pot={PALETTE.stoneware} sprigs={3} len={0.55} />
-      <Geo position={[0.85, TOP + 0.15, -0.08]} r={0.15} color={PALETTE.stoneware} rotation={[0.5, 0.4, 0]} />
-      <Mug position={[1.6, TOP, -0.06]} r={0.16} h={0.28} color={PALETTE.stoneware} />
-      <PottedPlant position={[2.7, TOP, -0.14]} r={0.26} h={0.3} pot={PALETTE.stoneware} sprigs={4} len={0.5} leaf={PALETTE.leaf} />
-      <Bowl position={[4.1, TOP, -0.12]} r={0.36} h={0.16} color={PALETTE.stoneware} />
+      {/* ── the top board: only its underside and front edge are in shot, so
+             whatever stands here is read as a silhouette and cropped ────── */}
+      <Bowl position={[-2.15, TOP, -0.12]} r={0.34} h={0.16} color={PALETTE.stoneware} />
+      <Mug position={[-0.95, TOP, -0.04]} r={0.15} h={0.26} color={PALETTE.stoneware} />
+      <Stack n={3} w={0.66} d={0.5} position={[0.5, TOP, -0.1]} rotation={[0, 0.14, 0]} colors={[PALETTE.walnut, PALETTE.stoneware, PALETTE.walnut]} />
+      <Bowl position={[1.3, TOP, -0.12]} r={0.3} h={0.14} color={PALETTE.stoneware} />
 
-      {/* ── the books' board ──────────────────────────────────────────── */}
-      <Bowl position={[-4.7, BOOKS, -0.14]} r={0.36} h={0.16} color={PALETTE.stoneware} />
-      <Mug position={[-3.9, BOOKS, -0.04]} r={0.15} h={0.26} color={PALETTE.stoneware} />
-      <Bowl position={[-3.87, BOOKS, -0.04]} r={0.25} h={0.04} color={PALETTE.stoneware} />
-      <group position={[-2.85, BOOKS, -0.14]}>
-        <Vase r={0.19} h={0.5} color={PALETTE.stoneware} />
-        <Foliage position={[0, 0.45, 0]} sprigs={VASE_SPRIGS} />
-      </group>
+      {/* ── the books' board ───────────────────────────────────────────── */}
 
       {/* against the last book, so the run has a reason to stand up */}
-      <Bookend position={[-0.5, BOOKS, -0.06]} h={0.62} />
+      <Bookend position={[-0.47, BOOKS, -0.06]} h={0.6} />
 
-      {/* right of the books, which is where the eye lands after them */}
-      <group position={[-0.1, BOOKS, -0.16]}>
-        <Pot r={0.24} h={0.3} color={PALETTE.stoneware} />
-        <Foliage position={[0, 0.27, 0]} sprigs={TALL_SPRIGS} />
+      {/* Between the books and the lamp, where the key still reaches. At 3.2
+          the vase stood taller than the books, swallowed its own eucalyptus
+          and became the brightest object in the frame -- the one thing the
+          hierarchy cannot afford. */}
+      <group position={[-0.05, BOOKS, -0.14]}>
+        <StonewareVase scale={1.75} />
+        <Foliage position={[0, 0.52, 0]} sprigs={EUCALYPTUS} />
       </group>
-      <Geo position={[0.6, BOOKS + 0.15, -0.08]} r={0.16} color={PALETTE.stoneware} rotation={[0.4, 0.8, 0.2]} />
-      <FilmCamera position={[1.35, BOOKS, -0.08]} rotation={[0, -0.46, 0]} scale={0.86} />
-      <Plaque text="JAY HARWANI · MOTION & DESIGN" w={1.55} position={[2.5, BOOKS + 0.11, 0.0]} rotation={[0, -0.3, 0]} />
-      <Mug position={[3.95, BOOKS, -0.06]} r={0.16} h={0.27} color={PALETTE.stoneware} />
 
-      {/* ── the lamp's board ──────────────────────────────────────────── */}
-      <Bowl position={[-4.6, MID, -0.14]} r={0.38} h={0.18} color={PALETTE.stoneware} />
-      <Mug position={[-3.8, MID, -0.04]} r={0.15} h={0.26} color={PALETTE.stoneware} />
-      <PottedPlant position={[-2.95, MID, -0.14]} r={0.23} h={0.27} pot={PALETTE.stoneware} sprigs={3} len={0.52} />
-      <Stack n={4} w={0.74} d={0.54} position={[-1.85, MID, -0.1]} rotation={[0, 0.16, 0]} />
-      <Bowl position={[-0.8, MID, -0.12]} r={0.4} h={0.19} color={PALETTE.stoneware} />
-      <Jar position={[0.2, MID, -0.08]} r={0.17} h={0.34} />
-      <PencilCup position={[0.78, MID, 0.0]} r={0.14} h={0.28} />
-      <Stack n={3} w={0.68} d={0.5} position={[1.55, MID, -0.1]} rotation={[0, -0.1, 0]} colors={[PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware]} />
       <Lamp position={LAMP.at} rotation={[0, LAMP.rotY, 0]} />
-      <Geo position={[3.4, MID + 0.16, -0.08]} r={0.17} color={PALETTE.stoneware} rotation={[0.3, 1.1, 0.2]} />
 
-      {/* ── lower boards, mostly read as texture under the subject ────── */}
-      <Jar position={[-3.3, LOW, -0.08]} r={0.16} h={0.38} fill={PALETTE.stoneware} />
-      <Bowl position={[-2.3, LOW, -0.12]} r={0.42} h={0.19} color={PALETTE.stoneware} />
-      <PottedPlant position={[-1.2, LOW, -0.14]} r={0.25} h={0.3} pot={PALETTE.stoneware} sprigs={4} len={0.55} leaf={PALETTE.leaf} />
-      <Stack n={5} w={0.82} d={0.58} position={[0.35, LOW, -0.1]} rotation={[0, 0.1, 0]} colors={[PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware]} />
-      <PencilCup position={[1.3, LOW, 0.0]} r={0.15} h={0.3} />
-      <Figurine position={[1.95, LOW, 0.0]} />
-      <Bowl position={[2.9, LOW, -0.12]} r={0.38} h={0.17} color={PALETTE.walnut} />
+      {/* beyond the lamp base, turned toward the viewer so it catches a
+          brass highlight down one edge */}
+      <FilmCamera position={[1.42, BOOKS, -0.26]} rotation={[0, -0.5, 0]} scale={4.2} />
 
-      <Stack n={4} w={0.8} d={0.58} position={[-2.6, FLOOR, -0.1]} rotation={[0, -0.12, 0]} />
-      <Bowl position={[-1.3, FLOOR, -0.12]} r={0.44} h={0.2} color={PALETTE.stoneware} />
-      <PottedPlant position={[0.1, FLOOR, -0.14]} r={0.27} h={0.33} pot={PALETTE.stoneware} sprigs={4} len={0.6} />
-      <Stack n={3} w={0.76} d={0.56} position={[1.5, FLOOR, -0.1]} colors={[PALETTE.stoneware, PALETTE.stoneware, PALETTE.stoneware]} />
+      {/* on the front edge, lower right, where the spec puts identity */}
+      {/* The frame only reaches x = 1.5 at this depth, so "lower right third"
+          is 0.95 and not 2.55; at 2.55 the plaque was a well-made object
+          nobody would ever see. */}
+      <Plaque line1="JAY HARWANI" line2="PRODUCT DESIGNER" w={1.0} position={[0.86, BOOKS + 0.125, 0.45]} rotation={[0, -0.2, 0]} />
+
+      {/* ── the board below: mostly shadow, read as depth rather than as
+             objects ──────────────────────────────────────────────────────── */}
+      <Stack n={4} w={0.78} d={0.56} position={[-1.6, MID, -0.1]} rotation={[0, 0.16, 0]} colors={[PALETTE.walnut, PALETTE.stoneware, PALETTE.walnut, PALETTE.ivy]} />
+      <PencilCup position={[-0.7, MID, 0.0]} r={0.15} h={0.3} />
+      <Bowl position={[0.35, MID, -0.12]} r={0.4} h={0.19} color={PALETTE.stoneware} />
+      <Stack n={3} w={0.72} d={0.52} position={[1.5, MID, -0.1]} rotation={[0, -0.1, 0]} colors={[PALETTE.walnut, PALETTE.ivy, PALETTE.stoneware]} />
+
+      {/* ── the board below that: two objects, both of them silhouette ──
+             The bottom board is out of frame entirely at this camera, so it
+             carries nothing. Dressing a shelf nobody can see is draw calls
+             spent on a photograph that does not exist. */}
+      <Stack n={4} w={0.8} d={0.58} position={[-1.2, LOW, -0.1]} rotation={[0, -0.12, 0]} />
+      <Bowl position={[0.4, LOW, -0.12]} r={0.42} h={0.19} color={PALETTE.stoneware} />
+
+      {/* ── the framing ────────────────────────────────────────────────────
+             Two vines off the top board, entering at the corners and falling
+             past the edge of the shot. They never cross the books. */}
+      <Vine position={[-2.95, TOP - SHELF.board, 0.44]} len={2.5} leaves={13} spread={0.5} seed={3} />
+      <Vine position={[1.62, TOP - SHELF.board, 0.46]} len={1.9} leaves={10} spread={-0.42} seed={11} />
     </group>
   );
 }

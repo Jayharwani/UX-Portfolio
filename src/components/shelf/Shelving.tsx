@@ -34,8 +34,6 @@ const NOSE = 0.018;
 /** vertical dividers, by tier index and x. Only below the books: an upright
     beside them would cut the one part of the frame that has to stay legible. */
 const DIVIDERS: Array<[number, number]> = [
-  [0, -3.6],
-  [0, 0.95],
   [1, -2.9],
   [1, 2.4],
   [2, -3.45],

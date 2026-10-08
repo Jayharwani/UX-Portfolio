@@ -166,25 +166,35 @@ export function wood(tint: string, seed = 1) {
 }
 
 /* -- the plaque ----------------------------------------------------------
-   Engraved rather than printed, so in the height pass its letters go DOWN
-   while everything else on these shelves stands up. */
-export function plaque(text: string, mode: Mode = "art") {
-  return make(`plaque:${text}:${mode}`, 1024, 128, (g) => {
+   Engraved and then filled, which is how a real one is made: the letters are
+   cut into the wood and the brass sits in the cut. So in the height pass the
+   type goes DOWN while everything else on these shelves stands up, and in the
+   colour pass it is brass rather than ink.
+
+   Two lines, because one line had to say who and what at once and ended up
+   saying neither: "JAY HARWANI - MOTION & DESIGN" was illegible at this size
+   and sold a product designer as a motion designer. */
+export function plaque(line1: string, line2: string, mode: Mode = "art") {
+  return make(`plaque:${line1}|${line2}:${mode}`, 1024, 256, (g) => {
     const art = mode === "art";
-    g.fillStyle = art ? "#E2C093" : FLAT;
-    g.fillRect(0, 0, 1024, 128);
+    g.fillStyle = art ? "#6A4B33" : FLAT;
+    g.fillRect(0, 0, 1024, 256);
     if (art) {
       const rnd = seeded(5);
-      for (let i = 0; i < 900; i++) {
-        g.fillStyle = `rgba(120, 84, 46, ${rnd() * 0.06})`;
-        g.fillRect(rnd() * 1024, rnd() * 128, 2 + rnd() * 5, 1);
+      for (let i = 0; i < 1600; i++) {
+        g.fillStyle = `rgba(42, 28, 16, ${rnd() * 0.12})`;
+        g.fillRect(rnd() * 1024, rnd() * 256, 3 + rnd() * 9, 1);
       }
     }
-    g.fillStyle = art ? "#5A4327" : SUNK;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.font = "600 50px Geist, Inter, system-ui, sans-serif";
-    g.fillText(text, 512, 66);
+    g.fillStyle = art ? "#D7B578" : SUNK;
+    g.font = "600 92px Geist, Inter, system-ui, sans-serif";
+    g.fillText(line1, 512, 96);
+    g.globalAlpha = art ? 0.86 : 1;
+    g.font = "500 50px Geist, Inter, system-ui, sans-serif";
+    g.fillText(line2, 512, 178);
+    g.globalAlpha = 1;
   });
 }
 

@@ -221,9 +221,15 @@ export function Book({
           castShadow
           receiveShadow
         />
-        <mesh position={[BOARD / 2 + 0.001, 0, -DEPTH / 2]} rotation={[0, Math.PI / 2, 0]} material={mats.cover}>
-          <planeGeometry args={[DEPTH - RADIUS * 2, h - RADIUS * 2]} />
-        </mesh>
+        {/* The cover art exists for the second of the open sequence when the
+            board swings towards the reader, and for no other frame. Mounting
+            it only then is four draw calls back on every frame that is not
+            an open, which is almost all of them. */}
+        {active ? (
+          <mesh position={[BOARD / 2 + 0.001, 0, -DEPTH / 2]} rotation={[0, Math.PI / 2, 0]} material={mats.cover}>
+            <planeGeometry args={[DEPTH - RADIUS * 2, h - RADIUS * 2]} />
+          </mesh>
+        ) : null}
       </group>
 
       {/* the spine */}
@@ -239,7 +245,7 @@ export function Book({
 
       {/* the headband: the scrap of woven cotton at the head of a case
           binding, and the one detail that says "bound" rather than "glued" */}
-      <mesh position={[0, h / 2 - 0.012 * H, FACE - SPINE_D / 2]} material={mats.paper}>
+      <mesh position={[0, h / 2 - 0.012 * H, FACE - SPINE_D / 2]} material={mats.paper} receiveShadow>
         <boxGeometry args={[w * 0.72, 0.01 * H, SPINE_D * 0.8]} />
       </mesh>
 
