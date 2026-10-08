@@ -44,6 +44,8 @@ export interface IndexItem {
   kind: string;
   href?: string;
   year: number | string;
+  /** a quieter trailing sentence, for work that cannot be linked to */
+  note?: string;
 }
 
 export interface Fact {
@@ -218,9 +220,10 @@ export const moreWork: IndexItem[] = [
   },
   {
     name: "Welspun GCC dashboards",
-    description: "Enterprise dashboards for [FILL: team or function]. Walkthrough on request.",
+    description: "Enterprise dashboards for [FILL: team or function].",
     kind: "Private work",
     year: "[FILL]",
+    note: "Walkthrough on request.",
   },
   {
     name: "UMBC Cards Lab",

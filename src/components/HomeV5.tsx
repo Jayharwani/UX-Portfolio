@@ -1,37 +1,28 @@
 import { useEffect } from "react";
-import { about, contact, footer, head, moreWork, site } from "../content/home";
-import { NOW_STALE_DAYS, now } from "../content/now";
+import { head } from "../content/home";
+import { Contact } from "./v5/Contact";
 import { Header } from "./v5/Header";
 import { Hero } from "./v5/Hero";
+import { About, Footer, LiveRegion, MoreWork, Now } from "./v5/Sections";
 import { Showcase } from "./v5/Showcase";
-import { Marker } from "./v5/Marker";
 import "../styles/home.css";
+import "../styles/sections.css";
 
 /* --------------------------------------------------------------------------
-   THE HOMEPAGE, PHASE 1.
+   THE HOMEPAGE.
 
-   A content skeleton, not a design. Every section the page will have is here
-   as semantic markup on the v5 tokens, and nothing more: the header, the hero,
-   the Spec to Ship showcase, the index, the route arc and the contact block
-   are Phases 2 to 6, and each one replaces the stand-in below.
+   Every section the page has, in the order §5.1 sets: who, then proof, then
+   range, then the person, then what is happening now, then how to reach him.
+   Each section owns its own content and its own motion; this file owns the
+   landmarks and the order, and nothing else.
 
-   What this phase is actually proving: the tokens load, the type is
-   self-hosted, the content model renders, and the gaps in it are visible on
-   the page. A skeleton that renders real content is a better foundation than a
-   finished section built before the system under it is settled.
+   The Phase 1 skeleton that stood here is gone. It had done its job, which
+   was to prove the tokens and the content model before any of it was
+   designed.
 
-   What left with it: the canvas field and its render loop, the side rail, the
-   letterbox title sequence, and the 16-layer extruded hero whose 21 SVG copies
-   were the whole of the H1's accessible name.
+   After this the page is complete on its own. What is left is the route morph
+   into the case studies, and work that is not the homepage at all.
    -------------------------------------------------------------------------- */
-
-const DAY = 86_400_000;
-
-/** §6.6: the section hides when its newest entry has gone stale */
-const nowIsFresh =
-  site.nowEnabled &&
-  now.length > 0 &&
-  Date.now() - new Date(now[0].date).getTime() < NOW_STALE_DAYS * DAY;
 
 export function HomeV5() {
   useEffect(() => {
@@ -48,89 +39,15 @@ export function HomeV5() {
 
       <main id="content" className="shell">
         <Hero />
-
         <Showcase />
-
-        {/* ── more work ───────────────────────────────────────────── Phase 6 */}
-        <section id="more-work" aria-labelledby="more-title">
-          <h2 id="more-title">More work</h2>
-          <ul>
-            {moreWork.map((item) => (
-              <li key={item.name}>
-                <b>{item.name}</b>{" "}
-                <span>
-                  <Marker>{item.description}</Marker>
-                </span>{" "}
-                <span>
-                  <Marker>{item.kind}</Marker>
-                </span>{" "}
-                <span className="tnum">
-                  <Marker>{String(item.year)}</Marker>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* ── about ───────────────────────────────────────────────── Phase 6 */}
-        <section id="about" aria-labelledby="about-title">
-          <h2 id="about-title">{about.heading}</h2>
-          <p className="tnum">
-            {about.route.from} to {about.route.to}, {about.route.km.toLocaleString("en-US")} km
-          </p>
-          {about.paragraphs.map((text, i) => (
-            <p key={i}>
-              <Marker>{text}</Marker>
-            </p>
-          ))}
-          <dl>
-            {about.facts.map((f) => (
-              <div key={f.term}>
-                <dt>{f.term}</dt>
-                <dd>{f.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        {/* ── now ─────────────────────────────────────────────────── Phase 6 */}
-        {nowIsFresh ? (
-          <section id="now" aria-labelledby="now-title">
-            <h2 id="now-title">Now</h2>
-            <ul>
-              {now.map((e) => (
-                <li key={e.date}>
-                  <span className="tnum">{e.date}</span> <span>{e.text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {/* ── contact ─────────────────────────────────────────────── Phase 6 */}
-        <section id="contact" aria-labelledby="contact-title">
-          <h2 id="contact-title">{contact.heading}</h2>
-          <p>
-            <Marker>{contact.reply}</Marker>
-          </p>
-          <p>
-            <a href={`mailto:${site.email}`}>{site.email}</a>
-          </p>
-          <p>
-            <a href={site.linkedin} target="_blank" rel="noopener noreferrer">
-              LinkedIn
-              <span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          </p>
-          <p>
-            <Marker>{site.resumeNote}</Marker>
-          </p>
-        </section>
+        <MoreWork />
+        <About />
+        <Now />
+        <Contact />
       </main>
 
-      <footer className="shell">
-        <p>{footer.owner}</p>
-      </footer>
+      <Footer />
+      <LiveRegion />
     </>
   );
 }

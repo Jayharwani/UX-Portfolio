@@ -1,0 +1,244 @@
+/* More work, About, Now, Contact, footer. §6.4 to §6.7. */
+
+.more,
+.about,
+.now,
+.contact { margin-top: var(--section-gap); }
+
+.more h2,
+.about h2,
+.now h2,
+.contact h2 {
+  font-size: var(--t-display);
+  letter-spacing: var(--track-display);
+  line-height: 1.02;
+  color: var(--ink);
+}
+
+/* ══ more work ═══════════════════════════════════════════════ §6.4 ══ */
+
+.more-rows { margin-top: var(--s-9); }
+
+.row {
+  display: block;
+  position: relative;
+  padding-block: var(--s-6);
+  border-top: 1px solid var(--line);
+  color: inherit;
+}
+.more-rows > .row:last-child { border-bottom: 1px solid var(--line); }
+
+@media (min-width: 768px) {
+  .row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: baseline;
+  }
+  .row-name { grid-column: 1 / 5; }
+  .row-desc { grid-column: 5 / 10; }
+  .row-kind { grid-column: 10 / 12; }
+  .row-year { grid-column: 12 / 13; text-align: right; }
+}
+
+.row-name {
+  display: block;
+  position: relative;
+  font-family: var(--font-display);
+  font-size: var(--t-name);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--ink);
+  /* the box the underline grows inside; inline-block so it is the text's
+     width and not the column's */
+  width: fit-content;
+}
+.row-desc {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: var(--t-small);
+  color: var(--ink-2);
+}
+.row-note { color: var(--ink-3); }
+.row-kind,
+.row-year {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+@media (min-width: 768px) {
+  .row-desc,
+  .row-kind,
+  .row-year { margin-top: 0; }
+}
+
+/* a row that goes somewhere says so by lighting up; one that does not, does
+   not pretend (§6.4) */
+.row-name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--d-2) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  a.row:hover::before {
+    content: "";
+    position: absolute;
+    inset: 0 -12px;
+    z-index: -1;
+    border-radius: var(--r-2);
+    background: var(--paper-2);
+  }
+  a.row:hover .row-name::after { transform: scaleX(1); }
+}
+a.row { transition: background-color var(--d-2) var(--ease-out); }
+a.row:focus-visible { outline-offset: 4px; }
+
+/* ══ about ═══════════════════════════════════════════════════ §6.5 ══ */
+
+/* No portrait file, so the text takes the first eight columns rather than
+   leaving a hole where one would be (§6.5, A7). */
+.about-text { max-width: 64ch; }
+@media (min-width: 1024px) {
+  .about { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); }
+  .about-text { grid-column: 1 / 9; }
+}
+
+.route { margin: var(--s-9) 0 0; }
+.route-svg { width: 100%; height: auto; overflow: visible; }
+.route-line {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+  /* pathLength="1", so the dash is a fraction of the whole */
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.route-end { fill: var(--ink); }
+.route-rider { fill: var(--spec-line); opacity: 0; }
+
+.route-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+  font-size: var(--t-small);
+  color: var(--ink-1);
+}
+.route-km {
+  font-size: var(--t-meta);
+  color: var(--ink-2);
+}
+
+.about-p {
+  margin-top: var(--s-6);
+  font-size: var(--t-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.facts {
+  margin-top: var(--s-9);
+  display: grid;
+  gap: var(--s-5);
+}
+@media (min-width: 640px) {
+  .facts { grid-template-columns: 1fr 1fr; gap: var(--s-5) var(--s-8); }
+}
+.facts dt {
+  font-size: var(--t-meta);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.facts dd {
+  margin: 2px 0 0;
+  font-size: var(--t-small);
+  color: var(--ink-1);
+}
+
+/* ══ now ═════════════════════════════════════════════════════ §6.6 ══ */
+
+.now-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+}
+.now-updated { font-size: var(--t-meta); color: var(--ink-3); }
+.now-list { margin-top: var(--s-8); display: grid; gap: var(--s-6); }
+.now-list li { display: grid; gap: var(--s-2); }
+@media (min-width: 768px) {
+  .now-list li {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    gap: 0;
+  }
+  .now-date { grid-column: 1 / 3; }
+  .now-text { grid-column: 3 / 10; }
+}
+.now-date { font-size: var(--t-meta); color: var(--ink-3); }
+.now-text { font-size: var(--t-body); }
+
+/* ══ contact ═════════════════════════════════════════════════ §6.7 ══ */
+
+.contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-5);
+  margin-top: var(--s-8);
+}
+.contact-email {
+  font-family: var(--font-display);
+  font-size: var(--t-title);
+  font-weight: 600;
+  letter-spacing: var(--track-title);
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  /* an address is one string and breaking it mid-domain reads as two */
+  overflow-wrap: anywhere;
+}
+.contact-copy { gap: 6px; }
+.contact-copy svg { width: 12px; height: 12px; }
+.contact-manual {
+  margin-top: var(--s-3);
+  font-size: var(--t-meta);
+  color: var(--ink-2);
+}
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6);
+  margin-top: var(--s-7);
+}
+.contact .status { margin-top: var(--s-8); }
+
+/* ══ footer ══════════════════════════════════════════════════ §6.7 ══ */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-6);
+  margin-top: var(--section-gap);
+  padding-block: var(--s-7);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-meta);
+  color: var(--ink-3);
+}
+@media (max-width: 767px) {
+  .foot { flex-direction: column; }
+}

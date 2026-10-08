@@ -21,6 +21,13 @@ function cloudflareSpaPulgin() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), cloudflareSpaPulgin()],
+  define: {
+    /* the footer's "Last updated", frozen at build time: a date computed in
+       the browser would say today forever and mean nothing */
+    __BUILD_MONTH__: JSON.stringify(
+      new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    ),
+  },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {

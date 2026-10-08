@@ -2711,3 +2711,77 @@ Starting where a keyboard user starts, at the top of the document with nothing
 focused, every project's controls are in view when focused. Two of the four
 fixes were real bugs and are listed above; the symptom that prompted them was
 not.
+
+---
+
+## 28. Phase 6 record (October 7, 2026). The MVP line.
+
+More work, About, Now, Contact and the footer. The homepage is complete.
+
+### 28.1 Acceptance
+
+| Check | Result |
+|---|---|
+| The index rows and their links are correct | **Pass** |
+| The route arc draws once and lands on 12,382 km | **Pass** |
+| Now hides when its newest entry is dated 46 days ago | **Pass**, unit tested at the boundary |
+| Copy works and is announced, and the clipboard-failure path works | **Pass**, both branches |
+| The footer date is correct | **Pass**, "Last updated October 2026", frozen at build time |
+
+Lighthouse: performance 98 mobile and 100 desktop, accessibility **100**, SEO
+100, CLS 0.0002, LCP unchanged from Phase 5 to the millisecond on mobile and
+within 1 ms on desktop. Homepage JavaScript 69.5 KB gzip against a budget of
+85. No text under 12 px and no target under 24 px at 390, 768 or 1440.
+
+**The only failing audit left anywhere on the page is `errors-in-console`, and
+its only entry is the `/favicon.ico` 404.** Everything else is 100.
+
+### 28.2 Two things that were tested rather than eyeballed
+
+- **The Now staleness rule.** `nowIsFresh` is a pure function of the entries
+  and a reference time, so §6.6's rule is checked rather than inspected: 44
+  days old shows, 45 does not, 46 does not, an unparseable date does not, and
+  a mixed list is judged on its newest entry. Eight cases, all passing. With
+  no entries shipped the section does not render at all, which is the correct
+  behaviour today and the reason there is no empty state to design.
+- **The arc genuinely draws.** Sampled through the animation:
+  `stroke-dashoffset` 1.000, then 0.986, then 0.289, with the rider moving
+  from x=40 to x=529 and the counter climbing 177, 8,799. The DOM held
+  "12,382 km" before any of it started, and under reduced motion the arc is
+  complete on the first frame with no rider.
+
+### 28.3 The clipboard cannot be tested headlessly, so the component was
+
+Chrome refuses `writeText` on a headless page whatever focus is emulated:
+`document.hasFocus()` goes true under `Emulation.setFocusEmulationEnabled`,
+clipboard permission reports granted, the context is secure, and the write
+still rejects with "Document is not focused", because the check is on real
+window focus.
+
+So both branches were exercised with the API stubbed. What that proves is the
+component's behaviour and the string it hands over, not Chrome's clipboard:
+
+- **accepts**: the label becomes "Copied", the live region says "Email address
+  copied", `harwanijay9498@gmail.com` is what was handed over, and it settles
+  back to "Copy" after 1.6 s.
+- **refuses**: the label stays "Copy", the address is selected, "Press Cmd+C
+  or Ctrl+C to copy" is shown and announced, and it persists for 3 s.
+
+### 28.4 Three deviations, and one rule retired
+
+- **No portrait.** A7 shows one when `public/about/portrait.avif` exists. It
+  does not, so the text takes columns 1 to 8 rather than leaving a hole.
+  `src/assets/hero-portrait.jpeg` exists at 122 KB, but whether a photo
+  appears is Jay's call, not a conversion.
+- **No Spec mode button in the footer.** §6.7 puts one there and §9.2 gives it
+  copy, but the mode itself is Phase 10. A control that does nothing is worse
+  than one that is not there yet.
+- **The private row's trailing sentence is its own field.** §6.4 has the
+  component append "Walkthrough on request." to the description for private
+  rows. It is `note` on the item instead, because deciding which rows are
+  private by matching a string against the `kind` field is the kind of rule
+  that quietly stops being true.
+- **The §24.4 scaffold rule is gone**, on schedule. Phase 4 took `#work` out of
+  it and this phase designs the last two sections, so every link on the page
+  now carries its own target size: measured at 390, 768 and 1440, nothing is
+  under 24 px.
