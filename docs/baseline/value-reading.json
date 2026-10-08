@@ -1,0 +1,16 @@
+[
+  {
+    "label": "homepage 1440x900",
+    "size": "1440x900",
+    "dark": 0.0015,
+    "mean": 175.3,
+    "clipped": 0.05543
+  },
+  {
+    "label": "homepage 390x844",
+    "size": "780x1688",
+    "dark": 0.0133,
+    "mean": 203.0,
+    "clipped": 0.01903
+  }
+]

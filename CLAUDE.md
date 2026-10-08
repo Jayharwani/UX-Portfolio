@@ -107,3 +107,20 @@ history, not as the source of truth, and nothing on `/` is built from it.
 - Clean up every `requestAnimationFrame`, `IntersectionObserver`, and event
   listener in the `useEffect` return. Leaks here cause the page to slow down
   after route changes.
+
+## Homepage shelf redesign (docs/HOMEPAGE_SHELF_WALNUT.md)
+
+- Scope: the homepage shelf only. Never edit case study files, global CSS, shared tokens,
+  shared layout components or the router. Homepage styles live under .shelf-root.
+- Run node scripts/check-home-scope.mjs after every change set. It must pass. The base
+  defaults to `shelf`, not `main`: main is still the pre-shelf site, so diffing against it
+  reports the whole shelf build and tells you nothing. Pass `main` once shelf is merged.
+- Frozen dependencies: react, react-dom, react-router, three, gsap. React Three Fiber
+  packages stay on their React 18 majors (fiber 8, drei 9, postprocessing 2).
+- Locked palette: use the shelf tokens in the spec. Do not add colors.
+- One warm key light tells the story. Do not raise ambient light to fix a dark area;
+  add a bounce or move the key instead.
+- Tone mapping comes from the ToneMapping effect at the end of the EffectComposer chain,
+  because the composer disables the renderer's tone mapping while it renders.
+- prefers-reduced-motion: no motes, no parallax, no sway, instant state changes.
+- No debug code in production. Dev tools load only behind import.meta.env.DEV.
