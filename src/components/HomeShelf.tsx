@@ -1,25 +1,25 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { PLATE, PROJECTS } from "./shelf/shelf";
+import { PROJECTS } from "./shelf/shelf";
 import { OverlayHUD } from "./shelf/OverlayHUD";
 import "../styles/shelf.css";
 
 /* --------------------------------------------------------------------------
    THE HOMEPAGE.
 
-   A photograph of a shelf, four real books standing in front of it, and an
-   HTML index underneath that is the page whether or not any of the rest
+   A room of shelving, built in WebGL, with four books on the middle board and
+   an HTML index underneath that is the page whether or not any of the rest
    arrives.
 
    THREE THINGS DECIDE WHICH VERSION A READER GETS, and none of them is a user
    agent string:
 
-     no WebGL            the plate and the index, nothing else
-     a narrow screen     the plate and a swipe carousel of the four books
-     reduced motion      the scene, with no parallax and no cinematic open
+     no WebGL            the index, and nothing else
+     a narrow screen     a swipe carousel of the four books
+     reduced motion      the room, with no drift and no cinematic open
 
    The scene is a lazy chunk, so a phone and a crawler never download three.js
-   at all. The plate is a plain <img> and paints first either way.
+   at all.
    -------------------------------------------------------------------------- */
 
 const BookshelfScene = lazy(() =>
@@ -39,6 +39,7 @@ function hasWebGL() {
 export function HomeShelf() {
   const [mode, setMode] = useState<"loading" | "scene" | "carousel" | "flat">("loading");
   const [reduce, setReduce] = useState(false);
+  const [lite, setLite] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -50,6 +51,12 @@ export function HomeShelf() {
 
     const decide = () => {
       setReduce(motion.matches);
+      /* Core count is a blunt instrument, but it is the only capability the
+         platform will actually tell you about, and it separates a four-core
+         ultrabook from a laptop that can afford a shadow map and four
+         full-screen passes. Reduced motion takes the cheap path too: someone
+         who has asked for less movement is not well served by film grain. */
+      setLite((navigator.hardwareConcurrency ?? 8) <= 4 || motion.matches);
       if (!hasWebGL()) setMode("flat");
       else setMode(narrow.matches ? "carousel" : "scene");
     };
@@ -76,23 +83,11 @@ export function HomeShelf() {
   }, []);
 
   return (
-    <div className="shelf" data-busy={busy ? "" : undefined}>
-      {/* The room. A plain image, so it is the first paint and it is still
-          there if every script fails. */}
-      <img
-        className="shelf-plate"
-        src={PLATE.src}
-        width={PLATE.w}
-        height={PLATE.h}
-        alt="A light oak shelf holding four cloth-bound books, a eucalyptus sprig in a ceramic vase, a brass lamp, a film camera and a mug."
-        fetchPriority="high"
-        decoding="async"
-      />
-
+    <div className="shelf" data-mode={mode} data-busy={busy ? "" : undefined}>
       <div className="shelf-stage">
         {mode === "scene" ? (
           <Suspense fallback={null}>
-            <BookshelfScene onHover={setHovered} reduce={reduce} />
+            <BookshelfScene onHover={setHovered} reduce={reduce} lite={lite} />
           </Suspense>
         ) : null}
 
@@ -105,8 +100,8 @@ export function HomeShelf() {
 
       <OverlayHUD hovered={hovered} busy={busy} onBack={back} />
 
-      {/* the plate is decorative on its own; this is the sentence a crawler
-          and a screen reader get first */}
+      {/* the room is decorative; this is the sentence a crawler and a screen
+          reader get first */}
       <h1 className="visually-hidden">
         Jay Harwani, a product designer who writes the front end. Four projects, all live.
       </h1>

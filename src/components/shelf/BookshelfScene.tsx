@@ -1,120 +1,161 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
+import { Bloom, DepthOfField, EffectComposer, Noise, Vignette } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
 import { useNavigate } from "react-router";
 import gsap from "gsap";
 import * as THREE from "three";
 import { Book, type BookHandle } from "./Book";
-import { LIGHT, PLATE, PROJECTS, layout } from "./shelf";
-import { disposeTextures } from "./textures";
+import { Shelving } from "./Shelving";
+import { Decor } from "./props/Decor";
+import { disposeProps } from "./props/shapes";
+import { LIGHT, PROJECTS, SHELF, layout } from "./shelf";
+import { disposeTextures, windowGobo } from "./textures";
 
 /* --------------------------------------------------------------------------
    THE SCENE.
 
-   The room is a photograph and the books are real geometry standing in front
-   of it. That is the whole architecture, and it is the only way this reference
-   is reachable at 60fps: the eucalyptus alone is several hundred individually
-   lit leaves, the vase has glaze scatter and the wall carries dappled shadow
-   from a window that is not in frame. None of that is primitives.
+   A room, built. The camera looks down the shelving at an angle, which is the
+   single decision the whole look rests on: boards running out of both sides of
+   the frame on a diagonal read as a wall of shelving you are standing close
+   to, and a long lens flattens it into the miniature the reference is.
 
-   What the books get in exchange for being real is a real hinge, real
-   raycasting, and a camera that can move. What the room gets for being flat
-   is every photon the renderer never has to trace.
-
-   ALIGNMENT IS A CONTRACT, NOT A GUESS. The plate declares where its painted
-   books are (PLATE.books, measured off the image), the plate and the canvas
-   are both laid out by the same object-fit maths, and the camera is framed so
-   the 3D run lands in that rect at any viewport. Nothing here is a magic
-   offset that breaks at 1280.
+   THE DIAGONAL RUNS UP TO THE RIGHT, so the camera sits on the LEFT of the
+   run. The brief said [7, 6, 8]; from there the near end of the shelf is on
+   the right and the boards slope down to the right, which is the mirror of
+   the reference image. The image is the thing being matched, so the camera is
+   on the other side.
    -------------------------------------------------------------------------- */
 
 const DEG = Math.PI / 180;
 const books = layout(PROJECTS);
+const BOOK_Y = SHELF.tiers[SHELF.bookTier];
 
-/* The shelf surface, in scene units. The camera frames the painted block, so
-   its centre is the origin and its floor is half its height below that. */
-const TALLEST = Math.max(...books.map((b) => b.height));
-const FLOOR = -TALLEST / 2;
+/* Where the camera rests. Kept as a direction and a distance rather than a
+   point, because the framing is tuned by moving in and out along one line and
+   a raw XYZ makes that three edits that have to agree.
 
-/** the painted block, as a fraction of the plate */
-const FRAME = {
-  cx: (PLATE.books.x + PLATE.books.w / 2) / PLATE.w,
-  cy: (PLATE.books.y + PLATE.books.h / 2) / PLATE.h,
-  h: PLATE.books.h / PLATE.h,
-};
+   The distance is not a guess. The reference frames about 2.2 units of height
+   at the books, which at fov 26 puts the camera 4.7 units out; 5.4 keeps a
+   little more of the shelving in shot without shrinking the books back into
+   the furniture, which is what the first pass did at 11. */
+const TARGET = new THREE.Vector3(-0.78, 0.46, 0.12);
+const DIR = new THREE.Vector3(-0.59, 0.457, 0.661).normalize();
+const DIST = 6.5;
 
-/* ── camera ───────────────────────────────────────────────────────────────
-   A long lens, because the photograph was taken with one: the spines are very
-   nearly parallel and the shelf's horizontals barely converge. A wide fov
-   would splay the outer books and nothing would sit. */
-function Rig({ locked, reduce }: { locked: boolean; reduce: boolean }) {
+/* ── the rig ──────────────────────────────────────────────────────────────
+   OrbitControls owns the camera, so the hand-held float is applied to the
+   ROOM instead. Nudging the camera directly would fight the controls for the
+   same three numbers every frame and lose; rotating the world by half a
+   degree is indistinguishable on screen and has one owner. */
+function Rig({ locked, reduce, room }: { locked: boolean; reduce: boolean; room: React.RefObject<THREE.Group | null> }) {
   const { camera, size } = useThree();
-  const target = useRef({ x: 0, y: 0 });
+  const pointer = useRef({ x: 0, y: 0 });
+  const t = useRef(0);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      target.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
-      target.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
+      pointer.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
+      pointer.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  /* the run of books has to fill the painted rect's height, whatever the
-     viewport does to it */
+  /* A narrow window sees less of the run, so it has to stand further back or
+     the books fall out of frame. Framing by aspect rather than by a fixed
+     distance is why this holds from 1280 to 2560. */
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    const plateAspect = PLATE.w / PLATE.h;
-    const viewAspect = size.width / size.height;
-    /* object-fit: cover, so the plate is scaled by whichever axis is short */
-    const coverH = viewAspect > plateAspect ? (plateAspect / viewAspect) : 1;
-    /* the tallest book must occupy exactly the painted block's share of the
-       frame. A padding factor here does not pad, it shrinks: the first pass
-       carried 1.34 and the books came out a third too small and floating. */
-    const tallest = Math.max(...books.map((b) => b.height));
-    const wanted = tallest / (FRAME.h * coverH);
-    cam.fov = 17;
-    cam.position.set(0, 0, (wanted / 2) / Math.tan((cam.fov / 2) * DEG));
-    cam.lookAt(0, 0, 0);
+    cam.fov = 26;
+    const aspect = size.width / size.height;
+    const pull = THREE.MathUtils.clamp(1.78 / aspect, 0.94, 1.5);
+    cam.position.copy(TARGET).addScaledVector(DIR, DIST * pull);
+    cam.lookAt(TARGET);
     cam.updateProjectionMatrix();
   }, [camera, size]);
 
   useFrame((_, dt) => {
-    if (reduce) return;
+    const g = room.current;
+    if (!g) return;
+    t.current += dt;
+    if (reduce || locked) {
+      const k = 1 - Math.pow(0.02, dt);
+      g.rotation.y += (0 - g.rotation.y) * k;
+      g.rotation.x += (0 - g.rotation.x) * k;
+      return;
+    }
+    /* cursor, plus a slow drift so the scene is alive when nothing moves */
+    const driftY = Math.sin(t.current * 0.31) * 0.12 * DEG;
+    const driftX = Math.cos(t.current * 0.24) * 0.09 * DEG;
     const k = 1 - Math.pow(0.004, dt);
-    const amp = locked ? 0 : 1;
-    /* clamped hard: a parallax that swings far enough to show the books are
-       not in the photograph is worse than none */
-    camera.rotation.y += (-target.current.x * 0.9 * DEG * amp - camera.rotation.y) * k;
-    camera.rotation.x += (-target.current.y * 0.6 * DEG * amp - camera.rotation.x) * k;
+    g.rotation.y += (-pointer.current.x * 0.85 * DEG + driftY - g.rotation.y) * k;
+    g.rotation.x += (pointer.current.y * 0.5 * DEG + driftX - g.rotation.x) * k;
   });
 
   return null;
 }
 
+/* ── light ────────────────────────────────────────────────────────────────
+   One sun, one sky, one window. The window is a spotlight carrying a drawn
+   gobo: a glazing bar and some leaves, thrown across the wall and over the
+   boards. It casts no shadows of its own -- it is a pattern, not a shadow
+   caster, and a second shadow map for a decorative light is a frame budget
+   spent on nothing. */
 function Lights() {
+  const gobo = useMemo(() => windowGobo(), []);
+  const spot = useRef<THREE.SpotLight>(null);
+  const { scene } = useThree();
+
+  useEffect(() => {
+    const s = spot.current;
+    if (!s) return;
+    /* aimed at the stretch of wall that is actually in shot, above the top
+       board on the left, rather than at the middle of a scene whose middle is
+       entirely occupied by shelving */
+    s.target.position.set(-3.2, 1.7, SHELF.wallZ);
+    scene.add(s.target);
+    return () => {
+      scene.remove(s.target);
+    };
+  }, [scene]);
+
   return (
     <>
-      <ambientLight color={LIGHT.fill} intensity={0.8} />
-      {/* the sun, from the top left, matching the plate's own shadows */}
+      <hemisphereLight color={LIGHT.sky} groundColor={LIGHT.ground} intensity={0.98} />
+      <ambientLight color={LIGHT.sun} intensity={0.28} />
       <directionalLight
         color={LIGHT.sun}
-        intensity={2.1}
-        position={[-3.2, 4.4, 3.1]}
+        intensity={1.55}
+        position={[-7.5, 9.5, 7]}
         castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-near={0.5}
-        shadow-camera-far={12}
-        shadow-camera-left={-2}
-        shadow-camera-right={2}
-        shadow-camera-top={2}
-        shadow-camera-bottom={-2}
-        shadow-bias={-0.0012}
+        shadow-mapSize={[1536, 1536]}
+        shadow-camera-near={2}
+        shadow-camera-far={34}
+        shadow-camera-left={-11}
+        shadow-camera-right={11}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
+        shadow-bias={-0.0013}
+        shadow-normalBias={0.02}
       />
-      {/* the brass lamp standing to the left of the books in the photograph */}
-      <pointLight color={LIGHT.lamp} intensity={1.2} distance={4} position={[-1.15, 0.5, 0.7]} />
-      {/* a dim bounce off the shelf, so the fore-edges are not black */}
-      <pointLight color="#fff3e2" intensity={0.25} distance={3} position={[0.4, -0.7, 1.1]} />
+      {/* Intensity is in candela and falls off with the square of distance,
+          so a light sixteen units out needs a number in the hundreds. The
+          first pass used 14 with decay 1.1 and arrived at the wall at about
+          0.6 against a key of 1.55 -- present in the render, invisible to the
+          eye. */}
+      <spotLight
+        ref={spot}
+        color={LIGHT.sun}
+        intensity={430}
+        distance={44}
+        angle={0.56}
+        penumbra={0.85}
+        decay={2}
+        position={[-7.6, 6.4, 8.2]}
+        map={gobo}
+      />
     </>
   );
 }
@@ -122,15 +163,21 @@ function Lights() {
 export function BookshelfScene({
   onHover,
   reduce,
+  lite = false,
 }: {
   onHover: (slug: string | null) => void;
   reduce: boolean;
+  /** a machine that cannot afford the shadow map and the extra passes */
+  lite?: boolean;
 }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  const [tip, setTip] = useState<string | null>(null);
   const handles = useRef(new Map<string, BookHandle>());
   const camRef = useRef<THREE.Camera | null>(null);
+  const controls = useRef<React.ElementRef<typeof OrbitControls> | null>(null);
+  const room = useRef<THREE.Group>(null);
   const tl = useRef<gsap.core.Timeline | null>(null);
   const fallback = useRef<number | undefined>(undefined);
 
@@ -139,11 +186,23 @@ export function BookshelfScene({
     else handles.current.delete(slug);
   }, []);
 
-  useEffect(() => () => {
-    tl.current?.kill();
-    window.clearTimeout(fallback.current);
-    disposeTextures();
-  }, []);
+  useEffect(
+    () => () => {
+      tl.current?.kill();
+      window.clearTimeout(fallback.current);
+      disposeTextures();
+      disposeProps();
+    },
+    []
+  );
+
+  const hover = useCallback(
+    (slug: string | null) => {
+      setTip(slug);
+      onHover(slug);
+    },
+    [onHover]
+  );
 
   /* ── the open ───────────────────────────────────────────────────────────
      Pull the book clear of its neighbours, turn it to face the reader, swing
@@ -158,9 +217,11 @@ export function BookshelfScene({
 
       setBusy(true);
       setActive(slug);
+      setTip(null);
       window.dispatchEvent(new Event("shelf:opening"));
       onHover(null);
       document.body.style.cursor = "";
+      if (controls.current) controls.current.enabled = false;
 
       const book = books.find((b) => b.slug === slug);
       const href = book?.href ?? "/";
@@ -177,26 +238,26 @@ export function BookshelfScene({
         navigate(href);
       };
 
+      /* Straight out in front of the book, a shade above its middle. 2.9 put
+         the near plane inside it: at fov 26 that frames 1.34 units of height
+         against a book 1.12 tall plus the cover swinging out past it, so the
+         board ran off the top and the bottom at once. */
+      const to = new THREE.Vector3(h.group.position.x - 0.42, BOOK_Y + 0.78, 3.7);
       const t = gsap.timeline({ defaults: { ease: "power3.inOut" } });
       tl.current = t;
 
-      /* 0.46 of the resting distance put the near plane inside the book: at
-         fov 17 it framed 1.0 units of height against a book 1.1 tall, so the
-         cover overflowed on every side. 0.66 leaves the board whole with air
-         around it, and centring on the book's own x rather than half of it
-         means the one being opened is the one in the middle. */
-      t.to(cam.position, { x: h.group.position.x, z: cam.position.z * 0.66, duration: 1.2 }, 0)
-        .to(h.group.position, { z: 0.54, y: h.group.position.y + 0.05, duration: 0.75 }, 0)
-        .to(h.group.rotation, { y: -75 * DEG, duration: 0.95 }, 0.12)
-        .to(h.coverPivot.rotation, { y: -118 * DEG, duration: 0.8, ease: "power2.inOut" }, 0.72)
+      t.to(cam.position, { x: to.x, y: to.y, z: to.z, duration: 1.25, onUpdate: () => cam.lookAt(h.group.position.x, BOOK_Y + 0.56, 0.42) }, 0)
+        .to(h.group.position, { z: 0.72, duration: 0.8 }, 0)
+        .to(h.group.rotation, { y: -78 * DEG, duration: 1 }, 0.1)
+        .to(h.coverPivot.rotation, { y: -120 * DEG, duration: 0.82, ease: "power2.inOut" }, 0.74)
         /* an explicit last beat rather than onComplete: the route change is
            the thing this whole sequence exists to do, and it should not be a
            property of the timeline that a later edit can drop. The guard and
            the fallback mean a dropped frame, a backgrounded tab or a killed
            tween still land the reader on the case study. */
-        .call(go, undefined, 1.72);
+        .call(go, undefined, 1.74);
 
-      fallback.current = window.setTimeout(go, 2200);
+      fallback.current = window.setTimeout(go, 2300);
     },
     [busy, navigate, onHover, reduce]
   );
@@ -210,9 +271,25 @@ export function BookshelfScene({
       const h = active ? handles.current.get(active) : null;
       const cam = camRef.current;
       if (h && cam) {
-        gsap.to(h.group.position, { z: 0, duration: 0.55, ease: "power3.out" });
-        gsap.to(h.group.rotation, { y: 0, duration: 0.55, ease: "power3.out" });
-        gsap.to(h.coverPivot.rotation, { y: 0, duration: 0.45, ease: "power3.out" });
+        gsap.to(h.group.position, { z: 0, duration: 0.6, ease: "power3.out" });
+        gsap.to(h.group.rotation, { y: 0, duration: 0.6, ease: "power3.out" });
+        gsap.to(h.coverPivot.rotation, { y: 0, duration: 0.5, ease: "power3.out" });
+        const c = controls.current;
+        const home = TARGET.clone().addScaledVector(DIR, cam.position.distanceTo(TARGET));
+        gsap.to(cam.position, {
+          x: home.x,
+          y: home.y,
+          z: home.z,
+          duration: 0.65,
+          ease: "power3.out",
+          onUpdate: () => cam.lookAt(TARGET),
+          onComplete: () => {
+            if (c) {
+              c.enabled = true;
+              c.update();
+            }
+          },
+        });
       }
       setBusy(false);
       setActive(null);
@@ -222,56 +299,125 @@ export function BookshelfScene({
   }, [busy, active]);
 
   const dpr = useMemo<[number, number]>(() => [1, 2], []);
+  const shown = tip ? books.find((b) => b.slug === tip) : null;
+  const shownIndex = shown ? books.findIndex((b) => b.slug === shown.slug) : -1;
 
   return (
     <Canvas
       className="shelf-canvas"
-      shadows
+      /* The shadow map is the single most expensive thing in the scene: it
+         re-draws every caster a second time. On a machine with four cores or
+         fewer the room keeps its form from the hemisphere light and loses
+         only the cast shadows, which is a far better trade than a room that
+         stutters. */
+      shadows={!lite}
       dpr={dpr}
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      camera={{ fov: 17, position: [0, 0, 6] }}
+      gl={{ antialias: true, powerPreference: "high-performance" }}
+      camera={{
+        fov: 26,
+        near: 0.3,
+        far: 60,
+        position: [TARGET.x + DIR.x * DIST, TARGET.y + DIR.y * DIST, TARGET.z + DIR.z * DIST],
+      }}
       onCreated={({ camera, gl }) => {
         camRef.current = camera;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.06;
+        gl.toneMappingExposure = 1.02;
       }}
-      /* the plate is the ground truth for where everything sits, so the canvas
-         is laid out over it by the same cover maths and never independently */
-      style={{ touchAction: "pan-y" }}
     >
-      <Rig locked={busy} reduce={reduce} />
+      <color attach="background" args={["#EFE9E0"]} />
+      <Rig locked={busy} reduce={reduce} room={room} />
       <Lights />
 
-      <group>
+      <group ref={room}>
+        <Shelving />
+        <Decor />
+
         {books.map((p, i) => (
           <Book
             key={p.slug}
             project={p}
             index={i}
-            baseY={FLOOR}
+            baseY={BOOK_Y}
             active={active === p.slug}
             busy={busy}
-            onHover={onHover}
+            onHover={hover}
             onOpen={open}
             register={register}
           />
         ))}
 
-        {/* the books have to land on the photographed shelf, not float over
-            it: a soft contact shadow is the one thing that sells it */}
-        <ContactShadows
-          position={[0, FLOOR + 0.002, 0.1]}
-          scale={2.6}
-          resolution={512}
-          blur={2.4}
-          opacity={0.42}
-          far={0.8}
-          color="#6b4f33"
-          frames={busy ? Infinity : 1}
-        />
+        {/* the callout, anchored to the book rather than to the viewport, so
+            it tracks when the room drifts and when the reader orbits */}
+        {shown && !busy ? (
+          <Html
+            position={[shown.x + 0.62, BOOK_Y + shown.height * 0.72, 0.92]}
+            center={false}
+            zIndexRange={[8, 0]}
+            style={{ pointerEvents: "none" }}
+          >
+            <div className="shelf-tip">
+              <p className="shelf-tip-n">
+                {String(shownIndex + 1).padStart(2, "0")} <span>&mdash;</span> {shown.title.toUpperCase()}
+              </p>
+              <p className="shelf-tip-sub">{shown.blurb}</p>
+            </div>
+          </Html>
+        ) : null}
       </group>
+
+      {/* ── the lens ──────────────────────────────────────────────────────
+          What makes a miniature read as a miniature is depth of field. A real
+          camera 40cm from a real shelf has the whole thing sharp; one 40cm
+          from a doll's shelf has about two centimetres in focus, and the brain
+          reads the blur as scale before it reads anything else. The focus
+          sits on the books, so the near board and the far wall both go soft
+          and the four spines are the only thing the eye can rest on.
+
+          It is aimed at a WORLD POINT, not at a depth. focusDistance is
+          normalised against the camera's far plane, so the first pass put
+          0.0115 against a far of 1000 and focused eleven units out -- several
+          metres behind the shelving -- which blurred the four books and left
+          the empty wall sharp. target does the arithmetic from the same vector
+          the camera already looks at, and cannot drift out of agreement
+          with it.
+
+          Everything here is deliberately under-done. Bloom at 0.12 is a
+          suggestion of the lamp rather than a glow; grain at 0.025 is film,
+          not snow. Both are the kind of effect that looks like craft at a
+          tenth of the strength it takes to notice on its own. */}
+      {lite ? null : (
+        <EffectComposer multisampling={4} enableNormalPass={false}>
+          <DepthOfField
+            target={[TARGET.x, TARGET.y, TARGET.z]}
+            focalLength={0.3}
+            bokehScale={0.9}
+            height={480}
+          />
+          <Bloom intensity={0.12} luminanceThreshold={0.86} luminanceSmoothing={0.3} mipmapBlur height={300} />
+          <Noise opacity={0.025} blendFunction={BlendFunction.OVERLAY} />
+          <Vignette offset={0.36} darkness={0.32} eskil={false} />
+        </EffectComposer>
+      )}
+
+      {/* A gaze, not a turntable. The limits are tight enough that a reader
+          can look around the room and never find the back of it. */}
+      <OrbitControls
+        ref={controls}
+        makeDefault
+        target={TARGET}
+        enablePan={false}
+        enableDamping
+        dampingFactor={0.075}
+        rotateSpeed={0.3}
+        zoomSpeed={0.45}
+        minDistance={4.6}
+        maxDistance={8.4}
+        minPolarAngle={56 * DEG}
+        maxPolarAngle={71 * DEG}
+        minAzimuthAngle={-54 * DEG}
+        maxAzimuthAngle={-29 * DEG}
+      />
     </Canvas>
   );
 }
-
-export { FRAME };

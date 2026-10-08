@@ -1,149 +1,168 @@
 /* --------------------------------------------------------------------------
    THE SHELF — one place for what the scene is made of.
 
-   Dimensions are in decimetres, which keeps every number on screen a readable
-   one or two digits and keeps the lights at sane intensities. The shelf
-   interior is 3 units wide and 1.6 tall; the camera sits 3.4 back.
+   Units are decimetres. A book is about one unit tall, which keeps every
+   number on screen to one or two digits and keeps the light intensities
+   sane.
+
+   This scene is built, not photographed. An earlier pass stood real geometry
+   in front of a photograph of a room; it worked, but a photograph cannot move,
+   so every prop was frozen and the books had to be erased out of the plate
+   before they could be replaced. Everything here is geometry, which means the
+   camera can go anywhere and nothing has to be retouched.
    -------------------------------------------------------------------------- */
 
 export interface Project {
   slug: string;
   title: string;
-  /** the one line a hover has room for */
+  /** the terse line, for the index under the fold */
   subtitle: string;
+  /** the fuller line, for the tooltip that has two lines to spend */
+  blurb: string;
   href: string;
   live: { href: string; label: string };
   year: string;
-  /** the project's own colour, as the cloth of its book */
+  /** the cloth of the book */
   cloth: string;
-  /** foil stamping on the spine and the cover */
-  foil: string;
-  /** books on a real shelf are not milled to one size */
+  /** the raised lettering on the spine */
+  ink: string;
+  /** the page block showing above and in front of the boards */
+  paper: string;
   height: number;
   thickness: number;
-  /** a lean, in degrees, because nothing on a shelf is plumb */
+  /** a degree or two of lean, because nothing on a shelf is plumb */
   lean: number;
-  /** Turned out of the shelf plane, in degrees. The two end books are angled
-      like bookends, which is what makes the run wide enough to cover the
-      painted block behind it: a turned book is as wide on screen as
-      t*cos(a) + depth*sin(a), so fifteen degrees buys almost as much width
-      again as the spine itself.
-
-      Sign matters. Positive turns the front board away from the reader and
-      shows the plain back one; the first pass used +34 and -27 and the two
-      end books presented a blank board and a full cover instead of spines. */
-  turn: number;
 }
 
-/* Read off the plate rather than invented: the four books in the photograph
-   are terracotta, sage, navy and amber, and the lettering on each is debossed
-   into the cloth rather than foiled onto it, so the "foil" here is a darker
-   or lighter tone of the same cloth and not a metal.
-
-   Sampling these by pixel did not work. The front book is pulled out and
-   throws a hard diagonal shadow across the two behind it, so a centre sample
-   read sage as dark olive and navy as near black; and the lettering is cut
-   into the cloth, so any sample near a title averages the groove. They are
-   matched by eye, which is what they are for.  */
 export const PROJECTS: Project[] = [
   {
     slug: "friction",
     title: "Friction",
     subtitle: "Review mining, Astro",
+    blurb: "Designing intentional resistance for better user decisions",
     href: "/friction",
     live: { href: "https://jayharwani.github.io/friction/", label: "Open site" },
     year: "2026",
-    cloth: "#b06a4e",
-    foil: "#8a4a34",
-    height: 1.2,
-    thickness: 0.265,
+    cloth: "#C2694A",
+    ink: "#F6E4D2",
+    paper: "#F2EADC",
+    height: 1.12,
+    thickness: 0.255,
     lean: 0,
-    turn: -15,
   },
   {
     slug: "headroom",
     title: "Headroom",
     subtitle: "Local-first finance, React",
+    blurb: "Local-first personal finance that keeps working offline",
     href: "/headroom",
     live: { href: "https://headroom-opal.vercel.app", label: "Open app" },
     year: "2026",
-    cloth: "#8a978a",
-    foil: "#5f6c5f",
-    height: 1.1,
-    thickness: 0.278,
+    cloth: "#A8BA9B",
+    ink: "#FBF7EE",
+    paper: "#F2EADC",
+    height: 1.05,
+    thickness: 0.225,
     lean: 0,
-    turn: 0,
   },
   {
     slug: "signal",
     title: "Signal",
     subtitle: "Live event map, MapLibre",
+    blurb: "A live map of what is happening across the DMV tonight",
     href: "/signal",
     live: { href: "https://jayharwani.github.io/dmv-map/", label: "Open map" },
     year: "2026",
-    cloth: "#2b3150",
-    foil: "#b9c0d6",
-    height: 1.12,
-    thickness: 0.205,
-    lean: 1.6,
-    turn: 0,
+    cloth: "#4B5A8E",
+    ink: "#FBFAF6",
+    paper: "#EFE7D8",
+    height: 1.09,
+    thickness: 0.2,
+    lean: 1.4,
   },
   {
     slug: "bumper",
     title: "Bumper",
     subtitle: "Behavioural, Chrome extension",
+    blurb: "A Chrome extension that puts a speed bump in the scroll",
     href: "/bumper",
     live: {
       href: "https://chromewebstore.google.com/detail/flnbabigjodkpgapnpeaiepdmganifmp",
       label: "Chrome Web Store",
     },
     year: "2026",
-    cloth: "#c3883f",
-    foil: "#8a5a23",
-    height: 1.17,
-    thickness: 0.238,
+    cloth: "#E2B23F",
+    ink: "#4A3310",
+    paper: "#F2EADC",
+    height: 1.16,
+    thickness: 0.235,
     lean: 0,
-    turn: 13,
   },
 ];
 
-/* THE PLATE, AND WHERE THE BOOKS SIT IN IT.
-
-   public/shelf/room.webp is the photograph with its baked-in interface
-   retouched out: the nav row, the hover card, two icon clusters, a wordmark
-   and a mouse cursor. scratchpad/ref/retouch.html is how, if it ever needs
-   rebuilding from the original.
-
-   The rect is the block of painted books the 3D ones stand in front of and
-   hide, measured off the plate: x 500 to 1000, y 195 to 665. Everything is
-   expressed as a fraction of the plate so the scene survives any viewport. */
-export const PLATE = {
-  src: "/shelf/room.webp",
-  w: 1530,
-  h: 858,
-  books: { x: 500, y: 195, w: 500, h: 470 },
-} as const;
-
-export const SHELF = {
-  /** the run of books, in scene units */
-  width: 0.9,
-  gap: 0.006,
+/* ── the room ─────────────────────────────────────────────────────────────
+   Everything is matte. The look in the reference is a miniature: objects that
+   would be glossy at real scale read as clay at doll scale, because the
+   highlight on a 4cm mug is a dot rather than a sweep. Roughness stays high
+   and metalness stays at zero except on the two things that are actually
+   metal, and even those are brushed rather than polished. */
+export const PALETTE = {
+  wall: "#EDE7DE",
+  oak: "#DDB683",
+  oakDark: "#C79C68",
+  oakEdge: "#E7C796",
+  clay: "#D2BBA4",
+  clayDeep: "#B9815F",
+  stone: "#CFC8BC",
+  cream: "#EFE7DA",
+  leaf: "#8FA886",
+  leafDeep: "#6E8C6B",
+  brass: "#C9A356",
+  steel: "#8E9094",
+  graphite: "#3B3B3F",
+  ink: "#4A4036",
 } as const;
 
 export const LIGHT = {
-  sun: "#FFFDF8",
-  fill: "#F4EFEB",
-  lamp: "#FFB366",
+  sun: "#FFF4E2",
+  sky: "#E8EEF5",
+  ground: "#C9A880",
+  lamp: "#FFB65E",
 } as const;
 
-/** x of each book's spine centre, so the run is centred on the origin */
-export function layout(projects: Project[]) {
+/* ── dimensions ───────────────────────────────────────────────────────────
+   The boards run well past the frame on both sides. A shelf that ends inside
+   the shot reads as a prop on a table; one that runs out of frame reads as a
+   wall of shelving the camera happens to be close to, which is the whole
+   feeling of the reference. */
+export const SHELF = {
+  /** boards run from -SPAN to +SPAN in x */
+  span: 7.6,
+  /** front face at +depth, back against the wall */
+  depth: 0.78,
+  board: 0.15,
+  /** y of the top surface of each board, bottom tier first.
+
+      Spacing is 1.38 against books 1.05 to 1.16 tall, so a book clears the
+      board above it by about a centimetre at this scale. That tightness is
+      not an accident: at 1.78 the books sat in the middle of a half-empty
+      compartment and read as four objects on a wide ledge, where the
+      reference reads as books that live on a shelf they only just fit. */
+  tiers: [-4.14, -2.76, -1.38, 0, 1.38] as const,
+  /** which tier the books stand on */
+  bookTier: 3,
+  wallZ: -0.84,
+  gap: 0.012,
+} as const;
+
+/** x of each book's spine centre, so the run is centred on `at` */
+export function layout(projects: Project[], at = -1.15) {
   const total = projects.reduce((n, p) => n + p.thickness, 0) + SHELF.gap * (projects.length - 1);
-  let x = -total / 2;
+  let x = at - total / 2;
   return projects.map((p) => {
-    const at = x + p.thickness / 2;
+    const mid = x + p.thickness / 2;
     x += p.thickness + SHELF.gap;
-    return { ...p, x: at };
+    return { ...p, x: mid };
   });
 }
 

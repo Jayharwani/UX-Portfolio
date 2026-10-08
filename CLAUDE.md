@@ -4,37 +4,46 @@ Project instructions for Claude Code. Read this before touching anything.
 
 ## What this is
 
-Jay Harwani's portfolio homepage (jayharwani.com). The homepage is a lit
-bookshelf in a daylit room: four books are the four case studies, hovering one
-raises it and names it, and clicking one pulls it off the shelf, turns it to
-face the reader and swings its cover open before the route changes.
+Jay Harwani's portfolio homepage (jayharwani.com). The homepage is a room of
+oak shelving seen from close up on a diagonal, built entirely in WebGL: four
+books on the middle board are the four case studies, hovering one steps it
+forward and names it in a callout, and clicking one pulls it clear, turns it
+to face the reader and swings its cover open before the route changes.
 
-It is a **hybrid**, and that is the load-bearing decision. The room, the vase,
-the brass lamp, the camera, the mug and the nameplate are a photograph
-(`public/shelf/room.webp`). Only the books are geometry. The eucalyptus alone
-is several hundred individually lit leaves and the wall carries dappled shadow
-from a window that is not in frame; none of that is reachable with primitives
-at 60fps, and the books are the only things that have to move, hinge, or be
-clicked. Anything added to this scene belongs in the plate unless it is
-interactive.
+**Everything in it is geometry, and that is the load-bearing decision.** An
+earlier pass stood real books in front of a photograph of a room. It worked,
+and it was the wrong shape: a photograph cannot move, so every prop was frozen
+at one camera angle, and the painted books had to be erased out of the plate
+with a Laplace solve before the real ones could stand where they had been.
+Nothing here is retouched, so the camera can go anywhere.
+
+The look is a **miniature**, not a photograph. Everything is matte and
+round-cornered, and the depth of field is what sells the scale — a lens that
+close to a real shelf keeps all of it sharp, so blur is what tells the eye the
+shelf is small. Keep roughness high and metalness at zero on anything that is
+not literally metal; one glossy prop and the whole thing reads as a render of
+furniture.
+
+Shelves run off both edges of the frame on purpose. A shelf that ends inside
+the shot reads as a prop on a table.
 
 `reference/index.html` is the previous dark, cinematic homepage. It is kept as
-history, not as the source of truth, and nothing on `/` is built from it any
-more. The bookshelf's own reference plate lives in `public/shelf/`.
+history, not as the source of truth, and nothing on `/` is built from it.
 
 ## Stack
 
 - React + TypeScript + Vite
 - Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
   CSS-in-JS, or a UI kit.**
-- **The homepage runs three.js, @react-three/fiber, drei and GSAP.** This
-  replaces an earlier "the homepage stays library-free" rule, which the
-  bookshelf brief overrode on purpose: a hinged, raycast, camera-moved book
-  cannot be had from CSS keyframes and a 2D canvas. The cost is paid honestly
-  rather than hidden — the scene is a `lazy()` chunk (~219 kB gzip) that is
-  only fetched on a wide viewport that reports WebGL, so the first paint is
-  the 83 kB shell plus the 97 kB plate and phones never download three.js at
-  all. Keep it that way: no eager import of `BookshelfScene`.
+- **The homepage runs three.js, @react-three/fiber, drei, GSAP and
+  @react-three/postprocessing.** This replaces an earlier "the homepage stays
+  library-free" rule, which two successive briefs overrode on purpose: a
+  hinged, raycast, camera-moved book in a lit room is not reachable from CSS
+  keyframes and a 2D canvas. The cost is paid honestly rather than hidden —
+  the scene is a `lazy()` chunk (~250 kB gzip) fetched only on a wide viewport
+  that reports WebGL, the first paint is an 84 kB shell and no image at all,
+  and phones never download three.js. Keep it that way: no eager import of
+  `BookshelfScene`.
 - **Still banned on the homepage:** Lenis, scroll-jacking, and any
   transform-based smooth-scroll wrapper. Those were never about bundle size.
 - **Case studies may use what is already in `package.json`** — GSAP (with
@@ -51,8 +60,18 @@ more. The bookshelf's own reference plate lives in `public/shelf/`.
 
 1. **Performance.** Animate only `transform`, `opacity`, `filter`, and canvas.
    Never animate `width`, `height`, `top`, or `left` in a loop.
-   Cap canvas DPR at 2. Pause the render loop on `document.hidden`.
-   Target 60fps on a 2019 laptop.
+   Cap canvas DPR at 2. Target 60fps on a 2019 laptop.
+
+   In the room, the number that matters is **draw calls**, and the budget is
+   about 250. Headless Chrome cannot measure frame rate here — `about:blank`
+   alone sits at 33ms — so measure draw calls instead; they are the same on
+   every machine. Anything repeated more than a few times gets its transforms
+   baked into one merged geometry: modelling every eucalyptus leaf as its own
+   mesh cost 412 calls a frame, and merging them per plant cost nothing
+   visible and gave back 168.
+
+   `lite` mode (four cores or fewer, or reduced motion) drops the shadow map
+   and the post chain. Keep new work behind that flag if it costs a pass.
 2. **No debug code in production.** No `console.log`, no commented-out blocks,
    no `TODO` left in shipped files.
 3. **Scroll observation uses IntersectionObserver**, never a `scroll` event
@@ -63,13 +82,12 @@ more. The bookshelf's own reference plate lives in `public/shelf/`.
    Smoothness comes from lerping the scroll *value*, not from moving the page.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **The homepage palette is sampled from the plate, not from SPEC.md.**
-   Every colour on `/` — the warm paper whites, the `#2a2520` ink, the four
-   book cloths and foils — is eyedropped from `public/shelf/room.webp` so the
-   geometry and the photograph agree. They live in `src/styles/shelf.css` and
-   `src/components/shelf/shelf.ts`. SPEC.md's locked tokens still govern
-   everything that is not the bookshelf. Do not mix the two: a SPEC.md token
-   on the shelf will read as the wrong temperature against the photograph.
+6. **The homepage palette lives with the room, not in SPEC.md.** Every colour
+   on `/` — the oak, the plaster, the clay and sage props, the four book
+   cloths — is in `PALETTE` in `src/components/shelf/shelf.ts`, and the HTML
+   over the top is in `src/styles/shelf.css`. SPEC.md's locked tokens still
+   govern everything that is not the homepage. Do not mix the two: a SPEC.md
+   token in this room reads at the wrong temperature against the oak.
 7. **A case study is themed by its own product, not by the template.**
    `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
    light because the app is a warm off-white with a deep emerald; its accent
