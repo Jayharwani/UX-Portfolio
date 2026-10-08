@@ -1,8 +1,8 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { Bloom, DepthOfField, EffectComposer, Noise, ToneMapping, Vignette } from "@react-three/postprocessing";
-import { BlendFunction, ToneMappingMode } from "postprocessing";
+import { PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { ShelfPostHigh, ShelfPostLow, ShelfPostMedium } from "./ShelfPost";
 import { useNavigate } from "react-router";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -36,6 +36,9 @@ const books = layout(PROJECTS);
 /* start the maps downloading as soon as the chunk evaluates, rather than when
    the first surface asks for them */
 preloadShelfTextures();
+
+/* HDR, so the brightest motes clear the bloom threshold */
+const MOTE = new THREE.Color(shelfPalette.mote).multiplyScalar(2);
 
 /* The value meter is how the look is tuned: dark share, mean luma and clipped
    share, read off the finished frame. It is gated on DEV so it never reaches
@@ -71,6 +74,12 @@ const DIR = new THREE.Vector3(
 );
 const TARGET = new THREE.Vector3(-0.634, 0.52, 0.158);
 
+const DESKTOP = { fov: FOV, yaw: YAW, dist: DIST };
+/* 860 to 1023: the scene still runs, but the run has to fill more of a
+   narrower frame, so the lens opens and the yaw comes off. Below 860 the page
+   serves the carousel instead and never loads any of this. */
+const TABLET = { fov: 32, yaw: -10 * DEG, dist: 3.98 };
+
 /* ── the rig ──────────────────────────────────────────────────────────────
    OrbitControls owns the camera, so the hand-held float is applied to the
    ROOM instead. Nudging the camera directly would fight the controls for the
@@ -96,10 +105,19 @@ function Rig({ locked, reduce, room }: { locked: boolean; reduce: boolean; room:
      from 1280 to 2560. */
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    cam.fov = FOV;
     const aspect = size.width / size.height;
+    /* A tablet sees less of the run, so it takes a wider lens and less yaw:
+       at 17 degrees on a 900px-wide window the fourth spine starts to hide
+       behind the third. */
+    const preset = size.width >= 1024 ? DESKTOP : TABLET;
+    cam.fov = preset.fov;
+    const dir = new THREE.Vector3(
+      Math.sin(preset.yaw) * Math.cos(PITCH),
+      Math.sin(PITCH),
+      Math.cos(preset.yaw) * Math.cos(PITCH)
+    );
     const pull = THREE.MathUtils.clamp(1.6 / aspect, 0.94, 1.5);
-    cam.position.copy(TARGET).addScaledVector(DIR, DIST * pull);
+    cam.position.copy(TARGET).addScaledVector(dir, preset.dist * pull);
     cam.lookAt(TARGET);
     cam.updateProjectionMatrix();
   }, [camera, size]);
@@ -136,11 +154,19 @@ export function BookshelfScene({
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<string | null>(null);
   const [reading, setReading] = useState<{ dark: number; mean: number; clipped: number } | null>(null);
+  const [tier, setTier] = useState<"high" | "medium" | "low">(lite ? "low" : "high");
+  const [dpr, setDpr] = useState(lite ? 1 : 2);
+  /* the post tier only steps once resolution has nothing left to give */
+  const dprFloor = useRef(false);
   const handles = useRef(new Map<string, BookHandle>());
   const camRef = useRef<THREE.Camera | null>(null);
   const room = useRef<THREE.Group>(null);
   const tl = useRef<gsap.core.Timeline | null>(null);
   const fallback = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    dprFloor.current = dpr <= 1;
+  }, [dpr]);
 
   const register = useCallback((slug: string, h: BookHandle | null) => {
     if (h) handles.current.set(slug, h);
@@ -252,7 +278,6 @@ export function BookshelfScene({
     return () => window.removeEventListener("shelf:back", back);
   }, [busy, active]);
 
-  const dpr = useMemo<[number, number]>(() => [1, 2], []);
   const shown = tip ? books.find((b) => b.slug === tip) : null;
   const shownIndex = shown ? books.findIndex((b) => b.slug === shown.slug) : -1;
 
@@ -265,7 +290,7 @@ export function BookshelfScene({
          only the cast shadows, which is a far better trade than a room that
          stutters. */
       shadows={!lite}
-      dpr={dpr}
+      dpr={[1, dpr]}
       gl={{ antialias: false, powerPreference: "high-performance" }}
       camera={{
         fov: 26,
@@ -287,6 +312,25 @@ export function BookshelfScene({
       {/* The background is the fog colour, so the wall does not end at a seam
           where geometry stops. fogExp2 rather than linear: the falloff a dark
           room has is exponential, and linear fog reads as a grey wash. */}
+      {/* QUALITY COMES DOWN, NEVER BACK UP. Resolution first, because dropping
+          from 2x to 1.25x is invisible next to losing ambient occlusion; the
+          post tier only steps after resolution has run out of room, and only
+          once. It never climbs again during a visit: changing tier recompiles
+          shaders, and a hitch every time the frame rate wobbles is worse than
+          the quality the hitch was buying. */}
+      <PerformanceMonitor
+        flipflops={3}
+        onDecline={() => {
+          setDpr((d) => (d > 1.5 ? 1.5 : d > 1.25 ? 1.25 : 1));
+          setTier((t) => (dprFloor.current && t === "high" ? "medium" : t === "medium" && dprFloor.current ? "low" : t));
+        }}
+        onIncline={() => setDpr((d) => Math.min(2, d + 0.25))}
+        onFallback={() => {
+          setTier("low");
+          setDpr(1);
+        }}
+      />
+
       <color attach="background" args={[shelfPalette.fog]} />
       <fogExp2 attach="fog" args={[shelfPalette.fog, 0.035]} />
       <Rig locked={busy} reduce={reduce} room={room} />
@@ -304,6 +348,32 @@ export function BookshelfScene({
           <Shelving />
           <Decor />
         </Suspense>
+
+        {/* A few motes of light, drifting in the lamp's cone. They are the
+            only thing in the scene that moves on its own, which is why there
+            are so few: a room where everything drifts is a screensaver. The
+            colour is scaled past 1 so the brightest of them catch the bloom,
+            and they are placed between the camera and the books rather than
+            behind, because dust is only visible when it is lit from the side
+            and in front of something dark.
+
+            The box sits to the RIGHT of the run, inside the lamp's cone and
+            clear of the spines: a mote crossing a title is a smudge on the one
+            thing that has to stay readable. Thirty-six of them at size 2.2
+            read as snow across the whole frame; eighteen at 1.1 read as a
+            room with air in it. */}
+        {tier !== "low" && !reduce ? (
+          <Sparkles
+            count={tier === "high" ? 18 : 8}
+            scale={[1.5, 1.0, 0.7]}
+            position={[0.15, 0.78, 0.75]}
+            size={1.1}
+            speed={0.16}
+            opacity={0.55}
+            noise={0.5}
+            color={MOTE}
+          />
+        ) : null}
 
         {books.map((p, i) => (
           <Book
@@ -367,28 +437,9 @@ export function BookshelfScene({
           suggestion of the lamp rather than a glow; grain at 0.025 is film,
           not snow. Both are the kind of effect that looks like craft at a
           tenth of the strength it takes to notice on its own. */}
-      {lite ? null : (
-        <EffectComposer multisampling={4} enableNormalPass={false}>
-          <DepthOfField
-            target={[TARGET.x, TARGET.y, TARGET.z]}
-            focalLength={0.3}
-            bokehScale={0.9}
-            height={480}
-          />
-          {/* A threshold of 1 only works because the composer renders in half
-              float: the one thing in the scene above 1 is the HDR bulb, so
-              nothing else glows. */}
-          <Bloom mipmapBlur levels={5} luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.55} />
-          {/* THE EFFECT THAT WAS MISSING. @react-three/postprocessing sets
-              gl.toneMapping to NoToneMapping for as long as the composer is
-              mounted, so the ACES configured on the renderer never ran: the
-              page shipped raw linear-to-sRGB, which is why 5.5% of its pixels
-              were clipped and nothing had any shape. */}
-          <ToneMapping mode={ToneMappingMode.AGX} />
-          <Vignette offset={0.28} darkness={0.62} eskil={false} />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.18} />
-        </EffectComposer>
-      )}
+      {tier === "high" ? <ShelfPostHigh focus={BOOKS_CENTER} /> : null}
+      {tier === "medium" ? <ShelfPostMedium /> : null}
+      {tier === "low" ? <ShelfPostLow /> : null}
 
     </Canvas>
   );
