@@ -14,12 +14,21 @@
   color: var(--ink-2);
 }
 
-/* reachable by keyboard, invisible to everyone else until it has focus */
+/* Reachable by keyboard, invisible to everyone else until it has focus, and
+   never in the flow. `position: static` on focus put a line of text inside a
+   section whose height IS the scroll timeline: focusing it pushed the sticky
+   stage down and left every ScrollTrigger start and end measured against a
+   height that no longer existed. Fixed, it cannot move anything. */
 .skip-inline { position: absolute; left: -9999px; }
 .skip-inline:focus {
-  position: static;
-  display: inline-block;
-  margin-bottom: var(--s-4);
+  position: fixed;
+  left: var(--margin);
+  top: calc(var(--header-h) + var(--s-3));
+  z-index: var(--z-toast);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-2);
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
   font-size: var(--t-small);
   font-weight: 500;
 }
@@ -45,6 +54,9 @@
 @media (min-width: 1024px) {
   .project { margin-top: var(--s-13); padding-top: var(--s-13); }
 }
+/* the roll is the visible half of a counter; the accessible half is the
+   visually hidden span beside it and is always the final value */
+.pv-roll { font-variant-numeric: tabular-nums; }
 
 .project-copy h3 {
   font-size: var(--t-title);
@@ -53,7 +65,6 @@
 }
 .project-problem {
   max-width: 28ch;
-  margin-top: var(--s-4);
   font-size: var(--t-lead);
   line-height: 1.45;
   letter-spacing: var(--track-lead);
@@ -61,14 +72,12 @@
   text-wrap: pretty;
 }
 .project-meta {
-  margin-top: var(--s-6);
   font-size: var(--t-meta);
   line-height: 1.5;
   color: var(--ink-3);
 }
 .project-meta dd { margin: 0; }
 .project-outcome {
-  margin-top: var(--s-5);
   font-size: var(--t-small);
   color: var(--ink-1);
 }
@@ -77,7 +86,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s-4);
-  margin-top: var(--s-6);
 }
 
 /* ══ the frame ═══════════════════════════════════════════════ §6.3.4 ══ */
@@ -444,7 +452,133 @@
   .link-ext:hover svg { transform: translate(2px, -2px); }
 }
 
-/* ══ progress nav ════════════════════════════════════════ §6.3.7 ══
-   Markup only in Phase 4. It is the pinned layout's control, and that layout
-   does not exist until Phase 5. */
+/* The masks the pinned layout clips copy with, inert in the stacked one.
+   Spacing lives on the mask rather than on the block inside it: a margin on
+   the inner element collapses straight through a wrapper with no padding or
+   border, which puts it outside the box doing the clipping. */
+.mask { display: block; }
+.mask > span { display: block; }
+.project-copy > .mask:nth-child(2) { margin-top: var(--s-4); }
+.project-copy > .mask:nth-child(3) { margin-top: var(--s-6); }
+.project-copy > .mask:nth-child(4) { margin-top: var(--s-5); }
+.project-copy > .mask:nth-child(5) { margin-top: var(--s-6); }
+
+/* ══ progress nav ════════════════════════════════════════ §6.3.7 ══ */
 .progress { display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PINNED LAYOUT. §6.3.2, §7.3, §8.2.
+
+   One sticky cell with all four projects stacked in it. Everything below is
+   driven by four numbers the engine writes on .project, and nothing below
+   reads the scroll position: CSS owns the look, the engine owns the numbers,
+   and that is what makes Path A and Path B interchangeable.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  /* the engine reads this height and never sets it (§8.5) */
+  .showcase {
+    height: calc(100svh + var(--n) * var(--segment));
+    margin-top: var(--section-gap);
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: calc(var(--header-h) + var(--s-8)) 0 var(--s-9);
+  }
+
+  /* all four in one cell */
+  .stage-copy { display: grid; align-items: center; }
+
+  .project {
+    grid-area: 1 / 1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    align-items: center;
+    /* §8.2 writes this as `min(1, --enter * 4) - --exit`, which leaves the
+       outgoing project at half opacity while the incoming one is already
+       fully drawn, and the two frames are then superimposed for most of the
+       handoff. Leaving is faster than arriving (§3.3), so the exit gets the
+       same multiplier: both reach their end state in the first quarter of
+       the 0.12 unit handoff, which at 765px a segment is about 23px of
+       scroll and reads as a change rather than a dissolve. */
+    opacity: calc(min(1, var(--enter) * 4) - min(1, var(--exit) * 4));
+  }
+  /* visible before the engine module has even been fetched */
+  .project[data-index="0"] { --enter: 1; }
+  /* nothing below the active project can be clicked through */
+  .project { pointer-events: none; }
+  .project[data-index="0"] { pointer-events: auto; }
+
+  /* clip, not hide: the block leaves its own box rather than fading inside it */
+  .project-copy .mask { overflow: clip; }
+  .project-copy .mask > span {
+    transform: translateY(calc((1 - var(--enter)) * 100% - var(--exit) * 100%));
+  }
+
+  .frame-link { transform: scale(calc(1 - var(--exit) * 0.015)); }
+
+  .project-frame {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+  }
+  .frame {
+    align-self: center;
+    max-height: calc(100svh - var(--header-h) - 176px);
+  }
+  .frame[data-kind="browser"] { width: 100%; }
+  /* a phone fills the box's height instead of its width */
+  .frame[data-kind="phone"] {
+    width: auto;
+    height: calc(100svh - var(--header-h) - 176px);
+    aspect-ratio: 9 / 19.5;
+  }
+  .frame[data-kind="phone"] .frame-body,
+  .frame[data-kind="phone"] .screen { height: 100%; }
+  .frame[data-kind="phone"] .screen { aspect-ratio: auto; }
+
+  /* the one line that is not simply present: it arrives with the ink, over
+     the last third of the reveal (§7.3) */
+  .project-outcome { opacity: clamp(0, (var(--reveal) - 0.71) * 3.5, 1); }
+
+  /* the switch is the stacked layout's control; here the scroll is */
+  .project-switch .seg { display: none; }
+
+  .progress {
+    display: flex;
+    gap: var(--s-6);
+    align-self: start;
+  }
+  .progress button {
+    font-size: var(--t-small);
+    font-weight: 500;
+    color: var(--ink-3);
+    transition: color var(--d-2) var(--ease-out);
+  }
+  .progress button[aria-current="true"] { color: var(--ink-1); }
+  .progress .track {
+    display: block;
+    height: 2px;
+    margin-top: var(--s-2);
+    background: var(--line);
+  }
+  .progress .fill {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+    transform: scaleX(var(--fill, 0));
+    transform-origin: left center;
+  }
+}
+
+/* The stage is a plain block below the breakpoint, so nothing above leaks
+   into the layout the stacked one needs. */
+@media not all and (min-width: 1024px) {
+  .stage-copy { display: block; }
+}

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { FlagshipProject } from "../../content/home";
+import { Counter } from "./Counter";
 import { Block, T } from "./LiveFrame";
 
 /* --------------------------------------------------------------------------
@@ -21,25 +22,21 @@ import { Block, T } from "./LiveFrame";
    -------------------------------------------------------------------------- */
 
 /** the figure a screen leads with, in the DOM at its final value (§6.3.6) */
-function Figure({
-  wire,
-  value,
-  prefix,
-  label,
-}: {
-  wire: boolean;
-  value: string;
-  prefix?: string;
-  label: string;
-}) {
+function Figure({ wire, label, ...p }: { wire: boolean; label: string } & PreviewProps) {
   return (
     <div className="pv-figure">
       {wire ? (
         <i className="pv-bar pv-bar--big" style={{ width: "52%" }} />
       ) : (
         <strong className="pv-num tnum" data-spec="type">
-          {prefix ? <small>{prefix}</small> : null}
-          {value}
+          {p.value === undefined ? (
+            <>
+              {p.prefix ? <small>{p.prefix}</small> : null}
+              {p.figure}
+            </>
+          ) : (
+            <Counter value={p.value} prefix={p.prefix} run={p.roll} reduce={p.reduce} />
+          )}
         </strong>
       )}
       <T wire={wire} w={44} className="pv-cap">
@@ -67,11 +64,12 @@ function Head({ wire, left, right }: { wire: boolean; left: string; right?: Reac
 const BARS = [92, 74, 86, 58, 96, 68, 80, 64, 90, 52, 76, 88];
 const KEPT = new Set([1, 5, 9]);
 
-function Friction({ wire, figure }: PreviewProps) {
+function Friction(p: PreviewProps) {
+  const { wire } = p;
   return (
     <div className="pv pv--friction" data-spec="padding">
       <Head wire={wire} left="Last scan" right={<><i className="pv-dot" />Weekly</>} />
-      <Figure wire={wire} value={figure} label="public reviews read" />
+      <Figure {...p} label="public reviews read" />
       <div className="pv-bars" data-spec="gap">
         {BARS.map((w, i) => (
           <i key={i} className={KEPT.has(i) ? "on" : undefined} style={{ width: `${w}%` }} />
@@ -100,11 +98,12 @@ const BILLS = [
   ["Wifi", "$120"],
 ];
 
-function Headroom({ wire, figure }: PreviewProps) {
+function Headroom(p: PreviewProps) {
+  const { wire } = p;
   return (
     <div className="pv pv--headroom" data-spec="padding">
       <Head wire={wire} left="Safe to spend" right={<><i className="pv-dot" />On track</>} />
-      <Figure wire={wire} value={figure} prefix="$" label="4 days until payday" />
+      <Figure {...p} label="4 days until payday" />
       {/* The bills sit under the figure, which is the order the running app
           uses: the number, then what made it smaller than the balance. They
           were pinned to the foot of the screen at first, and a 9/19.5 frame
@@ -147,7 +146,8 @@ const PINS = [
   [50, 38],
 ];
 
-function Signal({ wire, figure }: PreviewProps) {
+function Signal(p: PreviewProps) {
+  const { wire, figure } = p;
   return (
     <div className="pv pv--signal">
       <div className="pv-map">
@@ -177,7 +177,8 @@ function Signal({ wire, figure }: PreviewProps) {
 /* ── Bumper ───────────────────────────────────────────────────────────────
    A checkout, and the one question the extension puts in front of it. */
 
-function Bumper({ wire }: PreviewProps) {
+function Bumper(p: PreviewProps) {
+  const { wire } = p;
   return (
     <div className="pv pv--bumper">
       <div className="pv-cart" data-spec="padding">
@@ -214,6 +215,12 @@ interface PreviewProps {
   wire: boolean;
   /** already formatted, and already the final value in the DOM */
   figure: string;
+  /** the same number unformatted, where there is one to count */
+  value?: number;
+  prefix?: string;
+  /** the one-shot has fired for this frame */
+  roll: boolean;
+  reduce: boolean;
 }
 
 const BY_SLUG: Record<FlagshipProject["slug"], (p: PreviewProps) => ReactNode> = {
@@ -223,15 +230,7 @@ const BY_SLUG: Record<FlagshipProject["slug"], (p: PreviewProps) => ReactNode> =
   bumper: Bumper,
 };
 
-export function Preview({
-  slug,
-  wire,
-  figure,
-}: {
-  slug: FlagshipProject["slug"];
-  wire: boolean;
-  figure: string;
-}) {
+export function Preview({ slug, ...p }: { slug: FlagshipProject["slug"] } & PreviewProps) {
   const C = BY_SLUG[slug];
-  return <C wire={wire} figure={figure} />;
+  return <C {...p} />;
 }

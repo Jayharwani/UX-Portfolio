@@ -2626,3 +2626,88 @@ transparent `fillStyle` left the previous pixel and every colour after the
 first transparent one read as that stale value. `globalCompositeOperation =
 "copy"` makes the fill replace rather than composite. The same trap as reading
 `oklch()` with a number regex, one layer down.
+
+---
+
+## 27. Phase 5 record (October 7, 2026)
+
+The pinned stage and the engine that drives it. Path A, under A1.
+
+### 27.1 Acceptance
+
+| Check | Result |
+|---|---|
+| No run of 3 or more dropped frames at 4x CPU | **Pass**, longest run **2** |
+| Scrolling back up reverses cleanly | **Pass** |
+| Tabbing through every project keeps the ring visible | **Pass** |
+| Motion chunk 50 KB gzip or less, loading after LCP | **Pass**, **46.75 KB**, 577 ms against an LCP of 464 ms |
+| Zero console output | **Pass**, apart from the favicon 404 carried since Phase 1 |
+
+Frame timing, 2,294 frames over a full scroll down and back up at 4x CPU
+slowdown: median 16.7 ms, p95 16.9 ms, 26 dropped (1.1%), longest run 2, and
+no run of 3 anywhere in the histogram.
+
+Lighthouse holds: performance 98 mobile and 100 desktop, accessibility 100,
+CLS 0.0002, LCP within 5 ms of Phase 4 in both profiles.
+
+The scroll map, read off the drivers at seven positions, matches §7.3: `--draw`
+complete by p 0.22, `--reveal` 0.54 at p 0.55, both projects' states correct
+through a handoff, and the same values on the way back up.
+
+### 27.2 The engine writes numbers and nothing else
+
+Four per project, one per progress button. CSS turns them into transforms and
+clip paths, so nothing in `showcaseMotion.ts` knows what anything looks like
+and Path B could replace it without touching a stylesheet. Pinning is
+`position: sticky`, the section's height is set in a media query and only read
+by the engine, and `gsap.matchMedia` reverts the inline properties when the
+query stops matching so the stacked layout's own `data-state` takes over.
+
+### 27.3 Five bugs the measurements found
+
+- **The active name was wrong on the way back up.** `tl.call` fires on
+  crossing, so scrolling from project 4 to the middle of project 2 last
+  crossed project 3's marker and left its name lit. The index is now a floor
+  of the playhead's own time, which is right in both directions.
+- **Two projects were legible at once through a handoff.** §8.2's opacity
+  formula leaves the outgoing project at half while the incoming one is
+  already fully drawn: "Astro" sat struck through "React PWA" and the two
+  frames were superimposed. Every copy block is masked now rather than only
+  the name and the problem, and the exit takes the same multiplier as the
+  enter, because leaving is faster than arriving (§3.3).
+- **The inline skip link changed the height of the scroll timeline.**
+  `position: static` on focus put a line of text inside the section whose
+  height *is* the timeline, pushing the sticky stage down and leaving every
+  ScrollTrigger start and end measured against a layout that no longer
+  existed. It is fixed-position now and cannot move anything.
+- **Focus correction tested the wrong thing.** It skipped the active project,
+  but being active is not being on screen: the ring landed on the active
+  project's own button 170 px below the fold. It tests the rect now, and runs
+  a frame later, because the browser's own scroll-into-view was landing after
+  the engine's and undoing it.
+- **The motion chunk was loading during the critical path.** A 150% root
+  margin reaches 1350 px past a 900 px fold and the showcase starts about
+  120 px below it, so the observer fired at once and the fetch began at
+  116 ms. Waiting for `load` was not enough, because on a local server load
+  fires at 29 ms, before React has painted: the fetch moved to 134 ms against
+  an FCP of 188 ms. Waiting for the first LCP entry was not enough either,
+  because LCP arrives as a run of candidates and the first one is the
+  headline: 367 ms against a final LCP of 464 ms. It now waits for the
+  candidates to stop arriving, which puts it at 577 ms, and three runs agree.
+
+### 27.4 A chunk a reader may never fetch
+
+The engine is not imported at all unless the pinned query matches. A reader on
+a phone, or one who asked for less motion, was downloading 46 KB of GSAP for
+`gsap.matchMedia` to decline to use. Lighthouse mobile now records no request
+for it at all.
+
+### 27.5 A note on testing a harness, not a page
+
+The focus test reported its first Tab landing off screen through four rounds of
+fixes. The page was fine: the harness focused the skip link by script, from a
+scroll position no reader arrives at, and measured the state that produced.
+Starting where a keyboard user starts, at the top of the document with nothing
+focused, every project's controls are in view when focused. Two of the four
+fixes were real bugs and are listed above; the symptom that prompted them was
+not.
