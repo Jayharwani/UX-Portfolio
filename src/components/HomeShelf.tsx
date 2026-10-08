@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { PROJECTS } from "./shelf/shelf";
 import { OverlayHUD } from "./shelf/OverlayHUD";
@@ -7,19 +7,24 @@ import "../styles/shelf.css";
 /* --------------------------------------------------------------------------
    THE HOMEPAGE.
 
-   A room of shelving, built in WebGL, with four books on the middle board and
-   an HTML index underneath that is the page whether or not any of the rest
-   arrives.
+   A poster paints first, the scene fades in over it, and an HTML index is the
+   page whether or not any of the rest arrives.
 
-   THREE THINGS DECIDE WHICH VERSION A READER GETS, and none of them is a user
-   agent string:
+   WHAT A READER GETS, and none of it decided by a user agent string:
 
-     no WebGL            the index, and nothing else
-     a narrow screen     a swipe carousel of the four books
-     reduced motion      the room, with no drift and no cinematic open
+     no WebGL, or the context is lost   the poster, and the list, visible
+     a narrow screen                    a swipe carousel; three.js never loads
+     reduced motion                     the room, with no drift and no sequence
+     four cores or fewer                the room, without shadows or post
 
-   The scene is a lazy chunk, so a phone and a crawler never download three.js
-   at all.
+   THE POSTER IS THE LCP ELEMENT, which is the entire reason it exists: the
+   scene chunk and its two megabytes of maps cannot paint in a second, and a
+   dark empty rectangle for that second is a worse first impression than any
+   amount of 3D is a good one. It is 33 kB of AVIF.
+
+   fetchpriority is spelled in lowercase on purpose. React 18 does not know the
+   camelCase prop and silently drops it, which is a hint you can read in the
+   DOM and never see in the source.
    -------------------------------------------------------------------------- */
 
 const BookshelfScene = lazy(() =>
@@ -41,9 +46,9 @@ export function HomeShelf() {
   const [reduce, setReduce] = useState(false);
   const [lite, setLite] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  /* the keyboard's hover: focusing a list item pulls its book out */
   const [focused, setFocused] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     document.title = "Jay Harwani, product designer who writes the front end";
@@ -53,11 +58,11 @@ export function HomeShelf() {
 
     const decide = () => {
       setReduce(motion.matches);
-      /* Core count is a blunt instrument, but it is the only capability the
-         platform will actually tell you about, and it separates a four-core
-         ultrabook from a laptop that can afford a shadow map and four
-         full-screen passes. Reduced motion takes the cheap path too: someone
-         who has asked for less movement is not well served by film grain. */
+      /* Core count is a blunt instrument and the only capability the platform
+         will actually admit to. It separates a four-core ultrabook from a
+         laptop that can afford a shadow map and four full-screen passes.
+         Reduced motion takes the cheap path too: someone who asked for less
+         movement is not well served by film grain. */
       setLite((navigator.hardwareConcurrency ?? 8) <= 4 || motion.matches);
       if (!hasWebGL()) setMode("flat");
       else setMode(narrow.matches ? "carousel" : "scene");
@@ -72,19 +77,60 @@ export function HomeShelf() {
     };
   }, []);
 
-  /* the scene fires this when a book opens, so the overlay can fade out */
+  /* A LOST CONTEXT IS NOT A CRASH, it is a laptop waking up or a driver being
+     replaced, and it happens to real people. The poster is still there and the
+     list is one keystroke away, so the page falls back to being a page. */
+  useEffect(() => {
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setMode("flat");
+      setPainted(false);
+    };
+    const canvas = document.querySelector("canvas");
+    canvas?.addEventListener("webglcontextlost", onLost);
+    return () => canvas?.removeEventListener("webglcontextlost", onLost);
+  }, [mode, painted]);
+
   useEffect(() => {
     const on = () => setBusy(true);
     window.addEventListener("shelf:opening", on);
     return () => window.removeEventListener("shelf:opening", on);
   }, []);
 
+  /* Two frames, not one. The first frame after the scene mounts is the one
+     where the compositor still has nothing to show, and fading the canvas in
+     on it swaps a finished poster for an empty canvas. */
+  const onReady = useCallback(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setPainted(true)));
+  }, []);
+
   return (
     <div className="shelf shelf-root" data-mode={mode} data-busy={busy ? "" : undefined}>
-      <div className="shelf-stage">
+      <picture>
+        <source media="(max-width: 1100px)" srcSet="/shelf/poster-1024.avif" />
+        <img
+          className="shelf-poster"
+          src="/shelf/poster-1440.avif"
+          width={1440}
+          height={900}
+          alt=""
+          data-gone={painted ? "" : undefined}
+          /* lowercase: React 18 drops the camelCase spelling */
+          {...{ fetchpriority: "high" }}
+          decoding="async"
+        />
+      </picture>
+
+      <div className="shelf-stage" data-painted={painted ? "" : undefined}>
         {mode === "scene" ? (
           <Suspense fallback={null}>
-            <BookshelfScene onHover={setHovered} reduce={reduce} lite={lite} focused={focused} />
+            <BookshelfScene
+              onHover={setHovered}
+              reduce={reduce}
+              lite={lite}
+              focused={focused}
+              onReady={onReady}
+            />
           </Suspense>
         ) : null}
 

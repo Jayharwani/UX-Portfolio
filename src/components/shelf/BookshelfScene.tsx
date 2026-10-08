@@ -184,11 +184,14 @@ export function BookshelfScene({
   reduce,
   lite = false,
   focused = null,
+  onReady,
 }: {
   onHover: (slug: string | null) => void;
   reduce: boolean;
   /** the slug whose list item has keyboard focus, if any */
   focused?: string | null;
+  /** fired once the first real frame has been drawn, so the poster can go */
+  onReady?: () => void;
   /** a machine that cannot afford the shadow map and the extra passes */
   lite?: boolean;
 }) {
@@ -306,6 +309,7 @@ export function BookshelfScene({
       }}
       onCreated={({ camera, gl }) => {
         camRef.current = camera;
+        onReady?.();
         /* AgX here too, not just in the chain. The composer disables the
            renderer's tone mapping while it renders, so this value only shows
            up on a frame drawn WITHOUT the composer -- a poster capture, or the
