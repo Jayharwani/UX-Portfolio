@@ -1,0 +1,296 @@
+/* The bookshelf homepage. The plate is the ground truth for layout: the
+   canvas is stretched over it by the same object-fit rules, so the 3D books
+   stay registered with the painted ones at every viewport. */
+
+.shelf {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #e8e2d8;
+  color: #2a2520;
+  font-family: "Geist", -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the room */
+.shelf-plate,
+.shelf-stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100svh;
+}
+.shelf-plate {
+  object-fit: cover;
+  object-position: 50% 50%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.shelf-stage { pointer-events: none; }
+.shelf-stage > * { pointer-events: auto; }
+.shelf-canvas { width: 100% !important; height: 100% !important; }
+
+/* ── the hover card ───────────────────────────────────────────────────────
+   Where the reference puts it: left of the books, over the wall beside the
+   vase, frosted so the room reads through it. */
+.shelf-card {
+  position: fixed;
+  left: clamp(20px, 13vw, 210px);
+  top: 52%;
+  width: min(330px, 62vw);
+  padding: 18px 22px 20px;
+  border-radius: 14px;
+  background: rgba(255, 253, 249, 0.74);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: 0 1px 2px rgb(60 44 28 / 0.06), 0 18px 48px -16px rgb(60 44 28 / 0.26);
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transition:
+    opacity 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 4;
+}
+.shelf-card[data-on] { opacity: 1; transform: none; }
+.shelf-card-n {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #2a2520;
+}
+.shelf-card-n span { opacity: 0.45; margin: 0 2px; }
+.shelf-card-sub {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #6b5d50;
+}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.shelf-hdr {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px clamp(20px, 4vw, 56px);
+}
+.shelf-brand {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #2a2520;
+  text-decoration: none;
+}
+.shelf-hdr nav { display: flex; gap: clamp(16px, 2.4vw, 34px); }
+.shelf-hdr nav a {
+  font-size: 15px;
+  font-weight: 500;
+  color: #5c5047;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+.shelf-hdr nav a:hover { color: #2a2520; }
+
+.shelf-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  z-index: 5;
+  margin: 0;
+  transform: translateX(-50%);
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #4a4038;
+  opacity: 0.95;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+.shelf-hint[data-off] { opacity: 0; }
+
+.shelf-back {
+  position: fixed;
+  left: clamp(20px, 4vw, 56px);
+  bottom: 30px;
+  z-index: 7;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px -10px rgb(60 44 28 / 0.4);
+  font-size: 14px;
+  font-weight: 500;
+  color: #2a2520;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+.shelf-back[data-on] { opacity: 1; transform: none; pointer-events: auto; }
+
+/* the tooltip drei renders in the scene */
+.shelf-tip {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  width: max-content;
+  border-radius: 10px;
+  background: rgba(255, 253, 249, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px -12px rgb(60 44 28 / 0.45);
+  font-family: "Geist", system-ui, sans-serif;
+}
+.shelf-tip-n { font-size: 11px; letter-spacing: 0.1em; color: #8a7a6b; }
+.shelf-tip-title { font-size: 16px; font-weight: 600; color: #2a2520; }
+.shelf-tip-sub { font-size: 12px; color: #6b5d50; }
+
+/* ── the real index ───────────────────────────────────────────────────────
+   Under the fold on a desktop, the whole page without WebGL. */
+.shelf-index {
+  position: relative;
+  z-index: 5;
+  margin-top: 100svh;
+  padding: clamp(48px, 8vw, 110px) clamp(20px, 4vw, 56px) 80px;
+  background: #fbf8f3;
+  border-top: 1px solid #e6ded2;
+}
+.shelf-index ol { margin: 0; padding: 0; list-style: none; }
+.shelf-index li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 20px;
+  padding: 22px 0;
+  border-bottom: 1px solid #ebe4d9;
+}
+.shelf-index li:first-child { border-top: 1px solid #ebe4d9; }
+.shelf-index a { text-decoration: none; color: inherit; }
+.shelf-index li > a:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  flex: 1;
+  min-width: 0;
+}
+.shelf-index-n { font-size: 13px; color: #a2927f; font-variant-numeric: tabular-nums; }
+.shelf-index-title { font-size: 26px; font-weight: 600; letter-spacing: -0.015em; color: #2a2520; }
+.shelf-index-sub { font-size: 15px; color: #6b5d50; }
+.shelf-index-live {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b5d50;
+  box-shadow: inset 0 -1px 0 #d6c9b8;
+}
+.shelf-index li > a:first-child:hover .shelf-index-title { text-decoration: underline; text-underline-offset: 0.18em; }
+
+.shelf-skip {
+  position: absolute;
+  left: -9999px;
+}
+.shelf-skip:focus {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  z-index: 20;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px -10px rgb(60 44 28 / 0.5);
+  font-size: 14px;
+  font-weight: 500;
+  color: #2a2520;
+}
+
+.shelf-noscript { position: relative; z-index: 6; padding: 24px; background: #fbf8f3; }
+
+:where(.shelf) :focus-visible {
+  outline: 2px solid #8a5a2b;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ── the phone ────────────────────────────────────────────────────────────
+   Four books standing up, swiped past. Native scroll-snap, so momentum and
+   overscroll stay the platform's. */
+.mshelf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8vh;
+  margin: 0;
+  padding: 0 calc(50vw - 110px);
+  list-style: none;
+  display: flex;
+  gap: 26px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.mshelf::-webkit-scrollbar { display: none; }
+.mshelf-item { scroll-snap-align: center; flex: 0 0 auto; display: grid; justify-items: center; gap: 14px; }
+
+.mbook {
+  display: flex;
+  width: 220px;
+  height: 300px;
+  border-radius: 4px 10px 10px 4px;
+  overflow: hidden;
+  text-decoration: none;
+  background: var(--cloth);
+  box-shadow:
+    0 2px 4px rgb(50 36 22 / 0.18),
+    0 22px 44px -18px rgb(50 36 22 / 0.55);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mbook:active { transform: scale(0.985); }
+.mbook-spine {
+  flex: 0 0 34px;
+  display: grid;
+  align-content: space-between;
+  justify-items: center;
+  padding: 12px 0;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.26), rgb(255 255 255 / 0.06));
+}
+.mbook-n { font-size: 10px; color: var(--foil); font-variant-numeric: tabular-nums; }
+.mbook-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--foil);
+}
+.mbook-face {
+  flex: 1;
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  padding: 22px 20px;
+  color: var(--foil);
+}
+.mbook-face-title { font-size: 28px; font-weight: 600; letter-spacing: -0.015em; }
+.mbook-face-sub { font-size: 13px; opacity: 0.86; line-height: 1.4; }
+.mbook-face-year { font-size: 11px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+.mbook-live { font-size: 13px; color: #5c5047; text-decoration: none; box-shadow: inset 0 -1px 0 #c9bba8; }
+
+@media (max-width: 860px) {
+  .shelf-card, .shelf-hint { display: none; }
+  .shelf-plate { object-position: 62% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-card, .shelf-back, .shelf-hint, .mbook { transition-duration: 1ms; }
+}

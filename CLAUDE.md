@@ -4,23 +4,39 @@ Project instructions for Claude Code. Read this before touching anything.
 
 ## What this is
 
-Jay Harwani's portfolio homepage (jayharwani.com). A single dark, cinematic
-page: a letterbox title sequence, a live 3D canvas background, a migration
-route graphic, a work index with animated project previews, and a contact
-section.
+Jay Harwani's portfolio homepage (jayharwani.com). The homepage is a lit
+bookshelf in a daylit room: four books are the four case studies, hovering one
+raises it and names it, and clicking one pulls it off the shelf, turns it to
+face the reader and swings its cover open before the route changes.
 
-`reference/index.html` is a **working, self-contained implementation** of the
-finished design. It is the visual source of truth. When the spec and the
-reference disagree, the reference wins. Open it in a browser before you start.
+It is a **hybrid**, and that is the load-bearing decision. The room, the vase,
+the brass lamp, the camera, the mug and the nameplate are a photograph
+(`public/shelf/room.webp`). Only the books are geometry. The eucalyptus alone
+is several hundred individually lit leaves and the wall carries dappled shadow
+from a window that is not in frame; none of that is reachable with primitives
+at 60fps, and the books are the only things that have to move, hinge, or be
+clicked. Anything added to this scene belongs in the plate unless it is
+interactive.
+
+`reference/index.html` is the previous dark, cinematic homepage. It is kept as
+history, not as the source of truth, and nothing on `/` is built from it any
+more. The bookshelf's own reference plate lives in `public/shelf/`.
 
 ## Stack
 
 - React + TypeScript + Vite
 - Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
   CSS-in-JS, or a UI kit.**
-- **The homepage stays library-free.** CSS transitions, CSS keyframes,
-  `requestAnimationFrame`, and one 2D canvas. No Lenis, no scroll-jacking, no
-  transform-based smooth-scroll wrapper. This is deliberate, not an oversight.
+- **The homepage runs three.js, @react-three/fiber, drei and GSAP.** This
+  replaces an earlier "the homepage stays library-free" rule, which the
+  bookshelf brief overrode on purpose: a hinged, raycast, camera-moved book
+  cannot be had from CSS keyframes and a 2D canvas. The cost is paid honestly
+  rather than hidden — the scene is a `lazy()` chunk (~219 kB gzip) that is
+  only fetched on a wide viewport that reports WebGL, so the first paint is
+  the 83 kB shell plus the 97 kB plate and phones never download three.js at
+  all. Keep it that way: no eager import of `BookshelfScene`.
+- **Still banned on the homepage:** Lenis, scroll-jacking, and any
+  transform-based smooth-scroll wrapper. Those were never about bundle size.
 - **Case studies may use what is already in `package.json`** — GSAP (with
   ScrollTrigger, Flip, SplitText, Observer) and matter-js — and must import
   them dynamically so they never reach the homepage bundle. The earlier rule
@@ -47,8 +63,13 @@ reference disagree, the reference wins. Open it in a browser before you start.
    Smoothness comes from lerping the scroll *value*, not from moving the page.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **Locked palette on the homepage.** Use the tokens in SPEC.md. Do not add
-   colours there.
+6. **The homepage palette is sampled from the plate, not from SPEC.md.**
+   Every colour on `/` — the warm paper whites, the `#2a2520` ink, the four
+   book cloths and foils — is eyedropped from `public/shelf/room.webp` so the
+   geometry and the photograph agree. They live in `src/styles/shelf.css` and
+   `src/components/shelf/shelf.ts`. SPEC.md's locked tokens still govern
+   everything that is not the bookshelf. Do not mix the two: a SPEC.md token
+   on the shelf will read as the wrong temperature against the photograph.
 7. **A case study is themed by its own product, not by the template.**
    `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
    light because the app is a warm off-white with a deep emerald; its accent

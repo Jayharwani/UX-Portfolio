@@ -23,9 +23,10 @@ const CardsPreview = lazy(() =>
   import("./components/projects/CaseStudiesSection").then((m) => ({ default: m.CaseStudiesSection }))
 );
 
-/* The handoff design. It IS the homepage now; the previous one is still in
-   components/Home.tsx, one import away, and in git if this is ever reversed. */
-const HomeV2 = lazy(() => import("./components/HomeV2").then((m) => ({ default: m.HomeV2 })));
+/* The bookshelf. It IS the homepage now; HomeV2 and Home are both still in
+   components/, one import away, and in git if this is ever reversed. Lazy so
+   that the three.js chunk it reaches for is never on the critical path. */
+const HomeShelf = lazy(() => import("./components/HomeShelf").then((m) => ({ default: m.HomeShelf })));
 
 function RouteFallback() {
   return (
@@ -49,10 +50,10 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen antialiased" style={{ backgroundColor: "#0A0E16" }}>
+      <div className="min-h-screen antialiased">
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<HomeV2 />} />
+            <Route path="/" element={<HomeShelf />} />
             <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />
