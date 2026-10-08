@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { PROJECTS } from "./shelf/shelf";
 import { OverlayHUD } from "./shelf/OverlayHUD";
@@ -42,6 +42,8 @@ export function HomeShelf() {
   const [lite, setLite] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /* the keyboard's hover: focusing a list item pulls its book out */
+  const [focused, setFocused] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Jay Harwani, product designer who writes the front end";
@@ -70,24 +72,19 @@ export function HomeShelf() {
     };
   }, []);
 
-  /* the scene fires this when a book opens, so the HUD can offer a way out */
+  /* the scene fires this when a book opens, so the overlay can fade out */
   useEffect(() => {
     const on = () => setBusy(true);
     window.addEventListener("shelf:opening", on);
     return () => window.removeEventListener("shelf:opening", on);
   }, []);
 
-  const back = useCallback(() => {
-    window.dispatchEvent(new Event("shelf:back"));
-    setBusy(false);
-  }, []);
-
   return (
-    <div className="shelf" data-mode={mode} data-busy={busy ? "" : undefined}>
+    <div className="shelf shelf-root" data-mode={mode} data-busy={busy ? "" : undefined}>
       <div className="shelf-stage">
         {mode === "scene" ? (
           <Suspense fallback={null}>
-            <BookshelfScene onHover={setHovered} reduce={reduce} lite={lite} />
+            <BookshelfScene onHover={setHovered} reduce={reduce} lite={lite} focused={focused} />
           </Suspense>
         ) : null}
 
@@ -98,7 +95,7 @@ export function HomeShelf() {
         ) : null}
       </div>
 
-      <OverlayHUD hovered={hovered} busy={busy} onBack={back} />
+      <OverlayHUD hovered={hovered ?? focused} busy={busy} onFocusBook={setFocused} />
 
       {/* the room is decorative; this is the sentence a crawler and a screen
           reader get first */}

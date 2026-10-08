@@ -34,6 +34,11 @@ export interface Project {
   thickness: number;
   /** a degree or two of lean, because nothing on a shelf is plumb */
   lean: number;
+  /** the case study's own computed body background, measured in Phase 0. The
+      open fades to this before navigating, so the hand-off has no flash of
+      the wrong colour -- and Headroom's is nearly white, which is exactly the
+      case a single hard-coded fade colour would have got wrong. */
+  exit: string;
 }
 
 export const PROJECTS: Project[] = [
@@ -51,6 +56,7 @@ export const PROJECTS: Project[] = [
     height: 1.1600,
     thickness: 0.3132,
     lean: 0,
+    exit: "rgb(15, 19, 27)",
   },
   {
     slug: "headroom",
@@ -66,6 +72,7 @@ export const PROJECTS: Project[] = [
     height: 1.1020,
     thickness: 0.2726,
     lean: 0,
+    exit: "rgb(247, 248, 247)",
   },
   {
     slug: "signal",
@@ -81,6 +88,7 @@ export const PROJECTS: Project[] = [
     height: 1.1368,
     thickness: 0.2552,
     lean: 1.4,
+    exit: "rgb(5, 7, 12)",
   },
   {
     slug: "bumper",
@@ -99,6 +107,7 @@ export const PROJECTS: Project[] = [
     height: 1.0672,
     thickness: 0.3364,
     lean: 0,
+    exit: "rgb(5, 7, 12)",
   },
 ];
 

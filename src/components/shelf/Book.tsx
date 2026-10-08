@@ -61,6 +61,7 @@ export function Book({
   baseY,
   active,
   busy,
+  forced,
   onHover,
   onOpen,
   register,
@@ -71,6 +72,8 @@ export function Book({
   baseY: number;
   active: boolean;
   busy: boolean;
+  /** pulled out by keyboard focus rather than by a pointer */
+  forced: boolean;
   onHover: (slug: string | null) => void;
   onOpen: (slug: string) => void;
   register: (slug: string, handle: BookHandle | null) => void;
@@ -147,7 +150,7 @@ export function Book({
     const g = group.current;
     if (!g || active) return;
     const k = 1 - Math.pow(0.0012, dt);
-    const out = hovered && !busy;
+    const out = (hovered || forced) && !busy;
     g.position.z += ((out ? DEPTH * 0.22 : 0) - g.position.z) * k;
     g.position.y += ((out ? y + h * 0.02 : y) - g.position.y) * k;
     g.rotation.y += ((out ? 4 * DEG : 0) - g.rotation.y) * k;

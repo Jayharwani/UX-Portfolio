@@ -51,14 +51,14 @@ export function ShelfLights({ bulb, focus, highTier }: Rig) {
           depends on is a light that is not reaching anything. */}
       <primitive object={target} position={focus} />
       {/* floor, not fill: stops the unlit side of anything going to pure black */}
-      <hemisphereLight args={[shelfPalette.skyFill, shelfPalette.groundFill, 4.8]} />
+      <hemisphereLight args={[shelfPalette.skyFill, shelfPalette.groundFill, 6.3]} />
 
       {/* the one light that matters, and the only one that casts */}
       <spotLight
         position={bulb}
         target={target}
         color={shelfPalette.lampWarm}
-        intensity={112}
+        intensity={148}
         decay={2}
         /* ANGLE AND PENUMBRA TOGETHER DECIDE WHAT THE INTENSITY MEANS.
            penumbra is the fraction of the cone that is falloff, so 0.85 inside

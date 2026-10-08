@@ -1,12 +1,11 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import { PerformanceMonitor, Sparkles } from "@react-three/drei";
 import { ShelfPostHigh, ShelfPostLow, ShelfPostMedium } from "./ShelfPost";
 import { useNavigate } from "react-router";
 import gsap from "gsap";
 import * as THREE from "three";
-import { Book, type BookHandle } from "./Book";
+import { Book, DEPTH, type BookHandle } from "./Book";
 import { Shelving } from "./Shelving";
 import { Decor } from "./props/Decor";
 import { disposeProps } from "./props/shapes";
@@ -39,6 +38,47 @@ preloadShelfTextures();
 
 /* HDR, so the brightest motes clear the bloom threshold */
 const MOTE = new THREE.Color(shelfPalette.mote).multiplyScalar(2);
+
+/* WHERE THE CARD GOES, worked out once per hover instead of every frame.
+   drei's <Html> would do this continuously and mount a DOM portal inside the
+   canvas; the card only needs to move when the hover changes or the window
+   resizes, and the spec says so explicitly. */
+function CardAnchor({ slug }: { slug: string | null }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    if (!slug) {
+      window.dispatchEvent(new CustomEvent("shelf:card", { detail: null }));
+      return;
+    }
+    const b = books.find((x) => x.slug === slug);
+    if (!b) return;
+    /* The card clears the WHOLE RUN, not just the hovered book. Anchored to
+       one spine it sat on top of its neighbours, which satisfies the letter of
+       "never covers the book" and misses the point: the run is one object to
+       the eye. Vertically it still tracks the book being pointed at. */
+    const px = (v: THREE.Vector3) => ((v.project(camera).x * 0.5 + 0.5) * size.width);
+    const first = books[0];
+    const last = books[books.length - 1];
+    const z = DEPTH / 2 + 0.05;
+    const edges = [
+      px(new THREE.Vector3(first.x - first.thickness / 2, BOOK_Y + 0.5, z)),
+      px(new THREE.Vector3(last.x + last.thickness / 2, BOOK_Y + 0.5, z)),
+    ];
+    const mid = new THREE.Vector3(b.x, BOOK_Y + b.height * 0.62, z).project(camera);
+    window.dispatchEvent(
+      new CustomEvent("shelf:card", {
+        detail: {
+          left: Math.min(...edges),
+          right: Math.max(...edges),
+          y: (0.5 - mid.y * 0.5) * size.height,
+          w: size.width,
+          h: size.height,
+        },
+      })
+    );
+  }, [slug, camera, size]);
+  return null;
+}
 
 /* The value meter is how the look is tuned: dark share, mean luma and clipped
    share, read off the finished frame. It is gated on DEV so it never reaches
@@ -143,9 +183,12 @@ export function BookshelfScene({
   onHover,
   reduce,
   lite = false,
+  focused = null,
 }: {
   onHover: (slug: string | null) => void;
   reduce: boolean;
+  /** the slug whose list item has keyboard focus, if any */
+  focused?: string | null;
   /** a machine that cannot afford the shadow map and the extra passes */
   lite?: boolean;
 }) {
@@ -153,7 +196,6 @@ export function BookshelfScene({
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<string | null>(null);
-  const [reading, setReading] = useState<{ dark: number; mean: number; clipped: number } | null>(null);
   const [tier, setTier] = useState<"high" | "medium" | "low">(lite ? "low" : "high");
   const [dpr, setDpr] = useState(lite ? 1 : 2);
   /* the post tier only steps once resolution has nothing left to give */
@@ -202,15 +244,15 @@ export function BookshelfScene({
       const cam = camRef.current;
       if (!h || !cam || busy) return;
 
+      const book = books.find((b) => b.slug === slug);
+      const href = book?.href ?? "/";
+
       setBusy(true);
       setActive(slug);
       setTip(null);
-      window.dispatchEvent(new Event("shelf:opening"));
+      window.dispatchEvent(new CustomEvent("shelf:opening", { detail: { exit: book?.exit } }));
       onHover(null);
       document.body.style.cursor = "";
-
-      const book = books.find((b) => b.slug === slug);
-      const href = book?.href ?? "/";
 
       if (reduce) {
         navigate(href);
@@ -224,62 +266,26 @@ export function BookshelfScene({
         navigate(href);
       };
 
-      /* Straight out in front of the book, a shade above its middle. 2.9 put
-         the near plane inside it: at fov 26 that frames 1.34 units of height
-         against a book 1.12 tall plus the cover swinging out past it, so the
-         board ran off the top and the bottom at once. */
-      const to = new THREE.Vector3(h.group.position.x - 0.42, BOOK_Y + 0.78, 3.7);
+      /* Spec 10.1: out 60% of its depth, turned to face the reader, cover
+         swinging on the spine hinge; the DOM overlay starts fading at 250ms
+         and the route changes at 600. The route change is an explicit last
+         beat rather than an onComplete, because it is the thing the whole
+         sequence exists to do and should not be a property of a timeline a
+         later edit can drop. The guard and the fallback mean a dropped frame
+         or a backgrounded tab still land the reader on the case study. */
       const t = gsap.timeline({ defaults: { ease: "power3.inOut" } });
       tl.current = t;
+      t.to(h.group.position, { z: DEPTH * 0.6, duration: 0.4 }, 0)
+        .to(h.group.rotation, { y: -62 * DEG, duration: 0.4 }, 0)
+        .to(h.coverPivot.rotation, { y: -108 * DEG, duration: 0.42, ease: "power2.inOut" }, 0.18)
+        .to(cam.position, { z: cam.position.z - 0.9, duration: 0.6, onUpdate: () => cam.lookAt(TARGET) }, 0)
+        .call(go, undefined, 0.6);
 
-      t.to(cam.position, { x: to.x, y: to.y, z: to.z, duration: 1.25, onUpdate: () => cam.lookAt(h.group.position.x, BOOK_Y + 0.56, 0.42) }, 0)
-        .to(h.group.position, { z: 0.72, duration: 0.8 }, 0)
-        .to(h.group.rotation, { y: -78 * DEG, duration: 1 }, 0.1)
-        .to(h.coverPivot.rotation, { y: -120 * DEG, duration: 0.82, ease: "power2.inOut" }, 0.74)
-        /* an explicit last beat rather than onComplete: the route change is
-           the thing this whole sequence exists to do, and it should not be a
-           property of the timeline that a later edit can drop. The guard and
-           the fallback mean a dropped frame, a backgrounded tab or a killed
-           tween still land the reader on the case study. */
-        .call(go, undefined, 1.74);
-
-      fallback.current = window.setTimeout(go, 2300);
+      fallback.current = window.setTimeout(go, 1100);
     },
     [busy, navigate, onHover, reduce]
   );
 
-  /* the escape hatch: everything the open did, backwards */
-  useEffect(() => {
-    const back = () => {
-      if (!busy) return;
-      tl.current?.kill();
-      window.clearTimeout(fallback.current);
-      const h = active ? handles.current.get(active) : null;
-      const cam = camRef.current;
-      if (h && cam) {
-        gsap.to(h.group.position, { z: 0, duration: 0.6, ease: "power3.out" });
-        gsap.to(h.group.rotation, { y: 0, duration: 0.6, ease: "power3.out" });
-        gsap.to(h.coverPivot.rotation, { y: 0, duration: 0.5, ease: "power3.out" });
-        /* back to the framed position, along the same line it left on */
-        const home = TARGET.clone().addScaledVector(DIR, cam.position.distanceTo(TARGET));
-        gsap.to(cam.position, {
-          x: home.x,
-          y: home.y,
-          z: home.z,
-          duration: 0.65,
-          ease: "power3.out",
-          onUpdate: () => cam.lookAt(TARGET),
-        });
-      }
-      setBusy(false);
-      setActive(null);
-    };
-    window.addEventListener("shelf:back", back);
-    return () => window.removeEventListener("shelf:back", back);
-  }, [busy, active]);
-
-  const shown = tip ? books.find((b) => b.slug === tip) : null;
-  const shownIndex = shown ? books.findIndex((b) => b.slug === shown.slug) : -1;
 
   return (
     <Canvas
@@ -334,10 +340,11 @@ export function BookshelfScene({
       <color attach="background" args={[shelfPalette.fog]} />
       <fogExp2 attach="fog" args={[shelfPalette.fog, 0.035]} />
       <Rig locked={busy} reduce={reduce} room={room} />
+      <CardAnchor slug={busy ? null : tip} />
       <ShelfLights bulb={BULB} focus={BOOKS_CENTER} highTier={!lite} />
       {ValueMeter ? (
         <Suspense fallback={null}>
-          <ValueMeter onReading={(r) => setReading(r)} />
+          <ValueMeter />
         </Suspense>
       ) : null}
 
@@ -383,39 +390,14 @@ export function BookshelfScene({
             baseY={BOOK_Y}
             active={active === p.slug}
             busy={busy}
+            forced={focused === p.slug}
             onHover={hover}
             onOpen={open}
             register={register}
           />
         ))}
 
-        {/* the callout, anchored to the book rather than to the viewport, so
-            it tracks when the room drifts and when the reader orbits */}
-        {shown && !busy ? (
-          <Html
-            position={[shown.x + 0.62, BOOK_Y + shown.height * 0.72, 0.92]}
-            center={false}
-            zIndexRange={[8, 0]}
-            style={{ pointerEvents: "none" }}
-          >
-            <div className="shelf-tip">
-              <p className="shelf-tip-n">
-                {String(shownIndex + 1).padStart(2, "0")} <span>&mdash;</span> {shown.title.toUpperCase()}
-              </p>
-              <p className="shelf-tip-sub">{shown.blurb}</p>
-            </div>
-          </Html>
-        ) : null}
       </group>
-
-      {ValueMeter && reading ? (
-        <Html position={BOOKS_CENTER} center={false} zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
-          <div className="shelf-meter">
-            dark {(reading.dark * 100).toFixed(1)}% &middot; mean {reading.mean.toFixed(0)} &middot; clip{" "}
-            {(reading.clipped * 100).toFixed(2)}%
-          </div>
-        </Html>
-      ) : null}
 
       {/* ── the lens ──────────────────────────────────────────────────────
           What makes a miniature read as a miniature is depth of field. A real

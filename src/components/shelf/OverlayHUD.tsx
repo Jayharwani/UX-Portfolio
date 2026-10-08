@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useCallback, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router";
 import { PROJECTS } from "./shelf";
 
 /* --------------------------------------------------------------------------
@@ -9,10 +10,14 @@ import { PROJECTS } from "./shelf";
    and to a search engine, so the four projects exist as four real links
    whether or not WebGL does.
 
-   The header carries two ways to reach a person and nothing else. Work, About
-   and Contact came off: the work is the four books and the index below them,
-   so a link called Work pointed at what was already on screen, and Contact
-   was a mailto wearing a different word.
+   THE LIST IS THE KEYBOARD'S VERSION OF THE SHELF. Focusing an item pulls its
+   book out of the run, and the list itself becomes visible while focus is
+   inside it -- a focus ring on an element positioned a screen below the fold
+   satisfies no one, least of all WCAG 2.4.7. Escape puts the book back.
+
+   The card is aria-hidden on purpose. A pointer user sees it; a keyboard or
+   screen reader user gets the same sentence from the list item they are
+   standing on, and hearing it twice is worse than hearing it once.
    -------------------------------------------------------------------------- */
 
 const EMAIL = "harwanijay9498@gmail.com";
@@ -21,12 +26,94 @@ const LINKEDIN = "https://www.linkedin.com/in/jay-harwani";
 export function OverlayHUD({
   hovered,
   busy,
-  onBack,
+  onFocusBook,
 }: {
   hovered: string | null;
   busy: boolean;
-  onBack: () => void;
+  onFocusBook: (slug: string | null) => void;
 }) {
+  const navigate = useNavigate();
+  const exit = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+
+  /* The card sits beside the hovered book, on whichever side has more room,
+     16px clear of it and never past a 16px viewport margin. The scene works
+     out where the book is and says so once per hover; this does the choosing.
+     Neither of them runs per frame, which is the point: a card that follows a
+     book every frame is a layout recalculation sixty times a second for an
+     element that moves twice. */
+  useEffect(() => {
+    const el = card.current;
+    if (!el) return;
+    const place = (e: Event) => {
+      const d = (e as CustomEvent<{ left: number; right: number; y: number; w: number; h: number } | null>).detail;
+      if (!d) return;
+      const box = el.getBoundingClientRect();
+      const GAP = 16;
+      const roomRight = d.w - d.right - GAP * 2;
+      const roomLeft = d.left - GAP * 2;
+      const x =
+        roomRight >= box.width || roomRight >= roomLeft
+          ? Math.min(d.right + GAP, d.w - box.width - GAP)
+          : Math.max(GAP, d.left - GAP - box.width);
+      const y = Math.min(Math.max(GAP, d.y - box.height / 2), d.h - box.height - GAP);
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+    };
+    window.addEventListener("shelf:card", place);
+    return () => window.removeEventListener("shelf:card", place);
+  }, []);
+
+  /* The fade to the case study's own background, driven by the scene so the
+     two stay in step. A single hard-coded colour would have been wrong for
+     Headroom, whose page is nearly white while the other three are nearly
+     black. */
+  useEffect(() => {
+    const el = exit.current;
+    if (!el) return;
+    const onOpen = (e: Event) => {
+      const colour = (e as CustomEvent<{ exit?: string }>).detail?.exit;
+      if (!colour) return;
+      el.style.background = colour;
+      el.style.transition = "opacity 350ms linear";
+      /* a frame's delay, or the browser batches the two styles and there is
+         nothing to transition from */
+      requestAnimationFrame(() => {
+        el.style.opacity = "1";
+      });
+    };
+    const onBack = () => {
+      el.style.transition = "opacity 220ms linear";
+      el.style.opacity = "0";
+    };
+    window.addEventListener("shelf:opening", onOpen);
+    window.addEventListener("shelf:back", onBack);
+    return () => {
+      window.removeEventListener("shelf:opening", onOpen);
+      window.removeEventListener("shelf:back", onBack);
+    };
+  }, []);
+
+  const onKey = useCallback(
+    (e: React.KeyboardEvent, href: string) => {
+      if (e.key === "Escape") {
+        (e.currentTarget as HTMLElement).blur();
+        onFocusBook(null);
+        return;
+      }
+      /* Enter is the list's own job; this only exists so the book's exit
+         sequence plays rather than the route changing underneath it */
+      if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        navigate(href);
+      }
+    },
+    [navigate, onFocusBook]
+  );
+
+  const i = PROJECTS.findIndex((p) => p.slug === hovered);
+  const shown = i >= 0 ? PROJECTS[i] : null;
+
   return (
     <>
       <a className="shelf-skip" href="#index">
@@ -34,9 +121,12 @@ export function OverlayHUD({
       </a>
 
       <header className="shelf-hdr">
-        <Link className="shelf-brand" to="/">
-          Jay Harwani
-        </Link>
+        <div>
+          <Link className="shelf-brand" to="/">
+            Jay Harwani
+          </Link>
+          <span className="shelf-role">Product designer who writes the front end</span>
+        </div>
         <nav className="shelf-links" aria-label="Contact">
           <a href={`mailto:${EMAIL}`}>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -63,25 +153,36 @@ export function OverlayHUD({
         </nav>
       </header>
 
-      <button className="shelf-back" data-on={busy ? "" : undefined} type="button" onClick={onBack}>
-        Back to the shelf
-      </button>
+      {/* The card: the name, then one line. No number, no em dash, no button.
+          The hint already says what to do, and a title that reads "01 — FRICTION"
+          is a filename, not a name. */}
+      <div className="shelf-card" ref={card} data-on={shown && !busy ? "" : undefined} aria-hidden="true">
+        {shown ? (
+          <>
+            <p className="shelf-card-title">{shown.title}</p>
+            <p className="shelf-card-line">{shown.blurb}</p>
+          </>
+        ) : null}
+      </div>
 
       <p className="shelf-hint" data-off={busy || hovered ? "" : undefined} aria-hidden="true">
         Four projects. Pick one off the shelf.
       </p>
 
-      {/* The real index. Visually quiet under the room, but it is what a
-          screen reader, a crawler and a keyboard actually use, and it is the
-          whole site if WebGL never starts. */}
       <section className="shelf-index" id="index" aria-label="Selected work">
+        <h2 className="visually-hidden">Selected work</h2>
         <ol>
           {PROJECTS.map((p, n) => (
             <li key={p.slug}>
-              <Link to={p.href}>
+              <Link
+                to={p.href}
+                onFocus={() => onFocusBook(p.slug)}
+                onBlur={() => onFocusBook(null)}
+                onKeyDown={(e) => onKey(e, p.href)}
+              >
                 <span className="shelf-index-n">{String(n + 1).padStart(2, "0")}</span>
                 <span className="shelf-index-title">{p.title}</span>
-                <span className="shelf-index-sub">{p.subtitle}</span>
+                <span className="shelf-index-sub">{p.blurb}</span>
               </Link>
               <a className="shelf-index-live" href={p.live.href} target="_blank" rel="noopener noreferrer">
                 {p.live.label}
@@ -91,6 +192,8 @@ export function OverlayHUD({
           ))}
         </ol>
       </section>
+
+      <div className="shelf-exit" ref={exit} aria-hidden="true" />
     </>
   );
 }

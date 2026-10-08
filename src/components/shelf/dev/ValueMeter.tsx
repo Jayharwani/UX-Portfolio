@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 
 /* --------------------------------------------------------------------------
@@ -18,9 +18,26 @@ import { useFrame, useThree } from "@react-three/fiber";
 
 export type Reading = { dark: number; mean: number; clipped: number };
 
-export default function ValueMeter({ onReading }: { onReading: (r: Reading) => void }) {
+/* The badge is a plain DOM node this component makes and removes itself,
+   rather than a drei <Html> inside the canvas. <Html> would have dragged a
+   portal, and the import with it, into a production bundle that never renders
+   one -- a development tool is not worth a kilobyte of everyone else's. */
+function badge() {
+  let el = document.getElementById("shelf-meter") as HTMLDivElement | null;
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "shelf-meter";
+    el.className = "shelf-meter";
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+export default function ValueMeter() {
   const gl = useThree((s) => s.gl);
   const frame = useRef(0);
+
+  useEffect(() => () => document.getElementById("shelf-meter")?.remove(), []);
 
   useFrame(() => {
     frame.current += 1;
@@ -42,7 +59,8 @@ export default function ValueMeter({ onReading }: { onReading: (r: Reading) => v
       if (l < 60) dark += 1;
       if (l > 245) clipped += 1;
     }
-    onReading({ dark: dark / n, mean: sum / n, clipped: clipped / n });
+    const r: Reading = { dark: dark / n, mean: sum / n, clipped: clipped / n };
+    badge().textContent = `dark ${(r.dark * 100).toFixed(1)}%  mean ${r.mean.toFixed(0)}  clip ${(r.clipped * 100).toFixed(2)}%`;
   }, 2);
 
   return null;
