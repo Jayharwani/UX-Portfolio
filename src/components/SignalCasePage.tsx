@@ -133,7 +133,8 @@ export function SignalCasePage() {
               OPEN &#8599;
             </a>
           </div>
-          <div className="view">
+          {/* the other half of the homepage's route morph (§7.5) */}
+          <div className="view" style={{ viewTransitionName: "frame-signal" }}>
             <iframe
               src={LIVE}
               title="Signal — the live DMV tech events map"

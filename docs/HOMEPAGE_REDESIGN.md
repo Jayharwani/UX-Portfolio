@@ -2785,3 +2785,84 @@ component's behaviour and the string it hands over, not Chrome's clipboard:
   it and this phase designs the last two sections, so every link on the page
   now carries its own target size: measured at 390, 768 and 1440, nothing is
   under 24 px.
+
+---
+
+## 29. Phase 7 record (October 7, 2026)
+
+The route morph and scroll restoration, both of which needed data mode.
+
+### 29.1 Acceptance
+
+| Check | Result |
+|---|---|
+| The frame morphs into the case study hero | **Pass** for Headroom and Signal; see 29.4 |
+| Firefox navigates without errors | **Pass**, emulated: with `startViewTransition` deleted, navigation completes with no error and no unhandled rejection |
+| Back restores the exact scroll position and project | **Pass**, 2425 px to 2425 px, Headroom active |
+| Reduced motion disables the morph | **Pass**, navigation completes with no errors |
+
+The morph was verified by wrapping `document.startViewTransition` and
+recording what carried a name when it fired: exactly one element,
+`frame-headroom`, with the matching name on the case study's own phone. At
+rest all four frames report `view-transition-name: none`.
+
+Firefox itself was not run. What was tested is the code path Firefox takes,
+which is the one where `document.startViewTransition` is absent.
+
+### 29.2 Three bugs, each a layer down from the last
+
+- **Back restored to 1687 px instead of 2425, and showed the wrong project.**
+  `React.lazy` leaves the router believing a navigation is finished while
+  React is still suspended, so `<ScrollRestoration />` restored against a
+  document that was still the 100svh fallback and the position clamped. Data
+  mode has the right answer: a route's own `lazy` resolves the module before
+  the navigation completes.
+- **It still restored to 1638.** Tracing the scroll frame by frame showed it
+  was not clamping at all: it was *animating*, from 0 up to 1638 over 360 ms,
+  and stopping short. `html { scroll-behavior: smooth }` was declared as a
+  blanket rule, so every programmatic scroll on the site was smooth, including
+  the restore. §8.1 allows smooth for in-page anchor jumps and nothing else,
+  so `lib/anchorScroll.ts` now turns it on for the length of a jump and the
+  document is instant otherwise. Back restores in one frame at 58 ms.
+- **The migration logged a warning on every page.** The router wants a
+  `HydrateFallback` when the route a visitor lands on is lazy. Rule 2 is that
+  production logs nothing.
+
+### 29.3 The homepage is eager, and that is not a detail
+
+Route-level `lazy` on `/` cost **151 ms of mobile LCP**: the entry route is
+the LCP path, and putting a module round trip in front of it is paid by every
+first visit. As an eager import the homepage merges into `main` and LCP comes
+back to **1963 ms**, which is better than the 2017 ms it measured before this
+phase.
+
+| | route-level lazy | eager |
+|---|---|---|
+| Homepage JS | 87.2 KB gzip | **86.9 KB gzip** |
+| Mobile LCP | 2167 ms | **1963 ms** |
+| Extra bytes for a case-study-first visit | none | about 9.6 KB |
+
+### 29.4 Two things that are open
+
+**The homepage JavaScript budget is breached by 1.9 KB: 86.9 against 85.**
+
+The whole of it is the data router. The `react` chunk went from 57.1 KB gzip
+to 74.7 KB when `createBrowserRouter`, `RouterProvider` and
+`<ScrollRestoration />` replaced `<BrowserRouter>`, and §7.5 requires data
+mode for the `viewTransition` prop. Two ways out, and the choice is Jay's:
+
+1. **Accept 86.9 KB.** The budget exists to protect LCP, and LCP is now the
+   best this page has measured.
+2. **Go back to `<BrowserRouter>`** and hand-roll both features. §7.5
+   explicitly offers calling `document.startViewTransition` around
+   `navigate()` as the alternative. That recovers about 17.6 KB, and buys a
+   hand-written scroll restorer that would need proving from scratch.
+
+**Only two of the four projects morph.** Headroom's case study hero is a
+phone and Signal's is an embedded browser, so each has a real counterpart for
+the homepage frame to become. Friction's hero is a field of dots and Bumper's
+is typographic: there is nothing there for a frame to turn into, and naming
+something arbitrary would morph a browser frame into a paragraph. §6.3.4 says
+every preview's shipped screen must match the first screen of its case study
+hero, and making that true for all four is Phase 8's work. The two that do not
+morph fall back to the root crossfade, which §7.5 names as the fallback.

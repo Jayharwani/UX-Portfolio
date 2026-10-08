@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { head } from "../content/home";
+import { enableAnchorSmoothing } from "../lib/anchorScroll";
 import { Contact } from "./v5/Contact";
 import { Header } from "./v5/Header";
 import { Hero } from "./v5/Hero";
@@ -28,6 +29,8 @@ export function HomeV5() {
   useEffect(() => {
     document.title = head.title;
   }, []);
+
+  useEffect(enableAnchorSmoothing, []);
 
   return (
     <>

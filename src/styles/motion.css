@@ -1,8 +1,16 @@
 /* v5 motion: the shared keyframes, and the reduced-motion floor.
    Each phase adds the keyframes it uses; §7.6 is the contract they honour. */
 
-/* In-page anchor jumps only. Native scroll is never wrapped (§8.1). */
-html { scroll-behavior: smooth; }
+/* In-page anchor jumps only, which is what §8.1 allows and nothing more.
+   As a blanket rule on html it also caught every programmatic scroll on the
+   site: <ScrollRestoration /> restoring a position became a 360ms animation
+   that something then cut short, so pressing Back travelled visibly up the
+   page and stopped at 1638px instead of landing on the 2425px it left.
+
+   lib/anchorScroll.ts puts the attribute on for the length of a jump. An
+   explicit `behavior` in scrollTo still overrides this either way, which is
+   how the progress nav keeps its smooth jump. */
+html[data-anchor] { scroll-behavior: smooth; }
 
 /* ── the reduced-motion floor ─────────────────────────────────────────────
    A floor, not the whole contract. Every animated element still needs its own
@@ -28,7 +36,7 @@ html { scroll-behavior: smooth; }
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
-  html { scroll-behavior: auto; }
+  html[data-anchor] { scroll-behavior: auto; }
 }
 
 /* ── the ink fill ─────────────────────────────────────────────────────────
@@ -39,4 +47,29 @@ html { scroll-behavior: smooth; }
 @keyframes ink-fill {
   from { --ink-fill: 0%; }
   to { --ink-fill: 100%; }
+}
+
+/* ── route transitions ──────────────────────────────────────────── §7.5 ──
+   The frame a reader clicked becomes the case study's own hero frame rather
+   than the two crossfading past each other. One object, two pages.
+
+   The group animation is what moves and resizes a named pair; the root pair
+   is the rest of the page, and it is quicker so the frame is what the eye
+   follows. Browsers without startViewTransition simply navigate, which is the
+   documented fallback and not a thing to work around. */
+::view-transition-group(*) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

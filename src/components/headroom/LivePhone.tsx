@@ -125,7 +125,15 @@ export function LivePhone({ to = 1730, tilt = 6 }: { to?: number; tilt?: number 
 
   return (
     <div className="livePhone" ref={ref}>
-      <motion.div className="frame" style={reduce ? undefined : { rotateX: srx, rotateY: sry }}>
+      {/* the other half of the homepage's route morph: the frame a reader
+          clicked on /#work becomes this one (§7.5) */}
+      <motion.div
+        className="frame"
+        style={{
+          viewTransitionName: "frame-headroom",
+          ...(reduce ? null : { rotateX: srx, rotateY: sry }),
+        }}
+      >
         <div className="screen" ref={screen}>
           <img
             src="/headroom/today-healthy.png"

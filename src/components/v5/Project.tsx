@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useViewTransitionState } from "react-router";
 import type { FlagshipProject } from "../../content/home";
 import { useLiveCount } from "../../hooks/useLiveCount";
 import { prefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
@@ -21,6 +21,12 @@ import { Segmented, type FrameState } from "./Segmented";
    In the pinned layout `data-state` is deliberately absent. The engine owns
    --draw and --reveal there, and an attribute setting them too would be a
    second source of truth for the same two numbers (§8.2).
+
+   THE FRAME IS NAMED ONLY WHILE IT IS TRAVELLING. A view-transition-name has
+   to be unique across the document, and four frames carrying one each would
+   be four names the browser has to reconcile on every navigation. The name
+   appears when a transition to this project's own path is in flight and goes
+   again when it lands, so at rest there is exactly none (§7.5).
    -------------------------------------------------------------------------- */
 
 /** a block of copy that can be clipped out of its own box */
@@ -45,6 +51,9 @@ export function Project({
 }) {
   const root = useRef<HTMLElement>(null);
   const [near, setNear] = useState(index === 0);
+  /* true from the moment either link to this case study is clicked until the
+     transition finishes, whichever of the two started it */
+  const going = useViewTransitionState(project.caseStudyHref);
   const reduce = prefersReducedMotion();
   const [state, setState] = useState<FrameState>(() => (reduce ? "shipped" : "spec"));
   const autoShipped = useRef(reduce);
@@ -117,7 +126,7 @@ export function Project({
 
         <Mask>
         <p className="project-actions">
-          <Link className="btn btn--primary" to={project.caseStudyHref}>
+          <Link className="btn btn--primary" to={project.caseStudyHref} viewTransition>
             Read case study
           </Link>
           <a className="link-ext" href={project.liveHref} target="_blank" rel="noopener noreferrer">
@@ -139,13 +148,15 @@ export function Project({
       </div>
 
       <div className="project-frame">
-        <a
+        <Link
           className="frame-link"
           data-index={index}
           {...(pinned ? null : { "data-state": state })}
-          href={project.caseStudyHref}
+          to={project.caseStudyHref}
+          viewTransition
           tabIndex={-1}
           aria-hidden="true"
+          style={going ? { viewTransitionName: `frame-${project.slug}` } : undefined}
         >
           <LiveFrame project={project}>
             {(wire) => (
@@ -160,7 +171,7 @@ export function Project({
               />
             )}
           </LiveFrame>
-        </a>
+        </Link>
 
         <div className="project-switch">
           {pinned ? null : (

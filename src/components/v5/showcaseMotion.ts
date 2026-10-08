@@ -97,6 +97,12 @@ export function mountShowcaseMotion(
       invalidateOnRefresh: true,
       onUpdate: syncActive,
     });
+
+    /* §8.6: a restored scroll position has to render its own project on the
+       first frame. `scrub` lerps toward the target, so without this the stage
+       opens on project 1 and travels to project 3 in front of the reader who
+       just pressed Back. */
+    tl.totalProgress(trigger.progress);
     syncActive();
 
     /* the measured width of a line changes when the webfont lands, and every
