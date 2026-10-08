@@ -51,53 +51,13 @@ function make(key: string, w: number, h: number, draw: (g: CanvasRenderingContex
 export function disposeTextures() {
   cache.forEach((t) => t.dispose());
   cache.clear();
+  pageLines?.dispose();
+  pageLines = null;
 }
 
 function seeded(seed: number) {
   let s = seed * 9301 + 49297;
   return () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-}
-
-/* -- the spine -----------------------------------------------------------
-   Number at the head, title below it, both reading bottom to top: the
-   European convention, and the one that stays upright while the book is
-   standing. */
-export function spine(title: string, index: string, cloth: string, ink: string, mode: Mode = "art") {
-  return make(`spine:${title}:${mode}`, 256, 1024, (g) => {
-    const art = mode === "art";
-    g.fillStyle = art ? cloth : FLAT;
-    g.fillRect(0, 0, 256, 1024);
-
-    if (art) {
-      /* cloth wears at head and tail, where a hand pulls the book out */
-      const shade = g.createLinearGradient(0, 0, 0, 1024);
-      shade.addColorStop(0, "rgba(0,0,0,0.15)");
-      shade.addColorStop(0.1, "rgba(0,0,0,0)");
-      shade.addColorStop(0.9, "rgba(0,0,0,0)");
-      shade.addColorStop(1, "rgba(0,0,0,0.15)");
-      g.fillStyle = shade;
-      g.fillRect(0, 0, 256, 1024);
-    }
-
-    const fg = art ? ink : RAISED;
-    g.fillStyle = fg;
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-
-    g.save();
-    g.translate(128, 186);
-    g.rotate(-Math.PI / 2);
-    g.font = "700 84px Geist, Inter, system-ui, sans-serif";
-    g.fillText(index, 0, 0);
-    g.restore();
-
-    g.save();
-    g.translate(128, 615);
-    g.rotate(-Math.PI / 2);
-    g.font = "700 80px Geist, Inter, system-ui, sans-serif";
-    g.fillText(title.toUpperCase(), 0, 0);
-    g.restore();
-  });
 }
 
 /* -- the cover -----------------------------------------------------------
@@ -226,4 +186,35 @@ export function plaque(text: string, mode: Mode = "art") {
     g.font = "600 50px Geist, Inter, system-ui, sans-serif";
     g.fillText(text, 512, 66);
   });
+}
+
+/* -- the page block ------------------------------------------------------
+   A normal map of fine horizontal lines, generated rather than drawn, and
+   applied only where page edges actually show: the top and the fore-edge.
+   A stack of leaves has a shadow in every gap, and that is the whole
+   difference between a page block and a cream brick.
+
+   It is a normal map, not a bump map, because the lines are regular and a
+   bump map derived from them would alias into moire the moment the camera
+   moved. 256 lines over the height of a book is about the right density at
+   this scale: fine enough to read as paper, coarse enough to survive mips. */
+let pageLines: THREE.DataTexture | null = null;
+export function pageNormal() {
+  if (pageLines) return pageLines;
+  const n = 256;
+  const data = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    /* a sawtooth across each leaf: the face tilts one way, then snaps back */
+    const t = (i % 3) / 3;
+    const ny = (t - 0.5) * 0.8;
+    const nz = Math.sqrt(Math.max(0, 1 - ny * ny));
+    data[i * 4] = 128;
+    data[i * 4 + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+    data[i * 4 + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+    data[i * 4 + 3] = 255;
+  }
+  pageLines = new THREE.DataTexture(data, 1, n);
+  pageLines.wrapS = pageLines.wrapT = THREE.RepeatWrapping;
+  pageLines.needsUpdate = true;
+  return pageLines;
 }

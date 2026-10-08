@@ -41,52 +41,52 @@ export const PROJECTS: Project[] = [
     slug: "friction",
     title: "Friction",
     subtitle: "Review mining, Astro",
-    blurb: "Designing intentional resistance for better user decisions",
+    blurb: "Reads ten thousand app reviews a week and returns the 25 problems people keep running into.",
     href: "/friction",
     live: { href: "https://jayharwani.github.io/friction/", label: "Open site" },
     year: "2026",
     cloth: shelfPalette.clothFriction,
     ink: shelfPalette.foil,
     paper: shelfPalette.paper,
-    height: 1.12,
-    thickness: 0.255,
+    height: 1.1600,
+    thickness: 0.3132,
     lean: 0,
   },
   {
     slug: "headroom",
     title: "Headroom",
     subtitle: "Local-first finance, React",
-    blurb: "Local-first personal finance that keeps working offline",
+    blurb: "A money app that shows what is safe to spend before payday.",
     href: "/headroom",
     live: { href: "https://headroom-opal.vercel.app", label: "Open app" },
     year: "2026",
     cloth: shelfPalette.clothHeadroom,
     ink: shelfPalette.foil,
     paper: shelfPalette.paper,
-    height: 1.05,
-    thickness: 0.225,
+    height: 1.1020,
+    thickness: 0.2726,
     lean: 0,
   },
   {
     slug: "signal",
     title: "Signal",
     subtitle: "Live event map, MapLibre",
-    blurb: "A live map of what is happening across the DMV tonight",
+    blurb: "A live map of tech, design and AI events across DC, Northern Virginia and Baltimore.",
     href: "/signal",
     live: { href: "https://jayharwani.github.io/dmv-map/", label: "Open map" },
     year: "2026",
     cloth: shelfPalette.clothSignal,
     ink: shelfPalette.foil,
     paper: shelfPalette.paper,
-    height: 1.09,
-    thickness: 0.2,
+    height: 1.1368,
+    thickness: 0.2552,
     lean: 1.4,
   },
   {
     slug: "bumper",
     title: "Bumper",
     subtitle: "Behavioural, Chrome extension",
-    blurb: "A Chrome extension that puts a speed bump in the scroll",
+    blurb: "A Chrome extension that asks one question before an impulse buy.",
     href: "/bumper",
     live: {
       href: "https://chromewebstore.google.com/detail/flnbabigjodkpgapnpeaiepdmganifmp",
@@ -96,8 +96,8 @@ export const PROJECTS: Project[] = [
     cloth: shelfPalette.clothBumper,
     ink: shelfPalette.inkOnOchre,
     paper: shelfPalette.paper,
-    height: 1.16,
-    thickness: 0.235,
+    height: 1.0672,
+    thickness: 0.3364,
     lean: 0,
   },
 ];
@@ -157,6 +157,10 @@ export function layout(projects: Project[], at = -1.15) {
 }
 
 export type PlacedProject = ReturnType<typeof layout>[number];
+
+/** the tallest book. Every dimension in Book.tsx is a fraction of this, so the
+    whole run rescales from one number. */
+export const H = 1.16;
 
 /* ── the lamp, and what it points at ──────────────────────────────────────
    One source of truth for both the model and the light inside it.

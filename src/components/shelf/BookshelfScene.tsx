@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, OrbitControls } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import { Bloom, DepthOfField, EffectComposer, Noise, ToneMapping, Vignette } from "@react-three/postprocessing";
 import { BlendFunction, ToneMappingMode } from "postprocessing";
 import { useNavigate } from "react-router";
@@ -31,7 +31,6 @@ import { preloadShelfTextures } from "./materials/useTiledMaps";
    on the other side.
    -------------------------------------------------------------------------- */
 
-const DEG = Math.PI / 180;
 const books = layout(PROJECTS);
 
 /* start the maps downloading as soon as the chunk evaluates, rather than when
@@ -45,17 +44,32 @@ preloadShelfTextures();
 const ValueMeter = import.meta.env.DEV ? lazy(() => import("./dev/ValueMeter")) : null;
 const BOOK_Y = SHELF.tiers[SHELF.bookTier];
 
-/* Where the camera rests. Kept as a direction and a distance rather than a
-   point, because the framing is tuned by moving in and out along one line and
-   a raw XYZ makes that three edits that have to agree.
+/* THE DESKTOP FRAME.  Spec section 7.1, and pulled forward from Phase 5
+   because Phase 3 grades the spine type at 11px and type size is a function
+   of framing: at the old distance the titles measured 10.4px and no amount of
+   typographic fiddling was going to fix a camera problem.
 
-   The distance is not a guess. The reference frames about 2.2 units of height
-   at the books, which at fov 26 puts the camera 4.7 units out; 5.4 keeps a
-   little more of the shelving in shot without shrinking the books back into
-   the furniture, which is what the first pass did at 11. */
-const TARGET = new THREE.Vector3(-0.78, 0.46, 0.12);
-const DIR = new THREE.Vector3(-0.59, 0.457, 0.661).normalize();
-const DIST = 6.5;
+   Derived, not dialled in. fov 30 vertical is about a 45mm lens. The books run
+   1.21 units wide and have to fill 24-30% of the frame, which fixes the
+   distance at 5.24. The camera sits at the height of the books' tops and tilts
+   down 7 degrees, which fixes the elevation. The target is then offset along
+   screen-right so the run lands 38% from the left rather than dead centre.
+
+   This is a calmer frame than the diagonal it replaces. The boards still
+   recede, but 17 degrees of yaw reads as a still life rather than as a camera
+   leaning around a corner. */
+const DEG = Math.PI / 180;
+const FOV = 30;
+const YAW = -17 * DEG;
+const PITCH = 7 * DEG;
+const DIST = 5.24;
+
+const DIR = new THREE.Vector3(
+  Math.sin(YAW) * Math.cos(PITCH),
+  Math.sin(PITCH),
+  Math.cos(YAW) * Math.cos(PITCH)
+);
+const TARGET = new THREE.Vector3(-0.634, 0.52, 0.158);
 
 /* ── the rig ──────────────────────────────────────────────────────────────
    OrbitControls owns the camera, so the hand-held float is applied to the
@@ -65,9 +79,10 @@ const DIST = 6.5;
 function Rig({ locked, reduce, room }: { locked: boolean; reduce: boolean; room: React.RefObject<THREE.Group | null> }) {
   const { camera, size } = useThree();
   const pointer = useRef({ x: 0, y: 0 });
-  const t = useRef(0);
 
   useEffect(() => {
+    const fine = window.matchMedia("(pointer: fine)");
+    if (!fine.matches) return;
     const onMove = (e: PointerEvent) => {
       pointer.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
       pointer.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -76,35 +91,31 @@ function Rig({ locked, reduce, room }: { locked: boolean; reduce: boolean; room:
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  /* A narrow window sees less of the run, so it has to stand further back or
-     the books fall out of frame. Framing by aspect rather than by a fixed
-     distance is why this holds from 1280 to 2560. */
+  /* A narrower window sees less of the run, so it stands further back. Framing
+     by aspect rather than by a fixed distance is why the composition holds
+     from 1280 to 2560. */
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    cam.fov = 26;
+    cam.fov = FOV;
     const aspect = size.width / size.height;
-    const pull = THREE.MathUtils.clamp(1.78 / aspect, 0.94, 1.5);
+    const pull = THREE.MathUtils.clamp(1.6 / aspect, 0.94, 1.5);
     cam.position.copy(TARGET).addScaledVector(DIR, DIST * pull);
     cam.lookAt(TARGET);
     cam.updateProjectionMatrix();
   }, [camera, size]);
 
+  /* THE SCENE MOVES WHEN THE VISITOR MOVES, AND NOT OTHERWISE. No drift, no
+     breathing, no orbit: the frame is art directed, and a composition that
+     wanders is one nobody chose. The parallax is applied to the ROOM rather
+     than the camera, so it can never fight the framing above for the same
+     three numbers. A degree is plenty; it reads as depth, not as motion. */
   useFrame((_, dt) => {
     const g = room.current;
     if (!g) return;
-    t.current += dt;
-    if (reduce || locked) {
-      const k = 1 - Math.pow(0.02, dt);
-      g.rotation.y += (0 - g.rotation.y) * k;
-      g.rotation.x += (0 - g.rotation.x) * k;
-      return;
-    }
-    /* cursor, plus a slow drift so the scene is alive when nothing moves */
-    const driftY = Math.sin(t.current * 0.31) * 0.12 * DEG;
-    const driftX = Math.cos(t.current * 0.24) * 0.09 * DEG;
-    const k = 1 - Math.pow(0.004, dt);
-    g.rotation.y += (-pointer.current.x * 0.85 * DEG + driftY - g.rotation.y) * k;
-    g.rotation.x += (pointer.current.y * 0.5 * DEG + driftX - g.rotation.x) * k;
+    const k = 1 - Math.pow(0.06, dt * 60 * 0.0167);
+    const amp = reduce || locked ? 0 : 1;
+    g.rotation.y += (-pointer.current.x * 1.2 * DEG * amp - g.rotation.y) * k;
+    g.rotation.x += (pointer.current.y * 0.8 * DEG * amp - g.rotation.x) * k;
   });
 
   return null;
@@ -127,7 +138,6 @@ export function BookshelfScene({
   const [reading, setReading] = useState<{ dark: number; mean: number; clipped: number } | null>(null);
   const handles = useRef(new Map<string, BookHandle>());
   const camRef = useRef<THREE.Camera | null>(null);
-  const controls = useRef<React.ElementRef<typeof OrbitControls> | null>(null);
   const room = useRef<THREE.Group>(null);
   const tl = useRef<gsap.core.Timeline | null>(null);
   const fallback = useRef<number | undefined>(undefined);
@@ -172,7 +182,6 @@ export function BookshelfScene({
       window.dispatchEvent(new Event("shelf:opening"));
       onHover(null);
       document.body.style.cursor = "";
-      if (controls.current) controls.current.enabled = false;
 
       const book = books.find((b) => b.slug === slug);
       const href = book?.href ?? "/";
@@ -225,7 +234,7 @@ export function BookshelfScene({
         gsap.to(h.group.position, { z: 0, duration: 0.6, ease: "power3.out" });
         gsap.to(h.group.rotation, { y: 0, duration: 0.6, ease: "power3.out" });
         gsap.to(h.coverPivot.rotation, { y: 0, duration: 0.5, ease: "power3.out" });
-        const c = controls.current;
+        /* back to the framed position, along the same line it left on */
         const home = TARGET.clone().addScaledVector(DIR, cam.position.distanceTo(TARGET));
         gsap.to(cam.position, {
           x: home.x,
@@ -234,12 +243,6 @@ export function BookshelfScene({
           duration: 0.65,
           ease: "power3.out",
           onUpdate: () => cam.lookAt(TARGET),
-          onComplete: () => {
-            if (c) {
-              c.enabled = true;
-              c.update();
-            }
-          },
         });
       }
       setBusy(false);
@@ -387,24 +390,6 @@ export function BookshelfScene({
         </EffectComposer>
       )}
 
-      {/* A gaze, not a turntable. The limits are tight enough that a reader
-          can look around the room and never find the back of it. */}
-      <OrbitControls
-        ref={controls}
-        makeDefault
-        target={TARGET}
-        enablePan={false}
-        enableDamping
-        dampingFactor={0.075}
-        rotateSpeed={0.3}
-        zoomSpeed={0.45}
-        minDistance={4.6}
-        maxDistance={8.4}
-        minPolarAngle={56 * DEG}
-        maxPolarAngle={71 * DEG}
-        minAzimuthAngle={-54 * DEG}
-        maxAzimuthAngle={-29 * DEG}
-      />
     </Canvas>
   );
 }

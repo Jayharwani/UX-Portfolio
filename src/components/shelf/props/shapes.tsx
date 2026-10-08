@@ -241,6 +241,11 @@ const COLD = new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.stonew
 
 export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
   const brassMat = mat(PALETTE.brass, 0.32, 1, "metal");
+  const shadeMat = useMemo(() => {
+    const m = (brassMat as THREE.MeshStandardMaterial).clone();
+    m.side = THREE.DoubleSide;
+    return m;
+  }, [brassMat]);
   return (
     <group {...rest}>
       {/* clamp foot */}
@@ -262,7 +267,12 @@ export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
         <cylinderGeometry args={[0.019, 0.019, 0.62, 10]} />
       </mesh>
       <group position={[0.62, 0.96, 0]} rotation={[0, 0, -1]}>
-        <mesh material={brassMat} castShadow>
+        {/* THE INSIDE OF A SHADE IS THE PART YOU SEE. An open cylinder with a
+            front-side material draws only its outer wall, and the outer wall
+            faces away from the key, so the shade rendered as a black cone with
+            a bright dot under it. Double-sided, the interior catches the bulb
+            and the lamp reads as lit from within. */}
+        <mesh material={shadeMat} castShadow>
           <cylinderGeometry args={[0.175, 0.095, 0.21, 20, 1, true]} />
         </mesh>
         {/* A LIT BULB IS NOT A SHADED SURFACE. As a standard material with
@@ -391,6 +401,24 @@ export function Jar({ r = 0.17, h = 0.34, fill = PALETTE.walnut, ...rest }: Thro
       </mesh>
       <mesh position={[0, h + 0.03, 0]} material={mat(PALETTE.walnut, 0.9)} castShadow>
         <cylinderGeometry args={[r * 1.04, r * 1.04, 0.07, 18]} />
+      </mesh>
+    </group>
+  );
+}
+
+/* -- the bookend --------------------------------------------------------
+   An L of brass plate. It is there to answer a question the eye asks before
+   the brain does: four books standing in the middle of a long empty board
+   with nothing holding them look like they are about to fall over. */
+export function Bookend({ h = 0.62, ...rest }: Thrown & { h?: number }) {
+  const m = mat(PALETTE.brass, 0.36, 1, "metal");
+  return (
+    <group {...rest}>
+      <mesh position={[0, h / 2, 0]} material={m} castShadow receiveShadow>
+        <boxGeometry args={[0.016, h, 0.5]} />
+      </mesh>
+      <mesh position={[-0.11, 0.008, 0]} material={m} castShadow receiveShadow>
+        <boxGeometry args={[0.22, 0.016, 0.5]} />
       </mesh>
     </group>
   );

@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { RoundedBox } from "@react-three/drei";
+import { RoundedBox, Text } from "@react-three/drei";
 import * as THREE from "three";
-import type { PlacedProject } from "./shelf";
-import { sheenOf } from "./shelfPalette";
+import { H, type PlacedProject } from "./shelf";
+import { shelfPalette, sheenOf } from "./shelfPalette";
 import { TEX, useTiledMaps } from "./materials/useTiledMaps";
-import { cover, pages, spine } from "./textures";
+import { cover, pageNormal } from "./textures";
 
 /* --------------------------------------------------------------------------
    A BOOK, STANDING ON A SHELF WITH ITS SPINE OUT.
@@ -22,26 +22,33 @@ import { cover, pages, spine } from "./textures";
    that group and the front board opens like a door; swing a centred mesh and
    it spins about its own middle.
 
-   WHY THE ARTWORK IS ON A PLANE AND NOT ON THE BOX. These books are chunky
-   and round-cornered, which is most of the look -- and a rounded box does not
-   carry box UVs. Mapping a spine graphic straight onto one drags the title
-   around the fillets. So the case is rounded geometry in plain cloth and the
-   graphic sits on a flat plane a hair proud of it, inset far enough to stay
-   inside the flat of the face. The texture is drawn on the cloth colour, so
-   the join is invisible.
+   EVERY DIMENSION IS A FRACTION OF H, the tallest book, so the whole run
+   rescales from one number rather than from twenty.
 
-   The hover is damped in useFrame rather than sprung by a library: one lerp
-   per book per frame costs nothing, and it means a book being opened by GSAP
-   and hovered at the same time has one owner for its transform.
+   A CASE BINDING IS NOT A BOX. Its boards are bigger than the pages they
+   protect and stand proud of them on three sides: the top, the bottom and the
+   fore-edge. That overhang is called the square, it is why a hardback can sit
+   on a shelf for fifty years without the paper fraying, and at this scale it
+   is most of what separates a book from a painted brick -- it puts a line of
+   shadow between the cloth and the paper on every edge you can see.
+
+   THE TYPE IS GEOMETRY, NOT A PICTURE OF TYPE. A canvas texture goes soft
+   exactly when a reader leans in, which is the moment the title has to be
+   legible. troika renders it from the outline, so it is sharp at any distance,
+   and it takes a real material -- which is how foil can be metal and catch the
+   lamp while ink on ochre stays matte.
    -------------------------------------------------------------------------- */
 
-export const DEPTH = 0.78;
-const BOARD = 0.026;
-const RADIUS = 0.022;
-const SPINE_D = 0.085;
-/** z of the spine's outer face: proud of the boards, like a case binding */
-const FACE = DEPTH / 2 + 0.03;
 const DEG = Math.PI / 180;
+/** depth of every book, front to back */
+export const DEPTH = 0.78;
+/** the boards: 1.2% of H thick, standing 2% of H proud of the page block */
+const BOARD = 0.012 * H;
+const SQUARE = 0.02 * H;
+const RADIUS = 0.02 * H;
+/** the spine stands a little proud of the boards, the way a case binding does */
+const FACE = DEPTH / 2 + 0.022;
+const SPINE_D = 0.07;
 
 export interface BookHandle {
   group: THREE.Group;
@@ -73,71 +80,77 @@ export function Book({
   const [hovered, setHovered] = useState(false);
 
   const n = String(index + 1).padStart(2, "0");
-
   const linen = useTiledMaps(TEX.linen, [4, 4]);
 
   const mats = useMemo(() => {
-    const spineArt = spine(project.title, n, project.cloth, project.ink);
-    const spineBump = spine(project.title, n, project.cloth, project.ink, "bump");
-    const coverArt = cover(project.title, project.blurb, project.year, project.cloth, project.ink);
-    const coverBump = cover(project.title, project.blurb, project.year, project.cloth, project.ink, "bump");
-
+    const isFoil = project.ink === shelfPalette.foil;
     return {
-      /* Bookcloth, not plastic. sheen is what the word "cloth" actually means
-         to a renderer: a weak retroreflective lobe at grazing angles, so the
-         edge of a spine catches light the flat of it does not. Without it,
-         linen and vinyl are the same surface. */
       cloth: new THREE.MeshPhysicalMaterial({
         ...linen,
         color: project.cloth,
         roughness: 0.82,
         metalness: 0,
+        /* sheen is what the word "cloth" means to a renderer: a weak lobe at
+           grazing angles, so the edge of a spine catches what the flat of it
+           does not. Without it, linen and vinyl are the same surface. */
         sheen: 0.4,
         sheenRoughness: 0.55,
         sheenColor: new THREE.Color(sheenOf(project.cloth)),
         normalScale: new THREE.Vector2(0.35, 0.35),
       }),
-      /* bumpScale is what stops the lettering reading as a decal: the type on
-         these books stands proud of the cloth, so every stroke needs a lit
-         edge and a shadowed one. */
-      spine: new THREE.MeshStandardMaterial({
-        map: spineArt,
-        bumpMap: spineBump,
-        bumpScale: 3,
-        roughness: 0.92,
+      paper: new THREE.MeshStandardMaterial({
+        color: project.paper,
+        roughness: 0.9,
+        metalness: 0,
+        normalMap: pageNormal(),
+        normalScale: new THREE.Vector2(0.6, 1),
+      }),
+      /* Foil is stamped metal leaf and behaves like metal: it is dark until
+         something lands on it, then it is the brightest thing on the book.
+         On ochre it would disappear, so Bumper gets ink instead. */
+      type: new THREE.MeshStandardMaterial({
+        color: project.ink,
+        /* Stamped foil is metal leaf, and a metal shows only what it
+           reflects. In a room lit by one small lamp that is almost nothing, so
+           the environment has to be turned up hard on this material alone --
+           otherwise the titles render as dark smudges on dark cloth, which is
+           exactly what 1.3 produced. A little diffuse is kept at 0.88 so the
+           letters never go fully black when the lamp is behind them. */
+        metalness: isFoil ? 0.88 : 0,
+        roughness: isFoil ? 0.3 : 0.6,
+        envMapIntensity: isFoil ? 4 : 1,
       }),
       cover: new THREE.MeshStandardMaterial({
-        map: coverArt,
-        bumpMap: coverBump,
-        bumpScale: 3,
-        roughness: 0.9,
-      }),
-      paper: new THREE.MeshStandardMaterial({
-        map: pages(index + 3),
-        color: project.paper,
-        roughness: 0.97,
+        map: cover(project.title, project.blurb, project.year, project.cloth, project.ink),
+        roughness: 0.84,
       }),
     };
-  }, [linen, project.cloth, project.ink, project.paper, project.title, project.blurb, project.year, n, index]);
+  }, [linen, project.cloth, project.ink, project.paper, project.title, project.blurb, project.year]);
 
   const w = project.thickness;
   const h = project.height;
   const lean = project.lean * DEG;
   const y = baseY + h / 2;
 
+  /* TWO CONSTRAINTS, AND THE SMALLER ONE WINS. Cap height wants to be about
+     55% of the spine's width, which sets the type across the spine; the title
+     also has to fit ALONG it, and a long word on a short book is the binding
+     constraint. FRICTION at the cap-height size came out 1.28 units long on a
+     book 1.16 tall and ran off both ends. Clash Display's caps advance about
+     0.78em once the 0.08em tracking is in; 0.62 was optimistic and HEADROOM and
+     BUMPER still ran over. */
+  const capRule = (w * 0.55) / 0.72;
+  const fitRule = (h * 0.72) / (project.title.length * 0.78);
+  const titleSize = Math.min(capRule, fitRule);
+
   useFrame((_, dt) => {
     const g = group.current;
     if (!g || active) return;
-    /* frame-rate independent: the same feel at 60 and at 144 */
     const k = 1 - Math.pow(0.0012, dt);
     const out = hovered && !busy;
-    /* 0.3 forward was the brief's number and it is too much at this camera
-       angle: the run is seen from well off to the left, so a book that steps
-       that far towards the lens swings across the spine of the one beside it
-       and hovering Friction hid Headroom completely. 0.2 still reads as a
-       book coming off the shelf and leaves all four legible. */
-    g.position.z += ((out ? 0.2 : 0) - g.position.z) * k;
-    g.rotation.y += ((out ? 4.5 * DEG : 0) - g.rotation.y) * k;
+    g.position.z += ((out ? DEPTH * 0.22 : 0) - g.position.z) * k;
+    g.position.y += ((out ? y + h * 0.02 : y) - g.position.y) * k;
+    g.rotation.y += ((out ? 4 * DEG : 0) - g.rotation.y) * k;
     g.rotation.z += (lean - g.rotation.z) * k;
   });
 
@@ -154,10 +167,9 @@ export function Book({
     document.body.style.cursor = "";
   };
 
-  /* the flat of each face, inside the fillets */
-  const faceW = w - RADIUS * 2;
-  const faceH = h - RADIUS * 2;
-  const faceD = DEPTH - RADIUS * 2;
+  const blockW = w - BOARD * 2;
+  const blockH = h - SQUARE * 2;
+  const blockD = DEPTH - SQUARE;
 
   return (
     <group
@@ -177,7 +189,7 @@ export function Book({
       {/* back board */}
       <RoundedBox
         args={[BOARD, h, DEPTH]}
-        radius={BOARD * 0.42}
+        radius={BOARD * 0.4}
         smoothness={3}
         position={[-w / 2 + BOARD / 2, 0, 0]}
         material={mats.cloth}
@@ -185,12 +197,13 @@ export function Book({
         receiveShadow
       />
 
-      {/* the text block, inset on every side the way a real one is */}
+      {/* the text block, inside the square on three sides and set back from
+          the spine so the hinge has somewhere to go */}
       <RoundedBox
-        args={[w - BOARD * 2.4, h - 0.05, DEPTH - 0.055]}
-        radius={0.012}
-        smoothness={3}
-        position={[0, 0, -0.03]}
+        args={[blockW, blockH, blockD]}
+        radius={0.006}
+        smoothness={2}
+        position={[0, 0, -SQUARE / 2]}
         material={mats.paper}
         castShadow
         receiveShadow
@@ -201,26 +214,19 @@ export function Book({
       <group ref={coverPivot} position={[w / 2 - BOARD / 2, 0, DEPTH / 2]}>
         <RoundedBox
           args={[BOARD, h, DEPTH]}
-          radius={BOARD * 0.42}
+          radius={BOARD * 0.4}
           smoothness={3}
           position={[0, 0, -DEPTH / 2]}
           material={mats.cloth}
           castShadow
           receiveShadow
         />
-        {/* the cover graphic, on the outer face */}
         <mesh position={[BOARD / 2 + 0.001, 0, -DEPTH / 2]} rotation={[0, Math.PI / 2, 0]} material={mats.cover}>
-          <planeGeometry args={[faceD, faceH]} />
+          <planeGeometry args={[DEPTH - RADIUS * 2, h - RADIUS * 2]} />
         </mesh>
       </group>
 
-      {/* The spine: a rounded slab in cloth, standing a little proud of the
-          boards the way a case binding does, with the graphic on its face.
-
-          The clearance is the point. The first pass put the plane at
-          DEPTH/2 + 0.0225 and the slab's own front face at 0.413, half a
-          millimetre in front of it -- so every title was buried inside its own
-          spine and all four books rendered as plain colour slabs. */}
+      {/* the spine */}
       <RoundedBox
         args={[w, h, SPINE_D]}
         radius={RADIUS}
@@ -230,9 +236,40 @@ export function Book({
         castShadow
         receiveShadow
       />
-      <mesh position={[0, 0, FACE + 0.0016]} material={mats.spine}>
-        <planeGeometry args={[faceW, faceH]} />
+
+      {/* the headband: the scrap of woven cotton at the head of a case
+          binding, and the one detail that says "bound" rather than "glued" */}
+      <mesh position={[0, h / 2 - 0.012 * H, FACE - SPINE_D / 2]} material={mats.paper}>
+        <boxGeometry args={[w * 0.72, 0.01 * H, SPINE_D * 0.8]} />
       </mesh>
+
+      {/* Title and number, reading top to bottom: the English convention, and
+          the one that stays upright while the book is standing. */}
+      <Text
+        font="/shelf/fonts/ClashDisplay-Medium.woff"
+        characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        fontSize={titleSize}
+        letterSpacing={0.08}
+        rotation={[0, 0, -Math.PI / 2]}
+        position={[0, -h * 0.1, FACE + 0.0006 * H]}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {project.title.toUpperCase()}
+        <primitive object={mats.type} attach="material" />
+      </Text>
+      <Text
+        font="/shelf/fonts/ClashDisplay-Medium.woff"
+        characters="0123456789"
+        fontSize={titleSize * 0.55}
+        rotation={[0, 0, -Math.PI / 2]}
+        position={[0, h / 2 - h * 0.075, FACE + 0.0006 * H]}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {n}
+        <primitive object={mats.type} attach="material" />
+      </Text>
     </group>
   );
 }

@@ -1,5 +1,6 @@
 import { LAMP, PALETTE, SHELF } from "../shelf";
 import {
+  Bookend,
   Bowl,
   Figurine,
   FilmCamera,
@@ -76,6 +77,9 @@ export function Decor() {
         <Vase r={0.19} h={0.5} color={PALETTE.stoneware} />
         <Foliage position={[0, 0.45, 0]} sprigs={VASE_SPRIGS} />
       </group>
+
+      {/* against the last book, so the run has a reason to stand up */}
+      <Bookend position={[-0.5, BOOKS, -0.06]} h={0.62} />
 
       {/* right of the books, which is where the eye lands after them */}
       <group position={[-0.1, BOOKS, -0.16]}>
