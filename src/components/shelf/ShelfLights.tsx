@@ -99,10 +99,21 @@ export function ShelfLights({ bulb, focus, highTier }: Rig) {
       {/* something for the brass, the glaze and the clearcoat to reflect.
           background={false} by default, so this never lights the frame on its
           own; it only shows up in speculars. */}
-      <Environment resolution={128} environmentIntensity={0.25}>
-        <Lightformer form="rect" color={shelfPalette.lampWarm} intensity={2} position={[3, 2, 2]} scale={[2, 1, 1]} />
-        <Lightformer form="rect" color={shelfPalette.fillCool} intensity={0.6} position={[-4, 3, 3]} scale={[4, 2, 1]} />
+      {/* A METAL WITH NOTHING TO REFLECT IS BLACK. Brass at metalness 1 has no
+          diffuse term at all: every photon it shows came from the environment,
+          so at 0.25 the lamp rendered at luma 24 against a target of 90-100.
+          This is the light that makes the brass brass. */}
+      <Environment resolution={128} environmentIntensity={0.8}>
+        <Lightformer form="rect" color={shelfPalette.lampWarm} intensity={5} position={[3, 2, 2]} scale={[2, 1, 1]} />
+        <Lightformer form="rect" color={shelfPalette.fillCool} intensity={1.2} position={[-4, 3, 3]} scale={[4, 2, 1]} />
       </Environment>
+
+      {/* The spec allows one thing when an area is too dark, and it is this:
+          a small bounce, placed at the problem. The key falls off across the
+          run -- inverse square over 0.9 units is most of a stop -- so the far
+          end of the shelf gets a weak warm fill rather than the whole frame
+          getting lifted. */}
+      <pointLight position={[-2.1, 0.5, 0.55]} color={shelfPalette.lampWarm} intensity={1.6} distance={2.4} decay={2} />
     </>
   );
 }

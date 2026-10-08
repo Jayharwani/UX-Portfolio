@@ -14,6 +14,7 @@ import { BOOKS_CENTER, BULB, PROJECTS, SHELF, layout } from "./shelf";
 import { ShelfLights } from "./ShelfLights";
 import { shelfPalette } from "./shelfPalette";
 import { disposeTextures } from "./textures";
+import { preloadShelfTextures } from "./materials/useTiledMaps";
 
 /* --------------------------------------------------------------------------
    THE SCENE.
@@ -32,6 +33,10 @@ import { disposeTextures } from "./textures";
 
 const DEG = Math.PI / 180;
 const books = layout(PROJECTS);
+
+/* start the maps downloading as soon as the chunk evaluates, rather than when
+   the first surface asks for them */
+preloadShelfTextures();
 
 /* The value meter is how the look is tuned: dark share, mean luma and clipped
    share, read off the finished frame. It is gated on DEV so it never reaches
@@ -290,8 +295,12 @@ export function BookshelfScene({
       ) : null}
 
       <group ref={room}>
-        <Shelving />
-        <Decor />
+        {/* useTexture suspends, so the room needs a boundary inside the Canvas.
+            The group itself stays outside it, because Rig holds a ref to it. */}
+        <Suspense fallback={null}>
+          <Shelving />
+          <Decor />
+        </Suspense>
 
         {books.map((p, i) => (
           <Book

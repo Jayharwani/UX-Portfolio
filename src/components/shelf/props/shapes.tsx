@@ -23,19 +23,62 @@ import { plaque } from "../textures";
    is fifty, and on a 2019 laptop that is the difference.
    -------------------------------------------------------------------------- */
 
-const cache = new Map<string, THREE.MeshStandardMaterial>();
-export function mat(color: string, roughness = 0.92, metalness = 0) {
-  const key = `${color}:${roughness}:${metalness}`;
+const cache = new Map<string, THREE.Material>();
+
+type Finish = "matte" | "glaze" | "metal" | "leaf";
+
+/* Four finishes, because a room of natural materials is four behaviours and
+   not forty colours: fired clay has a glaze over a rough body, brass is a
+   metal with a varied polish, a leaf is thin enough to light from behind,
+   and everything else is matte. */
+export function mat(color: string, roughness = 0.92, metalness = 0, finish: Finish = "matte") {
+  const key = `${color}:${roughness}:${metalness}:${finish}`;
   let m = cache.get(key);
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    if (finish === "glaze") {
+      m = new THREE.MeshPhysicalMaterial({
+        color, roughness, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.5,
+      });
+    } else if (finish === "metal") {
+      m = new THREE.MeshStandardMaterial({
+        color, roughness, metalness: 1, roughnessMap: brassNoise(), envMapIntensity: 1.2,
+      });
+    } else if (finish === "leaf") {
+      m = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, side: THREE.DoubleSide });
+    } else {
+      m = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    }
     cache.set(key, m);
   }
   return m;
 }
+
+/* Brass polished to one number everywhere reads as plastic. A little noise in
+   the roughness is all it takes: the highlight breaks up and the metal looks
+   handled. 64px is plenty, because it is never seen sharp. */
+let brass: THREE.DataTexture | null = null;
+function brassNoise() {
+  if (brass) return brass;
+  const n = 64;
+  const data = new Uint8Array(n * n * 4);
+  let s = 1337;
+  for (let i = 0; i < n * n; i++) {
+    s = (s * 9301 + 49297) % 233280;
+    const v = 64 + Math.round((s / 233280) * 50); // roughness 0.25 to 0.45
+    data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
+    data[i * 4 + 3] = 255;
+  }
+  brass = new THREE.DataTexture(data, n, n);
+  brass.wrapS = brass.wrapT = THREE.RepeatWrapping;
+  brass.repeat.set(3, 3);
+  brass.needsUpdate = true;
+  return brass;
+}
 export function disposeProps() {
   cache.forEach((m) => m.dispose());
   cache.clear();
+  brass?.dispose();
+  brass = null;
 }
 
 const V = (x: number, y: number) => new THREE.Vector2(x, y);
@@ -58,7 +101,7 @@ function hollow(r: number, h: number, waist: number, mouth: number) {
 
 export function Bowl({ r = 0.3, h = 0.2, color = PALETTE.stoneware, ...rest }: Thrown) {
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.82, 1), 26), [r, h]);
-  return <mesh geometry={geo} material={mat(color, 0.9)} castShadow receiveShadow {...rest} />;
+  return <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} castShadow receiveShadow {...rest} />;
 }
 
 export function Vase({ r = 0.22, h = 0.62, color = PALETTE.stoneware, ...rest }: Thrown) {
@@ -75,8 +118,8 @@ export function Mug({ r = 0.14, h = 0.24, color = PALETTE.stoneware, ...rest }: 
   const geo = useMemo(() => new THREE.LatheGeometry(hollow(r, h, 0.98, 1), 20), [r, h]);
   return (
     <group {...rest}>
-      <mesh geometry={geo} material={mat(color, 0.9)} castShadow receiveShadow />
-      <mesh position={[r * 1.02, h * 0.58, 0]} rotation={[Math.PI / 2, 0, 0]} material={mat(color, 0.9)} castShadow>
+      <mesh geometry={geo} material={mat(color, 0.55, 0, "glaze")} castShadow receiveShadow />
+      <mesh position={[r * 1.02, h * 0.58, 0]} rotation={[Math.PI / 2, 0, 0]} material={mat(color, 0.55, 0, "glaze")} castShadow>
         <torusGeometry args={[r * 0.52, r * 0.17, 8, 16, Math.PI * 1.25]} />
       </mesh>
     </group>
@@ -151,7 +194,7 @@ export function Foliage({
   return (
     <group {...rest}>
       <mesh geometry={geo.stems} material={mat(PALETTE.ivy, 0.95)} />
-      <mesh geometry={geo.leaves} material={mat(color, 0.96)} castShadow />
+      <mesh geometry={geo.leaves} material={mat(color, 0.55, 0, "leaf")} castShadow receiveShadow />
     </group>
   );
 }
@@ -193,40 +236,42 @@ export function PottedPlant({
    shade rather than a real one: a point light bright enough to look like a
    bulb blows out everything within half a unit of it, so the glow is painted
    and the light it casts is set separately and kept low. */
+const HOT = new THREE.MeshBasicMaterial({ color: new THREE.Color(shelfPalette.bulb).multiplyScalar(12) });
+const COLD = new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.stoneware) });
+
 export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
-  const brass = mat(PALETTE.brass, 0.32, 1);
+  const brassMat = mat(PALETTE.brass, 0.32, 1, "metal");
   return (
     <group {...rest}>
       {/* clamp foot */}
-      <mesh material={brass} castShadow receiveShadow>
+      <mesh material={brassMat} castShadow receiveShadow>
         <cylinderGeometry args={[0.19, 0.21, 0.05, 22]} />
       </mesh>
       {/* upright */}
-      <mesh position={[0, 0.5, 0]} material={brass} castShadow>
+      <mesh position={[0, 0.5, 0]} material={brassMat} castShadow>
         <cylinderGeometry args={[0.021, 0.025, 1.0, 10]} />
       </mesh>
-      <mesh position={[0, 1.0, 0]} material={brass} castShadow>
+      <mesh position={[0, 1.0, 0]} material={brassMat} castShadow>
         <sphereGeometry args={[0.038, 12, 10]} />
       </mesh>
       {/* THE REACH. A short arm put the head a unit and a half from the books,
           and inverse-square did the rest: the board under the lamp came out
           four times brighter than the thing the lamp is supposed to be
           lighting. The arm carries the head out over the run instead. */}
-      <mesh position={[0.31, 0.972, 0]} rotation={[0, 0, -1.45]} material={brass} castShadow>
+      <mesh position={[0.31, 0.972, 0]} rotation={[0, 0, -1.45]} material={brassMat} castShadow>
         <cylinderGeometry args={[0.019, 0.019, 0.62, 10]} />
       </mesh>
       <group position={[0.62, 0.96, 0]} rotation={[0, 0, -1]}>
-        <mesh material={brass} castShadow>
+        <mesh material={brassMat} castShadow>
           <cylinderGeometry args={[0.175, 0.095, 0.21, 20, 1, true]} />
         </mesh>
-        <mesh position={[0, -0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        {/* A LIT BULB IS NOT A SHADED SURFACE. As a standard material with
+            emissive it still went through the lighting model and came out at
+            luma 61 where the ladder wants 230 or more. Basic, with the colour
+            scaled past 1, makes it the one thing in the scene above the bloom
+            threshold -- which is the only reason anything glows. */}
+        <mesh position={[0, -0.1, 0]} rotation={[Math.PI / 2, 0, 0]} material={on ? HOT : COLD}>
           <circleGeometry args={[0.15, 18]} />
-          <meshStandardMaterial
-            color={on ? shelfPalette.bulb : PALETTE.stoneware}
-            emissive={on ? shelfPalette.bulb : "#000000"}
-            emissiveIntensity={on ? 12 : 0}
-            roughness={1}
-          />
         </mesh>
       </group>
     </group>
@@ -239,7 +284,7 @@ export function Lamp({ on = true, ...rest }: Thrown & { on?: boolean }) {
    diameters rather than one. */
 export function FilmCamera(rest: Thrown) {
   const body = mat(PALETTE.bodyDark, 0.72);
-  const steel = mat(PALETTE.brass, 0.4, 0.55);
+  const steel = mat(PALETTE.brass, 0.4, 1, "metal");
   return (
     <group {...rest}>
       <RoundedBox args={[0.56, 0.3, 0.2]} radius={0.035} smoothness={3} position={[0, 0.15, 0]} material={body} castShadow receiveShadow />
@@ -360,7 +405,7 @@ export function Geo({ r = 0.17, color = PALETTE.stoneware, ...rest }: Thrown) {
 }
 
 export function Figurine(rest: Thrown) {
-  const m = mat(PALETTE.brass, 0.38, 0.6);
+  const m = mat(PALETTE.brass, 0.38, 1, "metal");
   return (
     <group {...rest}>
       <mesh position={[0, 0.02, 0]} material={m} castShadow>

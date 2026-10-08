@@ -3,6 +3,8 @@ import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import type { PlacedProject } from "./shelf";
+import { sheenOf } from "./shelfPalette";
+import { TEX, useTiledMaps } from "./materials/useTiledMaps";
 import { cover, pages, spine } from "./textures";
 
 /* --------------------------------------------------------------------------
@@ -72,6 +74,8 @@ export function Book({
 
   const n = String(index + 1).padStart(2, "0");
 
+  const linen = useTiledMaps(TEX.linen, [4, 4]);
+
   const mats = useMemo(() => {
     const spineArt = spine(project.title, n, project.cloth, project.ink);
     const spineBump = spine(project.title, n, project.cloth, project.ink, "bump");
@@ -79,7 +83,20 @@ export function Book({
     const coverBump = cover(project.title, project.blurb, project.year, project.cloth, project.ink, "bump");
 
     return {
-      cloth: new THREE.MeshStandardMaterial({ color: project.cloth, roughness: 0.94, metalness: 0 }),
+      /* Bookcloth, not plastic. sheen is what the word "cloth" actually means
+         to a renderer: a weak retroreflective lobe at grazing angles, so the
+         edge of a spine catches light the flat of it does not. Without it,
+         linen and vinyl are the same surface. */
+      cloth: new THREE.MeshPhysicalMaterial({
+        ...linen,
+        color: project.cloth,
+        roughness: 0.82,
+        metalness: 0,
+        sheen: 0.4,
+        sheenRoughness: 0.55,
+        sheenColor: new THREE.Color(sheenOf(project.cloth)),
+        normalScale: new THREE.Vector2(0.35, 0.35),
+      }),
       /* bumpScale is what stops the lettering reading as a decal: the type on
          these books stands proud of the cloth, so every stroke needs a lit
          edge and a shadowed one. */
@@ -101,7 +118,7 @@ export function Book({
         roughness: 0.97,
       }),
     };
-  }, [project.cloth, project.ink, project.paper, project.title, project.blurb, project.year, n, index]);
+  }, [linen, project.cloth, project.ink, project.paper, project.title, project.blurb, project.year, n, index]);
 
   const w = project.thickness;
   const h = project.height;
