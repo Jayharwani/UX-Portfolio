@@ -18,17 +18,30 @@ reference disagree, the reference wins. Open it in a browser before you start.
 - React + TypeScript + Vite
 - Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
   CSS-in-JS, or a UI kit.**
-- **The homepage stays library-free.** CSS transitions, CSS keyframes,
-  `requestAnimationFrame`, and one 2D canvas. No Lenis, no scroll-jacking, no
-  transform-based smooth-scroll wrapper. This is deliberate, not an oversight.
-- **Case studies may use what is already in `package.json`** — GSAP (with
-  ScrollTrigger, Flip, SplitText, Observer) and matter-js — and must import
-  them dynamically so they never reach the homepage bundle. The earlier rule
-  banned these outright while `gsap`, `three`, `@react-three/fiber`, `motion`
-  and `matter-js` all sat in dependencies and `motion` was imported in
-  eighteen files, so it described an intention rather than the repo.
-- **Do not add new animation or UI dependencies** without asking. Tailwind is
-  installed but unused in `src/`; leave it that way. No component kits.
+- **The homepage (Print Run) runs GSAP, Lenis and three.** This replaces an
+  earlier "the homepage stays library-free" rule, and the replacement is
+  deliberate. A registration intro, a pinned four-cover run and an extruded
+  monogram are not reachable from CSS keyframes and a 2D canvas, and the
+  earlier rule was already being contradicted by the repo rather than by this
+  brief. The cost is paid in the open: `three` is a separate 132 kB gzip chunk
+  behind a dynamic import that only the full tier ever requests, so phones and
+  weak machines never download it, and the homepage's own chunk is 14 kB gzip.
+  Keep it that way: no eager import of `src/lib/stage.ts`.
+- **Still banned on the homepage:** scroll-jacking beyond the one pinned run,
+  ScrollSmoother, and any transform-based smooth-scroll wrapper. Lenis animates
+  the real window scroll position and adds no wrapper, which is why `position:
+  sticky` and ScrollTrigger pinning still work. The ban was about wrappers.
+- **Case studies use `motion` and `lucide-react`**, lazily, through their own
+  route chunks. They never reach the homepage bundle. Do not import `motion`
+  from homepage code; the homepage animates with GSAP.
+- **Dependencies are the eight in `package.json` and no more**, without asking:
+  gsap, lenis, lucide-react, motion, react, react-dom, react-router, three.
+  `matter-js`, `@react-three/fiber` and `@phosphor-icons/react` were removed
+  when the last importer went; do not reintroduce them.
+- **Tailwind IS used, by the case studies.** An earlier version of this file
+  said it was "installed but unused in `src/`", and that was simply wrong:
+  the case studies carry 521 className attributes, 28 of them `flex`. Removing
+  it breaks them. The Print Run homepage uses plain CSS only.
 - Only external dependency allowed: Geist + Geist Mono from Google Fonts.
 
 ## Hard rules
@@ -40,15 +53,28 @@ reference disagree, the reference wins. Open it in a browser before you start.
 2. **No debug code in production.** No `console.log`, no commented-out blocks,
    no `TODO` left in shipped files.
 3. **Scroll observation uses IntersectionObserver**, never a `scroll` event
-   listener for reveals. One `scroll` listener is permitted, for the smoothed
-   scroll value that drives the canvas camera.
+   listener for reveals. Lenis owns scroll on the homepage: the field reads
+   `lenis.animatedScroll` through `createField(canvas, { external: true })`
+   rather than keeping its own listener and its own lerp. Two smoothing curves
+   on one page makes the stars lag the type by a different amount at every
+   scroll speed, which reads as the canvas being detached from the page.
 4. **Native scroll stays native.** Do not add a transform-based smooth-scroll
    wrapper — it breaks the `position: sticky` preview panel in the work section.
    Smoothness comes from lerping the scroll *value*, not from moving the page.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **Locked palette on the homepage.** Use the tokens in SPEC.md. Do not add
-   colours there.
+6. **Locked palette on the homepage.** Six tokens: `--void`, `--paper` and the
+   four project accents `--teal`, `--mint`, `--cyan`, `--gold`, plus opacity
+   and `color-mix` steps of those. No new hue. Colour literals live in exactly
+   two files, `src/styles/print-run.css` (the tokens block) and
+   `src/styles/tokens.ts` (the mirror that canvas and WebGL code reads); a hex
+   value anywhere else on the homepage is a bug, because a second hand-typed
+   copy is a drift waiting to happen.
+
+   Text on void has a floor: `--ink-3` is paper at 55%, which measures 5.66:1.
+   Paper at 45% measures 4.07:1 and fails AA, which is what the old 9px and
+   10px mono labels were using. Never put paper text on an accent fill; it
+   measures 1.45:1 on gold. Accent fills take `--void` text.
 7. **A case study is themed by its own product, not by the template.**
    `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
    light because the app is a warm off-white with a deep emerald; its accent

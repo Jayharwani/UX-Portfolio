@@ -9,7 +9,9 @@ const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => 
 const FrictionPage = lazy(() => import("./components/FrictionPage").then((m) => ({ default: m.FrictionPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
-const HomeV2 = lazy(() => import("./components/HomeV2").then((m) => ({ default: m.HomeV2 })));
+/* The homepage. HomeV2 is still in the tree, unimported, for one-line
+   rollback while Print Run is being reviewed. */
+const HomePrintRun = lazy(() => import("./components/HomePrintRun").then((m) => ({ default: m.HomePrintRun })));
 
 function RouteFallback() {
   return (
@@ -36,7 +38,7 @@ export default function App() {
       <div className="min-h-screen antialiased" style={{ backgroundColor: "#05070C" }}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<HomeV2 />} />
+            <Route path="/" element={<HomePrintRun />} />
             <Route path="/signal" element={<SignalCasePage />} />
             <Route path="/bumper" element={<BumperCasePage />} />
             <Route path="/headroom" element={<HeadroomPage />} />

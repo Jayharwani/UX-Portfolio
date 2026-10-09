@@ -19,9 +19,9 @@ import { useEffect, useState } from "react";
    -------------------------------------------------------------------------- */
 
 const SECTIONS = [
-  { id: "hero", label: "INTRO", hue: [95, 216, 164] as const },
-  { id: "route", label: "ROUTE", hue: [233, 197, 139] as const },
-  { id: "work", label: "WORK", hue: null },
+  { id: "hero", label: "COVER", hue: [95, 216, 164] as const },
+  { id: "route", label: "ORIGIN", hue: [233, 197, 139] as const },
+  { id: "work", label: "ISSUES", hue: null },
   { id: "end", label: "CONTACT", hue: [95, 211, 216] as const },
 ];
 

@@ -2,7 +2,16 @@
  * The 3D background field.
  *
  * Framework-agnostic. Mount a full-viewport <canvas>, hand it to createField(),
- * call destroy() on unmount. Owns its own rAF loop, listeners, and DPR handling.
+ * call destroy() on unmount.
+ *
+ * It runs one of two ways. Standalone, it owns its own rAF loop, its own
+ * scroll listener and its own smoothing. Passed { external: true }, it owns
+ * none of those and the page drives it through setScroll() and tick().
+ *
+ * The external mode exists because the homepage has exactly one frame clock
+ * and exactly one scroll owner. Two smoothing curves on one page means the
+ * stars lag the type by a different amount at every scroll speed, which reads
+ * as the canvas being detached from the page rather than behind it.
  *
  * No Three.js on purpose — this is ~1,000 points, a rotation matrix and a
  * perspective divide. A WebGL dependency would cost 150kB to do less.
@@ -15,7 +24,16 @@ export type FieldHandle = {
   getScroll: () => number;
   /** per-frame delta of the smoothed scroll; drives the warp */
   getVelocity: () => number;
+  /** external mode only: hand it the already-smoothed scroll position */
+  setScroll: (y: number) => void;
+  /** external mode only: advance one frame */
+  tick: (deltaMs: number) => void;
   destroy: () => void;
+};
+
+export type FieldOptions = {
+  /** the caller owns the loop, the scroll value and the visibility handling */
+  external?: boolean;
 };
 
 const lerp = (a: number, b: number, n: number) => a + (b - a) * n;
@@ -49,7 +67,8 @@ const ACC: [number, number, number][] = [
 
 type Pt = { x: number; y: number; z: number; ph: number; acc: number[] | null };
 
-export function createField(canvas: HTMLCanvasElement): FieldHandle {
+export function createField(canvas: HTMLCanvasElement, opts: FieldOptions = {}): FieldHandle {
+  const external = !!opts.external;
   const g = canvas.getContext('2d')!;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -123,16 +142,20 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
     return [x1, y1, z2] as const;
   }
 
-  function frame() {
+  function frame(deltaMs = 16) {
     if (!running) return;
-    tm += 16;
+    /* Real elapsed time, clamped. A fixed 16ms step runs the twinkle at double
+       speed on a 120Hz display and at half speed on a machine dropping to 30. */
+    tm += Math.min(deltaMs, 50);
     assemble = Math.min(assemble + 0.009, 1);
     const ease = 1 - Math.pow(1 - assemble, 3);
 
     ry = lerp(ry, try_, 0.045);
     rx = lerp(rx, trx, 0.045);
     prev = smooth;
-    smooth = lerp(smooth, tScroll, 0.075);
+    /* Standalone, this is where the smoothing happens. External, Lenis has
+       already done it and smoothing a smoothed value again just adds lag. */
+    smooth = external ? tScroll : lerp(smooth, tScroll, 0.075);
     vel = smooth - prev;
     svel = lerp(svel, vel, 0.18);
     const warp = Math.max(-90, Math.min(90, svel * 3.2));
@@ -215,7 +238,7 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
     }
 
     g.globalCompositeOperation = 'source-over';
-    raf = requestAnimationFrame(frame);
+    if (!external) raf = requestAnimationFrame(frame);
   }
 
   size();
@@ -226,15 +249,21 @@ export function createField(canvas: HTMLCanvasElement): FieldHandle {
     g.fillRect(0, 0, canvas.width, canvas.height);
   } else {
     addEventListener('pointermove', onMove, { passive: true });
-    addEventListener('scroll', onScroll, { passive: true });
-    document.addEventListener('visibilitychange', onVis);
-    raf = requestAnimationFrame(frame);
+    if (!external) {
+      addEventListener('scroll', onScroll, { passive: true });
+      /* gsap.ticker parks itself when the tab hides, so external mode needs no
+         visibility handling of its own. */
+      document.addEventListener('visibilitychange', onVis);
+      raf = requestAnimationFrame(frame);
+    }
   }
 
   return {
     setAccent: (rgb) => { live[0] = rgb[0]; live[1] = rgb[1]; live[2] = rgb[2]; },
     getScroll: () => smooth,
     getVelocity: () => svel,
+    setScroll: (y: number) => { tScroll = y; },
+    tick: (deltaMs: number) => { if (!reduced) frame(deltaMs); },
     destroy() {
       running = false;
       cancelAnimationFrame(raf);
