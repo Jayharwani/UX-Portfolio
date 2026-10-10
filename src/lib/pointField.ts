@@ -36,6 +36,8 @@ const STIFFNESS = 120;
 const DAMPING = 18;
 /** how much of the morph is spent waiting for the slowest points */
 const STAGGER = 0.45;
+/** how far the field swells at the halfway point of a morph, in world units */
+const PUFF = 0.26;
 
 export type FieldHandle = {
   /** morph between two shapes; p is 0 to 1 and may run backwards. `time` is
@@ -57,9 +59,14 @@ export type FieldHandle = {
    *  that is still wandering, which is what makes the opening read as a mess
    *  resolving rather than as a shape sliding into place. */
   setTurbulence: (amount: number) => void;
-  /** slide the whole lattice sideways in world units, so the copy column and
-   *  the object are beside each other instead of on top of each other */
-  setOffset: (x: number) => void;
+  /** move the whole lattice in world units, so the copy and the object are
+   *  beside each other instead of on top of each other. Wide screens use x,
+   *  narrow ones use y, because a phone has height to spare and no width. */
+  setOffset: (x: number, y?: number) => void;
+  /** scale the object. The shapes are sized for a wide frame; a vertical
+   *  camera field of view means a narrow viewport crops horizontally, and an
+   *  object cropped on both sides is not an object. */
+  setFit: (k: number) => void;
   /** where the camera should be, as an orbit around the lattice. Damped, so
    *  it is a move and not a cut. */
   setCamera: (azimuth: number, elevation: number, distance: number) => void;
@@ -102,9 +109,23 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   /** each point's place in the queue, fixed once so the wave is the same
    *  wave every time rather than re-shuffling on each morph */
   const delay = new Float32Array(COUNT);
+  /** which way each point swells on its way between two shapes */
+  const puff = new Float32Array(COUNT * 3);
   for (let i = 0; i < COUNT; i++) {
     const r = Math.sin(i * 12.9898) * 43758.5453;
     delay[i] = (r - Math.floor(r)) * STAGGER;
+
+    /* an even scatter of directions on the sphere, not an even scatter of
+       angles: the second one bunches at the poles */
+    const h1 = Math.sin(i * 7.233) * 43758.5453;
+    const h2 = Math.sin(i * 3.717) * 43758.5453;
+    const a = (h1 - Math.floor(h1)) * Math.PI * 2;
+    const b = Math.acos((h2 - Math.floor(h2)) * 2 - 1);
+    puff[i * 3] = Math.sin(b) * Math.cos(a);
+    puff[i * 3 + 1] = Math.sin(b) * Math.sin(a);
+    /* a little more of it in depth, because depth is the thing the swell is
+       there to show */
+    puff[i * 3 + 2] = Math.cos(b) * 1.3;
   }
 
   SHAPES.drift(pos, lit, size, COUNT, 0);
@@ -223,6 +244,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   let ry = 0;
   let churn = 0;
   let clock = 0;
+  let fit = 1;
   let dead = false;
 
   /* THE CAMERA MOVES, AND THAT IS THE DIFFERENCE BETWEEN A PICTURE OF A SHAPE
@@ -244,7 +266,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     camera.updateProjectionMatrix();
     /* point size follows the canvas, so the field has the same visual weight
        on a laptop and on a large display */
-    material.uniforms.uScale.value = (h / 900) * dpr * 1.5;
+    material.uniforms.uScale.value = (h / 900) * dpr * 1.5 * fit;
   };
   resize();
 
@@ -263,10 +285,18 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       const span = 1 - STAGGER;
       for (let i = 0; i < COUNT; i++) {
         const t = smoothstep(clamp01((p - delay[i]) / span));
+        /* IT COMES APART AND REASSEMBLES, IT DOES NOT CROSS-FADE. A straight
+           line between two shapes is the one path that makes both of them
+           look flat: the object never has a moment of being a volume, so the
+           reader sees one picture slide into another. Swelling each point
+           along its own direction and back, zero at both ends, turns the
+           halfway point into a cloud the shapes dissolve into and resolve
+           out of. Small on purpose, because the brief is calm. */
+        const swell = Math.sin(Math.PI * t) * PUFF;
         const i3 = i * 3;
-        target[i3] = aPos[i3] + (bPos[i3] - aPos[i3]) * t;
-        target[i3 + 1] = aPos[i3 + 1] + (bPos[i3 + 1] - aPos[i3 + 1]) * t;
-        target[i3 + 2] = aPos[i3 + 2] + (bPos[i3 + 2] - aPos[i3 + 2]) * t;
+        target[i3] = aPos[i3] + (bPos[i3] - aPos[i3]) * t + puff[i3] * swell;
+        target[i3 + 1] = aPos[i3 + 1] + (bPos[i3 + 1] - aPos[i3 + 1]) * t + puff[i3 + 1] * swell;
+        target[i3 + 2] = aPos[i3 + 2] + (bPos[i3 + 2] - aPos[i3 + 2]) * t + puff[i3 + 2] * swell;
         lit[i] = aLit[i] + (bLit[i] - aLit[i]) * t;
         size[i] = aSize[i] + (bSize[i] - aSize[i]) * t;
       }
@@ -327,13 +357,18 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
 
       const az = cam.az + Math.sin(clock * 0.09) * 0.045;
       const el = cam.el + Math.sin(clock * 0.07 + 1.3) * 0.022;
-      const cx = points.position.x;
+      /* THE CAMERA ORBITS THE ORIGIN, NOT THE OBJECT. It used to orbit and
+         aim at the lattice's own position, which quietly cancelled every
+         offset: move the object right, the camera moved right with it, and
+         the framing never changed. Placement was really being done by the
+         canvas mask hiding the left of a centred object, which works until
+         you want the object somewhere the mask is not. */
       camera.position.set(
-        cx + Math.sin(az) * Math.cos(el) * cam.dist,
+        Math.sin(az) * Math.cos(el) * cam.dist,
         Math.sin(el) * cam.dist,
         Math.cos(az) * Math.cos(el) * cam.dist,
       );
-      camera.lookAt(cx, 0, 0);
+      camera.lookAt(0, 0, 0);
       /* the focal plane sits on the lattice, so the subject is the sharp part
          and everything in front of and behind it falls away */
       material.uniforms.uFocus.value = cam.dist;
@@ -363,8 +398,16 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       accentTarget.set(hex);
     },
 
-    setOffset(x) {
-      points.position.x = x;
+    setOffset(x, y = 0) {
+      points.position.set(x, y, 0);
+    },
+
+    /* call resize() after this: the dots have to scale with the object, or a
+       shrunk object is a finer stipple of the same shape rather than the same
+       shape seen from further away */
+    setFit(k) {
+      fit = k;
+      points.scale.setScalar(k);
     },
 
     setCamera(azimuth, elevation, distance) {

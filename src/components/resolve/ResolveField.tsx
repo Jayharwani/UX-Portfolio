@@ -69,10 +69,14 @@ const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
    you are shown. */
 const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
   drift: [0.08, 0.05, 5.4],
-  friction: [-0.26, 0.3, 5.5],
-  headroom: [0.46, -0.04, 4.9],
-  signal: [-0.34, 0.46, 4.8],
-  bumper: [0.62, 0.12, 5.2],
+  /* the icons are upright objects, so the camera stays near their eye line
+     and only changes which side it reads them from. Tilting up at a dollar
+     sign the way you would tilt over a map makes it illegible, which is the
+     whole thing these are here to avoid. */
+  friction: [-0.3, 0.1, 4.5],
+  headroom: [0.32, 0.04, 4.4],
+  signal: [-0.24, 0.08, 4.5],
+  bumper: [0.38, 0.06, 4.5],
   reach: [-0.12, 0.08, 5.6],
   rest: [0, 0.05, 5.4],
   sent: [0.3, 0.2, 5.3],
@@ -80,6 +84,11 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
 };
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/** how far right of centre the object sits on a wide screen, in world units.
+ *  Enough to clear the copy column completely; not so far that it crowds the
+ *  right edge. */
+const SIDE = 0.55;
 
 export function ResolveField({
   track,
@@ -121,6 +130,8 @@ export function ResolveField({
     let lastY = Number.NaN;
     let clock = 0;
     let animating = true;
+    /** two columns or stacked. place() owns it and runs before the loop. */
+    let wide = false;
 
     const apply = (y: number) => {
       if (centres.length < 2) return;
@@ -164,6 +175,13 @@ export function ResolveField({
       const b = POSE[target];
       handle.setCamera(mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t));
 
+      /* THE LAST SECTION IS CENTRED, SO THE FIELD RETURNS TO THE MIDDLE FOR
+         IT. Every chapter above it is two columns and the object belongs in
+         the right one; the contact section is one centred column of type with
+         two buttons under it, and an object sitting off to one side of that
+         reads as a layout that slipped rather than as composition. */
+      if (wide) handle.setOffset(mix(SIDE, 0, to === "reach" ? t : 0), 0);
+
       /* QUIET UNTIL ASKED. Through the contact section the field holds back
          so the two buttons are unmistakably the foreground, and a hover
          brings it all the way up. That is what makes the hover feel like the
@@ -191,12 +209,24 @@ export function ResolveField({
       }
     };
 
-    /* On a wide screen the copy owns the left third and the lattice sits to
-       the right of it. Narrow, there is no room to sit beside anything, so it
-       returns to centre and the copy takes a scrim instead. */
     const place = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      /* SIDE BY SIDE IS ABOUT SHAPE, NOT WIDTH. A 1024 pixel tablet held
+         upright is wide enough by the old test and far too narrow in fact:
+         the camera's field of view is vertical, so a tall viewport does not
+         shrink the picture, it crops the sides off it, and the object would
+         have run off the right edge. The same test has to hold in the
+         stylesheet, which is why STACKED is written there too. */
+      wide = w >= 1024 && w / h > 1.25;
+      /* stacked, the object still has to clear the copy below it */
+      handle.setFit(wide ? 1 : Math.min(0.78, w / h / 0.74));
       handle.resize();
-      handle.setOffset(window.innerWidth >= 1024 ? 0.86 : 0);
+      /* THE FIELD HAS ITS OWN HALF AND MAY NOT LEAVE IT. Wide, that half is
+         to the right of the copy column. Narrow, there is no second column,
+         so the object takes the top of the screen and the copy takes the
+         bottom: a phone has height to spare and no width at all. */
+      handle.setOffset(wide ? SIDE : 0, wide ? 0 : 0.6);
       measure();
     };
     place();

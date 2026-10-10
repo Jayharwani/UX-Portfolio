@@ -25,6 +25,8 @@
    never has to be re-framed between states.
    -------------------------------------------------------------------------- */
 
+import { ICONS, iconPoints } from "./icons";
+
 export type ShapeWriter = (
   pos: Float32Array,
   lit: Float32Array,
@@ -67,160 +69,69 @@ function rand(seed: number): number {
 
 const ASPECT = 1.35;
 
-/* ── 01 FRICTION ──────────────────────────────────────────────────────────
-   A sieve. The lattice is squeezed: every row narrower than the one above it,
-   so ten thousand reviews at the top arrive as a handful at the throat. The
-   survivors are the bottom row, lit and large, because the product publishes
-   a countable set and not a vibe. */
+/* ── 01 to 04, THE PROJECTS ───────────────────────────────────────────────
+   Each one resolves into the object somebody would draw if you asked them
+   what the product was. A filter, money, a pin on a map, a cart. They were
+   abstract diagrams before, which was honest and cost the reader a beat they
+   do not spend.
 
-export const SURVIVORS = 25;
+   EXTRUDED, NOT CUT OUT. Every icon is given real thickness, because a flat
+   silhouette facing the camera would throw away every depth cue the renderer
+   has, and the camera orbits past it.
 
-/** The 25 cells that make it through, picked once and deterministically so
- *  the knot is the same knot on every load. */
-const survivorSet = (() => {
-  const set = new Set<number>();
-  let k = 0;
-  while (set.size < SURVIVORS && k < 400) {
-    const row = ROWS - 1 - (k % 3);
-    const col = Math.floor(rand(k * 4.7) * COLS);
-    set.add(row * COLS + col);
-    k++;
-  }
-  return set;
-})();
+   THREE BANDS, NOT A RANDOM DEPTH. Scattering z evenly through the slab put
+   half the points behind the other half at every pixel, so the accent and the
+   paper salted together and the object had no surface anywhere. A dense front
+   face, a thin wall and a sparse inset back is what an extrusion actually
+   looks like: one lit plane you read, an edge that proves the thickness, and
+   a ghost behind it that only shows when the camera moves.
+   ------------------------------------------------------------------------ */
 
-export const friction: ShapeWriter = (pos, lit, size, n) => {
-  let seen = 0;
-  for (let i = 0; i < n; i++) {
-    const { u, v } = cell(i);
-    /* rows converge toward the throat: the narrowing IS the filtering */
-    const t = (1 - v) / 2;
-    const narrow = 1 - 0.94 * Math.pow(t, 1.5);
-    const survivor = survivorSet.has(i);
+/** how far the icon reaches from the middle. Smaller than the old diagrams
+ *  on purpose: the copy column has to stay readable, and a shape that runs
+ *  under the headline is a layout bug however good it looks. */
+const ICON_SCALE = 0.86;
+/** thickness, in the same units */
+const ICON_DEPTH = 0.34;
 
-    if (survivor) {
-      /* A KNOT, NOT A ROW. Letting the bottom rows simply arrive narrow drew
-         two flat lines of sixty-four, which is neither countable nor the
-         twenty-five the product actually publishes. These twenty-five leave
-         the weave at the throat and gather, because they are the output and
-         should look like a different kind of thing from the input. */
-      const a = seen * 2.399963;
-      const r = 0.085 * Math.sqrt((seen + 0.5) / SURVIVORS);
-      pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = -1.04 + Math.sin(a) * r * 0.8;
-      pos[i * 3 + 2] = (rand(i * 2.7) - 0.5) * 0.12;
-      lit[i] = 1;
-      size[i] = 7;
-      seen++;
-      continue;
+function icon(key: string): ShapeWriter {
+  return (pos, lit, size, n) => {
+    const { xy, edge } = iconPoints(key, ICONS[key], n);
+    for (let i = 0; i < n; i++) {
+      const band = rand(i * 2.9);
+      const j = rand(i * 5.3);
+
+      let z: number;
+      /* the back face sits a little inside the front one, so the two
+         silhouettes read as a bevel rather than as a doubled print */
+      let scale = ICON_SCALE;
+      if (band < 0.58) {
+        z = ICON_DEPTH * (1 - 0.14 * j);
+      } else if (band < 0.82) {
+        z = (j * 2 - 1) * ICON_DEPTH;
+      } else {
+        z = -ICON_DEPTH * (1 - 0.14 * j);
+        scale = ICON_SCALE * 0.95;
+      }
+
+      pos[i * 3] = xy[i * 2] * scale;
+      pos[i * 3 + 1] = xy[i * 2 + 1] * scale;
+      pos[i * 3 + 2] = z;
+
+      /* the front face carries the colour, and how close a point is to the
+         outline carries the weight: the edge is drawn, the fill is texture */
+      const face = (z / ICON_DEPTH + 1) / 2;
+      const e = edge[i];
+      lit[i] = Math.pow(face, 2.2) * (0.55 + 0.45 * e);
+      size[i] = (1.5 + 1.5 * e) * (0.45 + 0.55 * face);
     }
+  };
+}
 
-    pos[i * 3] = u * ASPECT * narrow;
-    pos[i * 3 + 1] = v * 0.95;
-    /* a shallow bowl, so the sieve has a mouth rather than being a flat fan */
-    pos[i * 3 + 2] = (1 - narrow) * -0.45 + Math.cos(u * 1.4) * 0.12 * narrow;
-    lit[i] = 0;
-    size[i] = 1.8 + 1.3 * narrow;
-  }
-};
-
-/* ── 02 HEADROOM ──────────────────────────────────────────────────────────
-   A subtraction. The lattice splits across one line: everything above it is
-   already committed and lifts away, and the short lit band left underneath is
-   what is actually safe to spend. The gap between them is the product. */
-
-const SAFE_ROWS = 7;
-
-export const headroom: ShapeWriter = (pos, lit, size, n) => {
-  for (let i = 0; i < n; i++) {
-    const { u, v, row } = cell(i);
-    const safe = row >= ROWS - SAFE_ROWS;
-
-    /* committed rides up and away; safe settles. The distance between them is
-       the only number the product ever shows you. */
-    const y = safe ? -0.92 + (ROWS - 1 - row) * 0.055 : v * 0.78 + 0.26;
-
-    pos[i * 3] = u * ASPECT * (safe ? 0.82 : 1);
-    pos[i * 3 + 1] = y;
-    pos[i * 3 + 2] = Math.sin(u * 2.1) * 0.1;
-
-    lit[i] = safe ? 1 : 0;
-    size[i] = safe ? 5.4 : 1.9;
-  }
-};
-
-/* ── 03 SIGNAL ────────────────────────────────────────────────────────────
-   A map. The lattice lies down into a ground plane and the events that are
-   actually happening stand up off it. Scattered sources become one surface
-   you can read in a glance.
-
-   The plane is authored already foreshortened rather than laid flat in XZ,
-   because a flat plane is edge-on to a camera at eye level and the whole map
-   collapses into a streak. */
-
-export const signal: ShapeWriter = (pos, lit, size, n) => {
-  for (let i = 0; i < n; i++) {
-    const { u, v, col, row } = cell(i);
-    /* a sparse, irregular scatter of live events, fixed per cell so the pins
-       are in the same places every time */
-    const pin = rand(col * 7.3 + row * 13.1) > 0.9962;
-    const depth = (v + 1) / 2;
-
-    const groundY = -0.46 + depth * 0.62;
-    pos[i * 3] = u * ASPECT * (0.62 + 0.38 * (1 - depth));
-    pos[i * 3 + 1] = pin ? groundY + 0.22 : groundY;
-    pos[i * 3 + 2] = -depth * 1.1;
-
-    lit[i] = pin ? 1 : 0;
-    size[i] = pin ? 7 : 1.5 + 1.7 * (1 - depth);
-  }
-};
-
-/* ── 04 BUMPER ────────────────────────────────────────────────────────────
-   A pause. The lattice runs left to right, meets one barrier and banks up
-   against it: the columns compress as they approach, which is what a queue
-   looks like. A few still go through, because it slows you down, it does not
-   stop you. */
-
-export const bumper: ShapeWriter = (pos, lit, size, n) => {
-  const WALL = 0.2;
-  for (let i = 0; i < n; i++) {
-    const { u, v, col, row } = cell(i);
-    /* a regular sparse trail, not a random one: picking these at random
-       scattered them into a scribble, and a scribble is not "a few got
-       through", it is noise */
-    const through = col > COLS - 13 && (col + row * 3) % 9 === 0;
-    const barrier = col === COLS - 13;
-
-    if (barrier) {
-      pos[i * 3] = WALL;
-      pos[i * 3 + 1] = v * 0.72;
-      pos[i * 3 + 2] = 0;
-      lit[i] = 1;
-      size[i] = 5.6;
-      continue;
-    }
-
-    const t = (u + 1) / 2;
-    if (through) {
-      const past = (col - (COLS - 13)) / 12;
-      pos[i * 3] = WALL + 0.12 + past * 0.9;
-      pos[i * 3 + 1] = v * 0.34;
-      size[i] = 1.9;
-    } else {
-      /* COMPRESSED AT THE WALL, NOT AWAY FROM IT. The first curve bunched the
-         columns at the upstream end, which draws a queue flowing away from
-         the barrier it is supposed to be stuck behind. Easing the other way
-         spaces them evenly upstream and jams them where they stop. */
-      const packed = 1 - Math.pow(1 - Math.min(1, t / 0.87), 2.1);
-      pos[i * 3] = -1.45 + packed * (WALL + 1.45);
-      pos[i * 3 + 1] = v * 0.72;
-      size[i] = 1.7 + 1.9 * packed;
-    }
-    pos[i * 3 + 2] = Math.sin(v * 2.4) * 0.16;
-    lit[i] = 0;
-  }
-};
+export const friction: ShapeWriter = icon("friction");
+export const headroom: ShapeWriter = icon("headroom");
+export const signal: ShapeWriter = icon("signal");
+export const bumper: ShapeWriter = icon("bumper");
 
 /* ── 00 THE OPENING ───────────────────────────────────────────────────────
    What the hero is: a sheet of the same material, suspended, breathing.

@@ -63,15 +63,25 @@
      canvas is the full viewport, so without this the field ends at a hard
      vertical edge, and in the hero that edge ran straight through the middle
      of "Then ships it.". A mask is the right tool rather than moving the
-     object, because the object has to stay centred in its own perspective. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 100%);
+     object, because the object has to stay centred in its own perspective.
+
+     The #000 in these gradients is a stencil, not a colour: a mask reads
+     only alpha, so the token rule does not apply and swapping in var(--void)
+     would say something untrue about what the value is for. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 46%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 46%, #000 100%);
 }
-@media (max-width: 1023.98px) {
-  /* centred on a narrow screen, so it fades from both sides instead */
+/* STACKED. The same test the field makes in script: not wide enough, or not
+   wide for its height. Both halves have to agree or the object is placed for
+   one layout and the type for the other. */
+@media (max-width: 1023.98px), (max-aspect-ratio: 5 / 4) {
+  /* THE SPLIT IS HORIZONTAL HERE. There is no second column to sit
+     beside, so the object takes the top of the screen and the copy the
+     bottom, and the field is gone well before the first line of type rather
+     than lying dimly behind all of it. */
   .v2.rs .rs-field {
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
   }
 }
 
@@ -227,7 +237,7 @@
   width: min(100%, 38ch);
   /* a scrim, because the lattice passes behind the text and type on a moving
      background is unreadable without one */
-  background: linear-gradient(100deg, rgb(5 7 12 / 0.92) 48%, rgb(5 7 12 / 0) 100%);
+  background: linear-gradient(100deg, color-mix(in oklab, var(--void) 92%, transparent) 48%, transparent 100%);
   padding-right: var(--s-9);
   margin-left: calc(var(--s-7) * -1);
   padding-left: var(--s-7);
@@ -305,19 +315,40 @@
   .v2.rs .rs-btn { min-height: 48px; }
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 1023.98px), (max-aspect-ratio: 5 / 4) {
   .v2.rs { --t-display: clamp(2.6rem, 11vw, 3.6rem); }
-  .v2.rs .rs-panel {
-    width: 100%;
-    background: linear-gradient(180deg, rgb(5 7 12 / 0) 0%, rgb(5 7 12 / 0.9) 18%, rgb(5 7 12 / 0.9) 100%);
-    padding: var(--s-7) var(--s-5);
-    margin-left: calc(var(--s-5) * -1);
-    margin-right: calc(var(--s-5) * -1);
+  /* THE HERO IS BUILT LIKE A CHAPTER HERE, because on a phone every section
+     is: the object on top, the type under it, the same scrim between them.
+     Centred, the eyebrow landed inside the field's own fade, and a 12px mono
+     line cannot survive that. */
+  .v2.rs .rs-hero {
+    justify-content: flex-end;
+    padding-bottom: var(--s-9);
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 34%,
+      color-mix(in oklab, var(--void) 92%, transparent) 52%,
+      color-mix(in oklab, var(--void) 96%, transparent) 100%
+    );
   }
   .v2.rs .rs-panel {
+    /* FULL BLEED, AND IT HAS TO BE AUTO TO GET THERE. With width: 100% the
+       negative right margin cannot widen the box, only shift what follows,
+       so the scrim stopped one gutter short of the right edge and the field
+       came through at full brightness in that strip. */
+    width: auto;
+    margin-inline: calc(var(--gut) * -1);
+    padding: var(--s-7) var(--gut) var(--s-8);
     justify-content: flex-end;
-    padding-bottom: var(--s-8);
-    padding-right: var(--s-5);
+    /* clear at the top, because that is where the object is now */
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--void) 92%, transparent) 56%,
+      color-mix(in oklab, var(--void) 96%, transparent) 100%
+    );
   }
   .v2.rs .rs-actions .rs-btn { flex: 1; }
 }
@@ -416,7 +447,7 @@
   padding: clamp(20px, 2.4vw, 34px);
   border: 1px solid var(--ink-deco);
   border-radius: 4px;
-  background: rgb(5 7 12 / 0.9);
+  background: color-mix(in oklab, var(--void) 90%, transparent);
   transform: translateZ(0);
   transition: border-color 220ms var(--ease-out), transform 520ms var(--ease-out);
 }
