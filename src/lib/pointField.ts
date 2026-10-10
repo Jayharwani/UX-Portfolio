@@ -42,7 +42,8 @@ export type FieldHandle = {
   tick: (deltaSec: number) => void;
   setPointer: (nx: number, ny: number) => void;
   resize: () => void;
-  /** 0 to 1, fades the whole field without touching its motion */
+  /** 0 to 1, eased. Fades the whole field without touching its motion, so a
+   *  section can hold it quiet and a hover can bring it back up. */
   setOpacity: (v: number) => void;
   /** eased, not snapped: the colour crosses with the shape rather than
    *  cutting on a scroll threshold */
@@ -158,6 +159,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   const pointer = { x: 0, y: 0 };
   const accentNow = material.uniforms.uAccent.value as THREE.Color;
   const accentTarget = accentNow.clone();
+  let opacityTarget = 1;
   let rx = 0;
   let ry = 0;
   let dead = false;
@@ -220,6 +222,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       ry += (pointer.x * 0.22 - ry) * k;
       rx += (pointer.y * 0.12 - rx) * k;
       accentNow.lerp(accentTarget, k);
+      const o = material.uniforms.uOpacity;
+      o.value += (opacityTarget - o.value) * k;
       points.rotation.set(rx, ry, 0);
 
       renderer.render(scene, camera);
@@ -231,7 +235,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     },
 
     setOpacity(v) {
-      material.uniforms.uOpacity.value = v;
+      opacityTarget = v;
     },
 
     setAccent(hex) {

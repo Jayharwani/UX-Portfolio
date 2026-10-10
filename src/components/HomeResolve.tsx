@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { SmoothScroll } from "./print-run/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
-import { Contact } from "./v2/Contact";
+import { Reach } from "./resolve/Reach";
 import { ISSUES } from "../data/issues";
 import { TOKENS } from "../styles/tokens";
 import "../styles/v2.css";
@@ -83,7 +83,7 @@ export function HomeResolve() {
               screen tall, so one screen of scroll is one morph. */}
           <section className="rs-track" id="work" ref={track}>
             {ISSUES.map((issue, i) => (
-              <article className="rs-chapter" key={issue.key} data-on={active === i ? "" : undefined} data-accent={issue.accent}>
+              <article className="rs-chapter rs-stop" key={issue.key} data-on={active === i ? "" : undefined} data-accent={issue.accent}>
                 <div className="rs-panel">
                   <span className="mono rs-no">{issue.no}</span>
                   <h2 className="rs-title">{issue.title}</h2>
@@ -106,7 +106,7 @@ export function HomeResolve() {
         </main>
 
         <footer className="rs-foot">
-          <Contact />
+          <Reach />
         </footer>
       </div>
     </SmoothScroll>

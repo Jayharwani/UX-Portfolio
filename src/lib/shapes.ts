@@ -227,5 +227,102 @@ export const rest: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, friction, headroom, signal, bumper } as const;
+
+/* ── 05 REACH ─────────────────────────────────────────────────────────────
+   The last state. Four screens of taking a mess and returning one clear
+   thing, and then the lattice does it once more for the page itself: it
+   resolves into the two ways to reach Jay.
+
+   At rest it is a shallow dish opening toward the reader, which is as close
+   as a lattice gets to an open hand. Hovering either button pulls it into
+   what that button does, which is the only reason the hover is worth having:
+   the field is answering the question the button asks.
+   ------------------------------------------------------------------------ */
+
+export const reach: ShapeWriter = (pos, lit, size, n) => {
+  for (let i = 0; i < n; i++) {
+    const { u, v } = cell(i);
+    const x = u * ASPECT;
+    const y = v * 0.8;
+    /* a dish: the edges lean toward the viewer, the middle sits back */
+    pos[i * 3] = x;
+    pos[i * 3 + 1] = y;
+    pos[i * 3 + 2] = (x * x * 0.3 + y * y * 0.38) - 0.5;
+    lit[i] = 0;
+    size[i] = 2.1;
+  }
+};
+
+/* Hovering EMAIL. Everything gathers into one stream and leaves: a message
+   being sent, which is the single thing the button does. The leading edge is
+   lit, because that is the part that has already gone. */
+
+export const sent: ShapeWriter = (pos, lit, size, n) => {
+  for (let i = 0; i < n; i++) {
+    const { u, v, col } = cell(i);
+    const along = (col / (COLS - 1));
+    /* a narrow beam angled up and to the right, tightening as it travels */
+    const taper = 1 - 0.88 * Math.pow(along, 0.8);
+    const drift = (rand(i * 3.3) - 0.5) * 0.1;
+
+    pos[i * 3] = -1.3 + along * 2.7;
+    pos[i * 3 + 1] = -0.5 + along * 1.15 + v * 0.5 * taper + drift;
+    pos[i * 3 + 2] = u * 0.42 * taper;
+
+    const leading = along > 0.9;
+    lit[i] = leading ? 1 : 0;
+    size[i] = leading ? 4.2 : 1.1 + 1.6 * (1 - along);
+  }
+};
+
+/* Hovering LINKEDIN. The lattice gathers into clusters around hubs, which is
+   what a professional network is: not a logo, the thing the logo stands for.
+   Fourteen hubs, every point belonging to one of them. */
+
+const HUBS = 14;
+
+export const network: ShapeWriter = (pos, lit, size, n) => {
+  /* hub positions, fixed so the constellation is the same constellation */
+  const hx: number[] = [];
+  const hy: number[] = [];
+  const hz: number[] = [];
+  for (let h = 0; h < HUBS; h++) {
+    const a = h * 2.399963;
+    const r = 0.95 * Math.sqrt((h + 0.5) / HUBS);
+    hx.push(Math.cos(a) * r * ASPECT);
+    hy.push(Math.sin(a) * r * 0.82);
+    hz.push((rand(h * 5.9) - 0.5) * 0.7);
+  }
+
+  for (let i = 0; i < n; i++) {
+    const h = i % HUBS;
+    const t = (i / n);
+    const isHub = i >= n - HUBS;
+
+    if (isHub) {
+      const k = i - (n - HUBS);
+      pos[i * 3] = hx[k];
+      pos[i * 3 + 1] = hy[k];
+      pos[i * 3 + 2] = hz[k];
+      lit[i] = 1;
+      size[i] = 6;
+      continue;
+    }
+
+    /* each point sits on the line between its hub and the next one round, so
+       the clusters read as connected rather than as fourteen separate blobs */
+    const next = (h + 5) % HUBS;
+    const f = Math.pow(rand(i * 1.9), 1.7);
+    const jitter = (rand(i * 7.1) - 0.5) * 0.09;
+
+    pos[i * 3] = hx[h] + (hx[next] - hx[h]) * f + jitter;
+    pos[i * 3 + 1] = hy[h] + (hy[next] - hy[h]) * f + jitter;
+    pos[i * 3 + 2] = hz[h] + (hz[next] - hz[h]) * f;
+    lit[i] = 0;
+    size[i] = 1.5 + 1.1 * (1 - f);
+    void t;
+  }
+};
+
+export const SHAPES = { rest, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;

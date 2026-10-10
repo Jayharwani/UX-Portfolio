@@ -299,3 +299,184 @@
   }
   .v2.rs .rs-btn:active { transform: none; }
 }
+
+/* ══ reach: the last section ════════════════════════════════════════════
+   Two buttons and nothing else to press. They are the only elements on the
+   page with real depth, which is what makes them read as the thing to do.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.v2.rs .rs-reach {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--s-9) var(--gut);
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.v2.rs .rs-reach-title {
+  margin: 0 0 clamp(40px, 6vh, 72px);
+  font-size: clamp(2.8rem, 7vw, 6.2rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+}
+
+.v2.rs .rs-reach-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.4vw, 32px);
+  max-width: 820px;
+  /* the container owns the perspective, so both tiles share one vanishing
+     point and lean as if they were in the same room */
+  perspective: 1200px;
+}
+
+.v2.rs .rs-reach-btn {
+  position: relative;
+  display: block;
+  aspect-ratio: 1.15;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  /* slow on the way back, quick to answer: the lean follows the pointer
+     almost immediately and relaxes over a longer, calmer curve */
+  transition: transform 520ms var(--ease-out);
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .v2.rs .rs-reach-btn:hover { transition-duration: 120ms; }
+}
+.v2.rs .rs-reach-btn:active { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(0.975); }
+
+/* the plate: real geometry behind the face, not a drawn shadow */
+.v2.rs .rs-reach-plate {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--accent) 16%, var(--void));
+  border: 1px solid color-mix(in oklab, var(--accent) 38%, transparent);
+  transform: translateZ(-42px);
+  transition: transform 520ms var(--ease-out), opacity 520ms var(--ease-out);
+  opacity: 0.55;
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-plate,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-plate {
+  transform: translateZ(-78px) scale(1.04);
+  opacity: 1;
+  transition-duration: 220ms;
+}
+
+.v2.rs .rs-reach-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(20px, 2.4vw, 34px);
+  border: 1px solid var(--ink-deco);
+  border-radius: 4px;
+  background: rgb(5 7 12 / 0.9);
+  transform: translateZ(0);
+  transition: border-color 220ms var(--ease-out), transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-face,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-face {
+  border-color: var(--accent);
+  transform: translateZ(26px);
+  transition-duration: 220ms;
+}
+
+.v2.rs .rs-reach-icon {
+  display: block;
+  color: var(--accent);
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-icon svg { width: clamp(48px, 7vw, 84px); height: auto; display: block; }
+.v2.rs .rs-reach-btn:hover .rs-reach-icon,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-icon {
+  transform: translateZ(54px) scale(1.06);
+  transition-duration: 260ms;
+}
+
+.v2.rs .rs-reach-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: auto;
+  font-size: clamp(1.5rem, 2.6vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-label,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-label {
+  transform: translateZ(34px);
+  transition-duration: 260ms;
+}
+.v2.rs .rs-reach-arrow {
+  width: 0.62em;
+  height: 0.62em;
+  color: var(--accent);
+  transform: translate(-4px, 4px);
+  opacity: 0;
+  transition: transform 260ms var(--ease-out), opacity 260ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-arrow,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-arrow { transform: none; opacity: 1; }
+
+.v2.rs .rs-reach-detail {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: var(--t-label);
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out), color 220ms;
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-detail,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-detail {
+  color: var(--ink-2);
+  transform: translateZ(34px);
+  transition-duration: 260ms;
+}
+
+.v2.rs .rs-credits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 2px var(--s-8);
+  margin-top: clamp(56px, 9vh, 104px);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--ink-deco);
+}
+.v2.rs .rs-credits div { display: flex; justify-content: space-between; gap: var(--s-5); padding: var(--s-2) 0; }
+.v2.rs .rs-credits span { font-size: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.v2.rs .rs-credits b { font-weight: 400; font-size: 12.5px; color: var(--ink-2); text-align: right; text-wrap: balance; }
+
+.v2.rs .rs-colophon {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s-7);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+@media (max-width: 767.98px) {
+  .v2.rs .rs-reach-row { grid-template-columns: 1fr; max-width: none; }
+  .v2.rs .rs-reach-btn { aspect-ratio: 1.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the depth stays, the movement goes: the plate and the face keep their
+     separation so the tiles still read as objects, they just do not lean */
+  .v2.rs .rs-reach-btn,
+  .v2.rs .rs-reach-plate,
+  .v2.rs .rs-reach-face,
+  .v2.rs .rs-reach-icon,
+  .v2.rs .rs-reach-label,
+  .v2.rs .rs-reach-detail { transition: none; transform: none; }
+  .v2.rs .rs-reach-plate { transform: translateZ(-42px); opacity: 1; }
+  .v2.rs .rs-reach-arrow { opacity: 1; transform: none; transition: none; }
+}

@@ -35,8 +35,27 @@ import { ISSUES } from "../../data/issues";
    construction and survives any change to the layout.
    -------------------------------------------------------------------------- */
 
-/** rest, then one state per project, in the order they are read */
-const STATES: ShapeName[] = ["rest", "friction", "headroom", "signal", "bumper"];
+/** rest, then one state per project, then the contact section. Six stops,
+ *  five morphs, one lattice. */
+const STATES: ShapeName[] = ["rest", "friction", "headroom", "signal", "bumper", "reach"];
+
+/* WHAT THE LAST STOP'S TARGET IS, when a contact button has the pointer.
+   Module level rather than a prop, for the same reason getLenis is: the
+   buttons are three components away and this changes on pointerenter, which
+   is not a thing worth re-rendering a tree for. The scroll still owns HOW FAR
+   through the morph the field is; this only swaps WHERE it is heading, so a
+   hover halfway up the contact section does the right thing instead of
+   snapping. */
+let override: ShapeName | null = null;
+let overrideAccent: string | null = null;
+let onOverride: (() => void) | null = null;
+
+export function setFieldTarget(shape: ShapeName | null, accent?: string): void {
+  if (override === shape) return;
+  override = shape;
+  overrideAccent = accent ?? null;
+  onOverride?.();
+}
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
@@ -67,7 +86,9 @@ export function ResolveField({
     let centres: number[] = [];
     const measure = () => {
       lastY = Number.NaN;
-      const chapters = Array.from(host.querySelectorAll<HTMLElement>(".rs-chapter"));
+      /* every stop on the page, not only the project chapters: the contact
+         section is the sixth state and has to be measured with the rest */
+      const chapters = Array.from(document.querySelectorAll<HTMLElement>(".rs-stop"));
       const top = window.scrollY;
       centres = chapters.map((c) => {
         const r = c.getBoundingClientRect();
@@ -104,7 +125,19 @@ export function ResolveField({
         t = clamp01((y - centres[k]) / Math.max(1, centres[k + 1] - centres[k]));
       }
 
-      handle.morph(STATES[from], STATES[Math.min(from + 1, STATES.length - 1)], t);
+      const to = STATES[Math.min(from + 1, STATES.length - 1)];
+      /* the override only applies on the final leg, where "reach" lives */
+      const onLast = to === "reach";
+      const target = override && onLast ? override : to;
+      handle.morph(STATES[from], target, t);
+
+      /* QUIET UNTIL ASKED. Through the contact section the field holds back
+         so the two buttons are unmistakably the foreground, and a hover
+         brings it all the way up. That is what makes the hover feel like the
+         page answering rather than like a hover state: the whole object wakes
+         up, it does not just change shape. */
+      handle.setOpacity(onLast && t > 0.35 ? (override ? 1 : 0.4) : 1);
+      if (override && overrideAccent) handle.setAccent(overrideAccent);
 
       /* whichever chapter is nearest the middle owns the page's colour */
       let nearest = 0;
@@ -118,8 +151,10 @@ export function ResolveField({
       }
       if (nearest !== active) {
         active = nearest;
-        handle.setAccent(TOKENS[ISSUES[nearest].accent]);
-        onActive(nearest);
+        /* the contact stop has no project, so it keeps the last one's colour
+           until a button asks for its own */
+        if (nearest < ISSUES.length) handle.setAccent(TOKENS[ISSUES[nearest].accent]);
+        onActive(Math.min(nearest, ISSUES.length - 1));
       }
     };
 
@@ -146,6 +181,12 @@ export function ResolveField({
       handle.tick(deltaMs / 1000);
     });
 
+    /* a hover has to redraw even when the page has not moved */
+    onOverride = () => {
+      lastY = Number.NaN;
+      apply(getLenis()?.animatedScroll ?? window.scrollY);
+    };
+
     const onPointer = (e: PointerEvent) => {
       if (reduce.matches) return;
       handle.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
@@ -160,6 +201,8 @@ export function ResolveField({
     const settle = window.setTimeout(measure, 1200);
 
     return () => {
+      onOverride = null;
+      override = null;
       stopFrame();
       window.clearTimeout(settle);
       window.removeEventListener("pointermove", onPointer);
