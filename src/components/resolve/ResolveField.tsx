@@ -90,10 +90,21 @@ const mix = (a: number, b: number, t: number) => a + (b - a) * t;
  *  it; everything between them is a chapter. */
 export type Zone = "hero" | "work" | "end";
 
-/** how far right of centre the object sits on a wide screen, in world units.
+/** how far from centre the object sits on a wide screen, in world units.
  *  Enough to clear the copy column completely; not so far that it crowds the
- *  right edge. */
+ *  edge. */
 const SIDE = 0.55;
+
+/* WHICH HALF EACH STATE LIVES IN. The chapters alternate which side their
+   copy is on, so the object has to alternate with them or the mirrored ones
+   put the text straight through it. Interpolating between these means the
+   object crosses the page as the shape changes, which is the move the
+   alternation was worth making for. */
+function sideOf(state: number): number {
+  if (state >= STATES.length - 1) return 0; /* the contact section is centred */
+  if (state === 0) return SIDE; /* the hero sits where chapter 01 will */
+  return state % 2 === 1 ? SIDE : -SIDE;
+}
 
 export function ResolveField({
   track,
@@ -136,8 +147,55 @@ export function ResolveField({
     let lastY = Number.NaN;
     let clock = 0;
     let animating = true;
+    /* when the copy's rectangle was last read. A getBoundingClientRect in a
+       scroll callback is a layout read in the worst place there is, so this
+       runs on its own slow clock instead: the mask is feathered over eighty
+       pixels and cannot resolve the difference. */
+    let safeAt = -1;
     /** two columns or stacked. place() owns it and runs before the loop. */
     let wide = false;
+
+    /* THE COPY HAS RIGHT OF WAY. Whichever block of text is currently being
+       read is handed to the field, which fades and leans out of it. Which
+       block that is comes from the zone, so the hero's copy and the active
+       chapter's panel take their turn without the field knowing what either
+       of them is. */
+    const readSafe = () => {
+      const el = document.querySelector<HTMLElement>(
+        zone === "hero" ? ".rs-hero-copy" : zone === "work" ? ".rs-chapter[data-on] .rs-panel" : ".rs-reach-row",
+      );
+      if (!el) {
+        handle.setSafe(0, 0, 0, 0);
+        return;
+      }
+      /* THE BOX IS THE TYPE, NOT THE PANEL. A sticky panel is a full
+         viewport tall whatever is written in it, so handing the field its
+         bounding rectangle reserved a column from the top of the screen to
+         the bottom, and on a phone that erased the object entirely. The union
+         of the panel's children is the block of text itself. */
+      const kids = el.children;
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (let i = 0; i < kids.length; i++) {
+        const k = kids[i].getBoundingClientRect();
+        if (k.width === 0 || k.height === 0) continue;
+        left = Math.min(left, k.left);
+        top = Math.min(top, k.top);
+        right = Math.max(right, k.right);
+        bottom = Math.max(bottom, k.bottom);
+      }
+      if (!Number.isFinite(left)) {
+        const r = el.getBoundingClientRect();
+        left = r.left;
+        top = r.top;
+        right = r.right;
+        bottom = r.bottom;
+      }
+      if (bottom < 0 || top > window.innerHeight || right <= left) handle.setSafe(0, 0, 0, 0);
+      else handle.setSafe(left, top, right, bottom);
+    };
 
     const apply = (y: number) => {
       if (centres.length < 2) return;
@@ -181,12 +239,10 @@ export function ResolveField({
       const b = POSE[target];
       handle.setCamera(mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t));
 
-      /* THE LAST SECTION IS CENTRED, SO THE FIELD RETURNS TO THE MIDDLE FOR
-         IT. Every chapter above it is two columns and the object belongs in
-         the right one; the contact section is one centred column of type with
-         two buttons under it, and an object sitting off to one side of that
-         reads as a layout that slipped rather than as composition. */
-      if (wide) handle.setOffset(mix(SIDE, 0, to === "reach" ? t : 0), 0);
+      /* The object crosses the page between chapters, and comes back to the
+         middle for the contact section, which is a single centred column of
+         type with two buttons under it. */
+      if (wide) handle.setOffset(mix(sideOf(from), sideOf(from + 1), t), 0);
 
       /* QUIET UNTIL ASKED. Through the contact section the field holds back
          so the two buttons are unmistakably the foreground, and a hover
@@ -239,6 +295,7 @@ export function ResolveField({
          bottom: a phone has height to spare and no width at all. */
       handle.setOffset(wide ? SIDE : 0, wide ? 0 : 0.6);
       measure();
+      safeAt = -1;
     };
     place();
 
@@ -269,6 +326,10 @@ export function ResolveField({
 
     const stopFrame = onFrame((_t, deltaMs) => {
       clock += deltaMs / 1000;
+      if (clock - safeAt > 0.12) {
+        safeAt = clock;
+        readSafe();
+      }
       /* the smoothed value, so the field and the page agree about where the
          reader is within a single frame */
       apply(getLenis()?.animatedScroll ?? window.scrollY);

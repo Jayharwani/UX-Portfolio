@@ -1,4 +1,4 @@
-import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Mail, Linkedin, ArrowUpRight } from "lucide-react";
 import { setFieldTarget } from "./ResolveField";
 import { CONTACT, CREDITS } from "../../data/projects";
@@ -41,6 +41,7 @@ function ReachButton({
   field,
   external,
   icon,
+  onReach,
 }: {
   href: string;
   label: string;
@@ -49,6 +50,8 @@ function ReachButton({
   field: Target;
   external?: boolean;
   icon: React.ReactNode;
+  /** keyboard focus has to complete the sentence too, not only the pointer */
+  onReach: (v: boolean) => void;
 }) {
   const tile = useRef<HTMLAnchorElement>(null);
 
@@ -63,6 +66,9 @@ function ReachButton({
        every child on every pointer move */
     el.style.setProperty("--rx", `${(-ny * TILT).toFixed(2)}deg`);
     el.style.setProperty("--ry", `${(nx * TILT).toFixed(2)}deg`);
+    /* and the light the surface and its edge are lit by */
+    el.style.setProperty("--mx", `${(e.clientX - r.left).toFixed(0)}px`);
+    el.style.setProperty("--my", `${(e.clientY - r.top).toFixed(0)}px`);
   }, []);
 
   const settle = useCallback(() => {
@@ -85,8 +91,14 @@ function ReachButton({
       onPointerMove={lean}
       onPointerEnter={take}
       onPointerLeave={settle}
-      onFocus={take}
-      onBlur={settle}
+      onFocus={() => {
+        onReach(true);
+        take();
+      }}
+      onBlur={() => {
+        onReach(false);
+        settle();
+      }}
     >
       {/* the plate that sits behind the face and separates on hover */}
       <span className="rs-reach-plate" aria-hidden="true" />
@@ -107,22 +119,51 @@ function ReachButton({
 }
 
 export function Reach() {
+  const [asked, setAsked] = useState(false);
+
+  /* On a touch screen there is no hover to complete the sentence with, so it
+     completes itself once the section is actually being looked at. */
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = section.current;
+    if (!el || window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setAsked(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section className="rs-reach rs-stop" id="end">
+    <section className="rs-reach rs-stop rs-shell" id="end" ref={section} data-asked={asked ? "" : undefined}>
       <p className="mono rs-eyebrow">Available now</p>
+      {/* THE LAST HEADLINE IS THE FIRST ONE ANSWERED. Same solid-then-outline
+          pair as the hero, and the outline inks in when a card is reached for,
+          so the page's own sentence finishes at the moment you act on it. */}
       <h2 className="rs-reach-title">
-        Let&rsquo;s build
-        <br />
-        something.
+        <span>Let&rsquo;s build</span>
+        <span className="rs-outline">
+          something.
+          <span className="rs-ink" aria-hidden="true">
+            something.
+          </span>
+        </span>
       </h2>
 
-      <div className="rs-reach-row">
+      <div className="rs-reach-row" onPointerEnter={() => setAsked(true)} onPointerLeave={() => setAsked(false)}>
         <ReachButton
           href={`mailto:${CONTACT.email}`}
           label="Email"
           detail={CONTACT.email}
           accent="headroom"
           field="sent"
+          onReach={setAsked}
           icon={<Mail strokeWidth={1.25} />}
         />
         <ReachButton
@@ -132,6 +173,7 @@ export function Reach() {
           accent="signal"
           field="network"
           external
+          onReach={setAsked}
           icon={<Linkedin strokeWidth={1.25} />}
         />
       </div>

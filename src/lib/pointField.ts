@@ -69,6 +69,10 @@ export type FieldHandle = {
    *  camera field of view means a narrow viewport crops horizontally, and an
    *  object cropped on both sides is not an object. */
   setFit: (k: number) => void;
+  /** the rectangle the copy occupies, in CSS pixels from the top left of the
+   *  viewport. Points inside it fade almost out and lean away from it. Pass
+   *  a zero-size rect to switch it off. */
+  setSafe: (left: number, top: number, right: number, bottom: number) => void;
   /** where the camera should be, as an orbit around the lattice. Damped, so
    *  it is a move and not a cut. */
   setCamera: (azimuth: number, elevation: number, distance: number) => void;
@@ -159,14 +163,28 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       uFocus: { value: 5.4 },
       uFogNear: { value: 4.4 },
       uFogDensity: { value: 0.2 },
+      /* the copy's rectangle, in CSS pixels with y measured from the bottom,
+         because that is the space a vertex shader can cheaply get to */
+      uSafe: { value: new THREE.Vector4(0, 0, 0, 0) },
+      uRes: { value: new THREE.Vector2(1, 1) },
     },
     vertexShader: /* glsl */ `
       attribute float aLit;
       attribute float aSize;
       uniform float uScale;
+      uniform vec4 uSafe;
+      uniform vec2 uRes;
       varying float vLit;
       varying float vFade;
       varying float vDepth;
+      varying float vSafe;
+
+      /** how far past the rectangle a point has to be before it is free of
+       *  it. A hard edge would draw the copy's bounding box in dots. */
+      const float FEATHER = 80.0;
+      /** and how hard it is pushed out of the way */
+      const float PUSH = 24.0;
+
       void main() {
         vLit = aLit;
         /* A POINT CANNOT BE SMALLER THAN ONE PIXEL. Shrinking a point to zero
@@ -180,7 +198,33 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         /* perspective point size: near points are bigger, which is the only
            thing that gives a cloud of dots any depth at all */
         gl_PointSize = aSize * uScale * (5.8 / -mv.z);
-        gl_Position = projectionMatrix * mv;
+
+        vec4 clip = projectionMatrix * mv;
+
+        /* THE COPY HAS RIGHT OF WAY. Anywhere the text is, the field is
+           almost gone and what is left leans out of the way. Doing it here
+           rather than by moving the whole object means the object keeps its
+           own composition and only the handful of points that would have
+           landed on a sentence get out of its way. */
+        vSafe = 0.0;
+        if (uSafe.z > uSafe.x) {
+          vec2 px = ((clip.xy / clip.w) * 0.5 + 0.5) * uRes;
+          vec2 c = (uSafe.xy + uSafe.zw) * 0.5;
+          vec2 h = (uSafe.zw - uSafe.xy) * 0.5;
+          vec2 q = abs(px - c) - h;
+          float d = max(q.x, q.y);
+          vSafe = 1.0 - smoothstep(0.0, FEATHER, d);
+          if (vSafe > 0.0) {
+            /* out along the nearest face, not away from the centre: pushing
+               radially would send half of them across the text */
+            vec2 dir = q.x > q.y
+              ? vec2(sign(px.x - c.x), 0.0)
+              : vec2(0.0, sign(px.y - c.y));
+            px += dir * (PUSH * vSafe);
+            clip.xy = ((px / uRes) * 2.0 - 1.0) * clip.w;
+          }
+        }
+        gl_Position = clip;
       }`,
     fragmentShader: /* glsl */ `
       uniform vec3 uPaper;
@@ -194,6 +238,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       varying float vLit;
       varying float vFade;
       varying float vDepth;
+      varying float vSafe;
 
       void main() {
         /* EVERY POINT IS A LIT SPHERE, NOT A DISC. A flat circle of uniform
@@ -230,6 +275,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
 
         float a = mix(0.74, 1.0, vLit) * edge * uOpacity * vFade;
         a *= mix(1.0, 0.5, blur) * (1.0 - fog * 0.55);
+        a *= mix(1.0, 0.12, vSafe);
         gl_FragColor = vec4(col, a);
         #include <colorspace_fragment>
       }`,
@@ -266,6 +312,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    (material.uniforms.uRes.value as THREE.Vector2).set(w, h);
     /* point size follows the canvas, so the field has the same visual weight
        on a laptop and on a large display */
     material.uniforms.uScale.value = (h / 900) * dpr * 1.5 * fit;
@@ -416,6 +463,12 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     setFit(k) {
       fit = k;
       points.scale.setScalar(k);
+    },
+
+    setSafe(left, top, right, bottom) {
+      const h = canvas.clientHeight || 1;
+      /* the shader works bottom up, the DOM works top down */
+      (material.uniforms.uSafe.value as THREE.Vector4).set(left, h - bottom, right, h - top);
     },
 
     setCamera(azimuth, elevation, distance) {
