@@ -60,6 +60,27 @@ export function setFieldTarget(shape: ShapeName | null, accent?: string): void {
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
+/* WHERE EACH STATE IS READ FROM. Every shape has an angle that explains it
+   and angles that hide it: the funnel wants to be seen slightly from above so
+   the narrowing is a narrowing and not a triangle, the queue wants to be
+   looked along so the compression has length, the map wants height. The
+   camera travels between these as the lattice morphs, so the two moves are
+   one move, and the point cloud is somewhere you are rather than something
+   you are shown. */
+const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
+  drift: [0.08, 0.05, 5.4],
+  friction: [-0.26, 0.3, 5.5],
+  headroom: [0.46, -0.04, 4.9],
+  signal: [-0.34, 0.46, 4.8],
+  bumper: [0.62, 0.12, 5.2],
+  reach: [-0.12, 0.08, 5.6],
+  rest: [0, 0.05, 5.4],
+  sent: [0.3, 0.2, 5.3],
+  network: [-0.46, 0.14, 5.0],
+};
+
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
 export function ResolveField({
   track,
   onActive,
@@ -136,6 +157,12 @@ export function ResolveField({
       const onLast = to === "reach";
       const target = override && onLast ? override : to;
       handle.morph(STATES[from], target, t, clock);
+
+      /* the camera travels on the same t as the shape, so the angle and the
+         form arrive together */
+      const a = POSE[STATES[from]];
+      const b = POSE[target];
+      handle.setCamera(mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t));
 
       /* QUIET UNTIL ASKED. Through the contact section the field holds back
          so the two buttons are unmistakably the foreground, and a hover

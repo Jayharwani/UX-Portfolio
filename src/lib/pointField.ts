@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { SHAPES, COUNT, ANIMATED, type ShapeName } from "./shapes";
+import { TOKENS } from "../styles/tokens";
 
 /* --------------------------------------------------------------------------
    THE FIELD.
@@ -59,6 +60,9 @@ export type FieldHandle = {
   /** slide the whole lattice sideways in world units, so the copy column and
    *  the object are beside each other instead of on top of each other */
   setOffset: (x: number) => void;
+  /** where the camera should be, as an orbit around the lattice. Damped, so
+   *  it is a move and not a cut. */
+  setCamera: (azimuth: number, elevation: number, distance: number) => void;
   destroy: () => void;
 };
 
@@ -123,8 +127,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     uniforms: {
       uPaper: { value: new THREE.Color(paper) },
       uAccent: { value: new THREE.Color(accent) },
+      uVoid: { value: new THREE.Color(TOKENS.void) },
+      /* a single key, up and slightly to the left of the viewer, so the
+         shading agrees across every point in the field */
+      uLight: { value: new THREE.Vector3(-0.34, 0.5, 0.8).normalize() },
       uScale: { value: 1 },
       uOpacity: { value: 1 },
+      uFocus: { value: 5.4 },
+      uFogNear: { value: 4.4 },
+      uFogDensity: { value: 0.2 },
     },
     vertexShader: /* glsl */ `
       attribute float aLit;
@@ -132,6 +143,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       uniform float uScale;
       varying float vLit;
       varying float vFade;
+      varying float vDepth;
       void main() {
         vLit = aLit;
         /* A POINT CANNOT BE SMALLER THAN ONE PIXEL. Shrinking a point to zero
@@ -141,6 +153,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            actually take it away. */
         vFade = clamp(aSize * 0.9, 0.0, 1.0);
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vDepth = -mv.z;
         /* perspective point size: near points are bigger, which is the only
            thing that gives a cloud of dots any depth at all */
         gl_PointSize = aSize * uScale * (5.8 / -mv.z);
@@ -149,18 +162,51 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     fragmentShader: /* glsl */ `
       uniform vec3 uPaper;
       uniform vec3 uAccent;
+      uniform vec3 uVoid;
+      uniform vec3 uLight;
       uniform float uOpacity;
+      uniform float uFocus;
+      uniform float uFogNear;
+      uniform float uFogDensity;
       varying float vLit;
       varying float vFade;
+      varying float vDepth;
+
       void main() {
-        /* round, with a soft edge. Square points read as pixels, and the
-           whole field stops looking like a material. */
-        vec2 d = gl_PointCoord - 0.5;
-        float r = dot(d, d);
-        if (r > 0.25) discard;
-        float edge = smoothstep(0.25, 0.08, r);
-        vec3 col = mix(uPaper, uAccent, vLit);
+        /* EVERY POINT IS A LIT SPHERE, NOT A DISC. A flat circle of uniform
+           colour is the single reason a point cloud reads as a 2D scatter:
+           there is no surface for the eye to resolve. Reconstructing a
+           hemisphere normal from gl_PointCoord costs one sqrt and turns each
+           dot into a small object with a terminator and a highlight. */
+        vec2 d = gl_PointCoord * 2.0 - 1.0;
+        float r2 = dot(d, d);
+        if (r2 > 1.0) discard;
+        float r = sqrt(r2);
+        vec3 n = vec3(d.x, -d.y, sqrt(max(0.0, 1.0 - r2)));
+
+        float lambert = clamp(dot(n, uLight), 0.0, 1.0);
+        float shade = 0.3 + 0.7 * lambert;
+        vec3 h = normalize(uLight + vec3(0.0, 0.0, 1.0));
+        float spec = pow(clamp(dot(n, h), 0.0, 1.0), 22.0);
+
+        /* DEPTH OF FIELD, cheaply. Points away from the focal plane lose
+           their edge and some of their weight, which is what a lens does and
+           what separates near from far far more convincingly than size
+           alone. */
+        float blur = clamp(abs(vDepth - uFocus) / 3.2, 0.0, 1.0);
+        float soft = mix(0.07, 0.62, blur);
+        float edge = 1.0 - smoothstep(1.0 - soft, 1.0, r);
+
+        vec3 col = mix(uPaper, uAccent, vLit) * shade + spec * (0.35 + 0.4 * vLit);
+
+        /* ATMOSPHERE. Far points sink toward the background rather than
+           staying as bright as near ones, which is the oldest depth cue there
+           is and the one the flat version was missing entirely. */
+        float fog = 1.0 - exp(-pow(max(0.0, vDepth - uFogNear) * uFogDensity, 2.0));
+        col = mix(col, uVoid, fog * 0.92);
+
         float a = mix(0.74, 1.0, vLit) * edge * uOpacity * vFade;
+        a *= mix(1.0, 0.5, blur) * (1.0 - fog * 0.55);
         gl_FragColor = vec4(col, a);
         #include <colorspace_fragment>
       }`,
@@ -178,6 +224,14 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   let churn = 0;
   let clock = 0;
   let dead = false;
+
+  /* THE CAMERA MOVES, AND THAT IS THE DIFFERENCE BETWEEN A PICTURE OF A SHAPE
+     AND BEING IN THE ROOM WITH IT. Every state is read from its own angle:
+     down into the funnel, along the queue, across the gap. Nothing else gives
+     a point cloud parallax, and without parallax the depth cues in the shader
+     are describing a space the viewer never moves through. */
+  const cam = { az: 0, el: 0.05, dist: 5.4 };
+  const camTo = { az: 0, el: 0.05, dist: 5.4 };
 
   const resize = () => {
     if (dead) return;
@@ -261,6 +315,29 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       const k = 1 - Math.exp(-3 * dt);
       ry += (pointer.x * 0.22 - ry) * k;
       rx += (pointer.y * 0.12 - rx) * k;
+
+      /* The camera eases toward the pose this state asked for, with a slow
+         drift on top so there is always a little parallax even when nobody is
+         doing anything. Damped rather than scrubbed: the move should lag the
+         scroll slightly, the way a real camera operator does. */
+      const ck = 1 - Math.exp(-2.4 * dt);
+      cam.az += (camTo.az - cam.az) * ck;
+      cam.el += (camTo.el - cam.el) * ck;
+      cam.dist += (camTo.dist - cam.dist) * ck;
+
+      const az = cam.az + Math.sin(clock * 0.09) * 0.045;
+      const el = cam.el + Math.sin(clock * 0.07 + 1.3) * 0.022;
+      const cx = points.position.x;
+      camera.position.set(
+        cx + Math.sin(az) * Math.cos(el) * cam.dist,
+        Math.sin(el) * cam.dist,
+        Math.cos(az) * Math.cos(el) * cam.dist,
+      );
+      camera.lookAt(cx, 0, 0);
+      /* the focal plane sits on the lattice, so the subject is the sharp part
+         and everything in front of and behind it falls away */
+      material.uniforms.uFocus.value = cam.dist;
+      material.uniforms.uFogNear.value = cam.dist - 1.1;
       accentNow.lerp(accentTarget, k);
       const o = material.uniforms.uOpacity;
       o.value += (opacityTarget - o.value) * k;
@@ -288,6 +365,12 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
 
     setOffset(x) {
       points.position.x = x;
+    },
+
+    setCamera(azimuth, elevation, distance) {
+      camTo.az = azimuth;
+      camTo.el = elevation;
+      camTo.dist = distance;
     },
 
     scatter(spread = 3.4) {
