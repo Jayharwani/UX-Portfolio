@@ -25,7 +25,18 @@
    never has to be re-framed between states.
    -------------------------------------------------------------------------- */
 
-export type ShapeWriter = (pos: Float32Array, lit: Float32Array, size: Float32Array, n: number) => void;
+export type ShapeWriter = (
+  pos: Float32Array,
+  lit: Float32Array,
+  size: Float32Array,
+  n: number,
+  /** seconds since the field started, for the states that are alive */
+  time: number,
+) => void;
+
+/** the states that have to be recomputed every frame rather than only when
+ *  the scroll moves */
+export const ANIMATED = new Set<string>(["drift"]);
 
 /** The lattice. 96 x 54 is 5,184 points. At 64 x 36 the spacing came out at
  *  about 25 screen pixels on a full-height canvas and the weave read as
@@ -212,20 +223,52 @@ export const bumper: ShapeWriter = (pos, lit, size, n) => {
 };
 
 /* ── 00 THE OPENING ───────────────────────────────────────────────────────
-   Where the lattice is before the page has said anything: flat, even, at
-   rest. Already a form rather than a scatter, because nothing should look
-   like it was summoned out of nowhere. */
+   What the hero is: a sheet of the same material, suspended, breathing.
 
-export const rest: ShapeWriter = (pos, lit, size, n) => {
+   IT USED TO BE A FLAT EVEN GRID AND THAT WAS THE PROBLEM. A rectangle of
+   dots facing the camera is wallpaper: no depth, no silhouette, no reason to
+   look, and a hard edge that cut straight through the headline. The three
+   things that make this an object instead are a travelling wave through it, a
+   soft edge where the sheet dissolves rather than being cropped, and near
+   points drawn larger than far ones so the undulation reads as depth and not
+   as a pattern.
+
+   Two wave trains at different rates and directions, so it never repeats on
+   any beat a viewer can anticipate. This is the calm the rest of the page is
+   measured against, so it moves slowly enough to be furniture and enough to
+   be alive. */
+
+export const drift: ShapeWriter = (pos, lit, size, n, time) => {
   for (let i = 0; i < n; i++) {
     const { u, v } = cell(i);
-    pos[i * 3] = u * ASPECT;
-    pos[i * 3 + 1] = v * 0.86;
-    pos[i * 3 + 2] = 0;
+    const x = u * ASPECT;
+    const y = v * 0.9;
+
+    /* how far out this point is, for the soft edge */
+    const r = Math.min(1, Math.hypot(u * 0.92, v));
+    const edge = 1 - r * r * r;
+
+    const w =
+      Math.sin(u * 2.1 + time * 0.42) * 0.3 +
+      Math.sin(v * 2.7 - time * 0.33) * 0.22 +
+      Math.sin((u + v) * 1.4 + time * 0.21) * 0.14;
+
+    pos[i * 3] = x;
+    pos[i * 3 + 1] = y + w * 0.16 * edge;
+    /* the sheet leans away at the rim, so it ends rather than being cut off */
+    pos[i * 3 + 2] = w * edge - (1 - edge) * 1.1;
+
     lit[i] = 0;
-    size[i] = 2.2;
+    /* Near is bigger, so the wave reads as a surface and not a pattern. The
+       rim goes to nothing rather than merely getting small: leaving it at a
+       quarter size drew a faint rectangle around the whole form, which put
+       back exactly the boxy silhouette the soft edge exists to remove. */
+    size[i] = (1.7 + 1.9 * (0.5 + 0.5 * Math.sin(u * 2.1 + time * 0.42))) * edge;
   }
 };
+
+/** Reduced motion gets the same sheet, frozen. */
+export const rest: ShapeWriter = (pos, lit, size, n) => drift(pos, lit, size, n, 0);
 
 
 /* ── 05 REACH ─────────────────────────────────────────────────────────────
@@ -324,5 +367,5 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, friction, headroom, signal, bumper, reach, sent, network } as const;
+export const SHAPES = { rest, drift, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;

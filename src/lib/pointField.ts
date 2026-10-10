@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SHAPES, COUNT, type ShapeName } from "./shapes";
+import { SHAPES, COUNT, ANIMATED, type ShapeName } from "./shapes";
 
 /* --------------------------------------------------------------------------
    THE FIELD.
@@ -37,8 +37,9 @@ const DAMPING = 18;
 const STAGGER = 0.45;
 
 export type FieldHandle = {
-  /** morph between two shapes; p is 0 to 1 and may run backwards */
-  morph: (from: ShapeName, to: ShapeName, p: number) => void;
+  /** morph between two shapes; p is 0 to 1 and may run backwards. `time` is
+   *  seconds, for the states that are alive. */
+  morph: (from: ShapeName, to: ShapeName, p: number, time?: number) => void;
   tick: (deltaSec: number) => void;
   setPointer: (nx: number, ny: number) => void;
   resize: () => void;
@@ -51,6 +52,10 @@ export type FieldHandle = {
   /** throw the lattice outward with no velocity, so the springs draw it back
    *  in. This is the intro, and it is the same springs as everything else. */
   scatter: (spread?: number) => void;
+  /** 0 to 1. While this is above zero every point is pulled toward a target
+   *  that is still wandering, which is what makes the opening read as a mess
+   *  resolving rather than as a shape sliding into place. */
+  setTurbulence: (amount: number) => void;
   /** slide the whole lattice sideways in world units, so the copy column and
    *  the object are beside each other instead of on top of each other */
   setOffset: (x: number) => void;
@@ -98,7 +103,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     delay[i] = (r - Math.floor(r)) * STAGGER;
   }
 
-  SHAPES.rest(pos, lit, size, COUNT);
+  SHAPES.drift(pos, lit, size, COUNT, 0);
   target.set(pos);
 
   let cachedFrom: ShapeName | null = null;
@@ -126,8 +131,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       attribute float aSize;
       uniform float uScale;
       varying float vLit;
+      varying float vFade;
       void main() {
         vLit = aLit;
+        /* A POINT CANNOT BE SMALLER THAN ONE PIXEL. Shrinking a point to zero
+           does not remove it, the rasteriser floors it at 1px, so a rim that
+           was supposed to dissolve came back as a uniform faint grid and drew
+           a rectangle around the whole form. Fading it is the only way to
+           actually take it away. */
+        vFade = clamp(aSize * 0.9, 0.0, 1.0);
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         /* perspective point size: near points are bigger, which is the only
            thing that gives a cloud of dots any depth at all */
@@ -139,6 +151,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       uniform vec3 uAccent;
       uniform float uOpacity;
       varying float vLit;
+      varying float vFade;
       void main() {
         /* round, with a soft edge. Square points read as pixels, and the
            whole field stops looking like a material. */
@@ -147,7 +160,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         if (r > 0.25) discard;
         float edge = smoothstep(0.25, 0.08, r);
         vec3 col = mix(uPaper, uAccent, vLit);
-        float a = mix(0.74, 1.0, vLit) * edge * uOpacity;
+        float a = mix(0.74, 1.0, vLit) * edge * uOpacity * vFade;
         gl_FragColor = vec4(col, a);
         #include <colorspace_fragment>
       }`,
@@ -162,6 +175,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   let opacityTarget = 1;
   let rx = 0;
   let ry = 0;
+  let churn = 0;
+  let clock = 0;
   let dead = false;
 
   const resize = () => {
@@ -180,13 +195,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   resize();
 
   return {
-    morph(from, to, p) {
-      if (from !== cachedFrom) {
-        SHAPES[from](aPos, aLit, aSize, COUNT);
+    morph(from, to, p, time = 0) {
+      /* an animated state has to be rewritten every call; a static one only
+         when it actually changes */
+      if (from !== cachedFrom || ANIMATED.has(from)) {
+        SHAPES[from](aPos, aLit, aSize, COUNT, time);
         cachedFrom = from;
       }
-      if (to !== cachedTo) {
-        SHAPES[to](bPos, bLit, bSize, COUNT);
+      if (to !== cachedTo || ANIMATED.has(to)) {
+        SHAPES[to](bPos, bLit, bSize, COUNT, time);
         cachedTo = to;
       }
       const span = 1 - STAGGER;
@@ -209,10 +226,33 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          seconds and an unclamped spring integrator explodes on it */
       const dt = Math.min(deltaSec, 1 / 30);
 
-      for (let i = 0; i < COUNT * 3; i++) {
-        const a = (target[i] - pos[i]) * STIFFNESS - vel[i] * DAMPING;
-        vel[i] += a * dt;
-        pos[i] += vel[i] * dt;
+      clock += dt;
+
+      if (churn > 0.001) {
+        /* THE OPENING IS A MESS THAT RESOLVES, not a shape sliding in. Each
+           point chases a target that is still wandering on its own orbit, and
+           the wander decays to nothing. The springs do not change: what
+           changes is how settled the thing they are chasing is. */
+        for (let i = 0; i < COUNT; i++) {
+          const i3 = i * 3;
+          const seed = i * 0.7531;
+          const wobble = churn * 1.9;
+          const tx = target[i3] + Math.sin(seed + clock * 1.7) * wobble;
+          const ty = target[i3 + 1] + Math.sin(seed * 1.7 + clock * 1.3) * wobble;
+          const tz = target[i3 + 2] + Math.cos(seed * 2.3 + clock * 1.1) * wobble;
+          vel[i3] += ((tx - pos[i3]) * STIFFNESS - vel[i3] * DAMPING) * dt;
+          vel[i3 + 1] += ((ty - pos[i3 + 1]) * STIFFNESS - vel[i3 + 1] * DAMPING) * dt;
+          vel[i3 + 2] += ((tz - pos[i3 + 2]) * STIFFNESS - vel[i3 + 2] * DAMPING) * dt;
+          pos[i3] += vel[i3] * dt;
+          pos[i3 + 1] += vel[i3 + 1] * dt;
+          pos[i3 + 2] += vel[i3 + 2] * dt;
+        }
+      } else {
+        for (let i = 0; i < COUNT * 3; i++) {
+          const a = (target[i] - pos[i]) * STIFFNESS - vel[i] * DAMPING;
+          vel[i] += a * dt;
+          pos[i] += vel[i] * dt;
+        }
       }
       geometry.attributes.position.needsUpdate = true;
 
@@ -236,6 +276,10 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
 
     setOpacity(v) {
       opacityTarget = v;
+    },
+
+    setTurbulence(amount) {
+      churn = amount;
     },
 
     setAccent(hex) {

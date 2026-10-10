@@ -59,6 +59,20 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  /* THE LATTICE DISSOLVES TOWARD THE COPY, it does not stop at a line. The
+     canvas is the full viewport, so without this the field ends at a hard
+     vertical edge, and in the hero that edge ran straight through the middle
+     of "Then ships it.". A mask is the right tool rather than moving the
+     object, because the object has to stay centred in its own perspective. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 100%);
+}
+@media (max-width: 1023.98px) {
+  /* centred on a narrow screen, so it fades from both sides instead */
+  .v2.rs .rs-field {
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+  }
 }
 
 .v2.rs .rs-grain {
@@ -141,19 +155,45 @@
 
 /* The opening: the headline arrives while the lattice is still settling, so
    the two land together rather than taking turns. */
-.v2.rs .rs-eyebrow,
-.v2.rs .rs-display span,
+/* THE WORDS ARRIVE WITH THE LATTICE, not before it. The opening takes 3.4
+   seconds to resolve, and the old reveal was done in 0.9: the sentence had
+   been sitting there for two and a half seconds while the field was still
+   sorting itself out, which is why the whole thing read as rushed and then
+   stalled. Each line now lands against a stage of the resolve, and the last
+   of it settles as the surface does.
+
+   The line that makes the claim comes first and holds the longest. */
+/* LINE ONE IS PAINTED ON THE FIRST FRAME AND NEVER ANIMATED. Fading it in
+   cost 3.36s of Largest Contentful Paint against a 2.5s budget, because
+   Chrome excludes anything at opacity 0 from the measurement: the page had
+   nothing to show for two and a half seconds by its own choice. It is also
+   the one thing homepage usability guidance is blunt about, which is not to
+   animate the headline somebody is trying to read.
+
+   THE HEADLINE WAS NEVER THE THING TO SLOW DOWN. Staging line two to land
+   with the resolve pushed Largest Contentful Paint to 3.6s, because line two
+   is the larger of the pair and therefore the element being measured. The
+   opening feels slow and deliberate because the FIELD takes three and a half
+   seconds to resolve, not because the words withhold themselves: the lattice
+   is still a churning mess long after the sentence has finished arriving,
+   which is the whole effect. The text gets out of the way quickly and lets
+   it. */
+.v2.rs .rs-display span:last-child,
 .v2.rs .rs-byline,
 .v2.rs .rs-cue {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 900ms var(--ease-out), transform 900ms var(--ease-out);
+  transform: translateY(18px);
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
 }
-.v2.rs[data-ready] .rs-eyebrow { opacity: 1; transform: none; transition-delay: 420ms; }
-.v2.rs[data-ready] .rs-display span:first-child { opacity: 1; transform: none; transition-delay: 540ms; }
-.v2.rs[data-ready] .rs-display span:last-child { opacity: 1; transform: none; transition-delay: 640ms; }
-.v2.rs[data-ready] .rs-byline { opacity: 1; transform: none; transition-delay: 780ms; }
-.v2.rs[data-ready] .rs-cue { opacity: 1; transform: none; transition-delay: 900ms; }
+.v2.rs[data-ready] .rs-display span:last-child { opacity: 1; transform: none; transition-delay: 220ms; }
+.v2.rs[data-ready] .rs-byline { opacity: 1; transform: none; transition-delay: 760ms; }
+.v2.rs[data-ready] .rs-cue { opacity: 1; transform: none; transition-delay: 1400ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2.rs .rs-display span:last-child,
+  .v2.rs .rs-byline,
+  .v2.rs .rs-cue { opacity: 1; transform: none; transition: none; }
+}
 
 /* ══ the chapters ═══════════════════════════════════════════════════════ */
 

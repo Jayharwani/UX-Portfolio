@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { createField, type FieldHandle } from "../../lib/pointField";
+import { gsap } from "gsap";
 import { onFrame } from "../../lib/clock";
 import { getLenis } from "../print-run/SmoothScroll";
-import type { ShapeName } from "../../lib/shapes";
+import { ANIMATED, type ShapeName } from "../../lib/shapes";
 import { TOKENS } from "../../styles/tokens";
 import { ISSUES } from "../../data/issues";
 
@@ -37,7 +38,7 @@ import { ISSUES } from "../../data/issues";
 
 /** rest, then one state per project, then the contact section. Six stops,
  *  five morphs, one lattice. */
-const STATES: ShapeName[] = ["rest", "friction", "headroom", "signal", "bumper", "reach"];
+const STATES: ShapeName[] = ["drift", "friction", "headroom", "signal", "bumper", "reach"];
 
 /* WHAT THE LAST STOP'S TARGET IS, when a contact button has the pointer.
    Module level rather than a prop, for the same reason getLenis is: the
@@ -97,12 +98,16 @@ export function ResolveField({
     };
 
     let lastY = Number.NaN;
+    let clock = 0;
+    let animating = true;
 
     const apply = (y: number) => {
       if (centres.length < 2) return;
-      /* the interpolation walks every point, so it is not worth redoing when
-         the reader has not actually moved */
-      if (Math.abs(y - lastY) < 0.4) return;
+      /* The interpolation walks every point, so it is not worth redoing when
+         the reader has not moved. The exception is a state that is alive: the
+         hero sheet is a travelling wave, so while any of it is on screen the
+         targets have to be rewritten every frame or it freezes. */
+      if (!animating && Math.abs(y - lastY) < 0.4) return;
       lastY = y;
 
       const last = centres.length - 1;
@@ -126,10 +131,11 @@ export function ResolveField({
       }
 
       const to = STATES[Math.min(from + 1, STATES.length - 1)];
+      animating = ANIMATED.has(STATES[from]) || ANIMATED.has(to);
       /* the override only applies on the final leg, where "reach" lives */
       const onLast = to === "reach";
       const target = override && onLast ? override : to;
-      handle.morph(STATES[from], target, t);
+      handle.morph(STATES[from], target, t, clock);
 
       /* QUIET UNTIL ASKED. Through the contact section the field holds back
          so the two buttons are unmistakably the foreground, and a hover
@@ -168,13 +174,33 @@ export function ResolveField({
     };
     place();
 
-    /* The opening. Displacing the lattice and letting the springs pull it
-       home means the intro is made of the same physics as every later morph,
-       so the page has one motion language rather than an overture. Reduced
-       motion skips straight to the settled state. */
-    if (!reduce.matches) handle.scatter();
+    /* THE OPENING, AND IT IS THE PAGE'S OWN CLAIM ACTED OUT.
+       The headline says this takes something messy and gives back one clear
+       thing, so the first four seconds do exactly that: the lattice arrives
+       scattered and churning, and the churn decays until what is left is one
+       calm surface. Nothing is choreographed frame by frame; the springs that
+       run every later morph are simply chasing a target that has not settled
+       yet, which is why the opening and the rest of the page feel like the
+       same piece of software.
+
+       3.4 seconds, eased out, so most of the resolving happens early and the
+       last of it is a long quiet settle rather than a snap. Reduced motion
+       goes straight to the calm state. */
+    let intro: gsap.core.Tween | null = null;
+    if (!reduce.matches) {
+      handle.scatter(4.2);
+      const churn = { v: 1 };
+      handle.setTurbulence(1);
+      intro = gsap.to(churn, {
+        v: 0,
+        duration: 3.4,
+        ease: "power2.out",
+        onUpdate: () => handle.setTurbulence(churn.v),
+      });
+    }
 
     const stopFrame = onFrame((_t, deltaMs) => {
+      clock += deltaMs / 1000;
       /* the smoothed value, so the field and the page agree about where the
          reader is within a single frame */
       apply(getLenis()?.animatedScroll ?? window.scrollY);
@@ -201,6 +227,7 @@ export function ResolveField({
     const settle = window.setTimeout(measure, 1200);
 
     return () => {
+      intro?.kill();
       onOverride = null;
       override = null;
       stopFrame();
