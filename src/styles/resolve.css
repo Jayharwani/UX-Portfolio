@@ -1,0 +1,301 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   RESOLVE — the homepage.
+
+   Scoped to .v2.rs. The palette tokens, the grain and the contact section are
+   inherited from v2.css and v2-ported.css; nothing here can reach a case
+   study.
+
+   THE LAYOUT IS QUIET ON PURPOSE. There is one moving thing on this page and
+   it is the lattice. Everything else holds still, has generous room, and gets
+   out of its way, because a calm base is what lets one focal object carry the
+   whole site. The moment a second thing starts competing, the first stops
+   being worth looking at.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.v2.rs {
+  --ink-1: var(--paper);
+  --ink-2: rgb(238 241 245 / 0.62);     /* 6.96:1 */
+  --ink-3: rgb(238 241 245 / 0.55);     /* 5.66:1, the floor for any text */
+  --ink-deco: rgb(238 241 245 / 0.14);
+
+  --t-display: clamp(3rem, 7.4vw, 7rem);
+  --t-title: clamp(2.4rem, 5.6vw, 5rem);
+  --t-body: clamp(15px, 1.15vw, 17.5px);
+  --t-label: 11px;
+
+  --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  --r: 2px;
+  --d-short: 240ms;
+  --d-long: 560ms;
+  /* stronger than the built-in curves, which are too weak to read as
+     intentional at these durations */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  position: relative;
+  min-height: 100svh;
+  background: var(--void);
+  color: var(--ink-1);
+  scroll-padding-top: 96px;
+}
+
+.v2.rs [data-accent="teal"] { --accent: var(--teal); }
+.v2.rs [data-accent="mint"] { --accent: var(--mint); }
+.v2.rs [data-accent="cyan"] { --accent: var(--cyan); }
+.v2.rs [data-accent="gold"] { --accent: var(--gold); }
+
+.v2.rs :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.v2.rs .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+
+/* ── the field ──
+   Fixed, behind everything, pointer-transparent. It is one canvas and it is
+   the only canvas. */
+.v2.rs .rs-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.v2.rs .rs-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+.v2.rs main,
+.v2.rs .rs-foot { position: relative; z-index: 2; }
+
+.v2.rs .rs-skip {
+  position: fixed;
+  top: var(--s-4);
+  left: var(--s-4);
+  z-index: 40;
+  padding: var(--s-3) var(--s-5);
+  background: var(--paper);
+  color: var(--void);
+  font-size: 13px;
+  font-weight: 600;
+  transform: translateY(-200%);
+  transition: transform var(--d-short) var(--ease-out);
+}
+.v2.rs .rs-skip:focus-visible { transform: none; }
+
+/* ══ the hero ═══════════════════════════════════════════════════════════ */
+
+.v2.rs .rs-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 var(--gut);
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.v2.rs .rs-eyebrow {
+  font-size: var(--t-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 var(--s-5);
+}
+
+.v2.rs .rs-display {
+  margin: 0;
+  font-size: var(--t-display);
+  font-weight: 800;
+  letter-spacing: -0.052em;
+  line-height: 0.9;
+}
+.v2.rs .rs-display span { display: block; }
+/* the outline is this site's word for the half that is not built yet */
+.v2.rs .rs-outline { color: transparent; -webkit-text-stroke: 0.016em var(--paper); }
+
+.v2.rs .rs-byline {
+  margin: var(--s-6) 0 0;
+  max-width: 38ch;
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.v2.rs .rs-cue {
+  position: absolute;
+  left: var(--gut);
+  bottom: clamp(24px, 5vh, 44px);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* The opening: the headline arrives while the lattice is still settling, so
+   the two land together rather than taking turns. */
+.v2.rs .rs-eyebrow,
+.v2.rs .rs-display span,
+.v2.rs .rs-byline,
+.v2.rs .rs-cue {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 900ms var(--ease-out), transform 900ms var(--ease-out);
+}
+.v2.rs[data-ready] .rs-eyebrow { opacity: 1; transform: none; transition-delay: 420ms; }
+.v2.rs[data-ready] .rs-display span:first-child { opacity: 1; transform: none; transition-delay: 540ms; }
+.v2.rs[data-ready] .rs-display span:last-child { opacity: 1; transform: none; transition-delay: 640ms; }
+.v2.rs[data-ready] .rs-byline { opacity: 1; transform: none; transition-delay: 780ms; }
+.v2.rs[data-ready] .rs-cue { opacity: 1; transform: none; transition-delay: 900ms; }
+
+/* ══ the chapters ═══════════════════════════════════════════════════════ */
+
+.v2.rs .rs-track { position: relative; }
+
+/* TALLER THAN THE PANEL, OR STICKY DOES NOTHING. A sticky element is
+   constrained to its container, so a 100svh panel inside a 100svh chapter has
+   exactly zero travel: it simply scrolls away like any other block, which is
+   what it was doing. The extra height is also the morph's pacing, because the
+   whole sequence is mapped across this track: more scroll per chapter is a
+   slower, calmer deformation. */
+.v2.rs .rs-chapter {
+  min-height: 175svh;
+  padding: 0 var(--gut);
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+/* STICKY, BECAUSE THE SHAPE AND THE SENTENCE HAVE TO BE TRUE AT THE SAME
+   TIME. Letting the panel scroll past meant the copy was leaving the screen
+   while the lattice was still finishing the morph it describes, so the two
+   were only aligned for an instant in the middle. Held for the length of its
+   chapter, you can read the claim and watch the evidence settle. */
+.v2.rs .rs-panel {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(100%, 38ch);
+  /* a scrim, because the lattice passes behind the text and type on a moving
+     background is unreadable without one */
+  background: linear-gradient(100deg, rgb(5 7 12 / 0.92) 48%, rgb(5 7 12 / 0) 100%);
+  padding-right: var(--s-9);
+  margin-left: calc(var(--s-7) * -1);
+  padding-left: var(--s-7);
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--d-long) var(--ease-out), transform var(--d-long) var(--ease-out);
+}
+.v2.rs .rs-chapter[data-on] .rs-panel { opacity: 1; transform: none; }
+
+.v2.rs .rs-no {
+  display: block;
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  margin-bottom: var(--s-3);
+}
+.v2.rs .rs-title {
+  margin: 0;
+  font-size: var(--t-title);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+/* the result first, because a first pass is a few seconds long */
+.v2.rs .rs-result {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+.v2.rs .rs-what {
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.v2.rs .rs-tag {
+  display: block;
+  margin: var(--s-5) 0 0;
+  font-size: var(--t-label);
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+
+.v2.rs .rs-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-6); }
+.v2.rs .rs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--s-5);
+  border-radius: var(--r);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: transform 160ms var(--ease-out), border-color var(--d-short), color var(--d-short);
+}
+/* buttons must feel pressed, or the page feels like it is not listening */
+.v2.rs .rs-btn:active { transform: scale(0.97); }
+.v2.rs .rs-btn-solid { background: var(--accent); color: var(--void); }
+.v2.rs .rs-btn-ghost {
+  border: 1px solid var(--ink-deco);
+  color: var(--ink-2);
+  font-size: var(--t-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.v2.rs .rs-btn-ghost:hover,
+.v2.rs .rs-btn-ghost:focus-visible { border-color: var(--accent); color: var(--ink-1); }
+
+.v2.rs .rs-foot { padding: 0 var(--gut); max-width: 1320px; margin: 0 auto; }
+
+/* ══ smaller screens ════════════════════════════════════════════════════ */
+
+@media (pointer: coarse) {
+  .v2.rs .rs-btn { min-height: 48px; }
+}
+
+@media (max-width: 767.98px) {
+  .v2.rs { --t-display: clamp(2.6rem, 11vw, 3.6rem); }
+  .v2.rs .rs-panel {
+    width: 100%;
+    background: linear-gradient(180deg, rgb(5 7 12 / 0) 0%, rgb(5 7 12 / 0.9) 18%, rgb(5 7 12 / 0.9) 100%);
+    padding: var(--s-7) var(--s-5);
+    margin-left: calc(var(--s-5) * -1);
+    margin-right: calc(var(--s-5) * -1);
+  }
+  .v2.rs .rs-panel {
+    justify-content: flex-end;
+    padding-bottom: var(--s-8);
+    padding-right: var(--s-5);
+  }
+  .v2.rs .rs-actions .rs-btn { flex: 1; }
+}
+
+/* ══ reduced motion ═════════════════════════════════════════════════════
+   Fewer and gentler, not none. The lattice still deforms with scroll, because
+   that deformation is the content; what goes is the pointer lean, the
+   entrance travel and the settling overshoot. */
+
+@media (prefers-reduced-motion: reduce) {
+  .v2.rs .rs-eyebrow,
+  .v2.rs .rs-display span,
+  .v2.rs .rs-byline,
+  .v2.rs .rs-cue,
+  .v2.rs .rs-panel {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .v2.rs .rs-btn:active { transform: none; }
+}
