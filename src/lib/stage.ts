@@ -66,7 +66,7 @@ export function createStage(canvas: HTMLCanvasElement, svg: string, cssSize: num
   /* One Color object shared by both materials. accent.lerp() therefore
      re-tints the rim and the keyline together, with no uniform writes and no
      chance of the two drifting apart mid-transition. */
-  const accent = new THREE.Color(TOKENS.teal);
+  const accent = new THREE.Color(TOKENS.friction);
   const accentTarget = accent.clone();
 
   const cel = celMaterial(

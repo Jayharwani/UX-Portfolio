@@ -39,7 +39,7 @@ export const ISSUES: Issue[] = [
     tag: "Review mining · Astro",
     year: "2026",
     href: "/friction",
-    accent: "teal",
+    accent: "friction",
     live: { href: "https://jayharwani.github.io/friction/", label: "OPEN SITE" },
     hook: "Ten thousand app reviews, sifted to the complaints that repeat.",
     panels: [
@@ -55,7 +55,7 @@ export const ISSUES: Issue[] = [
     tag: "Local-first finance · React",
     year: "2026",
     href: "/headroom",
-    accent: "mint",
+    accent: "headroom",
     live: { href: "https://headroom-opal.vercel.app", label: "OPEN APP" },
     hook: "Can I spend this, right now?",
     panels: [
@@ -71,7 +71,7 @@ export const ISSUES: Issue[] = [
     tag: "Live event map · MapLibre",
     year: "2026",
     href: "/signal",
-    accent: "cyan",
+    accent: "signal",
     live: { href: "https://jayharwani.github.io/dmv-map/", label: "OPEN MAP" },
     hook: "A live map of DMV tech events.",
     panels: [
@@ -87,7 +87,7 @@ export const ISSUES: Issue[] = [
     tag: "Behavioural · Extension",
     year: "2026",
     href: "/bumper",
-    accent: "gold",
+    accent: "bumper",
     live: {
       href: "https://chromewebstore.google.com/detail/flnbabigjodkpgapnpeaiepdmganifmp?utm_source=item-share-cb",
       label: "CHROME STORE",

@@ -5,6 +5,7 @@ import { ResolveField } from "./resolve/ResolveField";
 import { Reach } from "./resolve/Reach";
 import { ISSUES } from "../data/issues";
 import { TOKENS } from "../styles/tokens";
+import type { Zone } from "./resolve/ResolveField";
 import "../styles/v2.css";
 import "../styles/v2-ported.css";
 import "../styles/resolve.css";
@@ -40,11 +41,21 @@ export function HomeResolve() {
     document.title = "Jay Harwani, product designer who writes the front end";
   }, []);
 
-  /* One accent owner. The field and the page read the same token, so they
-     cannot disagree about which project is being looked at. */
-  const onActive = useCallback((i: number) => {
+  /* ONE ACCENT OWNER, AND IT IS A REGISTERED PROPERTY SO IT CROSSFADES.
+     Every surface that carries the key reads --chapter-accent: the chapter
+     number, the buttons, the focus ring, the selection, the glow behind the
+     object and the object itself. Writing it here is the only place the key
+     changes, so the canvas and the interface cannot be in two colours at
+     once the way they were when each chapter coloured itself.
+
+     The hero and the contact section have no project to be in, so they take
+     the neutral ink and the glow drops with them. */
+  const onActive = useCallback((i: number, zone: Zone) => {
     setActive(i);
-    page.current?.style.setProperty("--accent", TOKENS[ISSUES[i].accent]);
+    const el = page.current;
+    if (!el) return;
+    el.dataset.zone = zone;
+    el.style.setProperty("--chapter-accent", zone === "work" ? TOKENS[ISSUES[i].accent] : TOKENS.paper);
   }, []);
 
   /* The opening is the lattice settling, so it is finished when the springs

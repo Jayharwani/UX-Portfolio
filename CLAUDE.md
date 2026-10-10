@@ -64,17 +64,33 @@ reference disagree, the reference wins. Open it in a browser before you start.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
 6. **Locked palette on the homepage.** Six tokens: `--void`, `--paper` and the
-   four project accents `--teal`, `--mint`, `--cyan`, `--gold`, plus opacity
-   and `color-mix` steps of those. No new hue. Colour literals live in exactly
-   two files, `src/styles/print-run.css` (the tokens block) and
-   `src/styles/tokens.ts` (the mirror that canvas and WebGL code reads); a hex
-   value anywhere else on the homepage is a bug, because a second hand-typed
-   copy is a drift waiting to happen.
+   four project accents, plus opacity and `color-mix` steps of those. No new
+   hue. Colour literals live in exactly two files, `src/styles/resolve.css`
+   (the tokens block on `.v2.rs`) and `src/styles/tokens.ts` (the mirror the
+   canvas reads); a hex value anywhere else on the homepage is a bug, because
+   a second hand-typed copy is a drift waiting to happen. A `#000` inside a
+   `mask-image` is a stencil, not a colour, and does not count.
+
+   **The accents are named for projects, not for colours**, and they are four
+   hues spaced around the wheel at one perceptual lightness and chroma
+   (OKLCH 80% / 0.10): `--accent-friction` `#F7A792`, `--accent-headroom`
+   `#8ED09C`, `--accent-signal` `#8CC3FC`, `--accent-bumper` `#E0B771`. This
+   replaced `--teal`/`--mint`/`--cyan`/`--gold`, which were accurate names and
+   the problem: three of those four sat within about thirty degrees of each
+   other, so four deliberate keys read as one colour drifting. Naming them for
+   the projects also stops the name going stale when a hue moves.
+
+   Only one of them is ever live. `--chapter-accent` is registered with
+   `@property` so it interpolates, the active chapter writes it on the page
+   root, and `--accent` is an alias of it, so the chapter number, the buttons,
+   the focus ring, the selection, the glow and the canvas all cross-fade
+   together. A chapter must not colour itself from its own `data-accent`; the
+   contact cards are the one exception, because both are on screen at once.
 
    Text on void has a floor: `--ink-3` is paper at 55%, which measures 5.66:1.
    Paper at 45% measures 4.07:1 and fails AA, which is what the old 9px and
-   10px mono labels were using. Never put paper text on an accent fill; it
-   measures 1.45:1 on gold. Accent fills take `--void` text.
+   10px mono labels were using. Never put paper text on an accent fill. Accent
+   fills take `--void` text: all four measure at least 10.4:1 against void.
 7. **A case study is themed by its own product, not by the template.**
    `CaseShell` takes `theme="light" | "dark"` and a named accent. Headroom is
    light because the app is a warm off-white with a deep emerald; its accent

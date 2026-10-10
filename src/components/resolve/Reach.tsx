@@ -2,7 +2,7 @@ import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "rea
 import { Mail, Linkedin, ArrowUpRight } from "lucide-react";
 import { setFieldTarget } from "./ResolveField";
 import { CONTACT, CREDITS } from "../../data/projects";
-import { TOKENS } from "../../styles/tokens";
+import { TOKENS, type Accent } from "../../styles/tokens";
 
 /* --------------------------------------------------------------------------
    REACH — the last section.
@@ -45,7 +45,7 @@ function ReachButton({
   href: string;
   label: string;
   detail: string;
-  accent: "mint" | "cyan";
+  accent: Accent;
   field: Target;
   external?: boolean;
   icon: React.ReactNode;
@@ -121,7 +121,7 @@ export function Reach() {
           href={`mailto:${CONTACT.email}`}
           label="Email"
           detail={CONTACT.email}
-          accent="mint"
+          accent="headroom"
           field="sent"
           icon={<Mail strokeWidth={1.25} />}
         />
@@ -129,7 +129,7 @@ export function Reach() {
           href={CONTACT.linkedin}
           label="LinkedIn"
           detail={CONTACT.linkedinLabel}
-          accent="cyan"
+          accent="signal"
           field="network"
           external
           icon={<Linkedin strokeWidth={1.25} />}

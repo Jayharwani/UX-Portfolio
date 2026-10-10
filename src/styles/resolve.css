@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════════════════════
    RESOLVE — the homepage.
 
-   Scoped to .v2.rs. The palette tokens, the grain and the contact section are
-   inherited from v2.css and v2-ported.css; nothing here can reach a case
-   study.
+   Scoped to .v2.rs, including the page canvas: the dark ground is attached
+   with :has() rather than to a bare `body`, because globals.css owns body for
+   every route and Headroom's case study is a light page. Nothing here can
+   reach a case study.
 
    THE LAYOUT IS QUIET ON PURPOSE. There is one moving thing on this page and
    it is the lattice. Everything else holds still, has generous room, and gets
@@ -11,6 +12,38 @@
    whole site. The moment a second thing starts competing, the first stops
    being worth looking at.
    ══════════════════════════════════════════════════════════════════════════ */
+
+/* THE GROUND, NOT JUST THE PAGE. A white body shows through on any overscroll
+   bounce, which on a near-black site is a flash of torchlight. Attaching it
+   through :has() keeps it on while this page is mounted and takes it off the
+   moment it is not, so the light case studies are untouched. */
+html:has(.v2.rs),
+body:has(.v2.rs) {
+  background: #05070c;
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(238 241 245 / 0.18) transparent;
+}
+
+/* ONE ANIMATABLE ACCENT. Registering it is what makes a colour transition at
+   all: an unregistered custom property has no type, so the browser can only
+   swap it at the halfway point. Registered as a colour, it interpolates, and
+   every surface that reads it crosses together. */
+@property --chapter-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #eef1f5;
+}
+@property --glow-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --glow-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
 
 .v2.rs {
   --ink-1: var(--paper);
@@ -26,6 +59,14 @@
   --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
   --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
 
+  /* FOUR KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
+     perceptual lightness and chroma, so no project's colour is louder than
+     another's. Mirrored in src/styles/tokens.ts for the canvas. */
+  --accent-friction: #f7a792;
+  --accent-headroom: #8ed09c;
+  --accent-signal: #8cc3fc;
+  --accent-bumper: #e0b771;
+
   --r: 2px;
   --d-short: 240ms;
   --d-long: 560ms;
@@ -38,14 +79,76 @@
   background: var(--void);
   color: var(--ink-1);
   scroll-padding-top: 96px;
+
+  /* where the object is, so the glow sits under the thing it belongs to and
+     never under the copy. The same two placements the field itself uses, and
+     a third for the contact section, where it returns to the middle. */
+  --glow-x: 62.5%;
+  --glow-y: 50%;
+
+  /* Temporary curve. Phase 3 replaces it with the generated effects spring. */
+  transition:
+    --chapter-accent 600ms cubic-bezier(0.2, 0, 0, 1),
+    --glow-x 600ms cubic-bezier(0.2, 0, 0, 1),
+    --glow-y 600ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.v2.rs [data-accent="teal"] { --accent: var(--teal); }
-.v2.rs [data-accent="mint"] { --accent: var(--mint); }
-.v2.rs [data-accent="cyan"] { --accent: var(--cyan); }
-.v2.rs [data-accent="gold"] { --accent: var(--gold); }
+/* ── the three layers behind everything ──
+   Back to front: an accent glow under the object, a vignette that pulls the
+   corners down, then grain over both. All three are decoration, all three are
+   fixed, none of them can be reached by the pointer. */
+
+/* 1. THE GLOW IS THE OBJECT'S OWN LIGHT. It is centred where the formation
+      is, carries the chapter's key, and drops to a neutral four per cent in
+      the hero and the contact section, where there is no project to be in. */
+.v2.rs::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(45vmax 45vmax at var(--glow-x) var(--glow-y), var(--accent) 0%, transparent 70%);
+  opacity: 0.07;
+  /* its own layer: a full-viewport gradient that repaints with the page is
+     the most expensive kind of decoration there is */
+  will-change: opacity;
+  transition: opacity 600ms var(--ease-out);
+}
+.v2.rs[data-zone="hero"]::before,
+.v2.rs[data-zone="end"]::before { opacity: 0.04; }
+.v2.rs[data-zone="end"] { --glow-x: 50%; }
+
+/* 2. THE VIGNETTE holds the corners down so the eye stays in the middle. */
+.v2.rs::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.35) 100%);
+  /* never changes, so it is rasterised once and composited after that */
+  transform: translateZ(0);
+}
+
+/* text sits above all three */
+.v2.rs main { position: relative; z-index: 5; }
+
+/* EVERYTHING READS THE ONE ANIMATED VALUE. The chapters used to colour
+   themselves from their own data-accent, which is fixed, so the page chrome
+   cut between keys while the canvas crossfaded and the two were never in the
+   same colour at the same time. The page root owns the key now and the
+   chapters inherit it.
+
+   The contact cards are the exception and have to be: both are on screen at
+   once, so each keeps its own colour rather than borrowing the page's. */
+.v2.rs { --accent: var(--chapter-accent); }
+.v2.rs .rs-reach-btn[data-accent="friction"] { --accent: var(--accent-friction); }
+.v2.rs .rs-reach-btn[data-accent="headroom"] { --accent: var(--accent-headroom); }
+.v2.rs .rs-reach-btn[data-accent="signal"] { --accent: var(--accent-signal); }
+.v2.rs .rs-reach-btn[data-accent="bumper"] { --accent: var(--accent-bumper); }
 
 .v2.rs :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.v2.rs ::selection { background: color-mix(in oklch, var(--accent) 35%, transparent); color: #fff; }
 .v2.rs .mono { font-family: "Geist Mono", ui-monospace, monospace; }
 
 /* ── the field ──
@@ -54,7 +157,7 @@
 .v2.rs .rs-field {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 2;
   display: block;
   width: 100%;
   height: 100%;
@@ -83,20 +186,38 @@
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
     mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
   }
+  /* the object moves to the top of the screen here, so its light does too */
+  .v2.rs { --glow-x: 50%; --glow-y: 30%; }
+  .v2.rs[data-zone="end"] { --glow-y: 50%; }
 }
 
+/* 3. GRAIN. Oversized and jumped to a new offset in steps rather than slid,
+      because grain that slides is a texture moving across the page and grain
+      that jumps is film. Eight offsets is enough: the cycle is under a second
+      and nobody can hear it repeat. */
 .v2.rs .rs-grain {
   position: fixed;
-  inset: 0;
-  z-index: 1;
+  inset: -80px;
+  z-index: 4;
   pointer-events: none;
-  opacity: 0.1;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  will-change: transform;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  animation: rs-grain 0.72s steps(1, end) infinite;
+}
+@keyframes rs-grain {
+  0%   { transform: translate(0, 0); }
+  12.5%{ transform: translate(-37px, 19px); }
+  25%  { transform: translate(23px, -41px); }
+  37.5%{ transform: translate(-11px, -27px); }
+  50%  { transform: translate(44px, 13px); }
+  62.5%{ transform: translate(-29px, 35px); }
+  75%  { transform: translate(17px, 47px); }
+  87.5%{ transform: translate(-45px, -9px); }
 }
 
 .v2.rs main,
-.v2.rs .rs-foot { position: relative; z-index: 2; }
+.v2.rs .rs-foot { position: relative; z-index: 5; }
 
 .v2.rs .rs-skip {
   position: fixed;
@@ -369,6 +490,8 @@
     transition: none;
   }
   .v2.rs .rs-btn:active { transform: none; }
+  /* grain stays, the jumping does not */
+  .v2.rs .rs-grain { animation: none; }
 }
 
 /* ══ reach: the last section ════════════════════════════════════════════

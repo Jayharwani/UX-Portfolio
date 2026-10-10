@@ -85,6 +85,11 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
+/** which part of the page is being read. The hero and the contact section
+ *  have no project to be in, so they take the neutral key and the glow with
+ *  it; everything between them is a chapter. */
+export type Zone = "hero" | "work" | "end";
+
 /** how far right of centre the object sits on a wide screen, in world units.
  *  Enough to clear the copy column completely; not so far that it crowds the
  *  right edge. */
@@ -96,7 +101,7 @@ export function ResolveField({
 }: {
   /** the element whose chapters drive the sequence */
   track: React.RefObject<HTMLElement>;
-  onActive: (index: number) => void;
+  onActive: (index: number, zone: Zone) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const field = useRef<FieldHandle | null>(null);
@@ -111,6 +116,7 @@ export function ResolveField({
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     let active = -1;
+    let zone: Zone | null = null;
 
     /** the scroll position at which each chapter sits in the middle of the
      *  viewport, which is where its shape must be exactly formed */
@@ -200,12 +206,17 @@ export function ResolveField({
           nearest = k;
         }
       }
-      if (nearest !== active) {
+      /* the hero reaches until the first chapter is within a screen of the
+         middle, which is the same point the lattice starts gathering */
+      const here: Zone = y < centres[0] - window.innerHeight * 0.5 ? "hero" : nearest >= ISSUES.length ? "end" : "work";
+      if (nearest !== active || here !== zone) {
         active = nearest;
-        /* the contact stop has no project, so it keeps the last one's colour
-           until a button asks for its own */
-        if (nearest < ISSUES.length) handle.setAccent(TOKENS[ISSUES[nearest].accent]);
-        onActive(Math.min(nearest, ISSUES.length - 1));
+        zone = here;
+        /* THE CANVAS AND THE PAGE CHANGE KEY TOGETHER. Both are driven from
+           this one line, so there is no scroll position where the chapter
+           number is one colour and the object another. */
+        if (!override) handle.setAccent(here === "work" ? TOKENS[ISSUES[nearest].accent] : TOKENS.paper);
+        onActive(Math.min(nearest, ISSUES.length - 1), here);
       }
     };
 

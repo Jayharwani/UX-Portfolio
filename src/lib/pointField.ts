@@ -38,6 +38,8 @@ const DAMPING = 18;
 const STAGGER = 0.45;
 /** how far the field swells at the halfway point of a morph, in world units */
 const PUFF = 0.26;
+/** chases the accent so it settles in the same 600ms the CSS transition uses */
+const ACCENT_RATE = 7.7;
 
 export type FieldHandle = {
   /** morph between two shapes; p is 0 to 1 and may run backwards. `time` is
@@ -373,7 +375,13 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          and everything in front of and behind it falls away */
       material.uniforms.uFocus.value = cam.dist;
       material.uniforms.uFogNear.value = cam.dist - 1.1;
-      accentNow.lerp(accentTarget, k);
+      /* THE CANVAS CROSSFADES ON THE PAGE'S CLOCK, NOT ITS OWN. The accent
+         is a 600ms transition in CSS, and an exponential chase settles to
+         within a per cent in about 4.6 time constants, so the rate that
+         lands on the same 600ms is 7.7. On the shared rate of 3 the object
+         was still arriving at its new colour a second after the chapter
+         number had finished, which reads as the two being unrelated. */
+      accentNow.lerp(accentTarget, 1 - Math.exp(-ACCENT_RATE * dt));
       const o = material.uniforms.uOpacity;
       o.value += (opacityTarget - o.value) * k;
       points.rotation.set(rx, ry, 0);
