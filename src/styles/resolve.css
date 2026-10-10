@@ -85,6 +85,20 @@ body:has(.v2.rs) {
   --accent-signal: #8cc3fc;
   --accent-bumper: #e0b771;
 
+  /* THE SPRING CURVES, with the old bezier as the value until the solver
+     has run. They are installed on this element at startup, so the fallback
+     is only ever what the very first paint uses. */
+  --e-fast: var(--spring-spatial-fast, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-move: var(--spring-spatial-default, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-slow: var(--spring-spatial-slow, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-hover: var(--spring-effects-fast, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-fade: var(--spring-effects-default, cubic-bezier(0.23, 1, 0.32, 1));
+  --t-fast: var(--dur-spatial-fast, 400ms);
+  --t-move: var(--dur-spatial-default, 550ms);
+  --t-slow: var(--dur-spatial-slow, 740ms);
+  --t-hover: var(--dur-effects-fast, 310ms);
+  --t-fade: var(--dur-effects-default, 420ms);
+
   --r: 2px;
   --r-press: 10px;
   --d-short: 240ms;
@@ -104,15 +118,17 @@ body:has(.v2.rs) {
      a third for the contact section, where it returns to the middle. */
   /* which half the object is in. The chapters alternate, so this does too,
      and the light goes with it. */
-  --side: 62.5%;
+  --side: 68%;
   --glow-x: var(--side);
   --glow-y: 50%;
 
-  /* Temporary curve. Phase 3 replaces it with the generated effects spring. */
+  /* the page-level key is allowed to take longer than the token's natural
+     settle, because a colour crossing the whole screen at UI speed reads as
+     a flicker */
   transition:
-    --chapter-accent 600ms cubic-bezier(0.2, 0, 0, 1),
-    --glow-x 600ms cubic-bezier(0.2, 0, 0, 1),
-    --glow-y 600ms cubic-bezier(0.2, 0, 0, 1);
+    --chapter-accent 600ms var(--e-fade),
+    --glow-x 600ms var(--e-fade),
+    --glow-y 600ms var(--e-fade);
 }
 
 /* ── the three layers behind everything ──
@@ -134,12 +150,11 @@ body:has(.v2.rs) {
   /* its own layer: a full-viewport gradient that repaints with the page is
      the most expensive kind of decoration there is */
   will-change: opacity;
-  transition: opacity 600ms var(--ease-out);
+  transition: opacity 600ms var(--e-fade);
 }
 .v2.rs[data-zone="hero"]::before,
 .v2.rs[data-zone="end"]::before { opacity: 0.04; }
-.v2.rs[data-side="left"] { --side: 37.5%; }
-.v2.rs[data-zone="end"] { --side: 50%; }
+.v2.rs[data-side="left"] { --side: 32%; }
 
 /* 2. THE VIGNETTE holds the corners down so the eye stays in the middle. */
 .v2.rs::after {
@@ -191,11 +206,18 @@ body:has(.v2.rs) {
      of "Then ships it.". A mask is the right tool rather than moving the
      object, because the object has to stay centred in its own perspective.
 
+     IT IS SYMMETRIC NOW, AND IT HAS TO BE. The old mask cleared the left
+     half of the screen, which worked for as long as the object was always on
+     the right. The chapters alternate sides, so a one-sided mask ate the
+     mirrored ones. Keeping the copy legible is the field's own job now, done
+     per point against the actual rectangle of the text; this is only here to
+     stop the field hitting the edges of the window.
+
      The #000 in these gradients is a stencil, not a colour: a mask reads
      only alpha, so the token rule does not apply and swapping in var(--void)
      would say something untrue about what the value is for. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 46%, #000 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 46%, #000 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
 }
 /* STACKED. The same test the field makes in script: not wide enough, or not
    wide for its height. Both halves have to agree or the object is placed for
@@ -255,7 +277,7 @@ body:has(.v2.rs) {
   font-size: 13px;
   font-weight: 600;
   transform: translateY(-200%);
-  transition: transform var(--d-short) var(--ease-out);
+  transition: transform var(--t-fast) var(--e-fast);
 }
 .v2.rs .rs-skip:focus-visible { transform: none; }
 
@@ -301,6 +323,16 @@ body:has(.v2.rs) {
   .v2.rs .rs-display { letter-spacing: -0.052em; }
 }
 .v2.rs .rs-display span { display: block; }
+/* A CLIP PER LINE, so a line can rise out of nothing instead of fading in
+   from nothing. The padding and the matching negative margin are for the
+   descender in "Designs": clip to the line box exactly and the g loses its
+   tail. */
+.v2.rs .rs-line {
+  display: block;
+  overflow: clip;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
 /* THE STROKE IS ABSOLUTE, NOT RELATIVE. At 0.016em it scaled with the type,
    so the outline was 1.8px beside a 112px solid and 0.9px beside a 56px one:
    the thing that is supposed to read as the same weight as its neighbour got
@@ -383,26 +415,13 @@ body:has(.v2.rs) {
    is still a churning mess long after the sentence has finished arriving,
    which is the whole effect. The text gets out of the way quickly and lets
    it. */
-/* THE CUE IS NOT IN THIS GROUP, and that is not an oversight. Its scroll
-   fade is a scrubbed GSAP tween, and a scrubbed tween records its start value
-   when it is created: created while the CSS entrance still had the cue at
-   opacity 0, it pinned an inline zero that the [data-ready] rule could never
-   beat, and the cue never appeared at all. Its entrance belongs to the same
-   timeline as its exit. */
-.v2.rs .rs-display span:last-child,
-.v2.rs .rs-byline {
-  opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
-}
-.v2.rs[data-ready] .rs-display span:last-child { opacity: 1; transform: none; transition-delay: 220ms; }
-.v2.rs[data-ready] .rs-byline { opacity: 1; transform: none; transition-delay: 760ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  .v2.rs .rs-display span:last-child,
-  .v2.rs .rs-byline,
-  .v2.rs .rs-cue { opacity: 1; transform: none; transition: none; }
-}
+/* NOTHING IN THE HERO HIDES ITSELF AND WAITS. The entrance is one GSAP
+   timeline that runs once a session, and it animates FROM a hidden state to
+   the state the stylesheet already describes. The CSS used to do half of it,
+   which meant two systems owned one element's opacity: the tween captured
+   the CSS's zero as its start value, pinned it inline, and the element never
+   appeared at all. Under reduced motion, or on the second visit, there is
+   simply nothing to run and the words are there. */
 
 /* ══ the chapters ═══════════════════════════════════════════════════════ */
 
@@ -445,6 +464,10 @@ body:has(.v2.rs) {
   transition: opacity var(--d-long) var(--ease-out), transform var(--d-long) var(--ease-out);
 }
 .v2.rs .rs-chapter[data-on] .rs-panel { opacity: 1; transform: none; }
+/* THE TIMELINE OWNS THE REVEAL WHEN THERE IS ONE. The CSS version stays as
+   the no-JavaScript and reduced-motion answer, but two systems animating one
+   element's opacity is how an element ends up stuck at zero. */
+.v2.rs[data-choreographed] .rs-panel { opacity: 1; transform: none; transition: none; }
 
 /* MIRRORED ON THE EVEN CHAPTERS. Four screens of one composition is a
    template; alternating which side the copy sits on makes the sequence read
@@ -507,8 +530,8 @@ body:has(.v2.rs) {
   font-weight: 600;
   /* the magnetic lean, written straight onto the element by the pointer */
   transform: translate(var(--bx, 0px), var(--by, 0px));
-  transition: transform 160ms var(--ease-out), border-color var(--d-short),
-    color var(--d-short), border-radius 160ms var(--ease-out);
+  transition: transform var(--t-fast) var(--e-fast), border-color var(--t-hover) var(--e-hover),
+    color var(--t-hover) var(--e-hover), border-radius var(--t-fast) var(--e-fast);
 }
 /* BUTTONS MUST FEEL PRESSED, or the page feels like it is not listening. The
    corner rounds as it goes down as well as shrinking: a shape that changes
@@ -523,13 +546,13 @@ body:has(.v2.rs) {
   width: 14px;
   height: 14px;
   flex: none;
-  transition: transform 160ms var(--ease-out);
+  transition: transform var(--t-fast) var(--e-fast);
 }
 .v2.rs .rs-btn:hover .rs-btn-arrow,
 .v2.rs .rs-btn:focus-visible .rs-btn-arrow { transform: translateX(3px); }
 /* the label leans a little further than the tile, which is what makes the
    magnet read as depth rather than as the whole button sliding */
-.v2.rs .rs-btn-text { transition: transform 160ms var(--ease-out); }
+.v2.rs .rs-btn-text { transition: transform var(--t-fast) var(--e-fast); }
 
 .v2.rs .rs-btn-ghost {
   border: 1px solid var(--ink-deco);
@@ -691,7 +714,7 @@ body:has(.v2.rs) {
 .v2.rs .rs-reach-title .rs-ink {
   /* eased rather than scrubbed: this one answers a hover, not a scroll. The
      registered property is what transitions; clip-path only reads it. */
-  transition: --ink var(--d-long) var(--ease-out);
+  transition: --ink var(--t-fade) var(--e-fade);
 }
 .v2.rs .rs-reach[data-asked] .rs-ink { --ink: 0%; }
 
@@ -713,7 +736,7 @@ body:has(.v2.rs) {
   transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   /* slow on the way back, quick to answer: the lean follows the pointer
      almost immediately and relaxes over a longer, calmer curve */
-  transition: transform 520ms var(--ease-out);
+  transition: transform var(--t-slow) var(--e-slow);
   will-change: transform;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -891,4 +914,122 @@ body:has(.v2.rs) {
   .v2.rs .rs-reach-detail { transition: none; transform: none; }
   .v2.rs .rs-reach-plate { transform: translateZ(-42px); opacity: 1; }
   .v2.rs .rs-reach-arrow { opacity: 1; transform: none; transition: none; }
+}
+
+/* ══ the chapter rail ═══════════════════════════════════════════════════
+   Fixed in the lane the shell keeps clear, and only while there is work to
+   be in: it fades in at the first chapter and out again at the contact
+   section, because a position indicator on a page with one position is just
+   furniture. */
+
+.v2.rs .rs-rail {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  z-index: 6;
+  width: var(--rail);
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fade) var(--e-fade);
+}
+@media (min-width: 900px) {
+  .v2.rs .rs-rail { display: flex; }
+  .v2.rs[data-zone="work"] .rs-rail { opacity: 1; pointer-events: auto; }
+}
+
+.v2.rs .rs-rail-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--t-label);
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+/* ONE DIGIT PAIR AT A TIME, inside a window its own height. The stack of all
+   four slides; the window shows the one that counts. */
+.v2.rs .rs-rail-roll {
+  display: block;
+  overflow: clip;
+  height: 1em;
+  color: var(--accent);
+}
+.v2.rs .rs-rail-roll > span {
+  display: block;
+  transition: transform var(--t-move) var(--e-move);
+}
+.v2.rs .rs-rail-roll span span { display: block; height: 1em; line-height: 1; }
+
+.v2.rs .rs-rail-ticks { display: flex; flex-direction: column; gap: 14px; list-style: none; }
+.v2.rs .rs-rail-ticks button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* the mark is 24 by 1; the target is 44 tall, because those are different
+     questions */
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.v2.rs .rs-rail-mark {
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--ink-deco);
+  transition: width var(--t-move) var(--e-move), background-color var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-rail-ticks button[data-on] .rs-rail-mark { width: 40px; background: var(--accent); }
+.v2.rs .rs-rail-ticks button:hover .rs-rail-mark { background: var(--ink-2); }
+
+.v2.rs .rs-rail-name {
+  position: absolute;
+  right: calc(100% + var(--s-3));
+  padding: 4px 8px;
+  background: var(--void);
+  color: var(--ink-1);
+  font-size: var(--t-label);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+  transition: opacity var(--t-hover) var(--e-hover), transform var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-rail-ticks button:hover .rs-rail-name,
+.v2.rs .rs-rail-ticks button:focus-visible .rs-rail-name { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2.rs .rs-rail-roll > span,
+  .v2.rs .rs-rail-mark { transition: none; }
+}
+
+/* ══ into the case study ════════════════════════════════════════════════
+   The chapter title and the case study's own headline are the same element
+   as far as the browser is concerned, so one becomes the other rather than
+   both cross-fading. Everything else is the root transition that was already
+   here. Unsupported browsers navigate normally; there is no polyfill. */
+
+::view-transition-group(project-title) {
+  animation-duration: 500ms;
+  animation-timing-function: var(--spring-spatial-default, cubic-bezier(0.23, 1, 0.32, 1));
+}
+::view-transition-old(project-title),
+::view-transition-new(project-title) {
+  animation-duration: 250ms;
+  animation-timing-function: var(--spring-effects-default, ease);
+  /* let the group's morph carry the move; these only need to swap */
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(project-title) { animation-duration: 150ms; }
+  ::view-transition-old(project-title),
+  ::view-transition-new(project-title) { animation-duration: 150ms; }
 }

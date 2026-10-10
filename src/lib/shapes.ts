@@ -34,11 +34,16 @@ export type ShapeWriter = (
   n: number,
   /** seconds since the field started, for the states that are alive */
   time: number,
+  /** HOW FAR INTO THIS STATE THE READER IS, 0 to 1. A shape that only knows
+   *  its final form can only be arrived at; one that knows how far through
+   *  its own chapter you are can perform. It is what lets the cart roll in,
+   *  the gauge fill, the pin land last and the stream gather into a number. */
+  phase: number,
 ) => void;
 
 /** the states that have to be recomputed every frame rather than only when
- *  the scroll moves */
-export const ANIMATED = new Set<string>(["drift"]);
+ *  the scroll moves: the ones that are alive, and the ones that act. */
+export const ANIMATED = new Set<string>(["drift", "friction", "headroom", "signal", "bumper", "reach"]);
 
 /** The lattice. 96 x 54 is 5,184 points. At 64 x 36 the spacing came out at
  *  about 25 screen pixels on a full-height canvas and the weave read as
@@ -94,92 +99,295 @@ const ICON_SCALE = 0.86;
 /** thickness, in the same units */
 const ICON_DEPTH = 0.34;
 
-function icon(key: string): ShapeWriter {
-  return (pos, lit, size, n) => {
-    const { xy, edge } = iconPoints(key, ICONS[key], n);
-    for (let i = 0; i < n; i++) {
-      const band = rand(i * 2.9);
-      const j = rand(i * 5.3);
+const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
-      let z: number;
-      /* the back face sits a little inside the front one, so the two
-         silhouettes read as a bevel rather than as a doubled print */
-      let scale = ICON_SCALE;
-      if (band < 0.58) {
-        z = ICON_DEPTH * (1 - 0.14 * j);
-      } else if (band < 0.82) {
-        z = (j * 2 - 1) * ICON_DEPTH;
-      } else {
-        z = -ICON_DEPTH * (1 - 0.14 * j);
-        scale = ICON_SCALE * 0.95;
-      }
-
-      pos[i * 3] = xy[i * 2] * scale;
-      pos[i * 3 + 1] = xy[i * 2 + 1] * scale;
-      pos[i * 3 + 2] = z;
-
-      /* the front face carries the colour, and how close a point is to the
-         outline carries the weight: the edge is drawn, the fill is texture */
-      const face = (z / ICON_DEPTH + 1) / 2;
-      const e = edge[i];
-      lit[i] = Math.pow(face, 2.2) * (0.55 + 0.45 * e);
-      size[i] = (1.5 + 1.5 * e) * (0.45 + 0.55 * face);
-    }
-  };
+/** where a point sits through the slab, and what that does to it. Shared by
+ *  every icon so all four are lit and weighted the same way. */
+const sl = { z: 0, scale: 1, lit: 0, size: 1 };
+function slab(i: number, e: number): void {
+  const band = rand(i * 2.9);
+  const j = rand(i * 5.3);
+  let z: number;
+  let scale = 1;
+  if (band < 0.58) z = ICON_DEPTH * (1 - 0.14 * j);
+  else if (band < 0.82) z = (j * 2 - 1) * ICON_DEPTH;
+  else {
+    z = -ICON_DEPTH * (1 - 0.14 * j);
+    scale = 0.95;
+  }
+  const face = (z / ICON_DEPTH + 1) / 2;
+  sl.z = z;
+  sl.scale = scale;
+  sl.lit = Math.pow(face, 2.2) * (0.55 + 0.45 * e);
+  sl.size = (1.5 + 1.5 * e) * (0.45 + 0.55 * face);
 }
 
-export const friction: ShapeWriter = icon("friction");
-export const headroom: ShapeWriter = icon("headroom");
-export const signal: ShapeWriter = icon("signal");
-export const bumper: ShapeWriter = icon("bumper");
+/** an extruded icon written into a slice of the buffers, so a formation can
+ *  be an icon plus the things around it rather than only an icon */
+function writeIcon(
+  key: string,
+  pos: Float32Array,
+  lit: Float32Array,
+  size: Float32Array,
+  n: number,
+  from: number,
+  count: number,
+  s: number,
+  ox: number,
+  oy: number,
+): void {
+  const { xy, edge } = iconPoints(key, ICONS[key], count);
+  for (let k = 0; k < count; k++) {
+    const i = from + k;
+    if (i >= n) break;
+    slab(i, edge[k]);
+    pos[i * 3] = xy[k * 2] * s * sl.scale + ox;
+    pos[i * 3 + 1] = xy[k * 2 + 1] * s * sl.scale + oy;
+    pos[i * 3 + 2] = sl.z;
+    lit[i] = sl.lit;
+    size[i] = sl.size;
+  }
+}
 
-/* ── 00 THE OPENING ───────────────────────────────────────────────────────
-   What the hero is: a sheet of the same material, suspended, breathing.
+/* ── 01 FRICTION ─ the filter, and what comes out of it ──────────────────
+   The funnel holds while the claim beside it is being read, and in the second
+   half of the chapter the stream below the throat gathers into the number the
+   product actually publishes. Ten thousand in, a hundred and fifty out: the
+   shape states the mechanic and then states the result, which is more than
+   either of them could do on its own. */
+/** WHICH POINTS ARE THE CONTENTS AND NOT THE VESSEL, worked out once.
+ *
+ *  Two rules, and the second one is the lesson. Interior rather than outline,
+ *  so what leaves is the stuff inside the funnel and the funnel is still
+ *  drawn after it has gone. And above the throat only: the first version took
+ *  the whole interior including the spout's, and a funnel whose spout has
+ *  emptied is a bowl.
+ *
+ *  They also go to a CONTIGUOUS run of the numeral's points. Mapping each one
+ *  to the numeral point of the same index spread a fifth of them across the
+ *  whole of "150" at a fifth of the density, and it never resolved into
+ *  anything you could read. */
+let streamOf: number[] | null = null;
+function stream(n: number, edge: Float32Array, xy: Float32Array): number[] {
+  if (streamOf) return streamOf;
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) if (edge[i] < 0.5 && xy[i * 2 + 1] > -0.06) out.push(i);
+  streamOf = out;
+  return out;
+}
 
-   IT USED TO BE A FLAT EVEN GRID AND THAT WAS THE PROBLEM. A rectangle of
-   dots facing the camera is wallpaper: no depth, no silhouette, no reason to
-   look, and a hard edge that cut straight through the headline. The three
-   things that make this an object instead are a travelling wave through it, a
-   soft edge where the sheet dissolves rather than being cropped, and near
-   points drawn larger than far ones so the undulation reads as depth and not
-   as a pattern.
+/** how far the funnel pulls back to make room for its own answer */
+const SIFT_LIFT = 0.42;
 
-   Two wave trains at different rates and directions, so it never repeats on
-   any beat a viewer can anticipate. This is the calm the rest of the page is
-   measured against, so it moves slowly enough to be furniture and enough to
-   be alive. */
+export const friction: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+  const { xy, edge } = iconPoints("friction", ICONS.friction, n);
+  const u = clamp01((phase - 0.46) / 0.4);
+  const ease = u * u * (3 - 2 * u);
+
+  /* the funnel first, whole, drawing back and up as the answer arrives */
+  const s = ICON_SCALE * (1 - 0.28 * ease);
+  const lift = SIFT_LIFT * ease;
+  for (let i = 0; i < n; i++) {
+    slab(i, edge[i]);
+    pos[i * 3] = xy[i * 2] * s * sl.scale;
+    pos[i * 3 + 1] = xy[i * 2 + 1] * s * sl.scale + lift;
+    pos[i * 3 + 2] = sl.z;
+    lit[i] = sl.lit;
+    size[i] = sl.size;
+  }
+  if (ease <= 0) return;
+
+  /* then what came through it gathers below the spout into the number the
+     product actually publishes. Ten thousand in, a hundred and fifty out. */
+  const run = stream(n, edge, xy);
+  const num = iconPoints("num150", ICONS.num150, run.length);
+  for (let k = 0; k < run.length; k++) {
+    const i = run[k];
+    const nx = num.xy[k * 2] * 1.1;
+    const ny = num.xy[k * 2 + 1] * 1.1 - 0.62;
+    pos[i * 3] += (nx - pos[i * 3]) * ease;
+    pos[i * 3 + 1] += (ny - pos[i * 3 + 1]) * ease;
+    /* flat, so the number is read rather than inspected */
+    pos[i * 3 + 2] *= 1 - ease * 0.72;
+    lit[i] = Math.max(lit[i], ease);
+    size[i] = size[i] * (1 - ease) + 2.6 * ease;
+  }
+};
+
+/* ── 02 HEADROOM ─ the money, and how much of it is spoken for ───────────
+   A dial. The ring is the month, the arc filling clockwise is what is already
+   committed, and the gap left at the end of it is the answer to the question
+   the product exists to answer. */
+const RING_SHARE = 0.24;
+const RING_R = 0.99;
+export const headroom: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+  const ringN = Math.round(n * RING_SHARE);
+  writeIcon("headroom", pos, lit, size, n, ringN, n - ringN, ICON_SCALE * 0.64, 0, 0);
+
+  const filledTo = 0.76 * clamp01(phase);
+  for (let j = 0; j < ringN; j++) {
+    const frac = j / ringN;
+    /* clockwise from the top, because that is the direction a dial reads */
+    const a = Math.PI / 2 - frac * Math.PI * 2;
+    const filled = frac <= filledTo;
+    pos[j * 3] = Math.cos(a) * RING_R;
+    pos[j * 3 + 1] = Math.sin(a) * RING_R;
+    pos[j * 3 + 2] = (rand(j * 3.1) - 0.5) * 0.1;
+    lit[j] = filled ? 1 : 0;
+    /* the unfilled part is a track, not an absence: you have to be able to
+       see how much of the ring is left */
+    size[j] = filled ? 3.1 : 1.05;
+  }
+};
+
+/* ── 03 SIGNAL ─ the map, and what is on tonight ─────────────────────────
+   The Beltway, the District inside it, the Potomac through both. Twelve
+   brighter points are the events, and the pin is a small thing that lands on
+   one of them rather than standing in for the whole idea. */
+const EVENTS = 12;
+const PIN_N = 440;
+/** roughly where things happen, in the same box the map is drawn in */
+const WHERE: Array<[number, number]> = [
+  [-0.08, 0.02],
+  [0.14, -0.06],
+  [-0.26, -0.18],
+  [0.3, 0.18],
+  [-0.34, 0.26],
+  [0.08, 0.34],
+  [0.4, -0.24],
+  [-0.44, -0.06],
+  [0.2, -0.4],
+  [-0.14, -0.44],
+  [0.48, 0.06],
+  [-0.02, 0.5],
+];
+/** which one the pin lands on */
+const LANDS = 5;
+export const signal: ShapeWriter = (pos, lit, size, n, time, phase) => {
+  const head = EVENTS + PIN_N;
+  writeIcon("signal", pos, lit, size, n, head, n - head, ICON_SCALE, 0, 0);
+
+  for (let j = 0; j < EVENTS; j++) {
+    const x = WHERE[j][0] * ICON_SCALE;
+    const y = WHERE[j][1] * ICON_SCALE;
+    pos[j * 3] = x;
+    pos[j * 3 + 1] = y;
+    pos[j * 3 + 2] = 0.14;
+    lit[j] = 1;
+    /* out of step with each other, because a dozen things happening in time
+       with each other is one thing happening */
+    size[j] = 4.6 + 1.9 * Math.sin(time * 1.5 + j * 1.9);
+  }
+
+  /* the pin falls in the last third and lands on one of them */
+  const drop = clamp01((phase - 0.62) / 0.3);
+  const land = drop * drop * (3 - 2 * drop);
+  const lx = WHERE[LANDS][0] * ICON_SCALE;
+  const ly = WHERE[LANDS][1] * ICON_SCALE;
+  const pin = iconPoints("pin", ICONS.pin, PIN_N);
+  for (let k = 0; k < PIN_N; k++) {
+    const i = EVENTS + k;
+    pos[i * 3] = pin.xy[k * 2] * 0.26 + lx;
+    /* the pin's own point sits on the event, so the shape hangs above it */
+    pos[i * 3 + 1] = (pin.xy[k * 2 + 1] + 1) * 0.26 + ly + (1 - land) * 1.1;
+    pos[i * 3 + 2] = 0.32;
+    lit[i] = land;
+    size[i] = 1.7 + 1.9 * land;
+  }
+};
+
+/* ── 04 BUMPER ─ the cart, and the thing in its way ──────────────────────
+   It rolls in from the left along a line of its own points, meets the bump,
+   and settles. The spring does the settling: it is already under-damped, so
+   the overshoot at the end is physics and not a keyframe. */
+const GROUND_SHARE = 0.09;
+export const bumper: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+  const groundN = Math.round(n * GROUND_SHARE);
+
+  const p = clamp01(phase / 0.86);
+  /* fast at first and slower as it arrives, which is what something with
+     mass does when it stops being pushed */
+  const travel = 1 - Math.pow(1 - p, 3);
+  const cx = -2.2 + 2.2 * travel;
+  const over = clamp01((p - 0.6) / 0.26);
+  const hop = Math.sin(over * Math.PI) * 0.075;
+
+  writeIcon("bumper", pos, lit, size, n, groundN, n - groundN, ICON_SCALE, cx, hop);
+
+  for (let j = 0; j < groundN; j++) {
+    const f = j / (groundN - 1);
+    const x = -1.3 + f * 2.6;
+    /* the bump itself: a small rise the cart has to climb */
+    const lump = Math.exp(-Math.pow((x - 0.5) / 0.12, 2)) * 0.1;
+    pos[j * 3] = x;
+    pos[j * 3 + 1] = -0.82 + lump;
+    pos[j * 3 + 2] = (rand(j * 7.7) - 0.5) * 0.03;
+    lit[j] = lump > 0.02 ? 1 : 0;
+    /* behind the cart the ground is still lit from it passing: speed lines,
+       and they go out as it comes to rest */
+    const behind = x < cx - 0.2 && x > cx - 1.3 ? 1 - travel : 0;
+    size[j] = 1.1 + lump * 14 + behind * 1.7;
+  }
+};
+
+
+/* ── 00 THE OPENING, AND THE CLOSE ───────────────────────────────────────
+   A sphere, and a real one: points placed on a golden spiral so the spacing
+   is even everywhere, with no poles where they crowd and no seam where they
+   meet. A latitude-longitude grid is easier and gives both away immediately.
+
+   IT HAS TO STAY A SPHERE AT EVERY ASPECT RATIO, which is the argument for
+   building it in world space and letting the camera see it rather than
+   drawing an ellipse that happens to look round at one window size.
+
+   It turns at about six degrees a second, which is slow enough to be
+   furniture and enough to be alive, and a long wave crosses its surface so
+   it reads as something breathing rather than something machined. The page
+   ends on it too: the contact section is this shape again, which is the only
+   way to say that the sequence is over.  */
+
+/** how far the sphere reaches. Wider than the icons, because it is the only
+ *  state with nothing beside it to be read against. */
+const SPHERE = 1.06;
 
 export const drift: ShapeWriter = (pos, lit, size, n, time) => {
+  const spin = time * 0.105;
+  const cs = Math.cos(spin);
+  const sn = Math.sin(spin);
   for (let i = 0; i < n; i++) {
-    const { u, v } = cell(i);
-    const x = u * ASPECT;
-    const y = v * 0.9;
+    /* the golden spiral. acos of an even step in height is what keeps the
+       spacing even: stepping the angle instead piles them at the poles. */
+    const k = i + 0.5;
+    const phi = Math.acos(1 - (2 * k) / n);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * k;
+    const sp = Math.sin(phi);
+    const x0 = Math.cos(theta) * sp;
+    const y = Math.cos(phi);
+    const z0 = Math.sin(theta) * sp;
 
-    /* how far out this point is, for the soft edge */
-    const r = Math.min(1, Math.hypot(u * 0.92, v));
-    const edge = 1 - r * r * r;
+    const x = x0 * cs - z0 * sn;
+    const z = x0 * sn + z0 * cs;
 
-    const w =
-      Math.sin(u * 2.1 + time * 0.42) * 0.3 +
-      Math.sin(v * 2.7 - time * 0.33) * 0.22 +
-      Math.sin((u + v) * 1.4 + time * 0.21) * 0.14;
+    /* a long swell across the surface, two trains at different rates so it
+       never repeats on a beat anyone can anticipate */
+    const swell =
+      1 + 0.045 * Math.sin(y * 3.4 + time * 0.5) + 0.03 * Math.cos(x * 2.6 - time * 0.37);
 
-    pos[i * 3] = x;
-    pos[i * 3 + 1] = y + w * 0.16 * edge;
-    /* the sheet leans away at the rim, so it ends rather than being cut off */
-    pos[i * 3 + 2] = w * edge - (1 - edge) * 1.1;
+    pos[i * 3] = x * SPHERE * swell;
+    pos[i * 3 + 1] = y * SPHERE * swell;
+    pos[i * 3 + 2] = z * SPHERE * swell;
 
+    /* the hemisphere facing you carries the weight; the far side falls away
+       to almost nothing, which is what makes a cloud of dots read as a solid
+       rather than as a ring */
+    const face = (z + 1) * 0.5;
     lit[i] = 0;
-    /* Near is bigger, so the wave reads as a surface and not a pattern. The
-       rim goes to nothing rather than merely getting small: leaving it at a
-       quarter size drew a faint rectangle around the whole form, which put
-       back exactly the boxy silhouette the soft edge exists to remove. */
-    size[i] = (1.7 + 1.9 * (0.5 + 0.5 * Math.sin(u * 2.1 + time * 0.42))) * edge;
+    size[i] = 0.75 + 2.4 * face * face;
   }
 };
 
 /** Reduced motion gets the same sheet, frozen. */
-export const rest: ShapeWriter = (pos, lit, size, n) => drift(pos, lit, size, n, 0);
+export const rest: ShapeWriter = (pos, lit, size, n) => drift(pos, lit, size, n, 0, 1);
 
 
 /* ── 05 REACH ─────────────────────────────────────────────────────────────
@@ -193,18 +401,13 @@ export const rest: ShapeWriter = (pos, lit, size, n) => drift(pos, lit, size, n,
    the field is answering the question the button asks.
    ------------------------------------------------------------------------ */
 
-export const reach: ShapeWriter = (pos, lit, size, n) => {
-  for (let i = 0; i < n; i++) {
-    const { u, v } = cell(i);
-    const x = u * ASPECT;
-    const y = v * 0.8;
-    /* a dish: the edges lean toward the viewer, the middle sits back */
-    pos[i * 3] = x;
-    pos[i * 3 + 1] = y;
-    pos[i * 3 + 2] = (x * x * 0.3 + y * y * 0.38) - 0.5;
-    lit[i] = 0;
-    size[i] = 2.1;
-  }
+export const reach: ShapeWriter = (pos, lit, size, n, time) => {
+  /* THE PAGE ENDS WHERE IT BEGAN. The contact section is the hero's sphere
+     re-formed, which is the only way to say that the sequence is over without
+     writing it down. It holds back to a little over a third of its weight so
+     the two things you are being asked to press are unmistakably in front of
+     it. */
+  drift(pos, lit, size, n, time, 1);
 };
 
 /* Hovering EMAIL. Everything gathers into one stream and leaves: a message
@@ -280,3 +483,28 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
 
 export const SHAPES = { rest, drift, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;
+
+/* ── HOW EACH SHAPE ASSEMBLES ─────────────────────────────────────────────
+   A morph where every point sets off at once reads as a crossfade between
+   two pictures. Staggering them turns it into a wave, and which way the wave
+   runs is free meaning: the filter fills from the top because that is the
+   direction things fall through it, the money fills around because that is
+   how a dial moves, the map draws along its own outline like a pen, and the
+   cart fills left to right because that is the way it travels.
+
+   "index" uses the order the points were sampled in, which for the icons is
+   angle around the centre, so it draws the silhouette rather than sweeping
+   across it. */
+export type Wave = "down" | "around" | "along" | "across";
+
+export const WAVES: Record<ShapeName, Wave> = {
+  rest: "down",
+  drift: "down",
+  friction: "down",
+  headroom: "around",
+  signal: "along",
+  bumper: "across",
+  reach: "around",
+  sent: "across",
+  network: "around",
+};

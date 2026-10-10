@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SHAPES, COUNT, ANIMATED, type ShapeName } from "./shapes";
+import { SHAPES, WAVES, COUNT, ANIMATED, cell, type ShapeName } from "./shapes";
 import { TOKENS } from "../styles/tokens";
 
 /* --------------------------------------------------------------------------
@@ -38,8 +38,10 @@ const DAMPING = 18;
 const STAGGER = 0.45;
 /** how far the field swells at the halfway point of a morph, in world units */
 const PUFF = 0.26;
-/** chases the accent so it settles in the same 600ms the CSS transition uses */
-const ACCENT_RATE = 7.7;
+/** the per-point colour crossfade, in progress per second. The slowest point
+ *  starts STAGGER late, so the whole sweep lands near the 600ms the CSS
+ *  transition on --chapter-accent takes. */
+const ACCENT_RATE = 1 / 0.6;
 
 export type FieldHandle = {
   /** morph between two shapes; p is 0 to 1 and may run backwards. `time` is
@@ -73,6 +75,12 @@ export type FieldHandle = {
    *  viewport. Points inside it fade almost out and lean away from it. Pass
    *  a zero-size rect to switch it off. */
   setSafe: (left: number, top: number, right: number, bottom: number) => void;
+  /** the pointer in CSS pixels, or null to switch the field off. Points near
+   *  it are pushed aside and lit. */
+  setPointerPx: (x: number | null, y?: number) => void;
+  /** how fast the page is scrolling, in pixels per second. The object lags
+   *  and stretches a little in that direction, like something with mass. */
+  setVelocity: (pxPerSecond: number) => void;
   /** where the camera should be, as an orbit around the lattice. Damped, so
    *  it is a move and not a cut. */
   setCamera: (azimuth: number, elevation: number, distance: number) => void;
@@ -112,6 +120,12 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   const bLit = new Float32Array(COUNT);
   const bSize = new Float32Array(COUNT);
 
+  /** a fixed random per point, for the handful of things that want a stable
+   *  identity: which dots twinkle, which read as highlights */
+  const seed = new Float32Array(COUNT);
+  /** how far through the accent crossfade each point is, so colour sweeps
+   *  across the object instead of every dot changing on the same frame */
+  const blend = new Float32Array(COUNT);
   /** each point's place in the queue, fixed once so the wave is the same
    *  wave every time rather than re-shuffling on each morph */
   const delay = new Float32Array(COUNT);
@@ -124,17 +138,27 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     /* an even scatter of directions on the sphere, not an even scatter of
        angles: the second one bunches at the poles */
     const h1 = Math.sin(i * 7.233) * 43758.5453;
-    const h2 = Math.sin(i * 3.717) * 43758.5453;
-    const a = (h1 - Math.floor(h1)) * Math.PI * 2;
-    const b = Math.acos((h2 - Math.floor(h2)) * 2 - 1);
-    puff[i * 3] = Math.sin(b) * Math.cos(a);
-    puff[i * 3 + 1] = Math.sin(b) * Math.sin(a);
+    seed[i] = h1 - Math.floor(h1);
+    blend[i] = 1;
+
+    /* A COHERENT SWIRL, NOT A RANDOM ONE. Drawing each point's escape
+       direction from a hash gave every neighbour a different answer, so the
+       halfway point of a morph was a fog. Deriving it from where the point
+       sits in the lattice means neighbours agree, and the cloud comes apart
+       in sheets and curls the way smoke does. */
+    const { u, v } = cell(i);
+    const dx = Math.sin(v * 4.1 + 1.3) + 0.4 * Math.cos(u * 2.7);
+    const dy = Math.cos(u * 3.7) - 0.4 * Math.sin(v * 2.3 + 0.7);
+    const dz = Math.sin((u + v) * 2.9);
+    const len = Math.hypot(dx, dy, dz) || 1;
+    puff[i * 3] = dx / len;
+    puff[i * 3 + 1] = dy / len;
     /* a little more of it in depth, because depth is the thing the swell is
        there to show */
-    puff[i * 3 + 2] = Math.cos(b) * 1.3;
+    puff[i * 3 + 2] = (dz / len) * 1.3;
   }
 
-  SHAPES.drift(pos, lit, size, COUNT, 0);
+  SHAPES.drift(pos, lit, size, COUNT, 0, 1);
   target.set(pos);
 
   let cachedFrom: ShapeName | null = null;
@@ -144,6 +168,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geometry.setAttribute("aLit", new THREE.BufferAttribute(lit, 1));
   geometry.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+  geometry.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+  geometry.setAttribute("aBlend", new THREE.BufferAttribute(blend, 1));
 
   const material = new THREE.ShaderMaterial({
     transparent: true,
@@ -167,17 +193,31 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          because that is the space a vertex shader can cheaply get to */
       uSafe: { value: new THREE.Vector4(0, 0, 0, 0) },
       uRes: { value: new THREE.Vector2(1, 1) },
+      /* the colour the field is leaving, so each point can cross from it in
+         its own time rather than the whole object changing on one frame */
+      uAccentPrev: { value: new THREE.Color(accent) },
+      uTime: { value: 0 },
+      /* the pointer, in CSS pixels, and whether there is one at all */
+      uPointer: { value: new THREE.Vector2(-9999, -9999) },
+      uPointerOn: { value: 0 },
     },
     vertexShader: /* glsl */ `
       attribute float aLit;
       attribute float aSize;
+      attribute float aSeed;
+      attribute float aBlend;
       uniform float uScale;
       uniform vec4 uSafe;
       uniform vec2 uRes;
+      uniform vec2 uPointer;
+      uniform float uPointerOn;
       varying float vLit;
       varying float vFade;
       varying float vDepth;
       varying float vSafe;
+      varying float vSeed;
+      varying float vBlend;
+      varying float vLight;
 
       /** how far past the rectangle a point has to be before it is free of
        *  it. A hard edge would draw the copy's bounding box in dots. */
@@ -185,8 +225,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       /** and how hard it is pushed out of the way */
       const float PUSH = 24.0;
 
+      /** how close the pointer has to be before the field notices it */
+      const float REACH = 120.0;
+      /** and how far out of the way it goes */
+      const float REPEL = 28.0;
+
       void main() {
         vLit = aLit;
+        vSeed = aSeed;
+        vBlend = aBlend;
         /* A POINT CANNOT BE SMALLER THAN ONE PIXEL. Shrinking a point to zero
            does not remove it, the rasteriser floors it at 1px, so a rim that
            was supposed to dissolve came back as a uniform faint grid and drew
@@ -206,9 +253,11 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            rather than by moving the whole object means the object keeps its
            own composition and only the handful of points that would have
            landed on a sentence get out of its way. */
+        vec2 px = ((clip.xy / clip.w) * 0.5 + 0.5) * uRes;
+        vec2 px0 = px;
+
         vSafe = 0.0;
         if (uSafe.z > uSafe.x) {
-          vec2 px = ((clip.xy / clip.w) * 0.5 + 0.5) * uRes;
           vec2 c = (uSafe.xy + uSafe.zw) * 0.5;
           vec2 h = (uSafe.zw - uSafe.xy) * 0.5;
           vec2 q = abs(px - c) - h;
@@ -221,9 +270,23 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
               ? vec2(sign(px.x - c.x), 0.0)
               : vec2(0.0, sign(px.y - c.y));
             px += dir * (PUSH * vSafe);
-            clip.xy = ((px / uRes) * 2.0 - 1.0) * clip.w;
           }
         }
+
+        /* THE FIELD KNOWS WHERE YOUR HAND IS. Points near the pointer step
+           aside and brighten, which is the cheapest possible proof that the
+           thing on screen is a material and not a picture of one. Screen
+           space, so the reach is the same wherever the camera happens to be
+           and whatever the object is doing. */
+        vLight = 0.0;
+        if (uPointerOn > 0.5) {
+          vec2 away = px - uPointer;
+          float near = 1.0 - smoothstep(0.0, REACH, length(away));
+          vLight = near;
+          px += normalize(away + vec2(0.0001, 0.0)) * (REPEL * near * near);
+        }
+
+        if (px != px0) clip.xy = ((px / uRes) * 2.0 - 1.0) * clip.w;
         gl_Position = clip;
       }`,
     fragmentShader: /* glsl */ `
@@ -235,10 +298,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       uniform float uFocus;
       uniform float uFogNear;
       uniform float uFogDensity;
+      uniform vec3 uAccentPrev;
+      uniform float uTime;
       varying float vLit;
       varying float vFade;
       varying float vDepth;
       varying float vSafe;
+      varying float vSeed;
+      varying float vBlend;
+      varying float vLight;
 
       void main() {
         /* EVERY POINT IS A LIT SPHERE, NOT A DISC. A flat circle of uniform
@@ -265,7 +333,21 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         float soft = mix(0.07, 0.62, blur);
         float edge = 1.0 - smoothstep(1.0 - soft, 1.0, r);
 
-        vec3 col = mix(uPaper, uAccent, vLit) * shade + spec * (0.35 + 0.4 * vLit);
+        /* THE COLOUR ARRIVES WITH EACH POINT, NOT ALL AT ONCE. Every dot
+           crosses from the key it is leaving to the one it is joining on its
+           own clock, so the new colour sweeps through the object in the same
+           direction the shape does. */
+        vec3 accent = mix(uAccentPrev, uAccent, vBlend);
+        vec3 col = mix(uPaper, accent, vLit) * shade + spec * (0.35 + 0.4 * vLit);
+
+        /* A SIXTH OF THEM READ AS HIGHLIGHTS and a tenth of them breathe,
+           which is the difference between a surface and a flat fill. Both are
+           keyed to the point's fixed seed, so it is always the same dots and
+           the field never shimmers as a whole. */
+        col = mix(col, uPaper, step(0.85, vSeed) * 0.5);
+        float twinkle = step(0.9, fract(vSeed * 7.31));
+        col *= 1.0 + twinkle * 0.25 * sin(uTime * (0.6 + vSeed * 0.8) + vSeed * 24.0);
+        col *= 1.0 + vLight * 0.3;
 
         /* ATMOSPHERE. Far points sink toward the background rather than
            staying as bright as near ones, which is the oldest depth cue there
@@ -293,6 +375,12 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   let churn = 0;
   let clock = 0;
   let fit = 1;
+  /** how far through the per-point colour crossfade the field is */
+  let accentT = 1;
+  /** where setOffset last put the object, before inertia moves it */
+  let offsetY = 0;
+  let velTo = 0;
+  let velNow = 0;
   let dead = false;
 
   /* THE CAMERA MOVES, AND THAT IS THE DIFFERENCE BETWEEN A PICTURE OF A SHAPE
@@ -324,16 +412,31 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       /* an animated state has to be rewritten every call; a static one only
          when it actually changes */
       if (from !== cachedFrom || ANIMATED.has(from)) {
-        SHAPES[from](aPos, aLit, aSize, COUNT, time);
+        /* the state being left is finished by definition: phase 1 */
+        SHAPES[from](aPos, aLit, aSize, COUNT, time, 1);
         cachedFrom = from;
       }
       if (to !== cachedTo || ANIMATED.has(to)) {
-        SHAPES[to](bPos, bLit, bSize, COUNT, time);
+        /* and the one being arrived at knows how far in the reader is */
+        SHAPES[to](bPos, bLit, bSize, COUNT, time, p);
         cachedTo = to;
       }
+      /* WHICH WAY THE WAVE RUNS IS FREE MEANING. A morph where every point
+         sets off together is a crossfade between two pictures; staggered, it
+         is a wave, and the direction can say what the product does. Most of
+         each delay is the direction and the rest is noise, because a
+         perfectly ordered wave reads as a wipe. */
+      const wave = WAVES[to];
       const span = 1 - STAGGER;
       for (let i = 0; i < COUNT; i++) {
-        const t = smoothstep(clamp01((p - delay[i]) / span));
+        const i3b = i * 3;
+        let lead: number;
+        if (wave === "along") lead = i / COUNT;
+        else if (wave === "around") lead = (Math.atan2(bPos[i3b + 1], bPos[i3b]) + Math.PI) / (Math.PI * 2);
+        else if (wave === "across") lead = (bPos[i3b] + 1.6) / 3.2;
+        else lead = (1.1 - bPos[i3b + 1]) / 2.2;
+        const d = (clamp01(lead) * 0.82 + delay[i] * 0.4) * STAGGER;
+        const t = smoothstep(clamp01((p - d) / span));
         /* IT COMES APART AND REASSEMBLES, IT DOES NOT CROSS-FADE. A straight
            line between two shapes is the one path that makes both of them
            look flat: the object never has a moment of being a volume, so the
@@ -342,7 +445,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            halfway point into a cloud the shapes dissolve into and resolve
            out of. Small on purpose, because the brief is calm. */
         const swell = Math.sin(Math.PI * t) * PUFF;
-        const i3 = i * 3;
+        const i3 = i3b;
         target[i3] = aPos[i3] + (bPos[i3] - aPos[i3]) * t + puff[i3] * swell;
         target[i3 + 1] = aPos[i3 + 1] + (bPos[i3 + 1] - aPos[i3 + 1]) * t + puff[i3 + 1] * swell;
         target[i3 + 2] = aPos[i3 + 2] + (bPos[i3 + 2] - aPos[i3 + 2]) * t + puff[i3 + 2] * swell;
@@ -422,13 +525,36 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          and everything in front of and behind it falls away */
       material.uniforms.uFocus.value = cam.dist;
       material.uniforms.uFogNear.value = cam.dist - 1.1;
+      material.uniforms.uTime.value = clock;
+
+      /* IT BREATHES, so a settled formation is still alive. Six seconds and
+         six tenths of a per cent: below the threshold anyone could name, far
+         above the threshold anyone could feel. */
+      const breath = 1 + Math.sin(clock * (Math.PI * 2 / 6)) * 0.006;
+      points.scale.setScalar(fit * breath);
+
+      /* AND IT HAS MASS. The object lags the page a little and stretches in
+         the direction of travel, then springs back when the scroll stops. */
+      velNow += (velTo - velNow) * (1 - Math.exp(-6 * dt));
+      const lag = Math.max(-1, Math.min(1, velNow / 2600));
+      points.position.y = offsetY + lag * 0.09;
+      points.scale.y = fit * breath * (1 + Math.abs(lag) * 0.035);
       /* THE CANVAS CROSSFADES ON THE PAGE'S CLOCK, NOT ITS OWN. The accent
          is a 600ms transition in CSS, and an exponential chase settles to
          within a per cent in about 4.6 time constants, so the rate that
          lands on the same 600ms is 7.7. On the shared rate of 3 the object
          was still arriving at its new colour a second after the chapter
          number had finished, which reads as the two being unrelated. */
-      accentNow.lerp(accentTarget, 1 - Math.exp(-ACCENT_RATE * dt));
+      /* THE KEY CROSSES POINT BY POINT. One global lerp meant the whole
+         object changed colour on the same frame while the shape was still
+         arriving in a wave, so the two moves never looked like one move. */
+      if (accentT < 1) {
+        accentT = Math.min(1, accentT + dt * ACCENT_RATE);
+        const sp = 1 - STAGGER;
+        for (let i = 0; i < COUNT; i++) blend[i] = smoothstep(clamp01((accentT - delay[i]) / sp));
+        geometry.attributes.aBlend.needsUpdate = true;
+        if (accentT >= 1) accentNow.copy(accentTarget);
+      }
       const o = material.uniforms.uOpacity;
       o.value += (opacityTarget - o.value) * k;
       points.rotation.set(rx, ry, 0);
@@ -450,11 +576,30 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     },
 
     setAccent(hex) {
-      accentTarget.set(hex);
+      const next = new THREE.Color(hex);
+      if (next.equals(accentTarget)) return;
+      /* whatever the field is actually showing right now becomes the colour
+         it is leaving, mid-crossfade or not */
+      accentNow.lerp(accentTarget, accentT);
+      (material.uniforms.uAccentPrev.value as THREE.Color).copy(accentNow);
+      accentTarget.copy(next);
+      (material.uniforms.uAccent.value as THREE.Color).copy(next);
+      accentT = 0;
     },
 
     setOffset(x, y = 0) {
+      offsetY = y;
       points.position.set(x, y, 0);
+    },
+
+    setPointerPx(x, y = 0) {
+      const on = x !== null;
+      material.uniforms.uPointerOn.value = on ? 1 : 0;
+      if (on) (material.uniforms.uPointer.value as THREE.Vector2).set(x, (canvas.clientHeight || 1) - y);
+    },
+
+    setVelocity(v) {
+      velTo = v;
     },
 
     /* call resize() after this: the dots have to scale with the object, or a
@@ -462,6 +607,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
        shape seen from further away */
     setFit(k) {
       fit = k;
+      /* tick() owns the scale from here, because breathing and the scroll
+         stretch both multiply it */
       points.scale.setScalar(k);
     },
 

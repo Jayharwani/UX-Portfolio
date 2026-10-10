@@ -77,7 +77,9 @@ export function HeadroomPage() {
       <header className="beat hero">
         <Reveal className="said" y={22}>
           <span className="eyebrow">HEADROOM · PRODUCT DESIGN</span>
-          <h1>Know what you can actually spend.</h1>
+          {/* the one shared element the homepage morphs into; naming an
+              element does not change how it paints */}
+          <h1 style={{ viewTransitionName: "project-title" }}>Know what you can actually spend.</h1>
           <p className="line">
             A money app that shows what&rsquo;s safe to spend today &mdash; before payday.
           </p>

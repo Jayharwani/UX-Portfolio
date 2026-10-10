@@ -185,7 +185,9 @@ export function CaseHero({
     >
       {backdrop}
       <div className="cs-eyebrow">{meta}</div>
-      <h1>{title}</h1>
+      {/* the one shared element the homepage morphs into; naming an element
+          does not change how it paints */}
+      <h1 style={{ viewTransitionName: "project-title" }}>{title}</h1>
       <div className="cs-heroGrid">
         <div>
           {standfirst ? <p className="cs-standfirst">{standfirst}</p> : null}

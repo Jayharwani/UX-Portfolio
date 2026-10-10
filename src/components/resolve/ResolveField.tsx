@@ -93,7 +93,7 @@ export type Zone = "hero" | "work" | "end";
 /** how far from centre the object sits on a wide screen, in world units.
  *  Enough to clear the copy column completely; not so far that it crowds the
  *  edge. */
-const SIDE = 0.55;
+const SIDE = 0.8;
 
 /* WHICH HALF EACH STATE LIVES IN. The chapters alternate which side their
    copy is on, so the object has to alternate with them or the mirrored ones
@@ -101,8 +101,9 @@ const SIDE = 0.55;
    object crosses the page as the shape changes, which is the move the
    alternation was worth making for. */
 function sideOf(state: number): number {
-  if (state >= STATES.length - 1) return 0; /* the contact section is centred */
-  if (state === 0) return SIDE; /* the hero sits where chapter 01 will */
+  /* the hero and the contact section are both left-aligned pages with the
+     object beside the type, so they sit where chapter 01 does */
+  if (state === 0 || state >= STATES.length - 1) return SIDE;
   return state % 2 === 1 ? SIDE : -SIDE;
 }
 
@@ -226,6 +227,15 @@ export function ResolveField({
         t = clamp01((y - centres[k]) / Math.max(1, centres[k + 1] - centres[k]));
       }
 
+      /* SETTLED BEFORE THE WORDS ARE, NOT WITH THEM. Mapping the morph
+         evenly across the gap between two chapter centres meant the shape was
+         only finished at the exact instant the copy was centred, so for the
+         whole approach you were reading a claim beside something that had not
+         decided what it was. Finishing three quarters of the way there and
+         holding gives the reader a formed object the entire time the sentence
+         is on screen. */
+      t = clamp01(t / 0.74);
+
       const to = STATES[Math.min(from + 1, STATES.length - 1)];
       animating = ANIMATED.has(STATES[from]) || ANIMATED.has(to);
       /* the override only applies on the final leg, where "reach" lives */
@@ -333,6 +343,9 @@ export function ResolveField({
       /* the smoothed value, so the field and the page agree about where the
          reader is within a single frame */
       apply(getLenis()?.animatedScroll ?? window.scrollY);
+      /* Lenis already knows how fast the page is moving; measuring it again
+         from scroll positions would only be a worse copy of the same number */
+      handle.setVelocity(reduce.matches ? 0 : (getLenis()?.velocity ?? 0) * 60);
       handle.tick(deltaMs / 1000);
     });
 
@@ -342,13 +355,21 @@ export function ResolveField({
       apply(getLenis()?.animatedScroll ?? window.scrollY);
     };
 
+    const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
     const onPointer = (e: PointerEvent) => {
       if (reduce.matches) return;
       handle.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
+      /* the local field, which only makes sense with a real pointer: a
+         fingertip is both imprecise and already covering what it points at */
+      if (fine.matches) handle.setPointerPx(e.clientX, e.clientY);
+    };
+    const onPointerOut = (e: PointerEvent) => {
+      if (!e.relatedTarget) handle.setPointerPx(null);
     };
     const onResize = () => place();
 
     window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("pointerout", onPointerOut, { passive: true });
     window.addEventListener("resize", onResize);
     /* fonts land after first paint and move the chapters, so the centres have
        to be taken again once the page has stopped changing size */
@@ -362,6 +383,7 @@ export function ResolveField({
       stopFrame();
       window.clearTimeout(settle);
       window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("pointerout", onPointerOut);
       window.removeEventListener("resize", onResize);
       handle.destroy();
       field.current = null;

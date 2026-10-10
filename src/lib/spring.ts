@@ -64,32 +64,59 @@ const SETTLED = 0.001;
 const MAX_SECONDS = 6;
 const SUBSTEP = 1 / 120;
 
+/** the raw 0-to-1 step response, one sample per substep */
+function trace(stiffness: number, dampingRatio: number): { curve: number[]; seconds: number } {
+  const s = { x: 0, v: 0 };
+  const curve: number[] = [0];
+  let t = 0;
+  while (t < MAX_SECONDS) {
+    stepSpring(s, 1, stiffness, dampingRatio, SUBSTEP);
+    t += SUBSTEP;
+    curve.push(s.x);
+    if (Math.abs(s.x - 1) < SETTLED && Math.abs(s.v) < SETTLED) break;
+  }
+  return { curve, seconds: t };
+}
+
+/** sample a trace at 0 to 1, linearly between substeps */
+function at(curve: number[], u: number): number {
+  const i = Math.max(0, Math.min(1, u)) * (curve.length - 1);
+  const lo = Math.floor(i);
+  const hi = Math.min(curve.length - 1, lo + 1);
+  return curve[lo] + (curve[hi] - curve[lo]) * (i - lo);
+}
+
+/**
+ * THE SAME CURVE AS A FUNCTION, for animation engines that want one. GSAP
+ * does not parse a CSS `linear()` string as an ease, so handing it the
+ * generated string silently falls back to its own default and the page ends
+ * up with two different motion systems that were supposed to be one.
+ */
+export function springEase(name: SpringName): { ease: (t: number) => number; duration: number } {
+  const { stiffness, damping } = SPRINGS[name];
+  const { curve, seconds } = trace(stiffness, damping);
+  return { ease: (t) => at(curve, t), duration: seconds };
+}
+
 /**
  * The 0-to-1 step response of a spring, as a CSS `linear()` easing and the
  * time it actually takes to settle. Values above 1 are kept: that overshoot
  * is the whole reason for doing this rather than picking a bezier.
  */
 export function springEasing(stiffness: number, dampingRatio: number, samples = 40): { css: string; ms: number } {
-  const s = { x: 0, v: 0 };
-  const trace: number[] = [0];
-  let t = 0;
-  while (t < MAX_SECONDS) {
-    stepSpring(s, 1, stiffness, dampingRatio, SUBSTEP);
-    t += SUBSTEP;
-    trace.push(s.x);
-    if (Math.abs(s.x - 1) < SETTLED && Math.abs(s.v) < SETTLED) break;
-  }
+  const { curve: traced, seconds: t } = trace(stiffness, dampingRatio);
 
   /* resample the trace onto an even grid, because linear() spaces its stops
      evenly unless each one is given a position, and even stops are half the
      characters */
   const out: string[] = [];
   for (let i = 0; i < samples; i++) {
-    const u = (i / (samples - 1)) * (trace.length - 1);
-    const lo = Math.floor(u);
-    const hi = Math.min(trace.length - 1, lo + 1);
-    const v = trace[lo] + (trace[hi] - trace[lo]) * (u - lo);
-    out.push(v.toFixed(4).replace(/0+$/, "").replace(/\.$/, ""));
+    out.push(
+      at(traced, i / (samples - 1))
+        .toFixed(4)
+        .replace(/0+$/, "")
+        .replace(/\.$/, ""),
+    );
   }
   /* the last sample is the target by definition; rounding must not say
      otherwise or the element lands a thousandth short */

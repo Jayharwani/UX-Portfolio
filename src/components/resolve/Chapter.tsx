@@ -1,6 +1,10 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { Issue } from "../../data/issues";
+
+/** which project was opened last, so coming back plays the move in reverse */
+const CAME_FROM = "rs-came-from";
 
 /* --------------------------------------------------------------------------
    ONE CHAPTER.
@@ -17,16 +21,46 @@ import type { Issue } from "../../data/issues";
    -------------------------------------------------------------------------- */
 
 export function Chapter({ issue, on }: { issue: Issue; on: boolean }) {
+  const title = useRef<HTMLHeadingElement>(null);
+
+  /* THE NAME HAS TO BE UNIQUE IN THE DOCUMENT, so only one title ever wears
+     it: the one being opened, or on the way back, the one that was. Naming
+     all four would make the transition ambiguous and the browser would
+     silently drop it. */
+  useEffect(() => {
+    if (sessionStorage.getItem(CAME_FROM) !== issue.key) return;
+    sessionStorage.removeItem(CAME_FROM);
+    const el = title.current;
+    if (!el) return;
+    el.style.viewTransitionName = "project-title";
+    const done = () => el.style.removeProperty("view-transition-name");
+    const t = window.setTimeout(done, 1200);
+    return () => {
+      window.clearTimeout(t);
+      done();
+    };
+  }, [issue.key]);
+
   return (
     <article className="rs-chapter rs-stop rs-shell" data-on={on ? "" : undefined} data-accent={issue.accent}>
       <div className="rs-panel">
         <span className="mono rs-no">{issue.no}</span>
-        <h2 className="rs-title">{issue.title}</h2>
+        <h2 className="rs-title" ref={title}>
+          {issue.title}
+        </h2>
         <p className="rs-result">{issue.hook}</p>
         <p className="rs-what">{issue.panels[1]}</p>
         <p className="mono rs-tag">{issue.tag}</p>
         <div className="rs-actions">
-          <Link className="rs-btn rs-btn-solid" to={issue.href}>
+          <Link
+            className="rs-btn rs-btn-solid"
+            to={issue.href}
+            viewTransition
+            onClick={() => {
+              sessionStorage.setItem(CAME_FROM, issue.key);
+              if (title.current) title.current.style.viewTransitionName = "project-title";
+            }}
+          >
             <span className="rs-btn-text">Case study</span>
             <ArrowRight className="rs-btn-arrow" aria-hidden="true" strokeWidth={2.2} />
           </Link>

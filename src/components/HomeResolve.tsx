@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SmoothScroll } from "./print-run/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
 import { Chapter } from "./resolve/Chapter";
 import { Reach } from "./resolve/Reach";
+import { Rail } from "./resolve/Rail";
 import { magnetic } from "../lib/magnetic";
+import { installSprings } from "../lib/spring";
 import { heroScroll } from "./resolve/heroScroll";
+import { chapters, intro } from "./resolve/choreography";
 import { ISSUES } from "../data/issues";
 import { TOKENS } from "../styles/tokens";
 import type { Zone } from "./resolve/ResolveField";
@@ -38,7 +41,6 @@ export function HomeResolve() {
   const track = useRef<HTMLElement>(null);
   const hero = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     document.title = "Jay Harwani, product designer who writes the front end";
@@ -63,30 +65,30 @@ export function HomeResolve() {
     el.style.setProperty("--chapter-accent", zone === "work" ? TOKENS[ISSUES[i].accent] : TOKENS.paper);
   }, []);
 
-  /* The opening is the lattice settling, so it is finished when the springs
-     are. Nothing is gated on a timer. */
-  useEffect(() => {
-    const t = window.setTimeout(() => setReady(true), 120);
-    return () => window.clearTimeout(t);
-  }, []);
+  /* What the page root owns because it spans the page: the spring curves
+     every transition reads, the pointer magnet on every button, the hero's
+     own scroll behaviour, and the order the chapters arrive in.
 
-  /* the two things the page root owns because they span it: the pointer
-     magnet on every button, and the hero's own scroll behaviour */
-  useEffect(() => {
+     THE SPRINGS GO IN FIRST AND SYNCHRONOUSLY. Everything after this reads
+     them back off the element, so they have to exist before anything is
+     built against them. */
+  useLayoutEffect(() => {
     const el = page.current;
     const h = hero.current;
-    if (!el || !h) return;
-    const offMagnet = magnetic(el);
-    const offHero = heroScroll(h);
-    return () => {
-      offMagnet();
-      offHero();
-    };
+    const t = track.current;
+    if (!el || !h || !t) return;
+    /* on the document root as well as the page: the view transition's own
+       pseudo-elements are children of the root and cannot see a variable
+       declared further down */
+    installSprings(el);
+    installSprings(document.documentElement);
+    const off = [magnetic(el), heroScroll(h), intro(h), chapters(el, t)];
+    return () => off.forEach((f) => f());
   }, []);
 
   return (
     <SmoothScroll>
-      <div className="v2 rs" ref={page} data-ready={ready ? "" : undefined}>
+      <div className="v2 rs" ref={page}>
         <ResolveField track={track} onActive={onActive} />
         <div className="rs-grain" aria-hidden="true" />
 
@@ -94,22 +96,30 @@ export function HomeResolve() {
           Skip to the work
         </a>
 
+        <Rail active={active} />
+
         <main>
           <section className="rs-hero rs-shell" id="top" ref={hero}>
             <div className="rs-hero-copy">
               <p className="mono rs-eyebrow">Product designer who writes the front end</p>
               <h1 className="rs-display">
-                <span>Designs it.</span>
+                {/* each line rides up out of its own clip, which is why the
+                    wrapper exists: a mask per line, not one for the pair */}
+                <span className="rs-line">
+                  <span>Designs it.</span>
+                </span>
                 {/* THE SENTENCE FINISHES AS THE WORK ARRIVES. The outline is the
                     half that is not built yet, so it inks in from the left across
                     the first stretch of scroll and is solid by the time the first
                     project is on screen. The filled copy is a duplicate stacked on
                     the original and hidden from the reader, because the sentence
                     must exist exactly once in the document. */}
-                <span className="rs-outline">
-                  Then ships it.
-                  <span className="rs-ink" aria-hidden="true">
+                <span className="rs-line">
+                  <span className="rs-outline">
                     Then ships it.
+                    <span className="rs-ink" aria-hidden="true">
+                      Then ships it.
+                    </span>
                   </span>
                 </span>
               </h1>
