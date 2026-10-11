@@ -79,7 +79,11 @@ export function FrictionPage() {
           label="A field of ten thousand dim dots, one for every review read this week."
         />
         <Say>
-          <h1>Finding a real problem is the hardest part of building one.</h1>
+          {/* the one shared element the homepage morphs into; naming an
+              element does not change how it paints */}
+          <h1 style={{ viewTransitionName: "project-title" }}>
+            Finding a real problem is the hardest part of building one.
+          </h1>
           <p className="sub">
             Friction reads ten thousand app store reviews a week and returns the twenty-five
             problems people keep running into.

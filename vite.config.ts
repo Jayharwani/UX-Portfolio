@@ -19,8 +19,16 @@ function cloudflareSpaPulgin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss(), cloudflareSpaPulgin()],
+
+  /* Hard rule: no debug code in production. Stripping it at build time means a
+     stray console.log cannot ship even if review misses it. */
+  esbuild: command === 'build' ? { drop: ['console', 'debugger'] } : {},
+
+  define: {
+    __ISSUE__: JSON.stringify(new Date().toISOString().slice(0, 7).replace('-', '.')),
+  },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
@@ -47,10 +55,17 @@ export default defineConfig({
          * case-study routes and grouping it here would pull it onto the
          * homepage's critical path.
          */
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router'],
-          motion: ['motion'],
-          gsap: ['gsap'],
+        /* Function form, not the object form. The object form matches whole
+           package entry points, so `gsap/ScrollTrigger` and
+           `three/examples/jsm/...` were landing back in the page chunk rather
+           than the vendor chunk they belong to. */
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return;
+          if (/node_modules[\/](react|react-dom|react-router|scheduler)[\/]/.test(id)) return 'react';
+          if (/node_modules[\/](motion|framer-motion|motion-dom|motion-utils)[\/]/.test(id)) return 'motion';
+          if (/node_modules[\/]gsap[\/]/.test(id)) return 'gsap';
+          if (/node_modules[\/]three[\/]/.test(id)) return 'three';
+          if (/node_modules[\/]lenis[\/]/.test(id)) return 'lenis';
         },
       },
     },
@@ -59,4 +74,4 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
-});
+}));

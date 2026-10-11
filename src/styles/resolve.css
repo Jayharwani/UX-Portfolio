@@ -1,0 +1,1038 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   RESOLVE — the homepage.
+
+   Scoped to .v2.rs, including the page canvas: the dark ground is attached
+   with :has() rather than to a bare `body`, because globals.css owns body for
+   every route and Headroom's case study is a light page. Nothing here can
+   reach a case study.
+
+   THE LAYOUT IS QUIET ON PURPOSE. There is one moving thing on this page and
+   it is the lattice. Everything else holds still, has generous room, and gets
+   out of its way, because a calm base is what lets one focal object carry the
+   whole site. The moment a second thing starts competing, the first stops
+   being worth looking at.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* THE GROUND, NOT JUST THE PAGE. A white body shows through on any overscroll
+   bounce, which on a near-black site is a flash of torchlight. Attaching it
+   through :has() keeps it on while this page is mounted and takes it off the
+   moment it is not, so the light case studies are untouched. */
+html:has(.v2.rs),
+body:has(.v2.rs) {
+  background: #05070c;
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(238 241 245 / 0.18) transparent;
+}
+
+/* ONE ANIMATABLE ACCENT. Registering it is what makes a colour transition at
+   all: an unregistered custom property has no type, so the browser can only
+   swap it at the halfway point. Registered as a colour, it interpolates, and
+   every surface that reads it crosses together. */
+@property --chapter-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #eef1f5;
+}
+@property --glow-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --glow-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+/* how much of "Then ships it." is still hollow. Registered so it can be
+   scrubbed as a number rather than swapped as a string. */
+@property --ink {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+
+.v2.rs {
+  --ink-1: var(--paper);
+  --ink-2: rgb(238 241 245 / 0.62);     /* 6.96:1 */
+  --ink-3: rgb(238 241 245 / 0.55);     /* 5.66:1, the floor for any text */
+  --ink-deco: rgb(238 241 245 / 0.14);
+
+  --t-display: clamp(56px, 7.2vw, 112px);
+  --t-title: clamp(44px, 5vw, 80px);
+  --t-body: clamp(15px, 1.15vw, 17.5px);
+  /* 11px mono at 0.14em tracking is legible and mean. 12.5 is the smallest
+     this face stays comfortable at, and it is above the 10.5 floor with room
+     to spare. */
+  --t-label: 12.5px;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+
+  /* ONE CONTAINER FOR THE WHOLE PAGE. The footer used to sit a gutter to the
+     right of everything above it, because .rs-foot and .rs-reach each applied
+     their own, and two nested paddings is an indent nobody chose. */
+  --shell: 1320px;
+  /* kept clear on the right for the chapter rail, so no line of copy ever
+     runs under it */
+  --rail: 0px;
+
+  /* FOUR KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
+     perceptual lightness and chroma, so no project's colour is louder than
+     another's. Mirrored in src/styles/tokens.ts for the canvas. */
+  --accent-friction: #f7a792;
+  --accent-headroom: #8ed09c;
+  --accent-signal: #8cc3fc;
+  --accent-bumper: #e0b771;
+
+  /* THE SPRING CURVES, with the old bezier as the value until the solver
+     has run. They are installed on this element at startup, so the fallback
+     is only ever what the very first paint uses. */
+  --e-fast: var(--spring-spatial-fast, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-move: var(--spring-spatial-default, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-slow: var(--spring-spatial-slow, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-hover: var(--spring-effects-fast, cubic-bezier(0.23, 1, 0.32, 1));
+  --e-fade: var(--spring-effects-default, cubic-bezier(0.23, 1, 0.32, 1));
+  --t-fast: var(--dur-spatial-fast, 400ms);
+  --t-move: var(--dur-spatial-default, 550ms);
+  --t-slow: var(--dur-spatial-slow, 740ms);
+  --t-hover: var(--dur-effects-fast, 310ms);
+  --t-fade: var(--dur-effects-default, 420ms);
+
+  --r: 2px;
+  --r-press: 10px;
+  --d-short: 240ms;
+  --d-long: 560ms;
+  /* stronger than the built-in curves, which are too weak to read as
+     intentional at these durations */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  position: relative;
+  min-height: 100svh;
+  background: var(--void);
+  color: var(--ink-1);
+  scroll-padding-top: 96px;
+
+  /* where the object is, so the glow sits under the thing it belongs to and
+     never under the copy. The same two placements the field itself uses, and
+     a third for the contact section, where it returns to the middle. */
+  /* which half the object is in. The chapters alternate, so this does too,
+     and the light goes with it. */
+  --side: 68%;
+  --glow-x: var(--side);
+  --glow-y: 50%;
+
+  /* the page-level key is allowed to take longer than the token's natural
+     settle, because a colour crossing the whole screen at UI speed reads as
+     a flicker */
+  transition:
+    --chapter-accent 600ms var(--e-fade),
+    --glow-x 600ms var(--e-fade),
+    --glow-y 600ms var(--e-fade);
+}
+
+/* ── the three layers behind everything ──
+   Back to front: an accent glow under the object, a vignette that pulls the
+   corners down, then grain over both. All three are decoration, all three are
+   fixed, none of them can be reached by the pointer. */
+
+/* 1. THE GLOW IS THE OBJECT'S OWN LIGHT. It is centred where the formation
+      is, carries the chapter's key, and drops to a neutral four per cent in
+      the hero and the contact section, where there is no project to be in. */
+.v2.rs::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(45vmax 45vmax at var(--glow-x, 68%) var(--glow-y, 50%), var(--accent) 0%, transparent 70%);
+  opacity: 0.07;
+  /* its own layer: a full-viewport gradient that repaints with the page is
+     the most expensive kind of decoration there is */
+  will-change: opacity;
+  transition: opacity 600ms var(--e-fade);
+}
+.v2.rs[data-zone="hero"]::before,
+.v2.rs[data-zone="end"]::before { opacity: 0.04; }
+.v2.rs[data-side="left"] { --side: 32%; }
+
+/* 2. THE VIGNETTE holds the corners down so the eye stays in the middle. */
+.v2.rs::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.35) 100%);
+  /* never changes, so it is rasterised once and composited after that */
+  transform: translateZ(0);
+}
+
+/* text sits above all three */
+.v2.rs main { position: relative; z-index: 5; }
+
+/* EVERYTHING READS THE ONE ANIMATED VALUE. The chapters used to colour
+   themselves from their own data-accent, which is fixed, so the page chrome
+   cut between keys while the canvas crossfaded and the two were never in the
+   same colour at the same time. The page root owns the key now and the
+   chapters inherit it.
+
+   The contact cards are the exception and have to be: both are on screen at
+   once, so each keeps its own colour rather than borrowing the page's. */
+.v2.rs { --accent: var(--chapter-accent, #eef1f5); }
+.v2.rs .rs-reach-btn[data-accent="friction"] { --accent: var(--accent-friction); }
+.v2.rs .rs-reach-btn[data-accent="headroom"] { --accent: var(--accent-headroom); }
+.v2.rs .rs-reach-btn[data-accent="signal"] { --accent: var(--accent-signal); }
+.v2.rs .rs-reach-btn[data-accent="bumper"] { --accent: var(--accent-bumper); }
+
+.v2.rs :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.v2.rs ::selection { background: color-mix(in oklch, var(--accent) 35%, transparent); color: #fff; }
+.v2.rs .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+
+/* ── the field ──
+   Fixed, behind everything, pointer-transparent. It is one canvas and it is
+   the only canvas. */
+.v2.rs .rs-field {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* THE LATTICE DISSOLVES TOWARD THE COPY, it does not stop at a line. The
+     canvas is the full viewport, so without this the field ends at a hard
+     vertical edge, and in the hero that edge ran straight through the middle
+     of "Then ships it.". A mask is the right tool rather than moving the
+     object, because the object has to stay centred in its own perspective.
+
+     IT IS SYMMETRIC NOW, AND IT HAS TO BE. The old mask cleared the left
+     half of the screen, which worked for as long as the object was always on
+     the right. The chapters alternate sides, so a one-sided mask ate the
+     mirrored ones. Keeping the copy legible is the field's own job now, done
+     per point against the actual rectangle of the text; this is only here to
+     stop the field hitting the edges of the window.
+
+     The #000 in these gradients is a stencil, not a colour: a mask reads
+     only alpha, so the token rule does not apply and swapping in var(--void)
+     would say something untrue about what the value is for. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
+}
+/* STACKED. The same test the field makes in script: not wide enough, or not
+   wide for its height. Both halves have to agree or the object is placed for
+   one layout and the type for the other. */
+@media (max-width: 1023.98px), (max-aspect-ratio: 5 / 4) {
+  /* THE SPLIT IS HORIZONTAL HERE. There is no second column to sit
+     beside, so the object takes the top of the screen and the copy the
+     bottom, and the field is gone well before the first line of type rather
+     than lying dimly behind all of it. */
+  .v2.rs .rs-field {
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
+  }
+  /* stacked, there is only one half, so the light is simply above the copy.
+     Declared on the same selector as the base value and later in the file, so
+     it wins over the side parity without an id or an !important. */
+  .v2.rs { --glow-x: 50%; --glow-y: 30%; }
+  .v2.rs[data-zone="end"] { --glow-y: 50%; }
+}
+
+/* 3. GRAIN. Oversized and jumped to a new offset in steps rather than slid,
+      because grain that slides is a texture moving across the page and grain
+      that jumps is film. Eight offsets is enough: the cycle is under a second
+      and nobody can hear it repeat. */
+.v2.rs .rs-grain {
+  position: fixed;
+  inset: -80px;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.035;
+  will-change: transform;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  animation: rs-grain 0.72s steps(1, end) infinite;
+}
+@keyframes rs-grain {
+  0%   { transform: translate(0, 0); }
+  12.5%{ transform: translate(-37px, 19px); }
+  25%  { transform: translate(23px, -41px); }
+  37.5%{ transform: translate(-11px, -27px); }
+  50%  { transform: translate(44px, 13px); }
+  62.5%{ transform: translate(-29px, 35px); }
+  75%  { transform: translate(17px, 47px); }
+  87.5%{ transform: translate(-45px, -9px); }
+}
+
+.v2.rs main,
+.v2.rs .rs-foot { position: relative; z-index: 5; }
+
+.v2.rs .rs-skip {
+  position: fixed;
+  top: var(--s-4);
+  left: var(--s-4);
+  z-index: 40;
+  padding: var(--s-3) var(--s-5);
+  background: var(--paper);
+  color: var(--void);
+  font-size: 13px;
+  font-weight: 600;
+  transform: translateY(-200%);
+  transition: transform var(--t-fast) var(--e-fast);
+}
+.v2.rs .rs-skip:focus-visible { transform: none; }
+
+/* ══ the hero ═══════════════════════════════════════════════════════════ */
+
+.v2.rs .rs-shell {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding-left: var(--gut);
+  padding-right: calc(var(--gut) + var(--rail));
+}
+@media (min-width: 900px) {
+  .v2.rs { --rail: 96px; }
+}
+
+.v2.rs .rs-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.v2.rs .rs-eyebrow {
+  font-size: var(--t-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 var(--s-5);
+  text-wrap: balance;
+}
+
+.v2.rs .rs-display {
+  margin: 0;
+  font-size: var(--t-display);
+  font-weight: 800;
+  /* tighter only where there is enough type for tight to read as intent */
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+@media (min-width: 1024px) {
+  .v2.rs .rs-display { letter-spacing: -0.052em; }
+}
+.v2.rs .rs-display span { display: block; }
+/* A CLIP PER LINE, so a line can rise out of nothing instead of fading in
+   from nothing. The padding and the matching negative margin are for the
+   descender in "Designs": clip to the line box exactly and the g loses its
+   tail. */
+.v2.rs .rs-line {
+  display: block;
+  overflow: clip;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+/* THE STROKE IS ABSOLUTE, NOT RELATIVE. At 0.016em it scaled with the type,
+   so the outline was 1.8px beside a 112px solid and 0.9px beside a 56px one:
+   the thing that is supposed to read as the same weight as its neighbour got
+   thinner exactly where it had less to work with. */
+.v2.rs .rs-outline {
+  position: relative;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--paper);
+}
+@media (max-width: 767.98px) {
+  .v2.rs .rs-outline { -webkit-text-stroke-width: 1.25px; }
+}
+.v2.rs .rs-ink {
+  position: absolute;
+  inset: 0;
+  color: var(--paper);
+  -webkit-text-stroke: 0;
+  /* the fallback is not decoration: where @property is unsupported the
+     property has no initial value, and a bare var() here would make the
+     whole clip-path invalid, which shows the filled copy from the start */
+  clip-path: inset(0 var(--ink, 100%) 0 0);
+}
+
+.v2.rs .rs-byline {
+  margin: var(--s-6) 0 0;
+  max-width: 38ch;
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.v2.rs .rs-cue {
+  position: absolute;
+  left: var(--gut);
+  bottom: clamp(24px, 5vh, 44px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* A LINE THAT DRAWS ITSELF DOWNWARD, which is the direction it is asking
+   you to go. It grows from the top, then empties from the top, so the motion
+   never reverses: it is always travelling down the way the page does. */
+.v2.rs .rs-cue-line {
+  width: 1px;
+  height: 40px;
+  background: currentColor;
+  animation: rs-cue 2.4s var(--ease-out) infinite;
+}
+@keyframes rs-cue {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  45%  { transform: scaleY(1); transform-origin: top; }
+  55%  { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+/* The opening: the headline arrives while the lattice is still settling, so
+   the two land together rather than taking turns. */
+/* THE WORDS ARRIVE WITH THE LATTICE, not before it. The opening takes 3.4
+   seconds to resolve, and the old reveal was done in 0.9: the sentence had
+   been sitting there for two and a half seconds while the field was still
+   sorting itself out, which is why the whole thing read as rushed and then
+   stalled. Each line now lands against a stage of the resolve, and the last
+   of it settles as the surface does.
+
+   The line that makes the claim comes first and holds the longest. */
+/* LINE ONE IS PAINTED ON THE FIRST FRAME AND NEVER ANIMATED. Fading it in
+   cost 3.36s of Largest Contentful Paint against a 2.5s budget, because
+   Chrome excludes anything at opacity 0 from the measurement: the page had
+   nothing to show for two and a half seconds by its own choice. It is also
+   the one thing homepage usability guidance is blunt about, which is not to
+   animate the headline somebody is trying to read.
+
+   THE HEADLINE WAS NEVER THE THING TO SLOW DOWN. Staging line two to land
+   with the resolve pushed Largest Contentful Paint to 3.6s, because line two
+   is the larger of the pair and therefore the element being measured. The
+   opening feels slow and deliberate because the FIELD takes three and a half
+   seconds to resolve, not because the words withhold themselves: the lattice
+   is still a churning mess long after the sentence has finished arriving,
+   which is the whole effect. The text gets out of the way quickly and lets
+   it. */
+/* NOTHING IN THE HERO HIDES ITSELF AND WAITS. The entrance is one GSAP
+   timeline that runs once a session, and it animates FROM a hidden state to
+   the state the stylesheet already describes. The CSS used to do half of it,
+   which meant two systems owned one element's opacity: the tween captured
+   the CSS's zero as its start value, pinned it inline, and the element never
+   appeared at all. Under reduced motion, or on the second visit, there is
+   simply nothing to run and the words are there. */
+
+/* ══ the chapters ═══════════════════════════════════════════════════════ */
+
+.v2.rs .rs-track { position: relative; }
+
+/* TALLER THAN THE PANEL, OR STICKY DOES NOTHING. A sticky element is
+   constrained to its container, so a 100svh panel inside a 100svh chapter has
+   exactly zero travel: it simply scrolls away like any other block, which is
+   what it was doing. The extra height is also the morph's pacing, because the
+   whole sequence is mapped across this track: more scroll per chapter is a
+   slower, calmer deformation. */
+.v2.rs .rs-chapter { min-height: 175svh; }
+
+/* STICKY, BECAUSE THE SHAPE AND THE SENTENCE HAVE TO BE TRUE AT THE SAME
+   TIME. Letting the panel scroll past meant the copy was leaving the screen
+   while the lattice was still finishing the morph it describes, so the two
+   were only aligned for an instant in the middle. Held for the length of its
+   chapter, you can read the claim and watch the evidence settle. */
+.v2.rs .rs-panel {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* WIDE ENOUGH FOR THE LONGEST TITLE, which is the only real constraint on
+     this column. "Headroom" at the top of the type scale is about 310px, and
+     at the first attempt the padding ate so much of a 403px column that it
+     overflowed by eighty pixels: harmless when it overflowed into empty space
+     on the right, a mess the moment the even chapters mirrored and it
+     overflowed into the object. */
+  width: min(100%, clamp(320px, 30vw, 440px));
+  /* a scrim, because the lattice passes behind the text and type on a moving
+     background is unreadable without one */
+  background: linear-gradient(100deg, color-mix(in oklab, var(--void) 92%, transparent) 48%, transparent 100%);
+  padding-inline: var(--s-6);
+  margin-left: calc(var(--s-6) * -1);
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--d-long) var(--ease-out), transform var(--d-long) var(--ease-out);
+}
+.v2.rs .rs-chapter[data-on] .rs-panel { opacity: 1; transform: none; }
+/* THE TIMELINE OWNS THE REVEAL WHEN THERE IS ONE. The CSS version stays as
+   the no-JavaScript and reduced-motion answer, but two systems animating one
+   element's opacity is how an element ends up stuck at zero. */
+.v2.rs[data-choreographed] .rs-panel { opacity: 1; transform: none; transition: none; }
+
+/* MIRRORED ON THE EVEN CHAPTERS. Four screens of one composition is a
+   template; alternating which side the copy sits on makes the sequence read
+   as four spreads instead. The field moves to the other half to meet it. */
+.v2.rs .rs-chapter:nth-of-type(even) .rs-panel {
+  margin-left: auto;
+  margin-right: calc(var(--s-6) * -1);
+  background: linear-gradient(260deg, color-mix(in oklab, var(--void) 92%, transparent) 48%, transparent 100%);
+}
+
+/* the rhythm, top to bottom: 16, 20, 12, 24, 24 */
+.v2.rs .rs-no {
+  display: block;
+  font-size: var(--t-label);
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  margin-bottom: var(--s-4);
+}
+.v2.rs .rs-title {
+  margin: 0;
+  font-size: var(--t-title);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+/* the result first, because a first pass is a few seconds long */
+.v2.rs .rs-result {
+  margin: 20px 0 0;
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--ink-1);
+  text-wrap: pretty;
+}
+.v2.rs .rs-what {
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.v2.rs .rs-tag {
+  display: block;
+  margin: var(--s-5) 0 0;
+  font-size: var(--t-label);
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+
+.v2.rs .rs-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); }
+.v2.rs .rs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--r);
+  font-size: 13.5px;
+  font-weight: 600;
+  /* the magnetic lean, written straight onto the element by the pointer */
+  transform: translate(var(--bx, 0px), var(--by, 0px));
+  transition: transform var(--t-fast) var(--e-fast), border-color var(--t-hover) var(--e-hover),
+    color var(--t-hover) var(--e-hover), border-radius var(--t-fast) var(--e-fast);
+}
+/* BUTTONS MUST FEEL PRESSED, or the page feels like it is not listening. The
+   corner rounds as it goes down as well as shrinking: a shape that changes
+   under the thumb reads as a physical thing being squashed, where scale alone
+   reads as the whole button moving away from you. */
+.v2.rs .rs-btn:active {
+  transform: translate(var(--bx, 0px), var(--by, 0px)) scale(0.97);
+  border-radius: var(--r-press);
+}
+.v2.rs .rs-btn-solid { background: var(--accent); color: var(--void); }
+.v2.rs .rs-btn-arrow {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: transform var(--t-fast) var(--e-fast);
+}
+.v2.rs .rs-btn:hover .rs-btn-arrow,
+.v2.rs .rs-btn:focus-visible .rs-btn-arrow { transform: translateX(3px); }
+/* the label leans a little further than the tile, which is what makes the
+   magnet read as depth rather than as the whole button sliding */
+.v2.rs .rs-btn-text { transition: transform var(--t-fast) var(--e-fast); }
+
+.v2.rs .rs-btn-ghost {
+  border: 1px solid var(--ink-deco);
+  color: var(--ink-2);
+  font-size: var(--t-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.v2.rs .rs-btn-ghost:hover,
+.v2.rs .rs-btn-ghost:focus-visible {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  color: var(--ink-1);
+}
+
+/* THE DOT IS THE WORD "LIVE" MEANING IT. A label that says live beside a
+   still page is a claim; a pulse is evidence. */
+.v2.rs .rs-dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+.v2.rs .rs-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  animation: rs-ping 2.4s var(--ease-out) infinite;
+}
+@keyframes rs-ping {
+  0%        { transform: scale(1);   opacity: 0.7; }
+  70%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.v2.rs .rs-foot { position: relative; }
+
+/* ══ smaller screens ════════════════════════════════════════════════════ */
+
+@media (pointer: coarse) {
+  .v2.rs .rs-btn { min-height: 48px; }
+}
+
+@media (max-width: 1023.98px), (max-aspect-ratio: 5 / 4) {
+  /* THE 56px FLOOR IN THE SPEC DOES NOT FIT A 390px PHONE: "Then ships it."
+     at that size is wider than the column. This is the largest the long line
+     can be and still land inside the gutters, measured rather than guessed. */
+  .v2.rs { --t-display: clamp(2.9rem, 12.6vw, 4.4rem); }
+  /* THE HERO IS BUILT LIKE A CHAPTER HERE, because on a phone every section
+     is: the object on top, the type under it, the same scrim between them.
+     Centred, the eyebrow landed inside the field's own fade, and a 12px mono
+     line cannot survive that. */
+  /* IN FLOW, NOT PINNED TO THE BOTTOM. The hero is bottom aligned here, so
+     an absolutely positioned cue sits straight on top of the last line of the
+     byline. Below the copy it belongs to the same stack as everything else. */
+  .v2.rs .rs-cue {
+    position: static;
+    margin-top: var(--s-6);
+  }
+  .v2.rs .rs-hero {
+    justify-content: flex-end;
+    padding-bottom: var(--s-7);
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 34%,
+      color-mix(in oklab, var(--void) 92%, transparent) 52%,
+      color-mix(in oklab, var(--void) 96%, transparent) 100%
+    );
+  }
+  .v2.rs .rs-panel {
+    /* FULL BLEED, AND IT HAS TO BE AUTO TO GET THERE. With width: 100% the
+       negative right margin cannot widen the box, only shift what follows,
+       so the scrim stopped one gutter short of the right edge and the field
+       came through at full brightness in that strip. */
+    width: auto;
+    margin-inline: calc(var(--gut) * -1);
+    padding: var(--s-7) var(--gut) var(--s-8);
+    justify-content: flex-end;
+    /* clear at the top, because that is where the object is now */
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--void) 92%, transparent) 56%,
+      color-mix(in oklab, var(--void) 96%, transparent) 100%
+    );
+  }
+  /* NO MIRRORING HERE. There is only one column, so there is no other side
+     to put the copy on, and :nth-of-type beats the plain .rs-panel rule above
+     on specificity whatever the order, so it has to be undone by name. */
+  .v2.rs .rs-chapter:nth-of-type(even) .rs-panel {
+    margin-inline: calc(var(--gut) * -1);
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--void) 92%, transparent) 56%,
+      color-mix(in oklab, var(--void) 96%, transparent) 100%
+    );
+  }
+  .v2.rs .rs-actions .rs-btn { flex: 1; }
+}
+
+/* ══ reduced motion ═════════════════════════════════════════════════════
+   Fewer and gentler, not none. The lattice still deforms with scroll, because
+   that deformation is the content; what goes is the pointer lean, the
+   entrance travel and the settling overshoot. */
+
+@media (prefers-reduced-motion: reduce) {
+  .v2.rs .rs-eyebrow,
+  .v2.rs .rs-display span,
+  .v2.rs .rs-byline,
+  .v2.rs .rs-cue,
+  .v2.rs .rs-panel {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .v2.rs .rs-btn:active { transform: none; }
+  /* grain stays, the jumping does not */
+  .v2.rs .rs-grain { animation: none; }
+  /* the cue is a line, not a metronome; the dot is a dot */
+  .v2.rs .rs-cue-line,
+  .v2.rs .rs-dot::after { animation: none; }
+  .v2.rs .rs-dot::after { opacity: 0; }
+  /* the claim is simply whole */
+  .v2.rs .rs-ink { --ink: 0%; }
+}
+
+/* ══ reach: the last section ════════════════════════════════════════════
+   Two buttons and nothing else to press. They are the only elements on the
+   page with real depth, which is what makes them read as the thing to do.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.v2.rs .rs-reach {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: var(--s-9);
+}
+
+/* THE LAST HEADLINE ECHOES THE FIRST, and finishes when you reach for a way
+   to get in touch. Same solid-then-outline pair as the hero, and the outline
+   inks in from the left when either card has the pointer, so the sentence
+   completes at the moment the page is asking for something. */
+.v2.rs .rs-reach-title {
+  margin: 0 0 clamp(40px, 6vh, 72px);
+  font-size: clamp(2.8rem, 7vw, 6.2rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+.v2.rs .rs-reach-title span { display: block; }
+.v2.rs .rs-reach-title .rs-ink {
+  /* eased rather than scrubbed: this one answers a hover, not a scroll. The
+     registered property is what transitions; clip-path only reads it. */
+  transition: --ink var(--t-fade) var(--e-fade);
+}
+.v2.rs .rs-reach[data-asked] .rs-ink { --ink: 0%; }
+
+.v2.rs .rs-reach-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.4vw, 32px);
+  max-width: 820px;
+  /* the container owns the perspective, so both tiles share one vanishing
+     point and lean as if they were in the same room */
+  perspective: 1200px;
+}
+
+.v2.rs .rs-reach-btn {
+  position: relative;
+  display: block;
+  aspect-ratio: 1.15;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  /* slow on the way back, quick to answer: the lean follows the pointer
+     almost immediately and relaxes over a longer, calmer curve */
+  transition: transform var(--t-slow) var(--e-slow);
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .v2.rs .rs-reach-btn:hover { transition-duration: 120ms; }
+}
+/* A LIGHT THAT FOLLOWS THE POINTER, on the surface and on the edge. Two
+   layers of the same gradient: one fills, one is masked to the border so the
+   1px line brightens exactly where the hand is. */
+.v2.rs .rs-reach-btn::before,
+.v2.rs .rs-reach-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-short) var(--ease-out);
+}
+.v2.rs .rs-reach-btn::before {
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklch, var(--accent) 10%, transparent), transparent 60%);
+}
+.v2.rs .rs-reach-btn::after {
+  padding: 1px;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklch, var(--accent) 70%, transparent), transparent 55%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.v2.rs .rs-reach-btn:hover::before,
+.v2.rs .rs-reach-btn:focus-visible::before,
+.v2.rs .rs-reach-btn:hover::after,
+.v2.rs .rs-reach-btn:focus-visible::after { opacity: 1; }
+.v2.rs .rs-reach-btn:active { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(0.975); }
+
+/* the plate: real geometry behind the face, not a drawn shadow */
+.v2.rs .rs-reach-plate {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--accent) 16%, var(--void));
+  border: 1px solid color-mix(in oklab, var(--accent) 38%, transparent);
+  transform: translateZ(-42px);
+  transition: transform 520ms var(--ease-out), opacity 520ms var(--ease-out);
+  opacity: 0.55;
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-plate,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-plate {
+  transform: translateZ(-78px) scale(1.04);
+  opacity: 1;
+  transition-duration: 220ms;
+}
+
+.v2.rs .rs-reach-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(20px, 2.4vw, 34px);
+  border: 1px solid var(--ink-deco);
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--void) 90%, transparent);
+  transform: translateZ(0);
+  transition: border-color 220ms var(--ease-out), transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-face,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-face {
+  border-color: var(--accent);
+  transform: translateZ(26px);
+  transition-duration: 220ms;
+}
+
+.v2.rs .rs-reach-icon {
+  display: block;
+  color: var(--accent);
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-icon svg { width: clamp(48px, 7vw, 84px); height: auto; display: block; }
+.v2.rs .rs-reach-btn:hover .rs-reach-icon,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-icon {
+  transform: translateZ(54px) scale(1.06);
+  transition-duration: 260ms;
+}
+
+.v2.rs .rs-reach-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: auto;
+  font-size: clamp(1.5rem, 2.6vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-label,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-label {
+  transform: translateZ(34px);
+  transition-duration: 260ms;
+}
+.v2.rs .rs-reach-arrow {
+  width: 0.62em;
+  height: 0.62em;
+  color: var(--accent);
+  transform: translate(-4px, 4px);
+  opacity: 0;
+  transition: transform 260ms var(--ease-out), opacity 260ms var(--ease-out);
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-arrow,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-arrow { transform: none; opacity: 1; }
+
+.v2.rs .rs-reach-detail {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: var(--t-label);
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  transform: translateZ(0);
+  transition: transform 520ms var(--ease-out), color 220ms;
+}
+.v2.rs .rs-reach-btn:hover .rs-reach-detail,
+.v2.rs .rs-reach-btn:focus-visible .rs-reach-detail {
+  color: var(--ink-2);
+  transform: translateZ(34px);
+  transition-duration: 260ms;
+}
+
+/* FOUR ITEMS, FOUR COLUMNS. auto-fit with a 270px floor gave three columns
+   at this width, so BASED wrapped onto a line of its own and the row read as
+   a list that had run out of room. Label above value, left aligned, so the
+   four read as four and not as a table. */
+.v2.rs .rs-credits {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-6) var(--s-6);
+  margin-top: clamp(56px, 9vh, 104px);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--ink-deco);
+}
+@media (min-width: 640px) {
+  .v2.rs .rs-credits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) {
+  .v2.rs .rs-credits { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.v2.rs .rs-credits div { display: flex; flex-direction: column; gap: var(--s-2); }
+.v2.rs .rs-credits span { font-size: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.v2.rs .rs-credits b { font-weight: 400; font-size: 13.5px; color: var(--ink-2); text-wrap: pretty; }
+
+.v2.rs .rs-colophon {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s-7);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+@media (max-width: 767.98px) {
+  .v2.rs .rs-reach-row { grid-template-columns: 1fr; max-width: none; }
+  .v2.rs .rs-reach-btn { aspect-ratio: 1.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the depth stays, the movement goes: the plate and the face keep their
+     separation so the tiles still read as objects, they just do not lean */
+  .v2.rs .rs-reach-btn,
+  .v2.rs .rs-reach-plate,
+  .v2.rs .rs-reach-face,
+  .v2.rs .rs-reach-icon,
+  .v2.rs .rs-reach-label,
+  .v2.rs .rs-reach-detail { transition: none; transform: none; }
+  .v2.rs .rs-reach-plate { transform: translateZ(-42px); opacity: 1; }
+  .v2.rs .rs-reach-arrow { opacity: 1; transform: none; transition: none; }
+}
+
+/* ══ the chapter rail ═══════════════════════════════════════════════════
+   Fixed in the lane the shell keeps clear, and only while there is work to
+   be in: it fades in at the first chapter and out again at the contact
+   section, because a position indicator on a page with one position is just
+   furniture. */
+
+.v2.rs .rs-rail {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  z-index: 6;
+  width: var(--rail);
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fade) var(--e-fade);
+}
+@media (min-width: 900px) {
+  .v2.rs .rs-rail { display: flex; }
+  .v2.rs[data-zone="work"] .rs-rail { opacity: 1; pointer-events: auto; }
+}
+
+.v2.rs .rs-rail-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--t-label);
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+/* ONE DIGIT PAIR AT A TIME, inside a window its own height. The stack of all
+   four slides; the window shows the one that counts. */
+.v2.rs .rs-rail-roll {
+  display: block;
+  overflow: clip;
+  height: 1em;
+  color: var(--accent);
+}
+.v2.rs .rs-rail-roll > span {
+  display: block;
+  transition: transform var(--t-move) var(--e-move);
+}
+.v2.rs .rs-rail-roll span span { display: block; height: 1em; line-height: 1; }
+
+.v2.rs .rs-rail-ticks { display: flex; flex-direction: column; gap: 14px; list-style: none; }
+.v2.rs .rs-rail-ticks button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* the mark is 24 by 1; the target is 44 tall, because those are different
+     questions */
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.v2.rs .rs-rail-mark {
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--ink-deco);
+  transition: width var(--t-move) var(--e-move), background-color var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-rail-ticks button[data-on] .rs-rail-mark { width: 40px; background: var(--accent); }
+.v2.rs .rs-rail-ticks button:hover .rs-rail-mark { background: var(--ink-2); }
+
+.v2.rs .rs-rail-name {
+  position: absolute;
+  right: calc(100% + var(--s-3));
+  padding: 4px 8px;
+  background: var(--void);
+  color: var(--ink-1);
+  font-size: var(--t-label);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+  transition: opacity var(--t-hover) var(--e-hover), transform var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-rail-ticks button:hover .rs-rail-name,
+.v2.rs .rs-rail-ticks button:focus-visible .rs-rail-name { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2.rs .rs-rail-roll > span,
+  .v2.rs .rs-rail-mark { transition: none; }
+}
+
+/* ══ into the case study ════════════════════════════════════════════════
+   The chapter title and the case study's own headline are the same element
+   as far as the browser is concerned, so one becomes the other rather than
+   both cross-fading. Everything else is the root transition that was already
+   here. Unsupported browsers navigate normally; there is no polyfill. */
+
+::view-transition-group(project-title) {
+  animation-duration: 500ms;
+  animation-timing-function: var(--spring-spatial-default, cubic-bezier(0.23, 1, 0.32, 1));
+}
+::view-transition-old(project-title),
+::view-transition-new(project-title) {
+  animation-duration: 250ms;
+  animation-timing-function: var(--spring-effects-default, ease);
+  /* let the group's morph carry the move; these only need to swap */
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(project-title) { animation-duration: 150ms; }
+  ::view-transition-old(project-title),
+  ::view-transition-new(project-title) { animation-duration: 150ms; }
+}

@@ -91,7 +91,7 @@ export function SignalCasePage() {
   }, []);
 
   return (
-    <CaseShell accent="cyan" live={{ href: LIVE, label: "LIVE" }}>
+    <CaseShell accent="signal" live={{ href: LIVE, label: "LIVE" }}>
       <CaseHero
         meta={
           <>
@@ -224,7 +224,7 @@ export function SignalCasePage() {
         ]}
       />
 
-      <NextCase to="/bumper" name="Bumper" tag="BEHAVIOURAL · EXTENSION" accent="gold" />
+      <NextCase to="/bumper" name="Bumper" tag="BEHAVIOURAL · EXTENSION" accent="bumper" />
       <CaseFoot />
     </CaseShell>
   );

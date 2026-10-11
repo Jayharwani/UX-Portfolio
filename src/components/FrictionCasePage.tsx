@@ -99,7 +99,7 @@ export function FrictionCasePage({ embedded = false }: { embedded?: boolean } = 
   }, []);
 
   return (
-    <CaseShell accent="teal" chrome={!embedded} live={{ href: LIVE, label: "LIVE" }}>
+    <CaseShell accent="friction" chrome={!embedded} live={{ href: LIVE, label: "LIVE" }}>
       <CaseHero
         backdrop={<Funnel />}
         meta={
@@ -522,7 +522,7 @@ export function FrictionCasePage({ embedded = false }: { embedded?: boolean } = 
 
       {embedded ? null : (
         <>
-          <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="mint" />
+          <NextCase to="/headroom" name="Headroom" tag="LOCAL-FIRST FINANCE · REACT" accent="headroom" />
           <CaseFoot />
         </>
       )}
