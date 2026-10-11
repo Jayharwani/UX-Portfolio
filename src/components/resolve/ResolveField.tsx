@@ -3,7 +3,7 @@ import { createField, type FieldHandle } from "../../lib/pointField";
 import { gsap } from "gsap";
 import { onFrame } from "../../lib/clock";
 import { getLenis } from "./SmoothScroll";
-import { ANIMATED, type ShapeName } from "../../lib/shapes";
+import { ANIMATED, setLattice, type ShapeName } from "../../lib/shapes";
 import { TOKENS } from "../../styles/tokens";
 import { ISSUES } from "../../data/issues";
 
@@ -123,10 +123,24 @@ export function ResolveField({
     const host = track.current;
     if (!el || !host) return;
 
+    /* HOW MANY POINTS THIS SCREEN GETS, decided before the field exists
+       because every buffer in it is sized from this. A phone shows the object
+       at about two thirds scale on a third of the width, so five thousand
+       dots there are three thousand it cannot resolve — and each one is a
+       sprite to rasterise and three floats up the bus, which is the budget a
+       phone GPU is actually short of. Reduced motion takes the small lattice
+       too: the field still deforms, it just has less to say. */
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const small = window.innerWidth < 900 || reduce.matches;
+    /* 0.82 is two thirds of the points, not half: at half the Beltway thinned
+       into dust and the numeral went grainy, and the two cheaper levers — a
+       1.5 pixel ratio and no second pass — had already taken most of the fill
+       cost out. Measured on the shapes that need the most points to read. */
+    setLattice(small ? 0.82 : 1);
+
     const handle = createField(el, TOKENS.paper, TOKENS[ISSUES[0].accent]);
     field.current = handle;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     let active = -1;
     let zone: Zone | null = null;
 

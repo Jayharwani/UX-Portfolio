@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SHAPES, WAVES, COUNT, ANIMATED, cell, type ShapeName } from "./shapes";
+import { SHAPES, WAVES, COUNT, ANIMATED, isLive, cell, type ShapeName } from "./shapes";
 import { TOKENS } from "../styles/tokens";
 
 /* --------------------------------------------------------------------------
@@ -91,6 +91,11 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 export function createField(canvas: HTMLCanvasElement, paper: string, accent: string): FieldHandle {
+  /* HOW MANY POINTS THIS DEVICE GETS, read once. Every buffer below is sized
+     from it and every per-frame loop is bounded by it, so it cannot change
+     after this without rebuilding the field — which is exactly what a resize
+     across the breakpoint does. */
+  const N = COUNT();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
   renderer.setClearAlpha(0);
 
@@ -106,32 +111,32 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
      pos is where the points are, target is where they are going, vel is what
      the spring is doing. Keeping all three as flat Float32Arrays means the
      integration loop never allocates. */
-  const pos = new Float32Array(COUNT * 3);
-  const vel = new Float32Array(COUNT * 3);
-  const target = new Float32Array(COUNT * 3);
-  const lit = new Float32Array(COUNT);
-  const size = new Float32Array(COUNT);
+  const pos = new Float32Array(N * 3);
+  const vel = new Float32Array(N * 3);
+  const target = new Float32Array(N * 3);
+  const lit = new Float32Array(N);
+  const size = new Float32Array(N);
 
   /* scratch for the two shapes being blended */
-  const aPos = new Float32Array(COUNT * 3);
-  const aLit = new Float32Array(COUNT);
-  const aSize = new Float32Array(COUNT);
-  const bPos = new Float32Array(COUNT * 3);
-  const bLit = new Float32Array(COUNT);
-  const bSize = new Float32Array(COUNT);
+  const aPos = new Float32Array(N * 3);
+  const aLit = new Float32Array(N);
+  const aSize = new Float32Array(N);
+  const bPos = new Float32Array(N * 3);
+  const bLit = new Float32Array(N);
+  const bSize = new Float32Array(N);
 
   /** a fixed random per point, for the handful of things that want a stable
    *  identity: which dots twinkle, which read as highlights */
-  const seed = new Float32Array(COUNT);
+  const seed = new Float32Array(N);
   /** how far through the accent crossfade each point is, so colour sweeps
    *  across the object instead of every dot changing on the same frame */
-  const blend = new Float32Array(COUNT);
+  const blend = new Float32Array(N);
   /** each point's place in the queue, fixed once so the wave is the same
    *  wave every time rather than re-shuffling on each morph */
-  const delay = new Float32Array(COUNT);
+  const delay = new Float32Array(N);
   /** which way each point swells on its way between two shapes */
-  const puff = new Float32Array(COUNT * 3);
-  for (let i = 0; i < COUNT; i++) {
+  const puff = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
     const r = Math.sin(i * 12.9898) * 43758.5453;
     delay[i] = (r - Math.floor(r)) * STAGGER;
 
@@ -158,7 +163,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     puff[i * 3 + 2] = (dz / len) * 1.3;
   }
 
-  SHAPES.drift(pos, lit, size, COUNT, 0, 1);
+  SHAPES.drift(pos, lit, size, N, 0, 1);
   target.set(pos);
 
   let cachedFrom: ShapeName | null = null;
@@ -411,9 +416,15 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            twice is what blows the middle out */
         if (vSeed < 0.85) discard;`,
   );
-  const glints = new THREE.Points(geometry, glintMaterial);
-  glints.frustumCulled = false;
-  points.add(glints);
+  /* ...and it is a luxury, so it is the first thing a phone does without: it
+     doubles the sprites drawn, for a sparkle nobody is looking that closely
+     at on a screen held at arm's length. */
+  const wantsGlints = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (wantsGlints) {
+    const glints = new THREE.Points(geometry, glintMaterial);
+    glints.frustumCulled = false;
+    points.add(glints);
+  }
 
   const pointer = { x: 0, y: 0 };
   const accentNow = material.uniforms.uAccent.value as THREE.Color;
@@ -444,7 +455,13 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     if (dead) return;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    /* TWO IS TOO MANY ON A PHONE. These are alpha-blended sprites, so the
+       cost here is fill rate and fill rate is pixels: a 390 wide screen at a
+       ratio of 2 is 1.3 million of them every frame, most covered more than
+       once. At 1.5 it is 740 thousand, and nothing about a four-pixel dot is
+       visibly coarser for it. */
+    const cap = window.innerWidth < 900 ? 1.5 : 2;
+    const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -460,14 +477,16 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
     morph(from, to, p, time = 0) {
       /* an animated state has to be rewritten every call; a static one only
          when it actually changes */
-      if (from !== cachedFrom || ANIMATED.has(from)) {
-        /* the state being left is finished by definition: phase 1 */
-        SHAPES[from](aPos, aLit, aSize, COUNT, time, 1);
+      /* THE STATE BEING LEFT IS AT PHASE 1 BY DEFINITION, so unless it moves
+         on its own clock it is a constant, and rewriting it every frame threw
+         away a third of this function for nothing. */
+      if (from !== cachedFrom || isLive(from)) {
+        SHAPES[from](aPos, aLit, aSize, N, time, 1);
         cachedFrom = from;
       }
       if (to !== cachedTo || ANIMATED.has(to)) {
         /* and the one being arrived at knows how far in the reader is */
-        SHAPES[to](bPos, bLit, bSize, COUNT, time, p);
+        SHAPES[to](bPos, bLit, bSize, N, time, p);
         cachedTo = to;
       }
       /* WHICH WAY THE WAVE RUNS IS FREE MEANING. A morph where every point
@@ -477,10 +496,10 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          perfectly ordered wave reads as a wipe. */
       const wave = WAVES[to];
       const span = 1 - STAGGER;
-      for (let i = 0; i < COUNT; i++) {
+      for (let i = 0; i < N; i++) {
         const i3b = i * 3;
         let lead: number;
-        if (wave === "along") lead = i / COUNT;
+        if (wave === "along") lead = i / N;
         else if (wave === "around") lead = (Math.atan2(bPos[i3b + 1], bPos[i3b]) + Math.PI) / (Math.PI * 2);
         else if (wave === "across") lead = (bPos[i3b] + 1.6) / 3.2;
         else lead = (1.1 - bPos[i3b + 1]) / 2.2;
@@ -518,7 +537,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            point chases a target that is still wandering on its own orbit, and
            the wander decays to nothing. The springs do not change: what
            changes is how settled the thing they are chasing is. */
-        for (let i = 0; i < COUNT; i++) {
+        for (let i = 0; i < N; i++) {
           const i3 = i * 3;
           const seed = i * 0.7531;
           const wobble = churn * 1.9;
@@ -533,14 +552,16 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
           pos[i3 + 2] += vel[i3 + 2] * dt;
         }
       } else {
-        for (let i = 0; i < COUNT * 3; i++) {
+        for (let i = 0; i < N * 3; i++) {
           const a = (target[i] - pos[i]) * STIFFNESS - vel[i] * DAMPING;
           vel[i] += a * dt;
           pos[i] += vel[i] * dt;
         }
       }
       geometry.attributes.position.needsUpdate = true;
-      geometry.attributes.aVel.needsUpdate = true;
+      /* the smear is a desktop detail; on a phone this would be sixty
+         kilobytes a frame crossing the bus for something too small to see */
+      if (wantsGlints) geometry.attributes.aVel.needsUpdate = true;
 
       /* the whole field leans toward the pointer: enough to feel answered,
          not enough to be a toy */
@@ -601,7 +622,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       if (accentT < 1) {
         accentT = Math.min(1, accentT + dt * ACCENT_RATE);
         const sp = 1 - STAGGER;
-        for (let i = 0; i < COUNT; i++) blend[i] = smoothstep(clamp01((accentT - delay[i]) / sp));
+        for (let i = 0; i < N; i++) blend[i] = smoothstep(clamp01((accentT - delay[i]) / sp));
         geometry.attributes.aBlend.needsUpdate = true;
         if (accentT >= 1) accentNow.copy(accentTarget);
       }
@@ -681,7 +702,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
          has one motion language rather than an overture and then a different
          piece of software. It also cannot desynchronise from the scroll
          state, because it never touches the target. */
-      for (let i = 0; i < COUNT; i++) {
+      for (let i = 0; i < N; i++) {
         const i3 = i * 3;
         const a = i * 2.399963;
         const r = Math.sin(i * 12.9898) * 43758.5453;
@@ -695,7 +716,9 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         vel[i3 + 2] = 0;
       }
       geometry.attributes.position.needsUpdate = true;
-      geometry.attributes.aVel.needsUpdate = true;
+      /* the smear is a desktop detail; on a phone this would be sixty
+         kilobytes a frame crossing the bus for something too small to see */
+      if (wantsGlints) geometry.attributes.aVel.needsUpdate = true;
     },
 
     resize,

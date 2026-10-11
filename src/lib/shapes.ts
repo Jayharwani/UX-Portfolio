@@ -41,27 +41,66 @@ export type ShapeWriter = (
   phase: number,
 ) => void;
 
-/** the states that have to be recomputed every frame rather than only when
- *  the scroll moves: the ones that are alive, and the ones that act. */
-export const ANIMATED = new Set<string>(["drift", "friction", "headroom", "signal", "bumper", "reach"]);
+/* WHICH STATES HAVE TO BE REWRITTEN, AND WHEN. Two different reasons, and
+   collapsing them into one set cost a third of the per-frame shape work for
+   nothing.
 
-/** The lattice. 96 x 54 is 5,184 points. At 64 x 36 the spacing came out at
- *  about 25 screen pixels on a full-height canvas and the weave read as
- *  scattered dust; this is close enough together to be a surface and still
- *  far enough apart that you can see the individual points move. */
-export const COLS = 96;
-export const ROWS = 54;
-export const COUNT = COLS * ROWS;
+   LIVE states move on their own clock: the sphere turns, the map's events
+   pulse. They have to be rewritten every frame wherever they appear.
+
+   ACTING states only move with the reader: the funnel empties, the gauge
+   fills, the cart rolls. They have to be rewritten while they are the state
+   being arrived at, because that is when their phase is changing — but the
+   state being LEFT is always at phase 1, which for these is a constant, so
+   it can be written once and cached. */
+const LIVE = new Set<string>(["drift", "reach", "signal"]);
+const ACTING = new Set<string>(["friction", "headroom", "bumper"]);
+
+/** true if this state changes under its own power, wherever it is used */
+export const isLive = (name: string): boolean => LIVE.has(name);
+/** true if this state changes at all, which is what the scroll loop asks */
+export const ANIMATED = new Set<string>([...LIVE, ...ACTING]);
+
+/* THE LATTICE, AND HOW BIG IT IS ON THE DEVICE IN FRONT OF YOU.
+   96 x 54 is 5,184 points. At 64 x 36 the spacing came out at about 25 screen
+   pixels on a full-height canvas and the weave read as scattered dust; this is
+   close enough together to be a surface and still far enough apart that you
+   can see the individual points move.
+
+   ON A PHONE IT IS FEWER, and the reason is fill rate, not arithmetic. A
+   profile of a full scroll says the main thread is idle 94% of the time and
+   the springs cost under two milliseconds a frame, so the loops were never
+   the problem; what costs is rasterising thousands of overlapping
+   alpha-blended sprites, and that is the one budget a phone GPU is actually
+   short of. Halving the points halves the sprites and halves the bytes going
+   up the bus with them. A 390 pixel screen showing the object at two thirds
+   scale could not resolve five thousand dots anyway.
+
+   Set before the field is built; the buffers are sized from it. */
+const LATTICE = { cols: 96, rows: 54, count: 96 * 54 };
+
+export const COLS = () => LATTICE.cols;
+export const ROWS = () => LATTICE.rows;
+export const COUNT = () => LATTICE.count;
+
+/** Scale the weave, keeping its proportions so nothing that reads it as a
+ *  grid has to know. 1 is the full lattice. */
+export function setLattice(scale: number): void {
+  LATTICE.cols = Math.max(8, Math.round(96 * scale));
+  LATTICE.rows = Math.max(8, Math.round(54 * scale));
+  LATTICE.count = LATTICE.cols * LATTICE.rows;
+}
 
 /** Where point i sits in the weave, -1 to 1 on both axes. */
 export function cell(i: number): { u: number; v: number; col: number; row: number } {
-  const col = i % COLS;
-  const row = (i / COLS) | 0;
+  const cols = LATTICE.cols;
+  const col = i % cols;
+  const row = (i / cols) | 0;
   return {
     col,
     row,
-    u: (col / (COLS - 1)) * 2 - 1,
-    v: 1 - (row / (ROWS - 1)) * 2,
+    u: (col / (cols - 1)) * 2 - 1,
+    v: 1 - (row / (LATTICE.rows - 1)) * 2,
   };
 }
 
@@ -219,7 +258,11 @@ export const friction: ShapeWriter = (pos, lit, size, n, _time, phase) => {
    committed, and the gap left at the end of it is the answer to the question
    the product exists to answer. */
 const RING_SHARE = 0.24;
-const RING_R = 0.99;
+/* THE ONE FORMATION WIDER THAN THE ICONS, so it is the one that decides
+   whether anything clips. At 0.99 the dial touched both gutters on a 390
+   phone and would have run off a 360 one; this leaves a tenth of the frame
+   either side and still reads as a dial filling the width. */
+const RING_R = 0.92;
 export const headroom: ShapeWriter = (pos, lit, size, n, _time, phase) => {
   const ringN = Math.round(n * RING_SHARE);
   writeIcon("headroom", pos, lit, size, n, ringN, n - ringN, ICON_SCALE * 0.64, 0, 0);
@@ -417,7 +460,7 @@ export const reach: ShapeWriter = (pos, lit, size, n, time) => {
 export const sent: ShapeWriter = (pos, lit, size, n) => {
   for (let i = 0; i < n; i++) {
     const { u, v, col } = cell(i);
-    const along = (col / (COLS - 1));
+    const along = col / (COLS() - 1);
     /* a narrow beam angled up and to the right, tightening as it travels */
     const taper = 1 - 0.88 * Math.pow(along, 0.8);
     const drift = (rand(i * 3.3) - 0.5) * 0.1;
