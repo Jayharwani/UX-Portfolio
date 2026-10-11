@@ -145,7 +145,7 @@ body:has(.v2.rs) {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(45vmax 45vmax at var(--glow-x) var(--glow-y), var(--accent) 0%, transparent 70%);
+  background: radial-gradient(45vmax 45vmax at var(--glow-x, 68%) var(--glow-y, 50%), var(--accent) 0%, transparent 70%);
   opacity: 0.07;
   /* its own layer: a full-viewport gradient that repaints with the page is
      the most expensive kind of decoration there is */
@@ -179,7 +179,7 @@ body:has(.v2.rs) {
 
    The contact cards are the exception and have to be: both are on screen at
    once, so each keeps its own colour rather than borrowing the page's. */
-.v2.rs { --accent: var(--chapter-accent); }
+.v2.rs { --accent: var(--chapter-accent, #eef1f5); }
 .v2.rs .rs-reach-btn[data-accent="friction"] { --accent: var(--accent-friction); }
 .v2.rs .rs-reach-btn[data-accent="headroom"] { --accent: var(--accent-headroom); }
 .v2.rs .rs-reach-btn[data-accent="signal"] { --accent: var(--accent-signal); }
@@ -350,7 +350,10 @@ body:has(.v2.rs) {
   inset: 0;
   color: var(--paper);
   -webkit-text-stroke: 0;
-  clip-path: inset(0 var(--ink) 0 0);
+  /* the fallback is not decoration: where @property is unsupported the
+     property has no initial value, and a bare var() here would make the
+     whole clip-path invalid, which shows the filled copy from the start */
+  clip-path: inset(0 var(--ink, 100%) 0 0);
 }
 
 .v2.rs .rs-byline {

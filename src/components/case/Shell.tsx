@@ -12,16 +12,22 @@ import "../../styles/case.css";
    the four pages drifting apart again.
    -------------------------------------------------------------------------- */
 
-export type CaseAccent = "mint" | "cyan" | "gold" | "teal" | "emerald";
+export type CaseAccent = "friction" | "headroom" | "signal" | "bumper" | "emerald";
 
+/* THE SAME FOUR KEYS THE HOMEPAGE USES, and named the same way. These were
+   mint, cyan, gold and teal: the old homepage palette, under colour names,
+   left behind when the homepage moved to four hues spaced around the wheel.
+   A visitor who clicks through from a chapter should not watch the colour
+   they just followed change into a different one.
+
+   Every one of them carries at least 10.4:1 against the dark shell's ground,
+   where the old teal managed 8.35. They are only ever a decorative fill here
+   — a progress rail and a pulse — so nothing is set in --void on top of them. */
 export const ACCENTS: Record<CaseAccent, string> = {
-  mint: "#5FD8A4",
-  cyan: "#5FD3D8",
-  gold: "#E9C58B",
-  /* Friction's own primary, hue 172, taken from the live site rather than
-     picked to fit the set. It is deeper and greener than mint and colder than
-     cyan, which is the only reason five accents still read as five. */
-  teal: "#3FB9A6",
+  friction: "#F7A792",
+  headroom: "#8ED09C",
+  signal: "#8CC3FC",
+  bumper: "#E0B771",
   /* Headroom's emerald, sampled from the running app. Mint is the same brand
      colour tuned for a dark ground and is what the work index still lights
      that row with; on paper it has nowhere near enough contrast, so the light

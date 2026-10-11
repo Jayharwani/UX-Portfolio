@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { SmoothScroll } from "./print-run/SmoothScroll";
+import { SmoothScroll } from "./resolve/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
 import { Chapter } from "./resolve/Chapter";
 import { Reach } from "./resolve/Reach";

@@ -9,8 +9,7 @@ const HeadroomPage = lazy(() => import("./components/HeadroomPage").then((m) => 
 const FrictionPage = lazy(() => import("./components/FrictionPage").then((m) => ({ default: m.FrictionPage })));
 const AboutPage = lazy(() => import("./components/AboutPage").then((m) => ({ default: m.AboutPage })));
 
-/* The homepage. HomeV2 and HomePrintRun are still in the tree, unimported,
-   so a rollback is one import. */
+/* The homepage. */
 const HomeResolve = lazy(() => import("./components/HomeResolve").then((m) => ({ default: m.HomeResolve })));
 
 function RouteFallback() {

@@ -3,7 +3,9 @@
 
    The canvas field needs real numbers, and a second hand-typed copy of a hex
    value is a drift waiting to happen. These are the same six colours declared
-   on .v2.rs in resolve.css and nothing else may introduce a hue.
+   on .v2.rs in resolve.css and nothing else may introduce a hue. The two
+   copies are checked by eye, not by a script: an earlier comment here cited
+   a scripts/check-tokens.mjs that has never existed.
 
    THE ACCENTS ARE NAMED FOR PROJECTS, NOT FOR COLOURS. They used to be teal,
    mint, cyan and gold, which was accurate and was the problem: three of the

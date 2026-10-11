@@ -171,7 +171,7 @@ export function BumperCasePage() {
   const [edgeRef, edgeSeen] = useReveal<HTMLDivElement>();
 
   return (
-    <CaseShell accent="gold" live={{ href: STORE, label: "CHROME STORE" }}>
+    <CaseShell accent="bumper" live={{ href: STORE, label: "CHROME STORE" }}>
       <CaseHero
         meta={
           <>
@@ -446,7 +446,7 @@ export function BumperCasePage() {
         ]}
       />
 
-      <NextCase to="/friction" name="Friction" tag="REVIEW MINING · ASTRO" accent="teal" />
+      <NextCase to="/friction" name="Friction" tag="REVIEW MINING · ASTRO" accent="friction" />
       <CaseFoot />
     </CaseShell>
   );

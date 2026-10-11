@@ -168,6 +168,9 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geometry.setAttribute("aLit", new THREE.BufferAttribute(lit, 1));
   geometry.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+  /* the spring integrator's own velocity, shared rather than recomputed: it
+     is already the exact number the smear wants */
+  geometry.setAttribute("aVel", new THREE.BufferAttribute(vel, 3));
   geometry.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
   geometry.setAttribute("aBlend", new THREE.BufferAttribute(blend, 1));
 
@@ -215,9 +218,11 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       varying float vFade;
       varying float vDepth;
       varying float vSafe;
+      attribute vec3 aVel;
       varying float vSeed;
       varying float vBlend;
       varying float vLight;
+      varying vec2 vStretch;
 
       /** how far past the rectangle a point has to be before it is free of
        *  it. A hard edge would draw the copy's bounding box in dots. */
@@ -229,6 +234,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       const float REACH = 120.0;
       /** and how far out of the way it goes */
       const float REPEL = 28.0;
+      /** the longest a sprite may smear, as a multiple of its own width */
+      const float STRETCH = 2.5;
 
       void main() {
         vLit = aLit;
@@ -287,6 +294,19 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         }
 
         if (px != px0) clip.xy = ((px / uRes) * 2.0 - 1.0) * clip.w;
+
+        /* A MOVING POINT IS A SMEAR, NOT A DOT. A point sprite is square and
+           cannot be made rectangular, but what is drawn inside it can be: the
+           fragment shader squashes its own coordinates across the direction
+           of travel, which lengthens the disc along it. Projecting one step
+           ahead rather than differencing frames keeps it in screen space, so
+           a point moving fast in world units but barely at all on screen,
+           which is most of what the camera does, correctly does not smear. */
+        vec4 ahead = projectionMatrix * modelViewMatrix * vec4(position + aVel, 1.0);
+        vec2 move = ((ahead.xy / ahead.w) - (clip.xy / clip.w)) * uRes * 0.5;
+        float speed = length(move);
+        vStretch = speed > 0.5 ? (move / speed) * min(STRETCH, 1.0 + speed * 0.07) : vec2(0.0);
+
         gl_Position = clip;
       }`,
     fragmentShader: /* glsl */ `
@@ -307,6 +327,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       varying float vSeed;
       varying float vBlend;
       varying float vLight;
+      varying vec2 vStretch;
 
       void main() {
         /* EVERY POINT IS A LIT SPHERE, NOT A DISC. A flat circle of uniform
@@ -315,6 +336,14 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
            hemisphere normal from gl_PointCoord costs one sqrt and turns each
            dot into a small object with a terminator and a highlight. */
         vec2 d = gl_PointCoord * 2.0 - 1.0;
+        /* squashing across the direction of travel is the same thing as
+           stretching along it, once the disc is cut out of the square */
+        float smear = length(vStretch);
+        if (smear > 1.0) {
+          vec2 dir = vStretch / smear;
+          float along = dot(d, dir);
+          d = dir * (along / smear) + (d - dir * along);
+        }
         float r2 = dot(d, d);
         if (r2 > 1.0) discard;
         float r = sqrt(r2);
@@ -365,6 +394,26 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
 
   const points = new THREE.Points(geometry, material);
   scene.add(points);
+
+  /* THE HIGHLIGHTS GET THEIR OWN PASS, because they need the one blend mode
+     the rest of the field must not have. Additive over a dense cloud blows
+     the middle out to white, which is exactly where the shape is; over a
+     scattered sixth of the points it is the only thing that reads as light
+     rather than as paint. One extra draw call over the same buffers: no
+     geometry, no second set of springs, nothing that can fall out of sync. */
+  const glintMaterial = material.clone();
+  glintMaterial.blending = THREE.AdditiveBlending;
+  glintMaterial.uniforms = material.uniforms;
+  glintMaterial.fragmentShader = material.fragmentShader.replace(
+    "void main() {",
+    `void main() {
+        /* the pass underneath has already drawn everything else; drawing it
+           twice is what blows the middle out */
+        if (vSeed < 0.85) discard;`,
+  );
+  const glints = new THREE.Points(geometry, glintMaterial);
+  glints.frustumCulled = false;
+  points.add(glints);
 
   const pointer = { x: 0, y: 0 };
   const accentNow = material.uniforms.uAccent.value as THREE.Color;
@@ -491,6 +540,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         }
       }
       geometry.attributes.position.needsUpdate = true;
+      geometry.attributes.aVel.needsUpdate = true;
 
       /* the whole field leans toward the pointer: enough to feel answered,
          not enough to be a toy */
@@ -645,6 +695,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         vel[i3 + 2] = 0;
       }
       geometry.attributes.position.needsUpdate = true;
+      geometry.attributes.aVel.needsUpdate = true;
     },
 
     resize,

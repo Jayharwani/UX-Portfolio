@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createField, type FieldHandle } from "../../lib/pointField";
 import { gsap } from "gsap";
 import { onFrame } from "../../lib/clock";
-import { getLenis } from "../print-run/SmoothScroll";
+import { getLenis } from "./SmoothScroll";
 import { ANIMATED, type ShapeName } from "../../lib/shapes";
 import { TOKENS } from "../../styles/tokens";
 import { ISSUES } from "../../data/issues";

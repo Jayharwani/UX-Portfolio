@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { getLenis } from "../print-run/SmoothScroll";
+import { getLenis } from "./SmoothScroll";
 import { ISSUES } from "../../data/issues";
 
 /* --------------------------------------------------------------------------

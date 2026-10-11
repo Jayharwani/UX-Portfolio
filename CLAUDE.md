@@ -18,16 +18,13 @@ reference disagree, the reference wins. Open it in a browser before you start.
 - React + TypeScript + Vite
 - Plain CSS (CSS custom properties). **Do not introduce Tailwind, styled-components,
   CSS-in-JS, or a UI kit.**
-- **The homepage (Print Run) runs GSAP, Lenis and three.** This replaces an
+- **The homepage (Resolve) runs GSAP, Lenis and three.** This replaces an
   earlier "the homepage stays library-free" rule, and the replacement is
-  deliberate. A registration intro, a pinned four-cover run and an extruded
-  monogram are not reachable from CSS keyframes and a 2D canvas, and the
-  earlier rule was already being contradicted by the repo rather than by this
-  brief. The cost is paid in the open: `three` is a separate 132 kB gzip chunk
-  behind a dynamic import that only the full tier ever requests, so phones and
-  weak machines never download it, and the homepage's own chunk is 14 kB gzip.
-  Keep it that way: no eager import of `src/lib/stage.ts`.
-- **Still banned on the homepage:** scroll-jacking beyond the one pinned run,
+  deliberate: one point field that deforms with scroll, sprung rather than
+  tweened, is not reachable from CSS keyframes and a 2D canvas. The cost is
+  paid in the open: `three` is a separate 113 kB gzip chunk, GSAP is 49 kB,
+  and the homepage's own chunk is about 16 kB gzip.
+- **Still banned on the homepage:** scroll-jacking,
   ScrollSmoother, and any transform-based smooth-scroll wrapper. Lenis animates
   the real window scroll position and adds no wrapper, which is why `position:
   sticky` and ScrollTrigger pinning still work. The ban was about wrappers.

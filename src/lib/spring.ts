@@ -130,6 +130,13 @@ export function springEasing(stiffness: number, dampingRatio: number, samples = 
  * time would mean a generated file nobody can read.
  */
 export function installSprings(el: HTMLElement): void {
+  /* A BROWSER THAT CANNOT PARSE linear() MUST NOT BE GIVEN ONE. Every
+     transition here is written as var(--spring-x, cubic-bezier(...)), and a
+     var() fallback only covers an UNSET variable, not one holding a value the
+     browser cannot read: set it anyway and the whole transition declaration
+     goes invalid, so the element does not ease at all, it cuts. Leaving the
+     variable unset is what lets the bezier through. */
+  if (!CSS.supports("transition-timing-function", "linear(0, 1)")) return;
   for (const [name, { stiffness, damping }] of Object.entries(SPRINGS)) {
     const { css, ms } = springEasing(stiffness, damping);
     el.style.setProperty(`--spring-${name}`, css);
