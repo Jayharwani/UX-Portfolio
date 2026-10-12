@@ -238,29 +238,28 @@ body:has(.v2.rs) {
   .v2.rs[data-zone="end"] { --glow-y: 50%; }
 }
 
-/* 3. GRAIN. Oversized and jumped to a new offset in steps rather than slid,
-      because grain that slides is a texture moving across the page and grain
-      that jumps is film. Eight offsets is enough: the cycle is under a second
-      and nobody can hear it repeat. */
+/* 3. GRAIN, AND IT DOES NOT MOVE.
+      It used to jump to a new offset eight times a second, on the theory that
+      grain which jumps is film and grain which slides is a texture sliding
+      across the page. Both halves of that were wrong here. Film grain is
+      independent noise on every frame, which averages into texture; this was
+      one tile being translated, so the eye tracked the pattern moving instead
+      of averaging it. And eleven changes a second is squarely in the band the
+      eye is most sensitive to, so on the large flat dark areas this page is
+      mostly made of it read as a flicker rather than as a surface. Measured:
+      up to 18.6% of the pixels in an empty strip changed between consecutive
+      frames; with the animation stopped, zero.
+      
+      Still here, still doing its job, which is stopping the dark from reading
+      as flat #05070C. It just holds still. Not moving also means it needs no
+      compositor layer of its own and no oversized box to translate inside. */
 .v2.rs .rs-grain {
   position: fixed;
-  inset: -80px;
+  inset: 0;
   z-index: 4;
   pointer-events: none;
   opacity: 0.035;
-  will-change: transform;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-  animation: rs-grain 0.72s steps(1, end) infinite;
-}
-@keyframes rs-grain {
-  0%   { transform: translate(0, 0); }
-  12.5%{ transform: translate(-37px, 19px); }
-  25%  { transform: translate(23px, -41px); }
-  37.5%{ transform: translate(-11px, -27px); }
-  50%  { transform: translate(44px, 13px); }
-  62.5%{ transform: translate(-29px, 35px); }
-  75%  { transform: translate(17px, 47px); }
-  87.5%{ transform: translate(-45px, -9px); }
 }
 
 .v2.rs main,
@@ -682,8 +681,6 @@ body:has(.v2.rs) {
     transition: none;
   }
   .v2.rs .rs-btn:active { transform: none; }
-  /* grain stays, the jumping does not */
-  .v2.rs .rs-grain { animation: none; }
   /* the cue is a line, not a metronome; the dot is a dot */
   .v2.rs .rs-cue-line,
   .v2.rs .rs-dot::after { animation: none; }
