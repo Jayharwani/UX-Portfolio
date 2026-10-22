@@ -242,4 +242,55 @@ export const ICONS: Record<string, IconDef> = {
       "M20.15 20A1.85 1.85 0 1 1 16.45 20A1.85 1.85 0 1 1 20.15 20Z",
     ],
   },
+
+  /* THE THREE PIECES OF ONE SENTENCE. Healthy Switch's whole argument is
+     "keep the burger, swap the fries", so the formation needs the thing that
+     stays and the thing that changes, and the change has to be a swap rather
+     than an improvement. A burger that became a salad would be the product's
+     opposite.
+
+     The burger is drawn as a stack with real gaps between the layers, because
+     a single blobby silhouette at this size is a bread roll. The gaps are what
+     say sandwich. */
+  burger: {
+    fills: [
+      /* top bun */
+      "M2.8 10.6C2.8 6.1 6.9 3.1 12 3.1C17.1 3.1 21.2 6.1 21.2 10.6Z",
+      /* lettuce, wider than the bun and scalloped underneath, which is the
+         one detail that stops the stack reading as a stack of coins */
+      "M1.9 11.3H22.1V12.4Q20.3 14.3 18.5 12.4Q16.7 14.3 14.9 12.4Q13.1 14.3 11.3 12.4Q9.5 14.3 7.7 12.4Q5.9 14.3 4.1 12.4Q3.0 13.7 1.9 12.4Z",
+      /* the patty */
+      "M3.1 14.9H20.9Q22.0 14.9 22.0 16.0V16.9Q22.0 18.0 20.9 18.0H3.1Q2.0 18.0 2.0 16.9V16.0Q2.0 14.9 3.1 14.9Z",
+      /* bottom bun */
+      "M2.6 18.8H21.4Q21.4 21.8 18.4 21.8H5.6Q2.6 21.8 2.6 18.8Z",
+    ],
+  },
+
+  /* the side, before. Five sticks at five different heights, because an even
+     comb is a fence, and the carton under them is what makes the comb food.
+
+     THE GAPS ARE THE DRAWING. First go, the sticks were 1.9 units wide with
+     0.6 between them, which at this raster is six pixels of gap against a
+     five pixel shell: the distance transform bridged them and the whole side
+     came out as one slab. Narrower sticks and wider gaps is the fix, and the
+     notch in the top of the carton is the same argument — a straight edge
+     flush against five stick ends is another way to say slab. */
+  fries: {
+    fills: [
+      "M6.7 5.0L7.8 4.5L8.5 12.8L7.4 12.8Z",
+      "M9.3 2.9L10.4 2.9L10.8 12.8L9.7 12.8Z",
+      "M11.8 4.2L12.9 3.8L13.1 12.8L12.0 12.8Z",
+      "M14.3 2.6L15.4 3.0L15.2 12.8L14.1 12.8Z",
+      "M16.7 5.6L17.8 5.1L17.5 12.8L16.4 12.8Z",
+      "M6.1 12.2H9.7L12.0 14.5L14.3 12.2H17.9L16.6 21.7Q16.5 22.5 15.7 22.5H8.3Q7.5 22.5 7.4 21.7Z",
+    ],
+  },
+
+  /* the side, after. Two arcs meeting at a tip and a base, which is the whole
+     of a leaf; the stem is what keeps it from reading as an eye. */
+  leaf: {
+    width: 1.5,
+    fills: ["M20.8 3.2Q21.0 16.5 4.6 19.8Q6.5 4.0 20.8 3.2Z"],
+    strokes: ["M4.6 19.8L2.6 22.2"],
+  },
 };

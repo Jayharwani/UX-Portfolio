@@ -2,7 +2,7 @@
  * agreeing.
  *
  * CSS cannot be read by the canvas and WebGL cannot read a stylesheet, so the
- * six homepage colours are declared in resolve.css and mirrored in tokens.ts.
+ * homepage colours are declared in resolve.css and mirrored in tokens.ts.
  * That is a hand-typed second copy, which is exactly the kind of thing that
  * drifts quietly: change one accent, miss the other, and the dots are a
  * different green from the button for a month before anyone notices.
@@ -44,10 +44,23 @@ for (const [k, v] of fromTs) {
 for (const k of fromCss.keys()) {
   if (!fromTs.has(k)) problems.push(`${k} is in CSS (${fromCss.get(k)}) and not in tokens.ts`);
 }
-if (fromTs.size !== 6) problems.push(`the palette is six colours; tokens.ts declares ${fromTs.size}`);
+/* THE COUNT IS DERIVED, NOT TYPED. This used to assert six, which is how a
+   fifth project turned a correct palette into a failing check. The rule it was
+   trying to state is the one below: two neutrals and one accent per project,
+   and the Accent union is the list of projects. Written this way it also
+   catches the mistake that actually matters — widening the union without
+   adding the colour, which typechecks and renders nothing. */
+const accents = (ts.match(/export type Accent = ([^;]+);/)?.[1].match(/"[a-z]+"/g) ?? []).length;
+if (!accents) problems.push("could not find the Accent union in tokens.ts");
+else if (fromTs.size !== accents + 2) {
+  problems.push(
+    `the palette is void, paper and one accent per project: ${accents} accents means ` +
+      `${accents + 2} colours, and tokens.ts declares ${fromTs.size}`,
+  );
+}
 
 if (problems.length) {
   console.error(`Token check FAILED:\n  ${problems.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`Token check passed: ${fromTs.size} colours, both copies agree.`);
+console.log(`Token check passed: ${fromTs.size} colours (${accents} accents), both copies agree.`);

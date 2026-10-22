@@ -80,9 +80,16 @@ export function chapters(root: HTMLElement, track: HTMLElement): () => void {
          rewrap at every width the page supports */
       /* a class of our own, because the defaults are not guaranteed and a
          character that cannot be selected cannot be clipped either */
+      /* WORDS AS WELL AS CHARACTERS, and the words are not decoration. Split
+         to characters alone, every letter becomes its own inline box and the
+         browser is free to break a line between any two of them: the first
+         two-word title on the page came out as "Health / y Switch". Nesting
+         the characters inside word wrappers is what keeps a word a word. The
+         animation still runs on split.chars. */
       const split = SplitText.create(title, {
-        type: "chars",
+        type: "words,chars",
         charsClass: "rs-char",
+        wordsClass: "rs-word",
         autoSplit: true,
         aria: "hidden",
       });

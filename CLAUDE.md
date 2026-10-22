@@ -9,6 +9,12 @@ page: a letterbox title sequence, a live 3D canvas background, a migration
 route graphic, a work index with animated project previews, and a contact
 section.
 
+There are **five projects**, in this order: Healthy Switch, Friction,
+Headroom, Signal, Bumper. Healthy Switch is the only one whose case study is
+not a route on this site — it is published with the prototype it describes,
+so its chapter opens an absolute URL in a new tab. `isOffsite()` in
+`src/data/issues.ts` decides that from the href, not from a flag.
+
 `reference/index.html` is a **working, self-contained implementation** of the
 finished design. It is the visual source of truth. When the spec and the
 reference disagree, the reference wins. Open it in a browser before you start.
@@ -60,22 +66,35 @@ reference disagree, the reference wins. Open it in a browser before you start.
    Smoothness comes from lerping the scroll *value*, not from moving the page.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
-6. **Locked palette on the homepage.** Six tokens: `--void`, `--paper` and the
-   four project accents, plus opacity and `color-mix` steps of those. No new
+6. **Locked palette on the homepage.** Seven tokens: `--void`, `--paper` and the
+   five project accents, plus opacity and `color-mix` steps of those. No new
    hue. Colour literals live in exactly two files, `src/styles/resolve.css`
    (the tokens block on `.v2.rs`) and `src/styles/tokens.ts` (the mirror the
    canvas reads); a hex value anywhere else on the homepage is a bug, because
    a second hand-typed copy is a drift waiting to happen. A `#000` inside a
    `mask-image` is a stencil, not a colour, and does not count.
 
-   **The accents are named for projects, not for colours**, and they are four
+   **The accents are named for projects, not for colours**, and they are five
    hues spaced around the wheel at one perceptual lightness and chroma
-   (OKLCH 80% / 0.10): `--accent-friction` `#F7A792`, `--accent-headroom`
-   `#8ED09C`, `--accent-signal` `#8CC3FC`, `--accent-bumper` `#E0B771`. This
-   replaced `--teal`/`--mint`/`--cyan`/`--gold`, which were accurate names and
-   the problem: three of those four sat within about thirty degrees of each
+   (OKLCH 80% / 0.10): `--accent-friction` `#F7A792` (35°),
+   `--accent-bumper` `#E0B771` (80°), `--accent-headroom` `#8ED09C` (150°),
+   `--accent-signal` `#8CC3FC` (250°), `--accent-healthy` `#DDA8E4` (323°).
+   This replaced `--teal`/`--mint`/`--cyan`/`--gold`, which were accurate names
+   and the problem: three of those four sat within about thirty degrees of each
    other, so four deliberate keys read as one colour drifting. Naming them for
    the projects also stops the name going stale when a hue moves.
+
+   **A new accent goes in the widest gap, and the gap is measured, not
+   eyeballed.** Healthy Switch's own story is red to green and both ends were
+   already taken — green is Headroom, the warm end is Friction — so the hue
+   could not come from the subject. Sorted, the other four sit at 35, 80, 150
+   and 250, which leaves one gap of 145° and nothing else wider than 100°.
+   323° is its midpoint and is 73° clear of its nearest neighbour. The
+   red-to-green arc is carried by the shape instead: the switch is unlit until
+   it is thrown.
+
+   All five carry at least 10.3:1 against `--void` (Healthy Switch is the
+   lowest at 10.36:1), which is why the floor in this file used to read 10.4.
 
    Only one of them is ever live. `--chapter-accent` is registered with
    `@property` so it interpolates, the active chapter writes it on the page
@@ -97,6 +116,22 @@ reference disagree, the reference wins. Open it in a browser before you start.
    than paper on ink to reach the same ratio.
 8. **Accessibility.** Visible focus rings, real `<a>` elements for links, no
    text under 10.5px, no interactive element under 24×24px.
+
+## The field
+
+**A shape's arrival and its performance are two different numbers.**
+`morph(from, to, p, time, phase)` takes both: `p` blends the two forms and is
+deliberately finished three quarters of the way through a chapter's leg, so
+the object is settled while its sentence is on screen. `phase` is the reader's
+own position in the chapter and runs the whole leg. A sub-move timed against
+`p` plays out underneath the arrival and is never seen — which is exactly what
+happened to Healthy Switch's fries, and is why the two were split.
+
+The original four shapes were written when these were one number, so each of
+them opens with `authored(p)`, which puts them back on the old scale. Their
+sub-moves still happen at the scroll position they always did; only Healthy
+Switch is authored against the full window. Do not remove that call without
+re-timing all four.
 
 ## Working style
 

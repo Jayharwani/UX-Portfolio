@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import type { Issue } from "../../data/issues";
+import { isOffsite, type Issue } from "../../data/issues";
 
 /** which project was opened last, so coming back plays the move in reverse */
 const CAME_FROM = "rs-came-from";
@@ -52,18 +52,37 @@ export function Chapter({ issue, on }: { issue: Issue; on: boolean }) {
         <p className="rs-what">{issue.panels[1]}</p>
         <p className="mono rs-tag">{issue.tag}</p>
         <div className="rs-actions">
-          <Link
-            className="rs-btn rs-btn-solid"
-            to={issue.href}
-            viewTransition
-            onClick={() => {
-              sessionStorage.setItem(CAME_FROM, issue.key);
-              if (title.current) title.current.style.viewTransitionName = "project-title";
-            }}
-          >
-            <span className="rs-btn-text">Case study</span>
-            <ArrowRight className="rs-btn-arrow" aria-hidden="true" strokeWidth={2.2} />
-          </Link>
+          {/* A WRITE-UP THAT IS NOT A ROUTE HERE IS NOT A ROUTER LINK. Healthy
+              Switch's case study is published with the prototype it describes,
+              so it leaves the site: a real anchor, a new tab, and the same
+              arrow the Live button uses, because the arrow is what tells you
+              which of those two things is about to happen. There is no shared
+              element to hand over either, so no view transition is started. */}
+          {isOffsite(issue.href) ? (
+            <a
+              className="rs-btn rs-btn-solid"
+              href={issue.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="rs-btn-text">Case study</span>
+              <ArrowUpRight className="rs-btn-arrow" aria-hidden="true" strokeWidth={2.2} />
+              <span className="vh-word"> for {issue.title}, opens in a new tab</span>
+            </a>
+          ) : (
+            <Link
+              className="rs-btn rs-btn-solid"
+              to={issue.href}
+              viewTransition
+              onClick={() => {
+                sessionStorage.setItem(CAME_FROM, issue.key);
+                if (title.current) title.current.style.viewTransitionName = "project-title";
+              }}
+            >
+              <span className="rs-btn-text">Case study</span>
+              <ArrowRight className="rs-btn-arrow" aria-hidden="true" strokeWidth={2.2} />
+            </Link>
+          )}
           <a className="rs-btn rs-btn-ghost mono" href={issue.live.href} target="_blank" rel="noopener noreferrer">
             {/* the pulse is the word "live" meaning it */}
             <span className="rs-dot" aria-hidden="true" />

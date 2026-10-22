@@ -45,8 +45,16 @@ const ACCENT_RATE = 1 / 0.6;
 
 export type FieldHandle = {
   /** morph between two shapes; p is 0 to 1 and may run backwards. `time` is
-   *  seconds, for the states that are alive. */
-  morph: (from: ShapeName, to: ShapeName, p: number, time?: number) => void;
+   *  seconds, for the states that are alive.
+   *
+   *  HOW FAR THE LATTICE HAS TRAVELLED AND HOW FAR THE READER HAS IS NOT THE
+   *  SAME NUMBER, and passing one for both is why a shape could only perform
+   *  while it was still arriving. `p` blends the two forms and finishes early
+   *  by design, so the object is settled while its sentence is on screen;
+   *  `phase` runs the whole chapter, which is the only window in which a
+   *  performance is actually watched. Defaults to p, so a caller that has
+   *  only one number gets exactly the old behaviour. */
+  morph: (from: ShapeName, to: ShapeName, p: number, time?: number, phase?: number) => void;
   tick: (deltaSec: number) => void;
   setPointer: (nx: number, ny: number) => void;
   resize: () => void;
@@ -474,7 +482,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   resize();
 
   return {
-    morph(from, to, p, time = 0) {
+    morph(from, to, p, time = 0, phase = p) {
       /* an animated state has to be rewritten every call; a static one only
          when it actually changes */
       /* THE STATE BEING LEFT IS AT PHASE 1 BY DEFINITION, so unless it moves
@@ -486,7 +494,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       }
       if (to !== cachedTo || ANIMATED.has(to)) {
         /* and the one being arrived at knows how far in the reader is */
-        SHAPES[to](bPos, bLit, bSize, N, time, p);
+        SHAPES[to](bPos, bLit, bSize, N, time, phase);
         cachedTo = to;
       }
       /* WHICH WAY THE WAVE RUNS IS FREE MEANING. A morph where every point

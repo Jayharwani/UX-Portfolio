@@ -36,9 +36,9 @@ import { ISSUES } from "../../data/issues";
    construction and survives any change to the layout.
    -------------------------------------------------------------------------- */
 
-/** rest, then one state per project, then the contact section. Six stops,
- *  five morphs, one lattice. */
-const STATES: ShapeName[] = ["drift", "friction", "headroom", "signal", "bumper", "reach"];
+/** rest, then one state per project, then the contact section. Seven stops,
+ *  six morphs, one lattice. */
+const STATES: ShapeName[] = ["drift", "healthy", "friction", "headroom", "signal", "bumper", "reach"];
 
 /* WHAT THE LAST STOP'S TARGET IS, when a contact button has the pointer.
    Module level rather than a prop, for the same reason getLenis is: the
@@ -73,6 +73,11 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
      and only changes which side it reads them from. Tilting up at a dollar
      sign the way you would tilt over a map makes it illegible, which is the
      whole thing these are here to avoid. */
+  /* the one composition made of three pieces side by side, so it is read
+     from a little further back and from barely off axis: swing round it and
+     the burger starts to occlude the switch that is supposed to be changing
+     the thing next to it. */
+  healthy: [-0.22, 0.09, 4.85],
   friction: [-0.3, 0.1, 4.5],
   headroom: [0.32, 0.04, 4.4],
   signal: [-0.24, 0.08, 4.5],
@@ -248,6 +253,13 @@ export function ResolveField({
          decided what it was. Finishing three quarters of the way there and
          holding gives the reader a formed object the entire time the sentence
          is on screen. */
+      /* THE WHOLE LEG IS THE PERFORMANCE; ONLY THE FORM ARRIVES EARLY. The
+         compressed number below settles the shape three quarters of the way
+         and is what every other thing on this leg reads. The uncompressed one
+         is the reader's own position in the chapter, and it is what a shape
+         acts on, because a sub-move timed against the arrival plays out
+         underneath the arrival and is never seen. */
+      const leg = t;
       t = clamp01(t / 0.74);
 
       const to = STATES[Math.min(from + 1, STATES.length - 1)];
@@ -255,7 +267,7 @@ export function ResolveField({
       /* the override only applies on the final leg, where "reach" lives */
       const onLast = to === "reach";
       const target = override && onLast ? override : to;
-      handle.morph(STATES[from], target, t, clock);
+      handle.morph(STATES[from], target, t, clock, leg);
 
       /* the camera travels on the same t as the shape, so the angle and the
          form arrive together */

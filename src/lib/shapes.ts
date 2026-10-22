@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
-   FOUR SHAPES, ONE GRID.
+   FIVE SHAPES, ONE GRID.
 
    Every one of Jay's products does the same thing: it takes a mess and gives
    back one clear thing. Ten thousand reviews become the problems that repeat.
@@ -54,7 +54,7 @@ export type ShapeWriter = (
    state being LEFT is always at phase 1, which for these is a constant, so
    it can be written once and cached. */
 const LIVE = new Set<string>(["drift", "reach", "signal"]);
-const ACTING = new Set<string>(["friction", "headroom", "bumper"]);
+const ACTING = new Set<string>(["healthy", "friction", "headroom", "bumper"]);
 
 /** true if this state changes under its own power, wherever it is used */
 export const isLive = (name: string): boolean => LIVE.has(name);
@@ -113,7 +113,7 @@ function rand(seed: number): number {
 
 const ASPECT = 1.35;
 
-/* ── 01 to 04, THE PROJECTS ───────────────────────────────────────────────
+/* ── 01 to 05, THE PROJECTS ───────────────────────────────────────────────
    Each one resolves into the object somebody would draw if you asked them
    what the product was. A filter, money, a pin on a map, a cart. They were
    abstract diagrams before, which was honest and cost the reader a beat they
@@ -139,6 +139,14 @@ const ICON_SCALE = 0.86;
 const ICON_DEPTH = 0.34;
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
+
+/** THE PHASE THE ORIGINAL FOUR WERE TIMED AGAINST. They were written when a
+ *  shape's performance and its arrival were one number, and that number ran
+ *  out at three quarters of the leg. The field now hands a shape the whole
+ *  leg, so putting those four back on the old scale is what makes the change
+ *  cost them nothing: every sub-move still happens at the scroll position it
+ *  always did. Only Healthy Switch is authored against the full window. */
+const authored = (p: number) => clamp01(p / 0.74);
 
 /** where a point sits through the slab, and what that does to it. Shared by
  *  every icon so all four are lit and weighted the same way. */
@@ -188,7 +196,135 @@ function writeIcon(
   }
 }
 
-/* ── 01 FRICTION ─ the filter, and what comes out of it ──────────────────
+/* ── 01 HEALTHY SWITCH ─ the toggle, and the one thing it changes ────────
+   The product is named after a control, and the prototype puts that control
+   in the header, so the object is the control. What makes it a product
+   rather than a settings screen is what happens to the meal beside it when
+   it is thrown.
+
+   KEEP THE BURGER, SWAP THE FRIES. That is the case study's own sentence and
+   it is why the burger is here at all: it never moves. A formation where the
+   burger turned into a salad would say the opposite of the thing it stands
+   for, which is that you do not have to give up the craving.
+
+   THE COLOUR ARRIVES WITH THE SWITCH. The case study is called "From red to
+   green", and this page has one accent per chapter, so that arc cannot be
+   told in hue here. It is told in light instead: nothing is lit until the
+   switch is thrown, and the accent comes up on the track behind the knob and
+   on the leaf as it lands. Off to on, which is the same sentence in the
+   palette the page actually has. */
+const TOGGLE = { y: -0.6, hw: 0.52, r: 0.19 };
+/** the track and the knob, as shares of the lattice. The meal takes the rest
+ *  and splits it between the half that stays and the half that changes. */
+const TRACK_SHARE = 0.17;
+const KNOB_SHARE = 0.12;
+/** the side is the one thing on this shape anybody has to read twice, so it
+ *  gets the room. Smaller than this and five stick gaps are three dots each. */
+const SIDE_SCALE = 0.38;
+
+export const healthy: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+  const trackN = Math.round(n * TRACK_SHARE);
+  const knobN = Math.round(n * KNOB_SHARE);
+  const rest = n - trackN - knobN;
+  const burgerN = Math.round(rest * 0.5);
+  const sideN = rest - burgerN;
+
+  /* BOTH OF THESE HAPPEN AFTER THE SHAPE HAS ARRIVED, and that is the only
+     reason either of them is seen. The lattice finishes assembling at about
+     0.65 of the leg: anything timed before that plays out inside a cloud that
+     has not decided what it is yet, which is where the first version put the
+     entire swap. So the toggle sits off while the meal forms, throws, and the
+     side follows it over. The throw leads, because that is what makes the two
+     of them read as cause and effect rather than as two things happening. */
+  const s = clamp01((phase - 0.66) / 0.2);
+  const slide = 1 - Math.pow(1 - s, 3);
+  const f = clamp01((phase - 0.76) / 0.21);
+  const flip = f * f * (3 - 2 * f);
+
+  const { y: ty, hw, r } = TOGGLE;
+  const run = hw - r;
+  const knobX = -run + slide * 2 * run;
+
+  /* 1. THE TRACK, walked as a perimeter rather than sampled as an icon: a
+        capsule is four exact pieces, and a raster of one is a worse capsule. */
+  const flat = 2 * run;
+  const cap = Math.PI * r;
+  const perim = 2 * flat + 2 * cap;
+  for (let j = 0; j < trackN; j++) {
+    const d = (j / trackN) * perim;
+    let x: number;
+    let y: number;
+    if (d < flat) {
+      x = -run + d;
+      y = ty + r;
+    } else if (d < flat + cap) {
+      const a = Math.PI / 2 - (d - flat) / r;
+      x = run + Math.cos(a) * r;
+      y = ty + Math.sin(a) * r;
+    } else if (d < 2 * flat + cap) {
+      x = run - (d - flat - cap);
+      y = ty - r;
+    } else {
+      const a = -Math.PI / 2 - (d - 2 * flat - cap) / r;
+      x = -run + Math.cos(a) * r;
+      y = ty + Math.sin(a) * r;
+    }
+    /* behind the knob is on; ahead of it is the track it has still to cross,
+       which is an absence you can see, the way the dial's empty arc is */
+    const on = x <= knobX;
+    pos[j * 3] = x;
+    pos[j * 3 + 1] = y;
+    pos[j * 3 + 2] = (rand(j * 3.1) - 0.5) * 0.09;
+    lit[j] = on ? 1 : 0;
+    size[j] = on ? 2.9 : 1.05;
+  }
+
+  /* 2. THE KNOB, a puck and not a disc. It is the only part of this shape the
+        reader watches travel, so it is the part that has to have a side. */
+  const kr = r * 0.7;
+  const rimN = Math.round(knobN * 0.55);
+  for (let j = 0; j < knobN; j++) {
+    const i = trackN + j;
+    const rim = j < rimN;
+    const a = rim ? (j / rimN) * Math.PI * 2 : rand(j * 9.1) * Math.PI * 2;
+    const rr = rim ? kr : kr * Math.sqrt(rand(j * 4.3)) * 0.9;
+    pos[i * 3] = knobX + Math.cos(a) * rr;
+    pos[i * 3 + 1] = ty + Math.sin(a) * rr;
+    pos[i * 3 + 2] = (rand(j * 2.3) - 0.5) * 0.3;
+    lit[i] = rim ? 1 : 0.3;
+    size[i] = rim ? 3 : 1.7;
+  }
+
+  /* 3. THE BURGER, AND IT DOES NOT MOVE. */
+  writeIcon("burger", pos, lit, size, n, trackN + knobN, burgerN, 0.4, -0.44, 0.34);
+
+  /* 4. THE SIDE, which is the only thing that changes. It travels while it
+        changes, up over a short arc and out toward the reader, because a swap
+        that happens in place is a crossfade between two pictures, and a
+        crossfade is the one thing a lattice is worse at than a video is. */
+  const base = trackN + knobN + burgerN;
+  const fries = iconPoints("fries", ICONS.fries, sideN);
+  const leafy = iconPoints("leaf", ICONS.leaf, sideN);
+  const arc = Math.sin(flip * Math.PI);
+  for (let k = 0; k < sideN; k++) {
+    const i = base + k;
+    if (i >= n) break;
+    const e = fries.edge[k] * (1 - flip) + leafy.edge[k] * flip;
+    slab(i, e);
+    const fx = fries.xy[k * 2] * SIDE_SCALE;
+    const fy = fries.xy[k * 2 + 1] * SIDE_SCALE;
+    const lx = leafy.xy[k * 2] * SIDE_SCALE;
+    const ly = leafy.xy[k * 2 + 1] * SIDE_SCALE;
+    pos[i * 3] = (fx + (lx - fx) * flip) * sl.scale + 0.46;
+    pos[i * 3 + 1] = (fy + (ly - fy) * flip) * sl.scale + 0.34 + arc * 0.2;
+    pos[i * 3 + 2] = sl.z + arc * 0.26;
+    /* unlit as fries, lit as a leaf: the accent is the thing you turned on */
+    lit[i] = sl.lit * flip;
+    size[i] = sl.size * (1 + 0.35 * arc);
+  }
+};
+
+/* ── 02 FRICTION ─ the filter, and what comes out of it ──────────────────
    The funnel holds while the claim beside it is being read, and in the second
    half of the chapter the stream below the throat gathers into the number the
    product actually publishes. Ten thousand in, a hundred and fifty out: the
@@ -218,7 +354,8 @@ function stream(n: number, edge: Float32Array, xy: Float32Array): number[] {
 /** how far the funnel pulls back to make room for its own answer */
 const SIFT_LIFT = 0.42;
 
-export const friction: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+export const friction: ShapeWriter = (pos, lit, size, n, _time, p) => {
+  const phase = authored(p);
   const { xy, edge } = iconPoints("friction", ICONS.friction, n);
   const u = clamp01((phase - 0.46) / 0.4);
   const ease = u * u * (3 - 2 * u);
@@ -253,7 +390,7 @@ export const friction: ShapeWriter = (pos, lit, size, n, _time, phase) => {
   }
 };
 
-/* ── 02 HEADROOM ─ the money, and how much of it is spoken for ───────────
+/* ── 03 HEADROOM ─ the money, and how much of it is spoken for ───────────
    A dial. The ring is the month, the arc filling clockwise is what is already
    committed, and the gap left at the end of it is the answer to the question
    the product exists to answer. */
@@ -263,7 +400,8 @@ const RING_SHARE = 0.24;
    phone and would have run off a 360 one; this leaves a tenth of the frame
    either side and still reads as a dial filling the width. */
 const RING_R = 0.92;
-export const headroom: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+export const headroom: ShapeWriter = (pos, lit, size, n, _time, p) => {
+  const phase = authored(p);
   const ringN = Math.round(n * RING_SHARE);
   writeIcon("headroom", pos, lit, size, n, ringN, n - ringN, ICON_SCALE * 0.64, 0, 0);
 
@@ -283,7 +421,7 @@ export const headroom: ShapeWriter = (pos, lit, size, n, _time, phase) => {
   }
 };
 
-/* ── 03 SIGNAL ─ the map, and what is on tonight ─────────────────────────
+/* ── 04 SIGNAL ─ the map, and what is on tonight ─────────────────────────
    The Beltway, the District inside it, the Potomac through both. Twelve
    brighter points are the events, and the pin is a small thing that lands on
    one of them rather than standing in for the whole idea. */
@@ -306,7 +444,8 @@ const WHERE: Array<[number, number]> = [
 ];
 /** which one the pin lands on */
 const LANDS = 5;
-export const signal: ShapeWriter = (pos, lit, size, n, time, phase) => {
+export const signal: ShapeWriter = (pos, lit, size, n, time, p) => {
+  const phase = authored(p);
   const head = EVENTS + PIN_N;
   writeIcon("signal", pos, lit, size, n, head, n - head, ICON_SCALE, 0, 0);
 
@@ -339,12 +478,13 @@ export const signal: ShapeWriter = (pos, lit, size, n, time, phase) => {
   }
 };
 
-/* ── 04 BUMPER ─ the cart, and the thing in its way ──────────────────────
+/* ── 05 BUMPER ─ the cart, and the thing in its way ──────────────────────
    It rolls in from the left along a line of its own points, meets the bump,
    and settles. The spring does the settling: it is already under-damped, so
    the overshoot at the end is physics and not a keyframe. */
 const GROUND_SHARE = 0.09;
-export const bumper: ShapeWriter = (pos, lit, size, n, _time, phase) => {
+export const bumper: ShapeWriter = (pos, lit, size, n, _time, leg) => {
+  const phase = authored(leg);
   const groundN = Math.round(n * GROUND_SHARE);
 
   const p = clamp01(phase / 0.86);
@@ -433,7 +573,7 @@ export const drift: ShapeWriter = (pos, lit, size, n, time) => {
 export const rest: ShapeWriter = (pos, lit, size, n) => drift(pos, lit, size, n, 0, 1);
 
 
-/* ── 05 REACH ─────────────────────────────────────────────────────────────
+/* ── 06 REACH ─────────────────────────────────────────────────────────────
    The last state. Four screens of taking a mess and returning one clear
    thing, and then the lattice does it once more for the page itself: it
    resolves into the two ways to reach Jay.
@@ -524,7 +664,7 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, drift, friction, headroom, signal, bumper, reach, sent, network } as const;
+export const SHAPES = { rest, drift, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;
 
 /* ── HOW EACH SHAPE ASSEMBLES ─────────────────────────────────────────────
@@ -543,6 +683,7 @@ export type Wave = "down" | "around" | "along" | "across";
 export const WAVES: Record<ShapeName, Wave> = {
   rest: "down",
   drift: "down",
+  healthy: "across",
   friction: "down",
   headroom: "around",
   signal: "along",

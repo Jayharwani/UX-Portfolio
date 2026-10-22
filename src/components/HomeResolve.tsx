@@ -18,7 +18,7 @@ import "../styles/resolve.css";
 /* --------------------------------------------------------------------------
    RESOLVE — the homepage.
 
-   Every one of these four products does the same thing: it takes a mess and
+   Every one of these five projects does the same thing: it takes a mess and
    returns one clear thing. So the page is one lattice that is never created
    and never destroyed, only deformed, and each deformation is a product's
    actual mechanic. The thing you are reading about is the thing you are
@@ -27,8 +27,9 @@ import "../styles/resolve.css";
    THE 3D IS NOT DECORATION AND IT IS NOT SEPARATE FROM THE CONTENT. Four
    previous attempts put a beautiful object in the hero and the work
    underneath it, and the object could have belonged to anybody. Here the
-   object cannot: it is the twenty-five problems Friction publishes, the gap
-   Headroom subtracts, the map Signal draws, the pause Bumper adds.
+   object cannot: it is the switch Healthy Switch is named after, the
+   twenty-five problems Friction publishes, the gap Headroom subtracts, the
+   map Signal draws, the pause Bumper adds.
 
    THE COPY IS REAL DOM AND IT IS THE PROMISE. The canvas is aria-hidden and
    carries nothing a reader needs. Everything the field says, the panel beside
@@ -124,7 +125,7 @@ export function HomeResolve() {
                 </span>
               </h1>
               <p className="rs-byline">
-                Four products, all live. Each one takes something messy and gives back one clear thing.
+                Four shipped, one concept. Each one takes something messy and gives back one clear thing.
               </p>
             </div>
             <p className="mono rs-cue" aria-hidden="true">

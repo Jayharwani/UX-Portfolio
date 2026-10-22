@@ -77,9 +77,10 @@ body:has(.v2.rs) {
      runs under it */
   --rail: 0px;
 
-  /* FOUR KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
+  /* FIVE KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
      perceptual lightness and chroma, so no project's colour is louder than
      another's. Mirrored in src/styles/tokens.ts for the canvas. */
+  --accent-healthy: #dda8e4;
   --accent-friction: #f7a792;
   --accent-headroom: #8ed09c;
   --accent-signal: #8cc3fc;
@@ -180,6 +181,7 @@ body:has(.v2.rs) {
    The contact cards are the exception and have to be: both are on screen at
    once, so each keeps its own colour rather than borrowing the page's. */
 .v2.rs { --accent: var(--chapter-accent, #eef1f5); }
+.v2.rs .rs-reach-btn[data-accent="healthy"] { --accent: var(--accent-healthy); }
 .v2.rs .rs-reach-btn[data-accent="friction"] { --accent: var(--accent-friction); }
 .v2.rs .rs-reach-btn[data-accent="headroom"] { --accent: var(--accent-headroom); }
 .v2.rs .rs-reach-btn[data-accent="signal"] { --accent: var(--accent-signal); }
