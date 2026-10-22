@@ -428,27 +428,41 @@ body:has(.v2.rs) {
    simply nothing to run and the words are there. */
 
 /* -- the reel: sixty seconds, offered --
-   The only thing in the hero that is not the lattice. It is a window rather
-   than a label: the well holds a real frame of the film, and the frame starts
-   moving when you lean in, so the button shows what it is promising.
+   A circle and a play mark, and nothing else until somebody asks. The hero
+   already carries a headline, a promise and a lattice; a fourth element with
+   two lines of its own type was a fourth thing competing, which is what the
+   first version of this was.
 
-   THE DIAL IS A MINUTE, NOT A PROGRESS BAR. It draws once around the well
-   over 1.7 seconds of hover, which is the length of the thing on offer. The
-   preview inside it is six of those sixty seconds, so the ring must never be
-   wired to that preview's time or it would be lying about how far in you are. */
+   HOVER IS THE QUESTION, SO HOVER IS THE ANSWER. The name slides out from
+   behind the circle, the ring draws once around it, and the film fades up in
+   the well and plays. The name is positioned beside the button rather than
+   laid out next to it, so the control stays exactly a circle and the hit
+   target does not become a long rectangle with a circle at one end.
 
-.v2.rs .rs-reel-row { margin-top: var(--s-6); }
+   THE DIAL IS A MINUTE, NOT A PROGRESS BAR. It draws over 1.5 seconds of
+   hover, which is the length of the thing on offer. The preview inside it is
+   six of those sixty seconds, so wiring the ring to that preview's time would
+   be telling a lie about how far in you are. */
+
+/* the row is the name's containing block, and --reel is the one place the
+   circle's size is written down */
+.v2.rs .rs-reel-row {
+  position: relative;
+  --reel: 56px;
+  margin-top: var(--s-6);
+}
 
 .v2.rs .rs-reel {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 22px 8px 8px;
-  border: 1px solid var(--ink-deco);
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--paper) 4%, transparent);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--reel);
+  height: var(--reel);
+  padding: 0;
+  border: 1px solid color-mix(in oklch, var(--paper) 22%, transparent);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--paper) 5%, transparent);
   color: var(--ink-1);
-  text-align: left;
   cursor: pointer;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -457,90 +471,43 @@ body:has(.v2.rs) {
   transition: transform var(--t-fast) var(--e-fast), border-color var(--t-hover) var(--e-hover),
     background-color var(--t-hover) var(--e-hover), box-shadow var(--t-hover) var(--e-hover);
 }
-.v2.rs .rs-reel:hover {
-  border-color: color-mix(in oklch, var(--paper) 30%, transparent);
-  background: color-mix(in oklch, var(--paper) 7%, transparent);
+.v2.rs .rs-reel:hover,
+.v2.rs .rs-reel:focus-visible {
+  border-color: color-mix(in oklch, var(--paper) 42%, transparent);
+  background: color-mix(in oklch, var(--paper) 9%, transparent);
   /* the same key the rest of the page is lit by, at the strength of a breath */
-  box-shadow: 0 0 38px -8px color-mix(in oklch, var(--accent) 26%, transparent);
+  box-shadow: 0 0 34px -10px color-mix(in oklch, var(--accent) 30%, transparent);
 }
 /* a press has to be felt, and 400ms of spring is not a press */
 .v2.rs .rs-reel:active {
-  transform: translate(var(--bx, 0px), var(--by, 0px)) scale(0.985);
+  transform: translate(var(--bx, 0px), var(--by, 0px)) scale(0.94);
   transition-duration: 120ms;
 }
 
 .v2.rs .rs-reel-well {
-  position: relative;
-  flex: none;
-  width: 64px;
-  height: 64px;
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: var(--void);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--paper) 12%, transparent);
-  /* 64, not 60: the well is a circular crop of a 16:9 frame, so it only ever
-     shows the middle third of one, and four pixels is the difference between
-     the numeral in there reading as a numeral and reading as a smudge. */
+  overflow: hidden;
 }
 .v2.rs .rs-reel-peek {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
-  /* the poster is this preview's own first frame, so there is nothing to see
-     at the moment it starts */
-}
-
-/* AT REST THE FILM IS DIMMED, AND THAT IS WHAT MAKES THE TRIANGLE A
-   TRIANGLE. The frame in the well is a bright particle numeral with type over
-   and under it; a white play mark laid straight on top of that competes with
-   it and loses. The scrim pushes the frame back a stop so the mark sits in
-   front of something quiet, and it lifts the moment the film starts, which is
-   also the moment the mark is no longer true. */
-.v2.rs .rs-reel-well::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in oklch, var(--void) 74%, transparent) 0%,
-    color-mix(in oklch, var(--void) 34%, transparent) 72%
-  );
+  /* nothing in the well until the film is actually running in it: a video
+     frame cropped to fifty-six pixels and sat under a play mark is a smudge,
+     and it was most of why the first version read as cluttered */
+  opacity: 0;
   transition: opacity var(--t-hover) var(--e-hover);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .v2.rs .rs-reel:hover .rs-reel-well::after,
-  .v2.rs .rs-reel:focus-visible .rs-reel-well::after { opacity: 0; }
+  .v2.rs .rs-reel:hover .rs-reel-peek,
+  .v2.rs .rs-reel:focus-visible .rs-reel-peek { opacity: 0.85; }
+  .v2.rs .rs-reel:hover .rs-reel-play,
+  .v2.rs .rs-reel:focus-visible .rs-reel-play { opacity: 0; transform: translate(-38%, -50%) scale(0.7); }
 }
-
-.v2.rs .rs-reel-dial {
-  position: absolute;
-  z-index: 3;
-  /* outside the well, so the ring is a ring and not a rim on the film */
-  inset: -5px;
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
-  /* from twelve o'clock, the way a minute is counted */
-  transform: rotate(-90deg);
-  pointer-events: none;
-  overflow: visible;
-}
-.v2.rs .rs-reel-dial circle {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  /* 2 * pi * 30.4 */
-  stroke-dasharray: 191;
-  stroke-dashoffset: 191;
-  transition: stroke-dashoffset 1.7s var(--e-move);
-}
-.v2.rs .rs-reel:hover .rs-reel-dial circle,
-.v2.rs .rs-reel:focus-visible .rs-reel-dial circle { stroke-dashoffset: 0; }
 
 .v2.rs .rs-reel-play {
   position: absolute;
@@ -549,37 +516,68 @@ body:has(.v2.rs) {
   top: 50%;
   width: 0;
   height: 0;
-  border-left: 11px solid var(--paper);
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  /* a triangle's optical centre is not the centre of its bounding box */
+  border-left: 12px solid var(--paper);
+  border-top: 7.5px solid transparent;
+  border-bottom: 7.5px solid transparent;
+  /* a triangle's optical centre is not the centre of its bounding box, which
+     is why this is 38 and not 50 */
   transform: translate(-38%, -50%);
-  filter: drop-shadow(0 1px 4px color-mix(in oklch, var(--void) 75%, transparent));
-  transition: opacity var(--t-hover) var(--e-hover);
-}
-/* it steps aside once the film is actually running, which it only is when
-   motion is welcome */
-@media (prefers-reduced-motion: no-preference) {
-  .v2.rs .rs-reel:hover .rs-reel-play,
-  .v2.rs .rs-reel:focus-visible .rs-reel-play { opacity: 0; }
+  transition: opacity var(--t-hover) var(--e-hover), transform var(--t-hover) var(--e-hover);
 }
 
+.v2.rs .rs-reel-dial {
+  position: absolute;
+  /* outside the rim, so the ring is a ring and not a line on the edge */
+  inset: -5px;
+  z-index: 3;
+  /* from twelve o'clock, the way a minute is counted */
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+.v2.rs .rs-reel-dial circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  /* 2 * pi * 30.6 */
+  stroke-dasharray: 192.3;
+  stroke-dashoffset: 192.3;
+  transition: stroke-dashoffset 1.5s var(--e-move);
+}
+.v2.rs .rs-reel:hover .rs-reel-dial circle,
+.v2.rs .rs-reel:focus-visible .rs-reel-dial circle { stroke-dashoffset: 0; }
+
+/* THE NAME IS BESIDE THE BUTTON, NOT INSIDE IT. Absolute, so it cannot widen
+   the control; nowrap, so it cannot become two lines of type in a hero that
+   already has enough. */
 .v2.rs .rs-reel-say {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: transform var(--t-fast) var(--e-fast);
+  position: absolute;
+  left: calc(var(--reel) + 16px);
+  top: calc(var(--reel) / 2);
+  white-space: nowrap;
+  width: max-content;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.008em;
+  color: var(--ink-2);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%) translateX(-8px);
+  transition: opacity var(--t-hover) var(--e-hover), transform var(--t-move) var(--e-move);
 }
-.v2.rs .rs-reel-label {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.012em;
+/* a sibling now, so the combinator is ~ and not a descendant: hovering the
+   row itself must not bring the name out, because the row is as wide as the
+   column and the circle is 56 pixels of it */
+.v2.rs .rs-reel:hover ~ .rs-reel-say,
+.v2.rs .rs-reel:focus-visible ~ .rs-reel-say {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
-.v2.rs .rs-reel-meta {
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+
+/* nothing to hover with, so the name simply is */
+@media (hover: none) {
+  .v2.rs .rs-reel-say { opacity: 1; transform: translateY(-50%); }
 }
 
 /* -- the reel, full size --
@@ -829,15 +827,13 @@ body:has(.v2.rs) {
 
 /* ══ smaller screens ════════════════════════════════════════════════════ */
 
-/* THE REEL SHRINKS BEFORE IT WRAPS. At 390 the well plus "Learn about me in
-   60 seconds" at 15px is wider than the column, and a pill that wraps to two
-   lines stops reading as one thing to press. */
+/* A CIRCLE HAS LESS TO GIVE, so it gives a little and the name shrinks with
+   it. At 390 the name still clears the gutter; below that it is allowed to
+   sit closer to the rim. */
 @media (max-width: 480px) {
-  .v2.rs .rs-reel { gap: 12px; padding: 7px 18px 7px 7px; }
-  .v2.rs .rs-reel-well { width: 56px; height: 56px; }
-  .v2.rs .rs-reel-label { font-size: 14px; }
-  .v2.rs .rs-reel-meta { font-size: 11px; letter-spacing: 0.08em; }
-  .v2.rs .rs-reel-play { border-left-width: 9px; border-top-width: 6px; border-bottom-width: 6px; }
+  .v2.rs .rs-reel-row { --reel: 52px; }
+  .v2.rs .rs-reel-play { border-left-width: 10px; border-top-width: 6.5px; border-bottom-width: 6.5px; }
+  .v2.rs .rs-reel-say { left: calc(var(--reel) + 13px); font-size: 13.5px; }
 }
 
 
@@ -913,6 +909,10 @@ body:has(.v2.rs) {
   .v2.rs .rs-reel-dial circle { transition: none; stroke-dashoffset: 0; }
   .v2.rs .rs-reel-scrim,
   .v2.rs .rs-reel-stage { animation: none; }
+  /* the name still arrives, it just does not travel to get here */
+  .v2.rs .rs-reel-say { transform: translateY(-50%); transition: opacity var(--t-hover) var(--e-hover); }
+  .v2.rs .rs-reel:hover ~ .rs-reel-say,
+  .v2.rs .rs-reel:focus-visible ~ .rs-reel-say { transform: translateY(-50%); }
 }
 
 /* ══ reduced motion ═════════════════════════════════════════════════════

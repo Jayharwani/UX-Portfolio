@@ -5,25 +5,29 @@ const ReelModal = lazy(() => import("./ReelModal").then((m) => ({ default: m.Ree
 /* --------------------------------------------------------------------------
    SIXTY SECONDS, OFFERED.
 
-   The one thing in the hero that is not the lattice, so it has to earn the
-   attention it takes. It earns it by being a window rather than a label: the
-   well is a real frame of the film, and hovering starts it playing, so what
-   the button promises is the thing the button is already showing you.
+   A circle and a play mark. That is the whole of it at rest, because the hero
+   already has a headline, a promise and a lattice in it, and a fourth thing
+   with two lines of its own type was a fourth thing competing. The first
+   version was a pill carrying a label and a timecode, and it read as a banner
+   rather than as a control.
 
-   NOTHING IS FETCHED UNTIL SOMEBODY LEANS IN. The poster is fifty kilobytes
-   and carries the resting state; the preview's src is not set until a pointer
-   or a focus ring arrives, and the full film is a separate chunk that is not
-   imported until the dialog opens. A hero that costs twenty-two megabytes to
-   look at is not a hero.
+   IT ONLY SPEAKS WHEN SPOKEN TO. Hovering is what asks the question, so
+   hovering is what answers it: the name slides out from behind the circle,
+   the ring draws, and the film itself fades up inside the well and plays. At
+   rest none of that is on screen and none of it has been downloaded.
 
-   THE DIAL IS A MINUTE. It draws once around the well while you hover, which
-   is the length of the thing being offered, and it is the only moving part
-   that is not the film itself. It is not a progress bar and must not pretend
-   to be one: the preview is six seconds of the sixty.
+   THE NAME IS NOT IN THE BUTTON'S BOX. It is positioned beside it rather than
+   laid out next to it, so the control stays exactly a circle — a label that
+   participated in layout would make the hit target a long rectangle with a
+   circle drawn at one end of it.
+
+   ON A TOUCH SCREEN THE NAME IS ALWAYS THERE. There is no hover to discover
+   it with, and an unlabelled circle is a guess.
    -------------------------------------------------------------------------- */
 
 const PEEK = "/jay-60-peek.mp4";
 const POSTER = "/jay-60-poster.jpg";
+const NAME = "Learn about me in 60 seconds";
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -32,13 +36,16 @@ export function Reel() {
   const btn = useRef<HTMLButtonElement>(null);
   const peek = useRef<HTMLVideoElement>(null);
 
-  /* SET ON THE ELEMENT, NOT THROUGH STATE. Re-rendering to add a src would
-     re-render the hero, and the only thing that has to change is one
-     attribute on one video that React is not otherwise touching. */
+  /* SET ON THE ELEMENT, NOT THROUGH STATE, and not until now. Neither the
+     poster nor the preview is fetched on load: at rest the well is empty and
+     the only thing in the circle is a triangle drawn in CSS. */
   const wake = useCallback(() => {
     const v = peek.current;
     if (!v || reduced()) return;
-    if (!v.getAttribute("src")) v.setAttribute("src", PEEK);
+    if (!v.getAttribute("src")) {
+      v.setAttribute("poster", POSTER);
+      v.setAttribute("src", PEEK);
+    }
     void v.play().catch(() => {});
   }, []);
 
@@ -62,6 +69,7 @@ export function Reel() {
         className="rs-reel"
         ref={btn}
         aria-haspopup="dialog"
+        aria-label={NAME}
         onPointerEnter={wake}
         onPointerLeave={rest}
         onFocus={wake}
@@ -69,20 +77,25 @@ export function Reel() {
         onClick={() => setOpen(true)}
       >
         <span className="rs-reel-well" aria-hidden="true">
-          <video className="rs-reel-peek" ref={peek} poster={POSTER} muted loop playsInline preload="none" />
-          <svg className="rs-reel-dial" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-            <circle cx="32" cy="32" r="30.4" />
-          </svg>
+          <video className="rs-reel-peek" ref={peek} muted loop playsInline preload="none" />
           <span className="rs-reel-play" />
         </span>
-        {/* rs-btn-text is what the page's magnet leans a little further than
-            the tile, and it has to be the whole text block or the two lines
-            drift apart from each other as the pointer moves */}
-        <span className="rs-btn-text rs-reel-say">
-          <span className="rs-reel-label">Learn about me in 60 seconds</span>
-          <span className="mono rs-reel-meta">Level 1 to 10 · 01:00</span>
-        </span>
+        <svg className="rs-reel-dial" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <circle cx="32" cy="32" r="30.6" />
+        </svg>
       </button>
+
+      {/* OUTSIDE THE BUTTON, AND IT HAS TO BE. Absolutely positioned inside a
+          56px circle, the name's containing block is 56px wide, and Chrome
+          clamps an intrinsic width to the space that leaves: the box came out
+          50px — one word — with the line overflowing it. As a sibling it
+          resolves against the row and measures what it draws.
+
+          aria-hidden because the button already carries this as its label,
+          and a name read twice is a name read wrong. */}
+      <span className="rs-reel-say" aria-hidden="true">
+        {NAME}
+      </span>
 
       {open && (
         <Suspense fallback={null}>
