@@ -19,6 +19,31 @@ so its chapter opens an absolute URL in a new tab. `isOffsite()` in
 finished design. It is the visual source of truth. When the spec and the
 reference disagree, the reference wins. Open it in a browser before you start.
 
+## Where the films live, and why not here
+
+The hero's sixty-second film exists as two cuts — `jay-60.mp4` (1920x1080)
+and `jay-60-tall.mp4` (1080x1920, a separate edit for phones held upright) —
+and **neither is in this repository**. They are served from
+`https://jayharwani.github.io/media/`, which is the `Jayharwani/media` repo
+published through GitHub Pages.
+
+**This host cannot serve byte ranges.** Cloudflare Workers static assets
+answer a `Range` request with `200` and the whole file, and there is no
+`Accept-Ranges` header. A video player needs ranges to seek, so on the site's
+own host, dragging the scrubber forward past whatever had buffered never
+resolved — measured at every speed from unthrottled down to 3 Mbps — and even
+a ten second nudge cost twelve seconds on 4G. Backward seeks into
+already-downloaded video were fine. GitHub Pages returns `206 Partial
+Content`, so seeking works there.
+
+The posters and the hover preview stay in `public/`: they are tens of
+kilobytes, nothing seeks them, and a local poster is on screen while the film
+is still opening a connection to the other origin.
+
+**Anything large enough that somebody will scrub it does not belong in
+`public/`.** The 25 MiB per-asset cap is the second reason; a file over it
+fails the deploy outright.
+
 ## Stack
 
 - React + TypeScript + Vite

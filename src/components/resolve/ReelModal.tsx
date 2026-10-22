@@ -37,8 +37,19 @@ import { getLenis } from "./SmoothScroll";
    separate edit — the numeral is rescaled for the taller frame and the type is
    restacked — so a phone gets a film composed for a phone rather than a
    letterboxed strip of a widescreen one. */
-const WIDE = { src: "/jay-60.mp4", poster: "/jay-60-poster.jpg", tall: false };
-const TALL = { src: "/jay-60-tall.mp4", poster: "/jay-60-tall-poster.jpg", tall: true };
+/* THE FILMS ARE NOT SERVED FROM THIS SITE, AND THAT IS THE ONLY REASON
+   SEEKING WORKS. Cloudflare Workers static assets answer a `Range` request
+   with 200 and the entire file, so a player has no way to jump: measured on
+   the live site, dragging forward past the buffer never resolved at any
+   connection speed from unthrottled down to 3 Mbps, and a ten second nudge
+   cost twelve seconds on 4G. GitHub Pages returns 206, so it does.
+
+   The posters stay here. They are sixty kilobytes, nothing seeks them, and
+   keeping them local means the still is already on screen while the film is
+   still opening a connection to the other origin. */
+const MEDIA = "https://jayharwani.github.io/media";
+const WIDE = { src: `${MEDIA}/jay-60.mp4`, poster: "/jay-60-poster.jpg", tall: false };
+const TALL = { src: `${MEDIA}/jay-60-tall.mp4`, poster: "/jay-60-tall-poster.jpg", tall: true };
 
 /** phones and tablets held upright. Not simply `(orientation: portrait)`: a
  *  desktop window taller than it is wide is still a desktop. */
