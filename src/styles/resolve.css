@@ -658,7 +658,33 @@ body:has(.v2.rs) {
   background: color-mix(in oklch, var(--void) 90%, transparent);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
+  /* a flick inside the overlay must not scroll the page under it, which it
+     otherwise does on both iOS and Android once the overlay has no more
+     scrolling of its own to give */
+  overscroll-behavior: contain;
   animation: rs-reel-scrim-in var(--t-move) var(--e-fade) both;
+}
+
+/* ON A PORTRAIT PHONE THE FILM TAKES THE WIDTH. A 16:9 frame inside a 48px
+   gutter came out 358 of 390 points across and 201 tall on an 844 point
+   screen: a letterbox strip floating in a lot of nothing. Full bleed is the
+   most a landscape film can be in portrait; past that it is the viewer's own
+   fullscreen control.
+
+   The blur goes with it, and that is the bigger win of the two. A
+   full-viewport backdrop-filter costs a phone real time every frame, and with
+   the stage covering the width there is almost no backdrop left to blur. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .v2.rs .rs-reel-scrim {
+    padding: 0;
+    background: var(--void);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .v2.rs .rs-reel-stage {
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
 @keyframes rs-reel-scrim-in { from { opacity: 0; } to { opacity: 1; } }
 

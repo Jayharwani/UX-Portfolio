@@ -30,6 +30,8 @@ const POSTER = "/jay-60-poster.jpg";
 const NAME = "Learn about me in 60 seconds";
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** the same test the field uses before it runs a pointer effect */
+const canHover = () => window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 export function Reel() {
   const [open, setOpen] = useState(false);
@@ -38,10 +40,16 @@ export function Reel() {
 
   /* SET ON THE ELEMENT, NOT THROUGH STATE, and not until now. Neither the
      poster nor the preview is fetched on load: at rest the well is empty and
-     the only thing in the circle is a triangle drawn in CSS. */
+     the only thing in the circle is a triangle drawn in CSS.
+
+     AND NOT AT ALL ON A TOUCH SCREEN. pointerenter fires on a tap, so a phone
+     was pulling the poster and the preview — 450 kB — a few hundred
+     milliseconds before opening the dialog, and then decoding that preview
+     behind it. Neither can ever be seen there: the well only reveals the film
+     on hover, and a device with no hover never reaches that state. */
   const wake = useCallback(() => {
     const v = peek.current;
-    if (!v || reduced()) return;
+    if (!v || reduced() || !canHover()) return;
     if (!v.getAttribute("src")) {
       v.setAttribute("poster", POSTER);
       v.setAttribute("src", PEEK);
