@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { pauseFrames } from "../../lib/clock";
 import { getLenis } from "./SmoothScroll";
@@ -33,10 +33,28 @@ import { getLenis } from "./SmoothScroll";
    the body it would inherit none of them and match none of them.
    -------------------------------------------------------------------------- */
 
-const SRC = "/jay-60.mp4";
-const POSTER = "/jay-60-poster.jpg";
+/* TWO CUTS OF THE SAME MINUTE, not one cut and a crop. The vertical one is a
+   separate edit — the numeral is rescaled for the taller frame and the type is
+   restacked — so a phone gets a film composed for a phone rather than a
+   letterboxed strip of a widescreen one. */
+const WIDE = { src: "/jay-60.mp4", poster: "/jay-60-poster.jpg", tall: false };
+const TALL = { src: "/jay-60-tall.mp4", poster: "/jay-60-tall-poster.jpg", tall: true };
+
+/** phones and tablets held upright. Not simply `(orientation: portrait)`: a
+ *  desktop window taller than it is wide is still a desktop. */
+const UPRIGHT = "(orientation: portrait) and (max-width: 900px)";
 
 export function ReelModal({ onClose }: { onClose: () => void }) {
+  /* CHOSEN ONCE, WHEN THE DIALOG OPENS, and deliberately not watched after
+     that. Swapping a video's src mid-playback reloads it and drops the
+     viewer back to zero, so somebody who turns their phone halfway through
+     keeps the film they started. The lazy initialiser is what makes it once:
+     a plain call in the body would re-run on every render.
+
+     In script rather than in markup, because <source media="..."> looks like
+     the answer and is not — browsers only honour media-based source
+     selection inside <picture>, and ignore it in <video>. */
+  const [cut] = useState(() => (window.matchMedia(UPRIGHT).matches ? TALL : WIDE));
   const scrim = useRef<HTMLDivElement>(null);
   const shut = useRef<HTMLButtonElement>(null);
   const film = useRef<HTMLVideoElement>(null);
@@ -106,12 +124,12 @@ export function ReelModal({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-label="Jay Harwani, level 1 to 10"
     >
-      <div className="rs-reel-stage">
+      <div className="rs-reel-stage" data-cut={cut.tall ? "tall" : "wide"}>
         <video
           className="rs-reel-film"
           ref={film}
-          src={SRC}
-          poster={POSTER}
+          src={cut.src}
+          poster={cut.poster}
           controls
           playsInline
           preload="auto"

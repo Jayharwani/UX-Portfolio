@@ -708,6 +708,20 @@ body:has(.v2.rs) {
   display: block;
   width: 100%;
   height: 100%;
+  /* so the film is right even on the one axis the stage had to give up */
+  object-fit: contain;
+}
+
+/* THE VERTICAL CUT IS TALLER THAN ANY PHONE, so height leads and the width
+   follows from the ratio. Where the width runs out first the box is allowed
+   to stop being 9:16 — it fills the screen instead, and object-fit above
+   keeps the film itself correct inside it, which is what full bleed with
+   bars actually looks like. */
+.v2.rs .rs-reel-stage[data-cut="tall"] {
+  aspect-ratio: 9 / 16;
+  width: auto;
+  height: min(100%, 1380px);
+  max-width: 100%;
 }
 
 .v2.rs .rs-reel-shut {
