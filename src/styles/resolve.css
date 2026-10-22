@@ -427,6 +427,233 @@ body:has(.v2.rs) {
    appeared at all. Under reduced motion, or on the second visit, there is
    simply nothing to run and the words are there. */
 
+/* -- the reel: sixty seconds, offered --
+   The only thing in the hero that is not the lattice. It is a window rather
+   than a label: the well holds a real frame of the film, and the frame starts
+   moving when you lean in, so the button shows what it is promising.
+
+   THE DIAL IS A MINUTE, NOT A PROGRESS BAR. It draws once around the well
+   over 1.7 seconds of hover, which is the length of the thing on offer. The
+   preview inside it is six of those sixty seconds, so the ring must never be
+   wired to that preview's time or it would be lying about how far in you are. */
+
+.v2.rs .rs-reel-row { margin-top: var(--s-6); }
+
+.v2.rs .rs-reel {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 22px 8px 8px;
+  border: 1px solid var(--ink-deco);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--paper) 4%, transparent);
+  color: var(--ink-1);
+  text-align: left;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  /* the magnetic lean, written straight onto the element by the pointer */
+  transform: translate(var(--bx, 0px), var(--by, 0px));
+  transition: transform var(--t-fast) var(--e-fast), border-color var(--t-hover) var(--e-hover),
+    background-color var(--t-hover) var(--e-hover), box-shadow var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-reel:hover {
+  border-color: color-mix(in oklch, var(--paper) 30%, transparent);
+  background: color-mix(in oklch, var(--paper) 7%, transparent);
+  /* the same key the rest of the page is lit by, at the strength of a breath */
+  box-shadow: 0 0 38px -8px color-mix(in oklch, var(--accent) 26%, transparent);
+}
+/* a press has to be felt, and 400ms of spring is not a press */
+.v2.rs .rs-reel:active {
+  transform: translate(var(--bx, 0px), var(--by, 0px)) scale(0.985);
+  transition-duration: 120ms;
+}
+
+.v2.rs .rs-reel-well {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--void);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--paper) 12%, transparent);
+  /* 64, not 60: the well is a circular crop of a 16:9 frame, so it only ever
+     shows the middle third of one, and four pixels is the difference between
+     the numeral in there reading as a numeral and reading as a smudge. */
+}
+.v2.rs .rs-reel-peek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  /* the poster is this preview's own first frame, so there is nothing to see
+     at the moment it starts */
+}
+
+/* AT REST THE FILM IS DIMMED, AND THAT IS WHAT MAKES THE TRIANGLE A
+   TRIANGLE. The frame in the well is a bright particle numeral with type over
+   and under it; a white play mark laid straight on top of that competes with
+   it and loses. The scrim pushes the frame back a stop so the mark sits in
+   front of something quiet, and it lifts the moment the film starts, which is
+   also the moment the mark is no longer true. */
+.v2.rs .rs-reel-well::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in oklch, var(--void) 74%, transparent) 0%,
+    color-mix(in oklch, var(--void) 34%, transparent) 72%
+  );
+  transition: opacity var(--t-hover) var(--e-hover);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v2.rs .rs-reel:hover .rs-reel-well::after,
+  .v2.rs .rs-reel:focus-visible .rs-reel-well::after { opacity: 0; }
+}
+
+.v2.rs .rs-reel-dial {
+  position: absolute;
+  z-index: 3;
+  /* outside the well, so the ring is a ring and not a rim on the film */
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  /* from twelve o'clock, the way a minute is counted */
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+.v2.rs .rs-reel-dial circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  /* 2 * pi * 30.4 */
+  stroke-dasharray: 191;
+  stroke-dashoffset: 191;
+  transition: stroke-dashoffset 1.7s var(--e-move);
+}
+.v2.rs .rs-reel:hover .rs-reel-dial circle,
+.v2.rs .rs-reel:focus-visible .rs-reel-dial circle { stroke-dashoffset: 0; }
+
+.v2.rs .rs-reel-play {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 11px solid var(--paper);
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  /* a triangle's optical centre is not the centre of its bounding box */
+  transform: translate(-38%, -50%);
+  filter: drop-shadow(0 1px 4px color-mix(in oklch, var(--void) 75%, transparent));
+  transition: opacity var(--t-hover) var(--e-hover);
+}
+/* it steps aside once the film is actually running, which it only is when
+   motion is welcome */
+@media (prefers-reduced-motion: no-preference) {
+  .v2.rs .rs-reel:hover .rs-reel-play,
+  .v2.rs .rs-reel:focus-visible .rs-reel-play { opacity: 0; }
+}
+
+.v2.rs .rs-reel-say {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform var(--t-fast) var(--e-fast);
+}
+.v2.rs .rs-reel-label {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.v2.rs .rs-reel-meta {
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* -- the reel, full size --
+   Portalled to the page root, so it is above everything and still inherits
+   every token. z-index 60 clears the rail at 40, which is the highest thing
+   the page otherwise puts on screen. */
+
+.v2.rs .rs-reel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: color-mix(in oklch, var(--void) 90%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  animation: rs-reel-scrim-in var(--t-move) var(--e-fade) both;
+}
+@keyframes rs-reel-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+.v2.rs .rs-reel-stage {
+  width: min(100%, 1380px);
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--void);
+  box-shadow: 0 32px 110px color-mix(in oklch, var(--void) 70%, transparent);
+  animation: rs-reel-stage-in var(--t-slow) var(--e-move) both;
+}
+/* it does not arrive from nothing: 0.97 and eight pixels, because a thing
+   that grows out of zero reads as a notification, not as a film opening */
+@keyframes rs-reel-stage-in {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.v2.rs .rs-reel-film {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.v2.rs .rs-reel-shut {
+  position: fixed;
+  top: clamp(12px, 2.4vw, 26px);
+  right: clamp(12px, 2.4vw, 26px);
+  z-index: 61;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--ink-deco);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--paper) 7%, transparent);
+  color: var(--ink-1);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: background-color var(--t-hover) var(--e-hover), border-color var(--t-hover) var(--e-hover);
+}
+.v2.rs .rs-reel-shut:hover {
+  background: color-mix(in oklch, var(--paper) 14%, transparent);
+  border-color: color-mix(in oklch, var(--paper) 32%, transparent);
+}
+.v2.rs .rs-reel-shut svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
 /* ══ the chapters ═══════════════════════════════════════════════════════ */
 
 .v2.rs .rs-track { position: relative; }
@@ -602,6 +829,19 @@ body:has(.v2.rs) {
 
 /* ══ smaller screens ════════════════════════════════════════════════════ */
 
+/* THE REEL SHRINKS BEFORE IT WRAPS. At 390 the well plus "Learn about me in
+   60 seconds" at 15px is wider than the column, and a pill that wraps to two
+   lines stops reading as one thing to press. */
+@media (max-width: 480px) {
+  .v2.rs .rs-reel { gap: 12px; padding: 7px 18px 7px 7px; }
+  .v2.rs .rs-reel-well { width: 56px; height: 56px; }
+  .v2.rs .rs-reel-label { font-size: 14px; }
+  .v2.rs .rs-reel-meta { font-size: 11px; letter-spacing: 0.08em; }
+  .v2.rs .rs-reel-play { border-left-width: 9px; border-top-width: 6px; border-bottom-width: 6px; }
+}
+
+
+
 @media (pointer: coarse) {
   .v2.rs .rs-btn { min-height: 48px; }
 }
@@ -665,6 +905,14 @@ body:has(.v2.rs) {
     );
   }
   .v2.rs .rs-actions .rs-btn { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the ring is a drawn ring rather than a drawing one, and the dialog
+     arrives rather than rises */
+  .v2.rs .rs-reel-dial circle { transition: none; stroke-dashoffset: 0; }
+  .v2.rs .rs-reel-scrim,
+  .v2.rs .rs-reel-stage { animation: none; }
 }
 
 /* ══ reduced motion ═════════════════════════════════════════════════════

@@ -3,6 +3,7 @@ import { SmoothScroll } from "./resolve/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
 import { Chapter } from "./resolve/Chapter";
 import { Reach } from "./resolve/Reach";
+import { Reel } from "./resolve/Reel";
 import { Rail } from "./resolve/Rail";
 import { magnetic } from "../lib/magnetic";
 import { installSprings } from "../lib/spring";
@@ -127,6 +128,10 @@ export function HomeResolve() {
               <p className="rs-byline">
                 Four shipped, one concept. Each one takes something messy and gives back one clear thing.
               </p>
+              {/* inside .rs-hero-copy on purpose, so it leaves with the rest
+                  of the hero rather than hanging about over the first
+                  chapter. The dialog it opens portals back out. */}
+              <Reel />
             </div>
             <p className="mono rs-cue" aria-hidden="true">
               Scroll

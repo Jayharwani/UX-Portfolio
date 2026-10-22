@@ -46,9 +46,9 @@ export function intro(hero: HTMLElement): () => void {
       { yPercent: 115, duration: spatial.duration, ease: spatial.ease, stagger: 0.08 },
       0.15,
     );
-    /* 500-1000ms: the label and the promise */
+    /* 500-1150ms: the label, the promise, and the minute on offer */
     tl.from(
-      [hero.querySelector(".rs-eyebrow"), hero.querySelector(".rs-byline")],
+      [hero.querySelector(".rs-eyebrow"), hero.querySelector(".rs-byline"), hero.querySelector(".rs-reel-row")],
       { opacity: 0, y: 8, duration: effects.duration, ease: effects.ease, stagger: 0.08 },
       0.5,
     );

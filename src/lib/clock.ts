@@ -36,8 +36,23 @@ type Tick = (timeSec: number, deltaMs: number) => void;
 
 const subs = new Set<Tick>();
 let started = false;
+let paused = false;
+
+/* STOP THE WHOLE PAGE, NOT ONE SUBSCRIBER. When the video dialog is open
+   nothing behind it is visible, and a five thousand point field nobody can
+   see is still a field the GPU rasterises sixty times a second, competing
+   with the decoder for the same machine. One flag here takes the lattice and
+   Lenis with it, because both of them are on this clock and neither of them
+   has anything to do while a modal owns the screen.
+
+   gsap.ticker keeps running, so lagSmoothing still absorbs the long frame
+   that arrives when this comes back on. */
+export function pauseFrames(on: boolean): void {
+  paused = on;
+}
 
 function frame(timeSec: number, deltaMs: number) {
+  if (paused) return;
   /* Iterating a copy: a subscriber that unsubscribes itself mid-frame (the
      emblem does, when its stage is disposed) would otherwise mutate the set
      being walked. */

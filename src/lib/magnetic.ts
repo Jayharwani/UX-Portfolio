@@ -44,14 +44,14 @@ export function magnetic(root: HTMLElement): () => void {
 
   const over = (e: PointerEvent) => {
     if (!fine.matches || reduce.matches) return;
-    const row = (e.target as HTMLElement | null)?.closest?.(".rs-actions");
+    const row = (e.target as HTMLElement | null)?.closest?.(".rs-actions, .rs-reel-row");
     if (!row) {
       if (armed.length) clear();
       return;
     }
-    if (armed.length && armed[0].el.closest(".rs-actions") === row) return;
+    if (armed.length && armed[0].el.closest(".rs-actions, .rs-reel-row") === row) return;
     clear();
-    armed = Array.from(row.querySelectorAll<HTMLElement>(".rs-btn")).map((el) => ({
+    armed = Array.from(row.querySelectorAll<HTMLElement>(".rs-btn, .rs-reel")).map((el) => ({
       el,
       label: el.querySelector<HTMLElement>(".rs-btn-text"),
       r: el.getBoundingClientRect(),
