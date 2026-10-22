@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SmoothScroll } from "./resolve/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
+import { Atmos, type AtmosKey } from "./resolve/Atmos";
 import { Chapter } from "./resolve/Chapter";
 import { Reach } from "./resolve/Reach";
 import { Reel } from "./resolve/Reel";
@@ -43,6 +44,10 @@ export function HomeResolve() {
   const track = useRef<HTMLElement>(null);
   const hero = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
+  /* WHICH LIGHT IS ON. Set from the same callback that sets the zone and the
+     key, so the background cannot be lit for one chapter while the page is
+     coloured for another. It changes once a chapter, not once a frame. */
+  const [lit, setLit] = useState<AtmosKey>("hero");
 
   useEffect(() => {
     document.title = "Jay Harwani, product designer who writes the front end";
@@ -59,6 +64,7 @@ export function HomeResolve() {
      the neutral ink and the glow drops with them. */
   const onActive = useCallback((i: number, zone: Zone) => {
     setActive(i);
+    setLit(zone === "work" ? ISSUES[i].accent : zone === "hero" ? "hero" : "end");
     const el = page.current;
     if (!el) return;
     el.dataset.zone = zone;
@@ -91,6 +97,8 @@ export function HomeResolve() {
   return (
     <SmoothScroll>
       <div className="v2 rs" ref={page}>
+        {/* first, so it is under the lattice as well as under the type */}
+        <Atmos active={lit} />
         <ResolveField track={track} onActive={onActive} />
         <div className="rs-grain" aria-hidden="true" />
 

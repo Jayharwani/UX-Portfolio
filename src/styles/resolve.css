@@ -34,15 +34,13 @@ body:has(.v2.rs) {
   inherits: true;
   initial-value: #eef1f5;
 }
-@property --glow-x {
-  syntax: "<percentage>";
-  inherits: true;
-  initial-value: 50%;
-}
-@property --glow-y {
-  syntax: "<percentage>";
-  inherits: true;
-  initial-value: 50%;
+/* the room wash, so a chapter's key can tint the whole viewport by three per
+   cent and cross to the next key in Oklab rather than swapping at the middle.
+   Unregistered it has no type and could only be switched. */
+@property --atm-wash {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
 }
 /* how much of "Then ships it." is still hollow. Registered so it can be
    scrubbed as a number rather than swapped as a string. */
@@ -114,22 +112,15 @@ body:has(.v2.rs) {
   color: var(--ink-1);
   scroll-padding-top: 96px;
 
-  /* where the object is, so the glow sits under the thing it belongs to and
-     never under the copy. The same two placements the field itself uses, and
-     a third for the contact section, where it returns to the middle. */
-  /* which half the object is in. The chapters alternate, so this does too,
-     and the light goes with it. */
-  --side: 68%;
-  --glow-x: var(--side);
-  --glow-y: 50%;
+  /* WHERE THE LIGHT IS NO LONGER LIVES HERE. It used to be --glow-x, a
+     single percentage the one gradient was centred on. Each chapter owns its
+     own light now and they hand over by travelling, so the position is a
+     measured constant per key in .rs-atmos and in Atmos.tsx.
 
-  /* the page-level key is allowed to take longer than the token's natural
+     The page-level key is allowed to take longer than the token's natural
      settle, because a colour crossing the whole screen at UI speed reads as
-     a flicker */
-  transition:
-    --chapter-accent 600ms var(--e-fade),
-    --glow-x 600ms var(--e-fade),
-    --glow-y 600ms var(--e-fade);
+     a flicker. */
+  transition: --chapter-accent 600ms var(--e-fade);
 }
 
 /* ── the three layers behind everything ──
@@ -137,25 +128,93 @@ body:has(.v2.rs) {
    corners down, then grain over both. All three are decoration, all three are
    fixed, none of them can be reached by the pointer. */
 
-/* 1. THE GLOW IS THE OBJECT'S OWN LIGHT. It is centred where the formation
-      is, carries the chapter's key, and drops to a neutral four per cent in
-      the hero and the contact section, where there is no project to be in. */
-.v2.rs::before {
-  content: "";
+/* 1. CHAPTER LIGHT. One layer per key, all seven mounted, only one lit. The
+      lit one sits behind that chapter's object in that chapter's accent, as
+      if the object were lighting the room; on a chapter change the outgoing
+      light slides toward where the new object will be while the incoming one
+      arrives from where the old one was, so the pair reads as one light
+      handing over rather than as a dissolve between two pictures.
+
+      It replaced a single radial gradient centred on --glow-x. That one was
+      honest and it was one colour at a time in one place; what it could not
+      do is move, which is the half of this that makes the page feel lit
+      rather than tinted. */
+.v2.rs .rs-atmos {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(45vmax 45vmax at var(--glow-x, 68%) var(--glow-y, 50%), var(--accent) 0%, transparent 70%);
-  opacity: 0.07;
-  /* its own layer: a full-viewport gradient that repaints with the page is
-     the most expensive kind of decoration there is */
-  will-change: opacity;
-  transition: opacity 600ms var(--e-fade);
+  overflow: hidden;
+  /* layout and paint, not size: `strict` adds size containment, and a fixed
+     box that sizes itself as though empty is a box with nothing in it */
+  contain: layout paint style;
+  background-color: var(--atm-wash);
+  transition: --atm-wash 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.v2.rs[data-zone="hero"]::before,
-.v2.rs[data-zone="end"]::before { opacity: 0.04; }
-.v2.rs[data-side="left"] { --side: 32%; }
+/* three per cent of the key across the whole viewport. In the stylesheet
+   because it is a colour, and because a color-mix assembled in script is a
+   colour literal in a second place. */
+.v2.rs .rs-atmos[data-wash="healthy"]  { --atm-wash: color-mix(in oklab, var(--accent-healthy) 3%, transparent); }
+.v2.rs .rs-atmos[data-wash="friction"] { --atm-wash: color-mix(in oklab, var(--accent-friction) 3%, transparent); }
+.v2.rs .rs-atmos[data-wash="headroom"] { --atm-wash: color-mix(in oklab, var(--accent-headroom) 3%, transparent); }
+.v2.rs .rs-atmos[data-wash="signal"]   { --atm-wash: color-mix(in oklab, var(--accent-signal) 3%, transparent); }
+.v2.rs .rs-atmos[data-wash="bumper"]   { --atm-wash: color-mix(in oklab, var(--accent-bumper) 3%, transparent); }
+
+/* THE DRIFT IS ON ITS OWN BOX. The keys are transformed for the hand-over,
+   so the slow wander has to be a layer above them or the two writes to
+   `transform` would be fighting over the same property. */
+.v2.rs .rs-atmos > .atm-drift {
+  position: absolute;
+  inset: 0;
+  animation: atm-drift 18s ease-in-out infinite alternate;
+}
+@keyframes atm-drift {
+  from { transform: translate3d(-0.8vw, 0.5vh, 0) scale(1); }
+  to   { transform: translate3d(0.8vw, -0.5vh, 0) scale(1.045); }
+}
+
+.v2.rs .rs-atmos .atm-k {
+  position: absolute;
+  width: 74vw;
+  height: 118vh;
+  /* globals.css caps every div at 100% of its parent, and the contact
+     section's bar is 120vw: capped, it would stop short and draw an edge */
+  max-width: none;
+  max-height: none;
+  opacity: 0;
+  /* each light rests a little smaller while it is off, so arriving is a
+     swell and not only a fade */
+  transform: scale(0.9);
+  background: radial-gradient(closest-side, var(--k0) 0%, var(--k1) 42%, transparent 100%);
+  transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), transform 1.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.v2.rs .rs-atmos .atm-k.on { opacity: 1; }
+
+/* left is (centre - 37)vw and top is (centre - 59)vh, because the box is
+   74vw by 118vh and these are its centres. Measured from where each
+   formation actually settles, which is why they are not a parity rule. */
+.v2.rs .rs-atmos [data-k="hero"]     { left: 27vw; top: -9vh;  --k0: color-mix(in oklab, var(--paper) 7%, transparent);             --k1: color-mix(in oklab, var(--paper) 3%, transparent); }
+.v2.rs .rs-atmos [data-k="healthy"]  { left: 24vw; top: -7vh;  --k0: color-mix(in oklab, var(--accent-healthy) 20%, transparent);   --k1: color-mix(in oklab, var(--accent-healthy) 8%, transparent); }
+.v2.rs .rs-atmos [data-k="friction"] { left: 0vw;  top: -9vh;  --k0: color-mix(in oklab, var(--accent-friction) 20%, transparent);  --k1: color-mix(in oklab, var(--accent-friction) 8%, transparent); }
+.v2.rs .rs-atmos [data-k="headroom"] { left: 27vw; top: -12vh; --k0: color-mix(in oklab, var(--accent-headroom) 20%, transparent);  --k1: color-mix(in oklab, var(--accent-headroom) 8%, transparent); }
+.v2.rs .rs-atmos [data-k="signal"]   { left: -2vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-signal) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-signal) 8%, transparent); }
+.v2.rs .rs-atmos [data-k="bumper"]   { left: 29vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-bumper) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-bumper) 8%, transparent); }
+
+/* THE PAGE ENDS WITH ALL FIVE ON. The contact section is the only place the
+   five keys are allowed to be on screen together, the same exception the
+   reach buttons take, and for the same reason: it is the summary. */
+.v2.rs .rs-atmos .atm-end {
+  left: -10vw;
+  top: 40vh;
+  width: 120vw;
+  height: 80vh;
+  background:
+    radial-gradient(ellipse 24vw 34vh at 18% 66%, color-mix(in oklab, var(--accent-healthy) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 34% 66%, color-mix(in oklab, var(--accent-friction) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 50% 66%, color-mix(in oklab, var(--accent-headroom) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 66% 66%, color-mix(in oklab, var(--accent-signal) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 82% 66%, color-mix(in oklab, var(--accent-bumper) 17%, transparent), transparent);
+}
 
 /* 2. THE VIGNETTE holds the corners down so the eye stays in the middle. */
 .v2.rs::after {
@@ -233,11 +292,15 @@ body:has(.v2.rs) {
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
     mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 70%);
   }
-  /* stacked, there is only one half, so the light is simply above the copy.
-     Declared on the same selector as the base value and later in the file, so
-     it wins over the side parity without an id or an !important. */
-  .v2.rs { --glow-x: 50%; --glow-y: 30%; }
-  .v2.rs[data-zone="end"] { --glow-y: 50%; }
+  /* stacked, there is only one half, so every light is simply above the copy
+     and none of them travel. Masked the way the field is, so the glow is gone
+     before the first line of type rather than lying dimly behind all of it. */
+  .v2.rs .rs-atmos {
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 72%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 40%, transparent 72%);
+  }
+  .v2.rs .rs-atmos .atm-k { left: -10vw; top: -5vh; width: 120vw; height: 62vh; }
+  .v2.rs .rs-atmos .atm-end { left: -10vw; top: -5vh; width: 120vw; height: 62vh; }
 }
 
 /* 3. GRAIN, AND IT DOES NOT MOVE.
@@ -825,6 +888,74 @@ body:has(.v2.rs) {
 
 .v2.rs .rs-foot { position: relative; }
 
+/* ══ the panel scrim, now that the ground has light in it ═══════════════
+   The copy sits over the lattice, so it has always needed a scrim. That
+   scrim used to be the panel's own background: a 440px gradient whose outer
+   edge was a hard vertical line. On a flat near-black ground you could just
+   about miss it. With a coloured light behind the page it is a seam straight
+   down the middle of every chapter.
+
+   So the darkness moves to a pseudo-element that bleeds a full viewport past
+   the panel on the text side and fades out over 560px on the other, which
+   means there is no edge anywhere on screen. The text side is exactly as
+   dark as it was; only the far end of the ramp changed.
+
+   DESKTOP ONLY. Stacked, the copy is below the object rather than beside it
+   and the existing top-to-bottom scrim is already edgeless.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) and (min-aspect-ratio: 501/400) {
+  /* the scrim is wider than the viewport by design. `clip` and not `hidden`:
+     hidden would make main a scroll container, and a scroll container is what
+     sticky positions against, so every panel would stop sticking. */
+  .v2.rs > main { overflow-x: clip; }
+
+  /* both parities by name, because :nth-of-type outranks a plain .rs-panel
+     whatever the order and the even rule carries its own background */
+  .v2.rs .rs-chapter:nth-of-type(odd) .rs-panel,
+  .v2.rs .rs-chapter:nth-of-type(even) .rs-panel { background-image: none; }
+
+  .v2.rs .rs-panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* behind the type and inside the panel's own stacking context, which
+       sticky gives it for free */
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* text on the left, so the ramp runs out to the right */
+  .v2.rs .rs-chapter:nth-of-type(odd) .rs-panel::before {
+    left: -100vw;
+    right: -160px;
+    background: linear-gradient(
+      90deg,
+    color-mix(in oklab, var(--void) 90%, transparent) 0,
+    color-mix(in oklab, var(--void) 90%, transparent) calc(100% - 560px),
+    color-mix(in oklab, var(--void) 85%, transparent) calc(100% - 420px),
+    color-mix(in oklab, var(--void) 55%, transparent) calc(100% - 300px),
+    color-mix(in oklab, var(--void) 18%, transparent) calc(100% - 160px),
+    transparent 100%
+    );
+  }
+  /* mirrored, like everything else about an even chapter */
+  .v2.rs .rs-chapter:nth-of-type(even) .rs-panel::before {
+    right: -100vw;
+    left: -160px;
+    background: linear-gradient(
+      270deg,
+    color-mix(in oklab, var(--void) 90%, transparent) 0,
+    color-mix(in oklab, var(--void) 90%, transparent) calc(100% - 560px),
+    color-mix(in oklab, var(--void) 85%, transparent) calc(100% - 420px),
+    color-mix(in oklab, var(--void) 55%, transparent) calc(100% - 300px),
+    color-mix(in oklab, var(--void) 18%, transparent) calc(100% - 160px),
+    transparent 100%
+    );
+  }
+}
+
 /* ══ smaller screens ════════════════════════════════════════════════════ */
 
 /* A CIRCLE HAS LESS TO GIVE, so it gives a little and the name shrinks with
@@ -904,6 +1035,19 @@ body:has(.v2.rs) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* The light arrives and leaves; it does not wander or travel to get there.
+     THE 300ms BELOW IS CLAMPED TO 150 AND THAT IS CORRECT. v2-ported.css
+     carries a site-wide `transition-duration: 150ms !important` on every
+     element under reduced motion, so this reads back as 0.15s however it is
+     written. The declaration still earns its place: it drops the transform
+     from the transition list and makes the curve linear, neither of which the
+     global touches. Do not add !important here to win the duration back —
+     shorter is the safer direction, and the exception would be for a layer
+     that is pure decoration. */
+  .v2.rs .rs-atmos { transition: none; }
+  .v2.rs .rs-atmos > .atm-drift { animation: none; }
+  .v2.rs .rs-atmos .atm-k { transform: none; transition: opacity 300ms linear; }
+
   /* the ring is a drawn ring rather than a drawing one, and the dialog
      arrives rather than rises */
   .v2.rs .rs-reel-dial circle { transition: none; stroke-dashoffset: 0; }
