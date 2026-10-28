@@ -38,6 +38,7 @@ export type StageParts = {
   line?: HTMLElement | null;
   scribble?: SVGElement | null;
   wire?: HTMLElement | null;
+  layer?: HTMLElement | null;
   inner?: HTMLElement | null;
   pieces?: Map<string, HTMLElement>;
   floor: HTMLElement | null;
@@ -161,15 +162,6 @@ const el = p.stage;
     let hy = f.cy + s.oy * f.h - size / 2;
     hx = Math.min(Math.max(hx, edge), vw - edge - size);
     hy = Math.min(Math.max(hy, edge), vh - edge - size);
-    /* THE RAIL IS A BOX, NOT A COLUMN. Clamping x against it unconditionally
-       pushed the amber shape ninety pixels left at 1664 and parked it on top
-       of the call to action — and the rail is only three hundred pixels
-       tall, so the shape was never near it. Only move out of the way of
-       something you would actually have hit. */
-    if (rail && rail.width && hy < rail.bottom + edge && hy + size > rail.top - edge) {
-      hx = Math.min(hx, rail.left - edge - size);
-    }
-
     /* A FRONT SHAPE MAY KISS THE CARD, NOT SWALLOW IT. The design has the
        clover crossing the top-left corner on purpose — that overlap is what
        puts it in front rather than beside. What it must not do is what the
@@ -181,6 +173,27 @@ const el = p.stage;
       if (s.ox > 0) hx = Math.max(hx, cardRight - allow);
       else hx = Math.min(hx, cardLeft - size + allow);
       hx = Math.min(Math.max(hx, edge), vw - edge - size);
+    }
+
+    /* THE RAIL GETS THE LAST WORD, AND IT MOVES THE SHAPE DOWN, NOT LEFT.
+       It is a box, not a column, so only a shape that would actually hit it
+       moves at all — but pushing left ran straight back into the clamp above,
+       which exists to keep front shapes beside the card, and the two undid
+       each other at 1280, 1440 and 1664. Going under the rail satisfies both:
+       there is always room below it, and nothing else lives there. */
+    if (rail && rail.width && hx < rail.right + edge && hx + size > rail.left - edge) {
+      /* AND IT CLEARS THE RAIL BY MORE THAN THE SHAPE IS PLACED AT. What is
+         placed here is a resting position; what is drawn is that position
+         plus an idle bob, a parallax lean, and the larger bounding box a
+         rotated square has. Measured, a shape placed twenty-four pixels clear
+         of the rail was still six pixels over it. FLOAT is the whole of that
+         difference with room to spare. */
+      const FLOAT = 56;
+      if (hy < rail.bottom + FLOAT && hy + size > rail.top - FLOAT) {
+        const below = rail.bottom + FLOAT;
+        const above = rail.top - FLOAT - size;
+        hy = below + size <= vh - edge ? below : Math.max(edge, above);
+      }
     }
 
     const onType = head && hx < head.right && hx + size > head.left && hy < head.bottom && hy + size > head.top;
@@ -231,6 +244,12 @@ const el = p.stage;
     p.scribble.setAttribute("height", `${sw * 0.58}`);
     box(p.scribble as unknown as HTMLElement, f.cx - sw / 2, f.cy - sw * 0.29);
   }
+  /* AND NOT UNTIL THE FONTS HAVE LANDED. The fragments are sized by their
+     own text, so Instrument Serif arriving re-measures the fit and moves
+     every one of them — revealing them on the first placement only swapped
+     one shift for a later one. They are not needed until 0.4s and the fonts
+     resolve inside 200ms, so nobody waits for this. */
+  if (p.layer && document.fonts?.status !== "loading") p.layer.dataset.placed = "";
   if (p.pieces) {
     /* FRAGMENTS ARE PLACED AS AN OFFSET FROM THE CARD, so the mess is the
        same composition at every width, and the offset is what the intro

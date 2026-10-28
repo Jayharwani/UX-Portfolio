@@ -49,6 +49,12 @@
       href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap"
       rel="stylesheet"
     />
+    <!-- THE TWO SHAPES THAT LAND FIRST. Every sprite is a WebP with a 2x
+         pair and the ten of them come to 128 KB at 2x, so none of this is
+         worth preloading except the two the eye goes to as the card
+         resolves. The rest are fetched when their <img> is parsed. -->
+    <link rel="preload" as="image" href="/hero/shapes/clover-mint@2x.webp" type="image/webp" />
+    <link rel="preload" as="image" href="/hero/shapes/sunny-amber@2x.webp" type="image/webp" />
     <link
       rel="preload"
       as="style"

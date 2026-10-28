@@ -90,7 +90,18 @@ export function CardUI({ card }: { card: HeroCard }) {
             so anything that reads the target back out of the text reads
             whatever the last count-up left there. On a phone, where the fit is
             measured again when the fonts land, that was a zero. */}
-        <span data-hc-count={card.number.value}>{card.number.value.toLocaleString("en-US")}</span>
+        {/* AND THE BOX IS THE SIZE OF THE FINAL FIGURE FROM THE START. The
+            count runs up from nothing, so the text is shorter than it will be
+            for most of it, and a box that follows the text is a layout shift
+            on every count — measured at 0.0009 CLS a second after the page
+            had otherwise settled. The figures are tabular, so one character
+            is one digit wide and the reservation is exact. */}
+        <span
+          data-hc-count={card.number.value}
+          style={{ minWidth: `${card.number.value.toLocaleString("en-US").length}ch` }}
+        >
+          {card.number.value.toLocaleString("en-US")}
+        </span>
       </div>
 
       <div className="hc-sub" data-hc-el>

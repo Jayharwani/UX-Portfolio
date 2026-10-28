@@ -105,6 +105,7 @@ export function HeroStage() {
         line: line.current,
         scribble: scribble.current?.ownerSVGElement ?? null,
         wire: refs.wire.current,
+        layer: stage.current.querySelector<HTMLElement>(".hc-intro"),
         inner: refs.ui.current?.firstElementChild as HTMLElement | null,
         pieces: pieces.current,
       },

@@ -54,12 +54,47 @@ const set = (el: Element | null, prop: string, value: string) => {
 /** where the scrub last left the card, and -1 for "nothing was scrubbed" */
 let lastA = -1;
 
+/** read once and kept current, because this is consulted every frame */
+const soft = typeof window === "undefined" ? null : window.matchMedia("(prefers-reduced-motion: reduce)");
+
+/* --------------------------------------------------------------------------
+   THE SAME HAND-OFF WITH NOTHING MOVING.
+
+   A reader who asked for less motion still gets the idea — the card goes and
+   the case study arrives — but none of the performance. The lens does not
+   grow, the ring does not draw, nothing drifts: the card simply fades out
+   across the first part of the scroll and the field's own morph, which the
+   site already softens under this setting, carries on underneath.
+   -------------------------------------------------------------------------- */
+function scrubQuiet(p: HeroParts, a: number): void {
+  const gone = seg(a, 0, 0.6);
+  for (const el of [p.overlay, p.frame, p.tag, p.ui, p.back, p.edge, p.lens, p.rim, ...p.extras]) {
+    set(el, "opacity", `${1 - gone}`);
+  }
+  for (const el of p.shapes) el.style.opacity = `${1 - gone}`;
+  set(p.ring, "opacity", "0");
+  if (p.code) {
+    p.code.style.transition = "none";
+    p.code.style.opacity = "0";
+  }
+  p.card.style.visibility = gone >= 1 ? "hidden" : "";
+  p.stage.style.pointerEvents = a > 0.02 ? "none" : "";
+  if (p.page) {
+    p.page.style.setProperty("--hc-grid-dur", "0ms");
+    p.page.style.setProperty("--hc-grid", `${1 - gone}`);
+  }
+}
+
 /** `a` is phase A, 0 at the top of the page and 1 where the field's own
  *  morph into chapter 01 begins. */
 export function scrubHero(a: number): void {
   if (!parts || a === lastA) return;
   lastA = a;
   const p = parts;
+  if (soft?.matches) {
+    scrubQuiet(p, a);
+    return;
+  }
 
   /* THE ANNOTATIONS BELONG TO THE DESIGN FACE AND GO WITH IT. The selection
      handles, the measurement and the collaborator's cursor are all labelling

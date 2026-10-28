@@ -183,6 +183,7 @@
   color: var(--hc-ink-3);
 }
 
+.v2.rs .hc-number [data-hc-count] { display: inline-block; text-align: left; }
 .v2.rs .hc-number {
   position: absolute;
   left: 34px;
@@ -788,7 +789,15 @@
   inset: 0;
   pointer-events: none;
   z-index: 3;
+  /* NOTHING HERE IS PAINTED UNTIL IT HAS BEEN PLACED. The fragments render
+     at the origin and are moved to their places a frame later, and an
+     element that paints before it is positioned is a layout shift — measured,
+     these five were the whole of a 0.0083 CLS. Opacity would not have done:
+     Chrome counts an element at opacity zero as present. place.ts turns this
+     on once every position is written. */
+  visibility: hidden;
 }
+.v2.rs .hc-intro[data-placed] { visibility: visible; }
 .v2.rs .hc-intro .hc-skip { pointer-events: auto; }
 
 /* THE LINE THE CARD IS BORN OUT OF. Placed from the card's own centre by
