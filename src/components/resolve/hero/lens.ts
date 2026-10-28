@@ -42,10 +42,15 @@ export function placeLens(
 /* WHICH PART OF THE INTERFACE THE LENS IS OVER. Bands, not element hit tests:
    the card is a tilted plane and the regions are fixed bands of card space,
    so this is four comparisons rather than a hit test per frame. */
+/* THE CTA BAND STARTS AT 500, NOT THE SPEC'S 530, because the spec also
+   clamps the lens centre to 514 and the two cannot both be true: at 530 the
+   call to action's snippet is the one thing on the card you can never point
+   at. 500 is reachable, and it is honest — a lens centred there already
+   covers the button, since the disc is 248 across. */
 const BOUNDS: [Region, number][] = [
   ["number", 300],
   ["module", 380],
-  ["list", 530],
+  ["list", 500],
   ["cta", Infinity],
 ];
 

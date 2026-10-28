@@ -7,6 +7,9 @@ import { BASE_H, BASE_W, fitStage, type Fit } from "./fit";
 import { CORNERS, projector, type Pose } from "./projector";
 import { placeLens, REST_X, REST_Y } from "./lens";
 import { setCardLight } from "./light";
+import { createMotion, type Motion } from "./motion";
+import { enter, leave, settle } from "./switching";
+import { onFrame } from "../../../lib/clock";
 
 /* --------------------------------------------------------------------------
    THE STAGE.
@@ -59,7 +62,7 @@ export function HeroStage() {
   const productRef = useRef<ProductKey>("headroom");
   productRef.current = product;
   const [fit, setFit] = useState<Fit>({ layout: "none" });
-  const [region] = useState<Region>("number");
+
 
   const stage = useRef<HTMLDivElement>(null);
   const floor = useRef<HTMLDivElement>(null);
@@ -81,6 +84,12 @@ export function HeroStage() {
   };
 
   const card = HERO_CARDS.find((c) => c.key === product) ?? HERO_CARDS[0];
+  const motion = useRef<Motion | null>(null);
+  const switching = useRef(false);
+  const [showCode, setShowCode] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [, setRegionTick] = useState(0);
+  const regionRef = useRef<Region>("number");
 
   /** Write every position for the current fit. No layout reads beyond the
    *  fit itself, and the card's corners come from the analytic projector
@@ -232,6 +241,126 @@ export function HeroStage() {
     };
   }, [place]);
 
+  /* THE SWITCH IS THREE ACTS AND REACT IS THE MIDDLE ONE. The old interface
+     has to leave before the DOM is swapped, or there is nothing left to
+     animate out; the new one lands after. So: play the exit, flip the state,
+     and let a layout effect catch the new elements on the frame they appear. */
+  const choose = useCallback(
+    (next: ProductKey) => {
+      if (next === productRef.current || switching.current) return;
+      switching.current = true;
+      const soft = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      void leave(refs.ui.current, refs.overlay.current, soft).then(() => {
+        setProduct(next);
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  useLayoutEffect(() => {
+    if (!switching.current) return;
+    switching.current = false;
+    const soft = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    settle(refs.ui.current, refs.overlay.current);
+    enter(refs.ui.current, refs.overlay.current, card.number.value, soft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
+
+  /* ── auto-advance ─────────────────────────────────────────────────────
+     Every six and a half seconds, with a line that fills so the change is
+     announced rather than sprung. It stops for anything that suggests
+     somebody is reading: a pointer on the stage, a focused tab, a hidden
+     tab, or a reader who asked for less motion. */
+  useEffect(() => {
+    if (fit.layout === "none") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const st = stage.current;
+    if (!st) return;
+
+    let t0 = performance.now();
+    let held = paused;
+    const order: ProductKey[] = HERO_CARDS.map((c) => c.key);
+
+    const stop = onFrame(() => {
+      if (document.hidden || held) {
+        t0 = performance.now();
+        st.style.setProperty("--hc-advance", "0");
+        return;
+      }
+      const p = (performance.now() - t0) / 6500;
+      st.style.setProperty("--hc-advance", `${Math.min(p, 1)}`);
+      if (p >= 1) {
+        t0 = performance.now();
+        const i = order.indexOf(productRef.current);
+        choose(order[(i + 1) % order.length]);
+      }
+    });
+
+    const over = () => { held = true; };
+    const out = () => { held = false; t0 = performance.now(); };
+    st.addEventListener("pointerenter", over);
+    st.addEventListener("pointerleave", out);
+    st.addEventListener("focusin", over);
+    st.addEventListener("focusout", out);
+    return () => {
+      stop();
+      st.removeEventListener("pointerenter", over);
+      st.removeEventListener("pointerleave", out);
+      st.removeEventListener("focusin", over);
+      st.removeEventListener("focusout", out);
+    };
+  }, [fit.layout, paused, choose]);
+
+  /* ── the code, for anyone without a hover ─────────────────────────────
+     The lens is a pointer instrument. A phone has no pointer and a keyboard
+     cannot aim one, so the same content gets a plain control: the listing
+     opens from where you touched, under the lens that fades out of its way. */
+  const toggleCode = useCallback(
+    (e?: { clientX: number; clientY: number }) => {
+      const code = refs.code.current;
+      const lensEl = refs.lens.current;
+      const rimEl = refs.rim.current;
+      const soft = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      setShowCode((was) => {
+        const on = !was;
+        if (code) {
+          /* the wipe starts where the finger landed, which is what makes it
+             feel like the card opening rather than a panel appearing */
+          let ox = 230;
+          let oy = 312;
+          /* A KEYBOARD CLICK CARRIES (0, 0). el.click() synthesises an event
+             with no coordinates, which mapped through the homography put the
+             wipe's origin a thousand pixels off the card. Only a real pointer
+             gets to choose where it opens from. */
+          if (e && (e.clientX || e.clientY) && motion.current) {
+            const c = motion.current.cardPoint(e.clientX, e.clientY);
+            if (c) {
+              ox = c[0];
+              oy = c[1];
+            }
+          }
+          code.style.setProperty("--hc-reveal-x", `${ox}px`);
+          code.style.setProperty("--hc-reveal-y", `${oy}px`);
+          code.style.transition = soft
+            ? "opacity 200ms linear"
+            : "clip-path 600ms var(--e-move, ease), opacity 150ms linear";
+          code.style.opacity = on ? "1" : "0";
+          code.style.setProperty("--hc-reveal-r", on ? (soft ? "150%" : "150%") : "0px");
+        }
+        for (const el of [lensEl, rimEl]) {
+          if (!el) continue;
+          el.style.transition = "opacity 150ms linear";
+          el.style.opacity = on ? "0" : "1";
+        }
+        setPaused(on);
+        return on;
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   /* re-place when the product changes the shapes that exist */
   useEffect(() => {
     if (fit.layout !== "none") place(fit);
@@ -241,6 +370,68 @@ export function HeroStage() {
      does not keep a card light with no card under it */
   useEffect(() => () => setCardLight(null), []);
 
+  /* ── everything that happens between frames ───────────────────────────
+     One subscription to the page's only clock. The lens, the lean and the
+     shapes all move here; nothing in the loop reads layout. */
+  useEffect(() => {
+    const st = stage.current;
+    const cd = refs.card.current;
+    if (!st || !cd || fit.layout === "none") return;
+
+    const m = createMotion({
+      stage: st,
+      card: cd,
+      lens: () => refs.lens.current,
+      rim: () => refs.rim.current,
+      tag: () => refs.tag.current,
+      shapes: shapes.current,
+      onRegion: (r) => {
+        regionRef.current = r;
+        setRegionTick((n) => n + 1);
+      },
+    });
+    m.setFit(fit);
+    motion.current = m;
+
+    const move = (e: PointerEvent) => {
+      m.onPointerMove(e);
+      m.dragTo(e);
+    };
+    const down = (e: PointerEvent) => {
+      if (!m.grab(e)) m.setPressed(true);
+    };
+    const up = () => {
+      const r = m.release();
+      /* a press that never travelled is a click, and a clicked shape
+         squashes rather than flies */
+      if (r && !r.moved) m.squash(r.body);
+      m.setPressed(false);
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    st.addEventListener("pointerdown", down, { passive: true });
+    window.addEventListener("pointerup", up, { passive: true });
+
+    /* PAUSED WHEN NOBODY CAN SEE IT. A hidden tab or a hero scrolled past is
+       a loop spending frames on an invisible card. */
+    const io = new IntersectionObserver(([e]) => m.setEnabled(e.isIntersecting && !document.hidden), { threshold: 0 });
+    const top = document.querySelector("#top");
+    if (top) io.observe(top);
+    const vis = () => m.setEnabled(!document.hidden);
+    document.addEventListener("visibilitychange", vis);
+
+    const stop = onFrame((t, deltaMs) => m.tick(Math.min(deltaMs / 1000, 0.05), t));
+    return () => {
+      stop();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", vis);
+      window.removeEventListener("pointermove", move);
+      st.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointerup", up);
+      motion.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fit]);
+
   if (fit.layout === "none") return null;
 
   return (
@@ -248,7 +439,7 @@ export function HeroStage() {
       <div className="hc-floor" ref={floor} aria-hidden="true" />
       <ShapeLayer layer="back" mode={fit.mode} bag={shapes} />
 
-      <Card card={card} region={region} refs={refs} />
+      <Card card={card} region={regionRef.current} refs={refs} />
 
       <ShapeLayer layer="front" mode={fit.mode} bag={shapes} />
       {fit.mode === "full" &&
@@ -267,9 +458,15 @@ export function HeroStage() {
           </span>
         ))}
 
-      <Tabs active={product} onSelect={setProduct} panelId="hc-panel" pager={fit.mode === "stacked" || fit.mode === "minimal"} rowRef={tabs} />
-      <button className="hc-code-toggle" type="button" aria-pressed={false} ref={toggle}>
-        Show code
+      <Tabs active={product} onSelect={choose} panelId="hc-panel" pager={fit.mode === "stacked" || fit.mode === "minimal"} rowRef={tabs} />
+      <button
+        className="hc-code-toggle"
+        type="button"
+        aria-pressed={showCode}
+        ref={toggle}
+        onClick={(e) => toggleCode({ clientX: e.clientX, clientY: e.clientY })}
+      >
+        {showCode ? "Show design" : "Show code"}
       </button>
       <p className="hc-sr" id="hc-panel" role="tabpanel" aria-live="polite">
         {card.srLabel}

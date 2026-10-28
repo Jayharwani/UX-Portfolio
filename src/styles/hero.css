@@ -747,3 +747,31 @@
   transition: width var(--t-move, 550ms) var(--e-move, ease), background-color var(--t-hover, 310ms) var(--e-hover, ease);
 }
 .v2.rs .hc-dot-tab[aria-selected="true"] { width: 18px; }
+
+/* the plate's shadow leans opposite to the card, which is what makes the
+   lean read as a lean rather than as the whole thing sliding */
+.v2.rs .hc-back { margin-left: var(--hc-plate-x, 0px); }
+
+/* THE COPY COLUMN IS AS WIDE AS ITS WIDEST LINE, which is what it already
+   looks like and was not. It stretched the full shell, so its box — and the
+   headline's inside it — lay across the card, and every pointer meant for
+   the card hit the words instead: no press, no lean, no lens.
+
+   Width rather than pointer-events, because this keeps the text selectable
+   and keeps `.rs-display span { display: block }` exactly as it is. That
+   block is load-bearing: the ink clip sweeps the outline's own box, so
+   shrinking the span would retime the one animation the brief says not to
+   touch. The copy's box may shrink; the span's may not.
+
+   Desktop only. Stacked there is one column and the copy should fill it. */
+@media (min-width: 1024px) and (min-aspect-ratio: 501/400) {
+  .v2.rs .rs-hero-copy { width: max-content; max-width: 100%; }
+}
+
+/* AND THE SECTION ITSELF IS A LAYOUT BOX, NOT A SURFACE. `.rs-hero` is a
+   full-viewport block sitting above the fixed stage, so it caught everything
+   the copy column no longer did. Its children go back to catching their own;
+   it keeps painting (the stacked layout's gradient lives on it) and stops
+   intercepting. */
+.v2.rs .rs-hero { pointer-events: none; }
+.v2.rs .rs-hero > * { pointer-events: auto; }
