@@ -9,6 +9,9 @@ import { setCardLight } from "./light";
 import { placeStage } from "./place";
 import { setCardSource } from "./cardPoints";
 import { useAutoAdvance } from "./useAutoAdvance";
+import { IntroLayer } from "./IntroLayer";
+import { introKind, type IntroKind } from "./intro";
+import { useIntro } from "./useIntro";
 import { registerHero, releaseHero } from "./handoff";
 import { createMotion, type Motion } from "./motion";
 import { enter, leave, settle } from "./switching";
@@ -38,6 +41,9 @@ export function HeroStage() {
   const productRef = useRef<ProductKey>("headroom");
   productRef.current = product;
   const [fit, setFit] = useState<Fit>({ layout: "none" });
+  /* the live fit, for the things that must not restart when it is remeasured */
+  const fitRef = useRef<Fit>(fit);
+  fitRef.current = fit;
 
 
   const stage = useRef<HTMLDivElement>(null);
@@ -46,6 +52,15 @@ export function HeroStage() {
   const toggle = useRef<HTMLButtonElement>(null);
   const shapes = useRef<Map<string, HTMLElement>>(new Map());
   const tokens = useRef<Map<string, HTMLElement>>(new Map());
+  const pieces = useRef<Map<string, HTMLElement>>(new Map());
+  const line = useRef<HTMLDivElement>(null);
+  const scribble = useRef<SVGPathElement>(null);
+  const skipEl = useRef<HTMLButtonElement>(null);
+  const player = useRef<{ skip: () => void; kill: () => void } | null>(null);
+  /** decided once, on the first render, because reading it later would read
+   *  a session flag the first visit has already set */
+  const [kind] = useState<IntroKind>(introKind);
+  const [playing, setPlaying] = useState(kind !== "none");
 
   const refs: CardRefs = {
     card: useRef<HTMLDivElement>(null),
@@ -56,6 +71,7 @@ export function HeroStage() {
     code: useRef<HTMLDivElement>(null),
     ui: useRef<HTMLDivElement>(null),
     overlay: useRef<HTMLDivElement>(null),
+    wire: useRef<HTMLDivElement>(null),
     frame: useRef<HTMLDivElement>(null),
   };
 
@@ -86,6 +102,11 @@ export function HeroStage() {
         tag: refs.tag.current,
         shapes: shapes.current,
         tokens: tokens.current,
+        line: line.current,
+        scribble: scribble.current?.ownerSVGElement ?? null,
+        wire: refs.wire.current,
+        inner: refs.ui.current?.firstElementChild as HTMLElement | null,
+        pieces: pieces.current,
       },
       productRef.current,
     );
@@ -181,6 +202,38 @@ export function HeroStage() {
   useEffect(() => {
     if (fit.layout !== "none") place(fit);
   }, [fit, product, place]);
+
+  /* THE HERO IS NEVER LEFT HIDDEN. `data-intro="pending"` is written by an
+     inline script before the app exists and takes the hero's copy and the
+     stage's parts off screen, so whatever happens next — a field that failed
+     to start, a layout with no card, a throw inside the timeline — something
+     has to take it away again. This is that something, and it is deliberately
+     the dumbest possible version. */
+  useEffect(() => {
+    const t = window.setTimeout(() => document.documentElement.removeAttribute("data-intro"), 1400);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useIntro({
+    playing,
+    setPlaying,
+    kind,
+    fit,
+    fitRef,
+    stage,
+    refs,
+    floor,
+    tabs,
+    toggle,
+    line,
+    scribble,
+    skipEl,
+    player,
+    handoff,
+    pieces,
+    shapes,
+    tokens,
+  });
 
   /* AND IT ALL GOES BACK WHEN THE STAGE DOES, so a landscape phone is not
      left with a card light over no card, a scrubbed-away floor, or a field
@@ -300,6 +353,16 @@ export function HeroStage() {
   return (
     <div className="hero-stage" ref={stage} data-mode={fit.mode} data-product={product}>
       <div className="hc-floor" ref={floor} aria-hidden="true" />
+      {playing && kind === "full" && (
+        <IntroLayer
+          mode={fit.mode}
+          bag={pieces}
+          line={line}
+          scribble={scribble}
+          skip={skipEl}
+          onSkip={() => player.current?.skip()}
+        />
+      )}
       <ShapeLayer layer="back" mode={fit.mode} bag={shapes} />
 
       <Card card={card} region={regionRef.current} refs={refs} />

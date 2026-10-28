@@ -85,7 +85,12 @@ export function CardUI({ card }: { card: HeroCard }) {
 
       <div className="hc-number" data-hc-el>
         {card.number.prefix && <span className="hc-prefix">{card.number.prefix}</span>}
-        <span data-hc-count>{card.number.value.toLocaleString("en-US")}</span>
+        {/* THE FIGURE IS IN THE ATTRIBUTE AS WELL AS THE TEXT, because both
+            the intro and the product switch count it up by writing the text —
+            so anything that reads the target back out of the text reads
+            whatever the last count-up left there. On a phone, where the fit is
+            measured again when the fonts land, that was a zero. */}
+        <span data-hc-count={card.number.value}>{card.number.value.toLocaleString("en-US")}</span>
       </div>
 
       <div className="hc-sub" data-hc-el>

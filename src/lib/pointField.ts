@@ -557,6 +557,9 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         if (wave === "along") lead = i / N;
         else if (wave === "around") lead = (Math.atan2(bPos[i3b + 1], bPos[i3b]) + Math.PI) / (Math.PI * 2);
         else if (wave === "across") lead = (bPos[i3b] + 1.6) / 3.2;
+        /* outward from the middle, for a burst: the ones nearest where it
+           started leave first and the edge of the cloud is still arriving */
+        else if (wave === "out") lead = Math.hypot(bPos[i3b], bPos[i3b + 1]) / 2.2;
         else lead = (1.1 - bPos[i3b + 1]) / 2.2;
         const d = (clamp01(lead) * 0.82 + delay[i] * 0.4) * STAGGER;
         const t = smoothstep(clamp01((p - d) / span));

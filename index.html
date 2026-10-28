@@ -68,6 +68,23 @@
     </noscript>
   </head>
   <body>
+    <!-- NO FLASH OF A HERO THAT IS ABOUT TO BE ANIMATED IN. This runs before
+         the app loads and before first paint, so the stage's parts and the
+         hero copy are already hidden by CSS when the intro's timeline turns
+         up a moment later. It reads the same session flag the intro does and
+         never writes it: the timeline owns that, so a visit where the script
+         runs and the app never mounts does not cost the reader their intro. -->
+    <script>
+      try {
+        if (
+          !sessionStorage.getItem('rs-intro-played') &&
+          !location.hash &&
+          !window.scrollY &&
+          matchMedia('(prefers-reduced-motion: no-preference)').matches
+        )
+          document.documentElement.dataset.intro = 'pending';
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

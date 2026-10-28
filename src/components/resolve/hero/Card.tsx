@@ -27,6 +27,7 @@ export type CardRefs = {
   code: RefObject<HTMLDivElement | null>;
   ui: RefObject<HTMLDivElement | null>;
   overlay: RefObject<HTMLDivElement | null>;
+  wire: RefObject<HTMLDivElement | null>;
   frame: RefObject<HTMLDivElement | null>;
 };
 
@@ -39,6 +40,12 @@ export function Card({ card, region, refs }: { card: HeroCard; region: Region; r
       <div className="hc" ref={refs.card}>
         <div className="hc-back" />
         <div className="hc-edge" />
+
+        {/* THE SKELETON SITS UNDER THE REAL ONE, not instead of it: the
+            intro fades one into the other in place, so nothing moves at the
+            moment the card stops being a wireframe. Its blocks are written
+            by place.ts from the real layout's own measurements. */}
+        <div className="hc-face hc-wire" ref={refs.wire} />
 
         <div className="hc-face hc-ui" ref={refs.ui}>
           <CardUI card={card} />

@@ -69,6 +69,8 @@ export function enter(ui: HTMLElement | null, overlay: HTMLElement | null, value
      rather than its opacity. Tabular figures, so the width never jitters. */
   const node = ui.querySelector<HTMLElement>("[data-hc-count]");
   if (node) {
+    /* the caller passes the figure, and the attribute carries it too, so the
+       two can never disagree about what this is counting to */
     const n = { v: 0 };
     gsap.to(n, {
       v: value,

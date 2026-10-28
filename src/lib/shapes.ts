@@ -26,7 +26,8 @@
    -------------------------------------------------------------------------- */
 
 import { ICONS, iconPoints } from "./icons";
-import { cardPhase, getCardPlane, getCardSource } from "../components/resolve/hero/cardPoints";
+import { cardMap, cardPhase, getCardSource, getCardWire, type CardRect } from "../components/resolve/hero/cardPoints";
+import { BASE_H, BASE_W } from "../components/resolve/hero/fit";
 
 export type ShapeWriter = (
   pos: Float32Array,
@@ -57,7 +58,7 @@ export type ShapeWriter = (
 /* `card` is rebuilt every frame because the pose it is drawn from moves:
    the reader's pointer leans the card, and the particles are registered to
    its glyphs, so they have to lean with it. */
-const LIVE = new Set<string>(["drift", "reach", "signal", "card"]);
+const LIVE = new Set<string>(["drift", "reach", "signal", "card", "line", "mess", "wire"]);
 const ACTING = new Set<string>(["healthy", "friction", "headroom", "bumper"]);
 
 /** true if this state changes under its own power, wherever it is used */
@@ -219,18 +220,13 @@ function writeIcon(
    landscape phone has no card, and the field still needs a hero state. */
 export const card: ShapeWriter = (pos, lit, size, n, time, phase) => {
   const src = getCardSource();
-  if (!src) {
+  const map = cardMap();
+  if (!src || !map) {
     drift(pos, lit, size, n, time, 1);
     return;
   }
-  const plane = getCardPlane();
-  if (!plane) {
-    drift(pos, lit, size, n, time, 1);
-    return;
-  }
-  const { sample, project, vw, vh } = src;
-  const { halfW, halfH, fit, ox, oy } = plane;
-  const { xy, halo, plain } = sample;
+  const { project, toWorld } = map;
+  const { xy, halo, plain } = src.sample;
   const ph = cardPhase();
   const slide = clamp01((ph - 0.15) / 0.4);
   /* THE CHARACTERS COME APART BEFORE THEY TRAVEL ANYWHERE. A listing that
@@ -258,25 +254,180 @@ export const card: ShapeWriter = (pos, lit, size, n, time, phase) => {
       v += (xy[t * 2 + 1] - v) * e;
     }
 
-    /* SCREEN PIXELS TO LATTICE SPACE. The world point is where the glyph is;
-       dividing out the field's own offset and scale is what puts the particle
-       there once three multiplies the lattice's transform back in. Without
-       it the formation only lined up at fit 1, dead centre — which is to say
-       on a wide screen and nowhere else. */
     if (spread > 0) {
       u += Math.sin(i * 12.9898) * spread;
       v += Math.cos(i * 78.233) * spread;
     }
 
     const [sx, sy] = project(u, v);
-    pos[i * 3] = ((sx / vw) * 2 * halfW - halfW - ox) / fit;
-    pos[i * 3 + 1] = (halfH - (sy / vh) * 2 * halfH - oy) / fit;
+    const [wx, wy] = toWorld(sx, sy);
+    pos[i * 3] = wx;
+    pos[i * 3 + 1] = wy;
     pos[i * 3 + 2] = 0;
     lit[i] = 0;
     size[i] = i < halo ? 1.6 : 1.15;
   }
   /* anything the sample did not fill sits far behind, out of frame */
   for (let i = count; i < n; i++) {
+    pos[i * 3] = 0;
+    pos[i * 3 + 1] = 0;
+    pos[i * 3 + 2] = -40;
+    lit[i] = 0;
+    size[i] = 0;
+  }
+};
+
+/* ── THE INTRO'S THREE FORMATIONS ────────────────────────────────
+
+   A line of light, the mess it bursts into, and the wireframe that mess
+   resolves into before the card itself exists. All three are registered to
+   the card through the same mapping the `card` formation uses, so the whole
+   opening is one object arriving at one place rather than four animations
+   that happen to end near each other.
+
+   Each falls back to `drift` when there is no card, which is the landscape
+   phone and the only case where the hero has nothing to arrive at.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** a deterministic unit pair from an index: the same mess on every load */
+const scatterAt = (i: number): [number, number] => {
+  const a = Math.sin(i * 12.9898) * 43758.5453;
+  const b = Math.sin(i * 78.233) * 12345.6789;
+  return [a - Math.floor(a), b - Math.floor(b)];
+};
+
+/** EVERY PARTICLE ON THE LIGHT LINE. One and a bit card widths, at the card's
+ *  own centre height, which is exactly where the CSS line is drawn — the two
+ *  are one line seen twice, so the burst comes out of the thing the reader is
+ *  already looking at rather than out of thin air beside it. */
+export const line: ShapeWriter = (pos, lit, size, n, time) => {
+  const map = cardMap();
+  if (!map) {
+    drift(pos, lit, size, n, time, 1);
+    return;
+  }
+  const { project, toWorld } = map;
+  const [lx, ly] = toWorld(...project(0, BASE_H / 2));
+  const [rx, ry] = toWorld(...project(BASE_W, BASE_H / 2));
+  const ex = (rx - lx) * 0.3;
+  const ey = (ry - ly) * 0.3;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const [jx, jy] = scatterAt(i);
+    pos[i * 3] = lx - ex + (rx - lx + ex * 2) * t;
+    /* a hair of thickness, so it is a line of light and not a wire */
+    pos[i * 3 + 1] = ly - ey + (ry - ly + ey * 2) * t + (jy - 0.5) * 0.012;
+    pos[i * 3 + 2] = (jx - 0.5) * 0.02;
+    lit[i] = 0;
+    size[i] = 1.1;
+  }
+};
+
+/** THE BURST. A loose cloud around the card, wider than it is tall because
+ *  that is the shape of the room the line was lying across. */
+export const mess: ShapeWriter = (pos, lit, size, n, time) => {
+  const map = cardMap();
+  if (!map) {
+    drift(pos, lit, size, n, time, 1);
+    return;
+  }
+  const { project, toWorld } = map;
+  const [cx, cy] = toWorld(...project(BASE_W / 2, BASE_H / 2));
+  const [ex] = toWorld(...project(BASE_W, BASE_H / 2));
+  const half = Math.abs(ex - cx) || 1;
+  for (let i = 0; i < n; i++) {
+    const [a, b] = scatterAt(i);
+    const ang = a * Math.PI * 2;
+    /* the cube root spreads them through the volume instead of piling two
+       thirds of them against the skin of it */
+    const r = Math.cbrt(b) * half * 1.9;
+    pos[i * 3] = cx + Math.cos(ang) * r;
+    pos[i * 3 + 1] = cy + Math.sin(ang) * r * 0.78;
+    pos[i * 3 + 2] = Math.sin(i * 1.7) * r * 0.45;
+    lit[i] = 0;
+    size[i] = 1.0 + a * 0.5;
+  }
+};
+
+/** a point on a skeleton block: mostly its outline, a few scattered inside */
+function onBox(b: CardRect, t: number, i: number): [number, number] {
+  const [a, c] = scatterAt(i * 3 + 11);
+  if (a < 0.26) return [b.x + c * b.w, b.y + ((i * 0.618) % 1) * b.h];
+  const per = (b.w + b.h) * 2;
+  let d = t * per;
+  if (d < b.w) return [b.x + d, b.y];
+  d -= b.w;
+  if (d < b.h) return [b.x + b.w, b.y + d];
+  d -= b.h;
+  if (d < b.w) return [b.x + b.w - d, b.y + b.h];
+  return [b.x, b.y + b.h - (d - b.w)];
+}
+
+/** the card's own rounded rectangle, by distance along its outline */
+function onOutline(t: number, r: number): [number, number] {
+  const w = BASE_W - 2 * r;
+  const h = BASE_H - 2 * r;
+  const arc = (Math.PI / 2) * r;
+  const per = 2 * w + 2 * h + 4 * arc;
+  let d = t * per;
+  if (d < w) return [r + d, 0];
+  d -= w;
+  if (d < arc) { const a = d / r; return [BASE_W - r + Math.sin(a) * r, r - Math.cos(a) * r]; }
+  d -= arc;
+  if (d < h) return [BASE_W, r + d];
+  d -= h;
+  if (d < arc) { const a = d / r; return [BASE_W - r + Math.cos(a) * r, BASE_H - r + Math.sin(a) * r]; }
+  d -= arc;
+  if (d < w) return [BASE_W - r - d, BASE_H];
+  d -= w;
+  if (d < arc) { const a = d / r; return [r - Math.sin(a) * r, BASE_H - r + Math.cos(a) * r]; }
+  d -= arc;
+  if (d < h) return [0, BASE_H - r - d];
+  const a = (d - h) / r;
+  return [r - Math.cos(a) * r, r - Math.sin(a) * r];
+}
+
+/** THE CARD BEFORE IT IS A CARD. Its outline, and one box per element of its
+ *  own measured layout — so the skeleton can never be a second, staler
+ *  description of the thing it is a skeleton of. */
+export const wire: ShapeWriter = (pos, lit, size, n, time) => {
+  const map = cardMap();
+  if (!map) {
+    drift(pos, lit, size, n, time, 1);
+    return;
+  }
+  const { project, toWorld } = map;
+  const boxes = getCardWire();
+  /* a fifth of them draw the card's own edge, whatever else there is */
+  const edge = boxes.length ? Math.floor(n * 0.22) : n;
+  for (let i = 0; i < edge; i++) {
+    const [wx, wy] = toWorld(...project(...onOutline(i / edge, 34)));
+    pos[i * 3] = wx;
+    pos[i * 3 + 1] = wy;
+    pos[i * 3 + 2] = 0;
+    lit[i] = 0;
+    size[i] = 1.25;
+  }
+  if (!boxes.length) return;
+  /* and the rest spread over the boxes by perimeter, so a wide row does not
+     come out as sparse as a small label */
+  let total = 0;
+  for (const b of boxes) total += (b.w + b.h) * 2;
+  let i = edge;
+  for (const b of boxes) {
+    const share = Math.round((((b.w + b.h) * 2) / total) * (n - edge));
+    const end = Math.min(n, i + share);
+    const start = i;
+    for (; i < end; i++) {
+      const [wx, wy] = toWorld(...project(...onBox(b, (i - start) / Math.max(1, share - 1), i)));
+      pos[i * 3] = wx;
+      pos[i * 3 + 1] = wy;
+      pos[i * 3 + 2] = 0;
+      lit[i] = 0;
+      size[i] = 1.05;
+    }
+  }
+  for (; i < n; i++) {
     pos[i * 3] = 0;
     pos[i * 3 + 1] = 0;
     pos[i * 3 + 2] = -40;
@@ -753,7 +904,7 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, drift, card, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
+export const SHAPES = { rest, drift, line, mess, wire, card, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;
 
 /* ── HOW EACH SHAPE ASSEMBLES ─────────────────────────────────────────────
@@ -767,11 +918,16 @@ export type ShapeName = keyof typeof SHAPES;
    "index" uses the order the points were sampled in, which for the icons is
    angle around the centre, so it draws the silhouette rather than sweeping
    across it. */
-export type Wave = "down" | "around" | "along" | "across";
+export type Wave = "down" | "around" | "along" | "across" | "out";
 
 export const WAVES: Record<ShapeName, Wave> = {
   rest: "down",
   drift: "down",
+  /* the line arrives along itself, the burst travels outward from where the
+     line was, and the wireframe draws itself edge first */
+  line: "across",
+  mess: "out",
+  wire: "along",
   card: "down",
   healthy: "across",
   friction: "down",

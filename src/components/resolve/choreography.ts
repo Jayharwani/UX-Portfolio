@@ -2,6 +2,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { springEase } from "../../lib/spring";
+import { introRunning } from "./hero/intro";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -32,8 +33,22 @@ const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matc
 
 
 
+/* THE HERO STAGE HAS ITS OWN OPENING AND IT INCLUDES THIS ONE. Where there
+   is a card, intro.ts raises the same two headline lines and fades the same
+   three blocks of copy, on a timeline that also builds the card — so running
+   this as well would be two animations fighting over four elements. What is
+   left here is the opening for a hero with no card, which is a landscape
+   phone and nothing else.
+
+   THE TEST CANNOT BE THE STAGE'S PRESENCE. React flushes a parent's passive
+   effects before a child's state change re-renders it, and the stage renders
+   nothing until it has measured a fit — so when this ran the stage was not in
+   the document yet, both openings started, and two tweens owned the headline's
+   yPercent. The flag is set during the stage's render, which is before every
+   effect on the page. */
 export function intro(hero: HTMLElement): () => void {
   if (reduced() || sessionStorage.getItem(ONCE)) return () => {};
+  if (introRunning()) return () => {};
   sessionStorage.setItem(ONCE, "1");
 
   const spatial = springEase("spatial-default");

@@ -4,7 +4,8 @@ import { BASE_H, BASE_W, type Fit } from "./fit";
 import { CORNERS, projector, type Pose } from "./projector";
 import { placeLens, REST_X, REST_Y } from "./lens";
 import { setCardLight } from "./light";
-import { cardSample, setCardSource } from "./cardPoints";
+import { cardSample, measureWire, setCardSource, setCardWire, type CardRect } from "./cardPoints";
+import { fragmentsFor } from "../../../data/heroFragments";
 
 /* --------------------------------------------------------------------------
    WHERE EVERYTHING ON THE STAGE GOES.
@@ -33,6 +34,12 @@ const REST_RX = 7;
 /** every element the placement writes to, gathered once by the component */
 export type StageParts = {
   stage: HTMLElement;
+  /** the intro's own furniture, absent on every visit after the first */
+  line?: HTMLElement | null;
+  scribble?: SVGElement | null;
+  wire?: HTMLElement | null;
+  inner?: HTMLElement | null;
+  pieces?: Map<string, HTMLElement>;
   floor: HTMLElement | null;
   tabs: HTMLElement | null;
   toggle: HTMLElement | null;
@@ -65,6 +72,31 @@ function headlineBox(): DOMRect | null {
   return new DOMRect(left, top, right - left, bottom - top);
 }
 
+
+/** Draw the skeleton blocks once per layout. Children are reused where they
+ *  can be, because a product change re-measures and this runs again. */
+function drawWire(face: HTMLElement, rects: CardRect[]): void {
+  while (face.children.length > rects.length) face.lastElementChild?.remove();
+  while (face.children.length < rects.length) face.appendChild(document.createElement("i"));
+  rects.forEach((r, i) => {
+    const el = face.children[i] as HTMLElement;
+    el.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+  });
+}
+
+/** CSSTEXT IS A LOADED GUN HERE AND IT WENT OFF THREE TIMES. Assigning it
+ *  replaces the whole inline style, so a placement that ran while the intro
+ *  was playing — and one does, because the fit is measured again when the
+ *  fonts land — silently deleted the opacity GSAP had set, and the tab row,
+ *  the code toggle and the floor were all on screen from the first frame.
+ *  Writing the individual properties leaves everything else alone. */
+function box(el: HTMLElement | null, left: number, top: number, w?: number, h?: number): void {
+  if (!el) return;
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  if (w !== undefined) el.style.width = `${w}px`;
+  if (h !== undefined) el.style.height = `${h}px`;
+}
 
 export function placeStage(f: Fit, p: StageParts, product: ProductKey): void {
   if (f.layout === "none") return;
@@ -104,7 +136,7 @@ const el = p.stage;
   if (p.floor) {
     const fw = f.w * 0.9;
     const fh = f.w * 0.144;
-    p.floor.style.cssText = `left:${f.cx - fw / 2}px;top:${bottom + 28 - fh / 2}px;width:${fw}px;height:${fh}px`;
+    box(p.floor, f.cx - fw / 2, bottom + 28 - fh / 2, fw, fh);
   }
 
   /* THE SHAPES HAVE TO BE KEPT OUT OF THREE THINGS: the window's edges, the
@@ -180,10 +212,56 @@ const el = p.stage;
   /* 14 under the card when it is a pager, 40 when it is a tab row: the
      pager is small and belongs to the card, the row is furniture */
   const gap = stacked ? 14 : 40;
-  if (p.tabs) p.tabs.style.cssText = `left:${f.cx}px;top:${bottom + gap}px`;
-  if (p.toggle) p.toggle.style.cssText = `left:${f.cx}px;top:${bottom + gap + (stacked ? 28 : 54)}px`;
+  box(p.tabs, f.cx, bottom + gap);
+  box(p.toggle, f.cx, bottom + gap + (stacked ? 28 : 54));
 
   placeLens(p.lens, p.rim, p.tag, REST_X, REST_Y, 1);
+
+  /* ── the intro's furniture, placed from the same fit ─────────────────── */
+  if (p.line) {
+    /* one and a bit card widths, across the card's own centre height. The
+       field's `line` formation lies along the identical span, which is the
+       only reason the burst looks like it comes out of this. */
+    const lw = f.w * 1.6;
+    box(p.line, f.cx - lw / 2, f.cy, lw);
+  }
+  if (p.scribble) {
+    const sw = f.w * 1.9;
+    p.scribble.setAttribute("width", `${sw}`);
+    p.scribble.setAttribute("height", `${sw * 0.58}`);
+    box(p.scribble as unknown as HTMLElement, f.cx - sw / 2, f.cy - sw * 0.29);
+  }
+  if (p.pieces) {
+    /* FRAGMENTS ARE PLACED AS AN OFFSET FROM THE CARD, so the mess is the
+       same composition at every width, and the offset is what the intro
+       tweens to zero — the pull-in needs no measurement at all, which is the
+       whole point of putting the origin at the card's centre. */
+    const k = Math.max(0.62, f.k);
+    for (const frag of fragmentsFor(f.mode)) {
+      const el = p.pieces.get(frag.key);
+      if (!el) continue;
+      const half = (el.firstElementChild?.firstElementChild as HTMLElement | null);
+      const hw = ((half?.offsetWidth ?? 200) * k) / 2;
+      const hh = ((half?.offsetHeight ?? 80) * k) / 2;
+      /* and none of them may leave the window: the receipt and the right-hand
+         note both ran off the edge at 1664, which is where the mess stops
+         reading as a pile of things and starts reading as a bug */
+      const x = Math.min(Math.max(f.cx + frag.ox * f.w, hw + 16), vw - hw - 16);
+      const y = Math.min(Math.max(f.cy + frag.oy * f.h, hh + 16), vh - hh - 16);
+      el.style.left = `${f.cx}px`;
+      el.style.top = `${f.cy}px`;
+      el.style.transform = `translate3d(${x - f.cx}px, ${y - f.cy}px, 0) rotate(${frag.angle}deg) scale(${k})`;
+    }
+  }
+  /* THE SKELETON IS THE REAL LAYOUT, MEASURED. offsetLeft and friends are
+     untransformed, so a tilted card still reports card-local boxes, and the
+     particles and the DOM blocks come from one measurement rather than two
+     descriptions that can disagree. */
+  if (p.inner) {
+    const rects = measureWire(p.inner);
+    setCardWire(rects);
+    if (p.wire) drawWire(p.wire, rects);
+  }
 
   /* AND THE FIELD IS TOLD WHERE EVERY GLYPH ON THE CARD IS. One projector,
      shared: the DOM face and the particles under it are the same homography,

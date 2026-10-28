@@ -839,6 +839,14 @@ body:has(.v2.rs) {
   --hc-pu: rgb(238 241 245 / 0.42);
   --hc-cm: rgb(238 241 245 / 0.34);
   --hc-id: rgb(238 241 245 / 0.82);
+  /* the intro's mess. The notes and badges are coloured per fragment from
+     --hc-frag, which each one sets to the accent of the product whose
+     problem it is; these are the surfaces the mess is made of. */
+  --hc-frag-dark: #121823;
+  --hc-frag-toast: rgb(5 7 12 / 0.92);
+  --hc-frag-receipt-ink: rgb(5 7 12 / 0.8);
+  --hc-scribble: rgb(238 241 245 / 0.16);
+  --hc-skeleton: rgb(238 241 245 / 0.09);
 }
 
 /* ONE ANIMATABLE ACCENT FOR THE CARD, registered so it interpolates rather

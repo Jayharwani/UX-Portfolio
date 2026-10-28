@@ -58,6 +58,23 @@ let override: ShapeName | null = null;
 let overrideAccent: string | null = null;
 let onOverride: (() => void) | null = null;
 
+/* THE INTRO OWNS THE FIELD WHILE IT RUNS, and the driver stands down for
+   exactly that long. Module level for the same reason the override is: the
+   stage is three components away and this changes twice a session, which is
+   not worth a re-render of the tree either time. */
+let live: FieldHandle | null = null;
+let paused = false;
+
+export const getField = (): FieldHandle | null => live;
+
+export function pauseDriver(on: boolean): void {
+  if (paused === on) return;
+  paused = on;
+  /* coming back, the driver has to re-apply from wherever the reader now is,
+     not from wherever it last wrote */
+  if (!on) onOverride?.();
+}
+
 export function setFieldTarget(shape: ShapeName | null, accent?: string): void {
   if (override === shape) return;
   override = shape;
@@ -87,8 +104,13 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
   healthy: [-0.22, 0.09, 4.85],
   /* STRAIGHT ON, AND IT HAS TO BE. The card formation turns screen pixels
      into world units assuming a camera on the z axis looking at the origin;
-     any orbit at all and the particles stop sitting on their glyphs. */
+     any orbit at all and the particles stop sitting on their glyphs. The
+     intro's three formations are registered to the same card, so they take
+     the same pose and the whole opening happens at one camera. */
   card: [0, 0, 5.4],
+  line: [0, 0, 5.4],
+  mess: [0, 0, 5.4],
+  wire: [0, 0, 5.4],
   friction: [-0.3, 0.1, 4.5],
   headroom: [0.32, 0.04, 4.4],
   signal: [-0.24, 0.08, 4.5],
@@ -156,6 +178,7 @@ export function ResolveField({
 
     const handle = createField(el, TOKENS.paper, TOKENS[ISSUES[0].accent]);
     field.current = handle;
+    live = handle;
 
     let active = -1;
     let zone: Zone | null = null;
@@ -233,7 +256,7 @@ export function ResolveField({
     };
 
     const apply = (y: number) => {
-      if (centres.length < 2) return;
+      if (centres.length < 2 || paused) return;
       /* The interpolation walks every point, so it is not worth redoing when
          the reader has not moved. The exception is a state that is alive: the
          hero sheet is a travelling wave, so while any of it is on screen the
@@ -316,15 +339,8 @@ export function ResolveField({
       if (onCard) {
         scrubHero(heroA);
         setCardPhase(heroA);
-        setCardPlane(handle.cardPlane());
-        const src = getCardSource();
-        if (src && src.sample !== codeFor) {
-          codeFor = src.sample;
-          handle.setCodeColours(src.sample.rgb);
-        }
-      } else {
-        setCardPlane(null);
-        if (from === 0) releaseHero();
+      } else if (from === 0) {
+        releaseHero();
       }
 
       const to = STATES[Math.min(from + 1, STATES.length - 1)];
@@ -441,6 +457,17 @@ export function ResolveField({
 
     const stopFrame = onFrame((_t, deltaMs) => {
       clock += deltaMs / 1000;
+      /* THE CARD'S PLANE IS PUBLISHED EVERY FRAME, PAUSED OR NOT. It is the
+         mapping from screen pixels to lattice space, and the intro's three
+         formations need it as much as the hand-off does — while it was
+         published from inside the scroll driver, pausing the driver for the
+         intro left every one of them falling back to the sphere. */
+      const src = getCardSource();
+      setCardPlane(src ? handle.cardPlane() : null);
+      if (src && src.sample !== codeFor) {
+        codeFor = src.sample;
+        handle.setCodeColours(src.sample.rgb);
+      }
       if (clock - safeAt > 0.12) {
         safeAt = clock;
         readSafe();
@@ -492,6 +519,8 @@ export function ResolveField({
       window.removeEventListener("resize", onResize);
       handle.destroy();
       field.current = null;
+      live = null;
+      paused = false;
     };
   }, [track, onActive]);
 

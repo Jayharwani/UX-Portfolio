@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { introRunning } from "./hero/intro";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -67,7 +68,11 @@ export function heroScroll(hero: HTMLElement): () => void {
        is created: sharing the property with a CSS entrance meant the tween
        captured an opacity of zero and pinned it inline forever. */
     const cue = hero.querySelector(".rs-cue");
-    gsap.from(cue, { opacity: 0, y: 10, duration: 0.7, delay: 1.4, ease: "power2.out" });
+    /* THE INTRO BRINGS IT IN WHEN THERE IS ONE, at 3.1s rather than 1.4s,
+       because on a first visit the card is still being built at 1.4s and
+       nothing should be inviting you to scroll past it yet. The exit below
+       stays here either way: it is scroll-driven and this owns the scroll. */
+    if (!introRunning()) gsap.from(cue, { opacity: 0, y: 10, duration: 0.7, delay: 1.4, ease: "power2.out" });
     gsap.fromTo(
       cue,
       { opacity: 1 },

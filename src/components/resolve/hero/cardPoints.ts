@@ -232,3 +232,67 @@ export const setCardPhase = (v: number): void => {
   phaseNow = v;
 };
 export const cardPhase = (): number => phaseNow;
+
+/* --------------------------------------------------------------------------
+   THE CARD'S OWN SKELETON.
+
+   The intro builds a wireframe before it builds the card, and the wireframe
+   is not a table of rectangles written out by hand — it is the real layout,
+   measured once. `offsetLeft` and friends are the element's position in its
+   own untransformed coordinate space, which for the card's inner flow is
+   exactly card-local pixels, so a tilted, scaled, perspective-projected card
+   still reports the boxes the particles need.
+
+   Hand-copying the boxes would have been a second description of the layout
+   that goes stale the first time a row moves.
+   -------------------------------------------------------------------------- */
+
+export type CardRect = { x: number; y: number; w: number; h: number };
+
+let wire: CardRect[] = [];
+
+export const setCardWire = (rects: CardRect[]): void => {
+  wire = rects;
+};
+export const getCardWire = (): CardRect[] => wire;
+
+/** Measure every `[data-hc-el]` inside the card's inner flow, in card-local
+ *  pixels. Call it from a layout, never from a frame. */
+export function measureWire(inner: HTMLElement | null): CardRect[] {
+  if (!inner) return [];
+  const out: CardRect[] = [];
+  for (const el of Array.from(inner.querySelectorAll<HTMLElement>("[data-hc-el]"))) {
+    if (!el.offsetWidth || !el.offsetHeight) continue;
+    let x = el.offsetLeft;
+    let y = el.offsetTop;
+    /* walk up to the card, because a row inside the list is positioned
+       against the list and not against the face */
+    for (let p = el.offsetParent as HTMLElement | null; p && p !== inner.offsetParent; p = p.offsetParent as HTMLElement | null) {
+      x += p.offsetLeft;
+      y += p.offsetTop;
+    }
+    out.push({ x, y, w: el.offsetWidth, h: el.offsetHeight });
+  }
+  return out;
+}
+
+/** Screen pixels to lattice space for the current card, or null when there
+ *  is no card to be registered to. Every hero formation goes through it, so
+ *  they all agree about where the card is to the pixel. */
+export function cardMap(): null | {
+  project: (u: number, v: number) => Pt;
+  toWorld: (sx: number, sy: number) => Pt;
+} {
+  const src = source;
+  const plane = planeNow;
+  if (!src || !plane) return null;
+  const { vw, vh } = src;
+  const { halfW, halfH, fit, ox, oy } = plane;
+  return {
+    project: src.project,
+    toWorld: (sx, sy) => [
+      ((sx / vw) * 2 * halfW - halfW - ox) / fit,
+      (halfH - (sy / vh) * 2 * halfH - oy) / fit,
+    ],
+  };
+}
