@@ -58,6 +58,27 @@ export function stepSpring(
   return s;
 }
 
+/** THE SPRINGS RUN AT A FIXED RATE, NOT AT THE FRAME RATE. A spring stepped
+ *  with whatever dt the frame happened to take is a different spring on a
+ *  120Hz screen than on a 60Hz one, and it blows up after a stall. Accumulate
+ *  the frame's time and spend it in 1/120 pieces; the leftover carries. The
+ *  clamp is the stall guard: after a long task there is no point simulating
+ *  the seconds nobody saw. */
+export function stepFixed(frameSec: number, acc: { t: number }, step: (dt: number) => void): void {
+  acc.t = Math.min(acc.t + frameSec, 0.1);
+  while (acc.t >= SUBSTEP) {
+    step(SUBSTEP);
+    acc.t -= SUBSTEP;
+  }
+}
+
+/** Critically damped follow that does not care about the frame rate. The
+ *  exponential is what makes it frame-rate independent: lerping by a constant
+ *  fraction per frame moves twice as fast at 120Hz. Higher speed is snappier. */
+export function follow(current: number, target: number, dtSec: number, speed = 14): number {
+  return current + (target - current) * (1 - Math.exp(-speed * dtSec));
+}
+
 /** at rest to within a thousandth, in both position and velocity */
 const SETTLED = 0.001;
 /** a ceiling, so a hypothetical under-damped token cannot hang the loop */

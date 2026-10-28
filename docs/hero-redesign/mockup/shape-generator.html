@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.169.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/" } }</script>
+</head><body>
+<!-- Generates the 3D token shapes. In the console: await renderShape({ name: "clover", color: "#55B874", rx: -0.45, ry: 0.6, rz: 0.4 }) returns a PNG data URL. Names: cookie, clover, sunny, flower, pill, arch. -->
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const SIZE = 1024;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(SIZE, SIZE);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x000000, 0);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.5;
+const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(-3, 4.5, 5); scene.add(key);
+const fill = new THREE.DirectionalLight(0xffe9dc, 0.35); fill.position.set(4, 1, 4); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xbfd4ff, 1.6); rim.position.set(4, -2.5, -4); scene.add(rim);
+scene.add(new THREE.AmbientLight(0xffffff, 0.12));
+const cam = new THREE.PerspectiveCamera(28, 1, 0.1, 100); cam.position.set(0, 0, 9.5); cam.lookAt(0, 0, 0);
+
+// Shape outlines in the spirit of the Material 3 Expressive shape set
+function polar(fn, n = 720) { const s = new THREE.Shape(); for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2, r = fn(t); const x = Math.cos(t) * r, y = Math.sin(t) * r; i ? s.lineTo(x, y) : s.moveTo(x, y); } return s; }
+function union(circles, n = 1440) {
+  // outline of a union of circles seen from the origin, lightly smoothed
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / n * Math.PI * 2, dx = Math.cos(t), dy = Math.sin(t); let best = 0;
+    for (const [cx, cy, r] of circles) { const b = dx * cx + dy * cy, c = cx * cx + cy * cy - r * r, disc = b * b - c; if (disc >= 0) best = Math.max(best, b + Math.sqrt(disc)); }
+    pts.push(best);
+  }
+  for (let pass = 0; pass < 10; pass++) { const q = pts.slice(); for (let i = 0; i < n; i++) pts[i] = (q[(i - 1 + n) % n] + 2 * q[i] + q[(i + 1) % n]) / 4; }
+  const s = new THREE.Shape(); pts.forEach((r, i) => { const t = i / n * Math.PI * 2; i ? s.lineTo(Math.cos(t) * r, Math.sin(t) * r) : s.moveTo(Math.cos(t) * r, Math.sin(t) * r); }); s.closePath(); return s;
+}
+function pill(w, h) { const s = new THREE.Shape(), r = h / 2; s.moveTo(-w / 2 + r, -r); s.lineTo(w / 2 - r, -r); s.absarc(w / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2, false); s.lineTo(-w / 2 + r, r); s.absarc(-w / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5, false); return s; }
+const SHAPES = {
+  cookie: () => polar(t => 1.0 * (1 + 0.075 * Math.cos(9 * t))),
+  clover: () => union([[0.5, 0, 0.56], [-0.5, 0, 0.56], [0, 0.5, 0.56], [0, -0.5, 0.56]]),
+  sunny: () => polar(t => 1.0 * (0.88 + 0.12 * Math.cos(8 * t))),
+  flower: () => polar(t => 1.0 * (0.8 + 0.2 * Math.cos(6 * t))),
+  pill: () => pill(2.3, 1.0),
+  arch: () => { const s = new THREE.Shape(); s.moveTo(-0.9, -0.95); s.lineTo(0.9, -0.95); s.lineTo(0.9, 0.05); s.absarc(0, 0.05, 0.9, 0, Math.PI, false); s.lineTo(-0.9, -0.95); return s; },
+};
+
+window.renderShape = async ({ name, color, rx = 0.5, ry = -0.5, rz = 0, depth = 0.42, scale = 1, rough = 0.34, emissive = 0.0 }) => {
+  for (const o of scene.children.filter(o => o.isMesh)) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+  const geo = new THREE.ExtrudeGeometry(SHAPES[name](), { depth, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.13, bevelSegments: 14, curveSegments: 96, steps: 1 });
+  geo.center();
+  const c = new THREE.Color(color);
+  const mat = new THREE.MeshPhysicalMaterial({ color: c, roughness: rough, metalness: 0, clearcoat: 1.0, clearcoatRoughness: 0.14, sheen: 0.4, sheenColor: new THREE.Color(0xffffff), sheenRoughness: 0.5, emissive: c, emissiveIntensity: emissive });
+  const m = new THREE.Mesh(geo, mat); m.rotation.set(rx, ry, rz); m.scale.setScalar(scale); scene.add(m);
+  renderer.render(scene, cam);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.ready = true;
+</script>
+</body></html>

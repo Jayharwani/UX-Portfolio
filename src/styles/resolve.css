@@ -200,6 +200,52 @@ body:has(.v2.rs) {
 .v2.rs .rs-atmos [data-k="signal"]   { left: -2vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-signal) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-signal) 8%, transparent); }
 .v2.rs .rs-atmos [data-k="bumper"]   { left: 29vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-bumper) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-bumper) 8%, transparent); }
 
+/* ── the hero key, when it is the card's light ───────────────────────────
+   In the hero the key stops being a neutral wash in the right half and
+   becomes the card's own light: centred on the card, in the product's
+   accent, and much stronger than the neutral it replaces (26% core against
+   7%) because it now has a job — to put the card in a room.
+
+   TWO LAYERS, NOT A TRANSITION. A product change crossfades their opacity.
+   Transitioning the gradient's own colour would repaint a 74vw by 118vh
+   gradient on every frame of the change, which is the single most expensive
+   thing this page could do. */
+.v2.rs .rs-atmos .atm-hero[data-lit="card"] {
+  /* positioned from the card centre, so left/top are the centre and the box
+     is pulled back by half of itself */
+  margin: -59vh 0 0 -37vw;
+  background: none;
+}
+.v2.rs .rs-atmos .atm-hero[data-lit="card"] > span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transition: opacity var(--dur-effects-slow, 550ms) var(--spring-effects-slow, ease);
+}
+.v2.rs .rs-atmos .atm-hero > span[data-k="healthy"] { background: radial-gradient(closest-side, color-mix(in oklab, var(--accent-healthy) 26%, transparent) 0%, color-mix(in oklab, var(--accent-healthy) 10%, transparent) 42%, transparent 100%); }
+.v2.rs .rs-atmos .atm-hero > span[data-k="headroom"] { background: radial-gradient(closest-side, color-mix(in oklab, var(--accent-headroom) 26%, transparent) 0%, color-mix(in oklab, var(--accent-headroom) 10%, transparent) 42%, transparent 100%); }
+.v2.rs .rs-atmos .atm-hero > span[data-k="friction"] { background: radial-gradient(closest-side, color-mix(in oklab, var(--accent-friction) 26%, transparent) 0%, color-mix(in oklab, var(--accent-friction) 10%, transparent) 42%, transparent 100%); }
+.v2.rs .rs-atmos .atm-hero > span[data-k="signal"] { background: radial-gradient(closest-side, color-mix(in oklab, var(--accent-signal) 26%, transparent) 0%, color-mix(in oklab, var(--accent-signal) 10%, transparent) 42%, transparent 100%); }
+.v2.rs .rs-atmos .atm-hero > span[data-k="bumper"] { background: radial-gradient(closest-side, color-mix(in oklab, var(--accent-bumper) 26%, transparent) 0%, color-mix(in oklab, var(--accent-bumper) 10%, transparent) 42%, transparent 100%); }
+
+/* THE FLOOR UNDER THE CARD. Twenty-six pixel dots, masked to a circle around
+   the card, so the card reads as standing on something rather than floating
+   in a void. It is scrubbed away by the first third of the hand-off. */
+.v2.rs .rs-atmos .atm-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background-image: radial-gradient(color-mix(in oklab, var(--paper) 16%, transparent) 1.6px, transparent 1.6px);
+  background-size: 26px 26px;
+  transition: opacity var(--dur-effects-slow, 550ms) var(--spring-effects-slow, ease);
+  -webkit-mask-image: radial-gradient(circle at var(--hc-light-x, 50%) var(--hc-light-y, 50%), #000 0%, transparent 70%);
+  mask-image: radial-gradient(circle at var(--hc-light-x, 50%) var(--hc-light-y, 50%), #000 0%, transparent 70%);
+}
+.v2.rs .rs-atmos .atm-grid[data-on] { opacity: var(--hc-grid, 1); }
+.v2.rs[data-zone="work"] .rs-atmos .atm-grid,
+.v2.rs[data-zone="end"] .rs-atmos .atm-grid { opacity: 0; }
+
 /* THE PAGE ENDS WITH ALL FIVE ON. The contact section is the only place the
    five keys are allowed to be on screen together, the same exception the
    reach buttons take, and for the same reason: it is the summary. */
@@ -753,6 +799,56 @@ body:has(.v2.rs) {
   stroke: currentColor;
   stroke-width: 1.7;
   stroke-linecap: round;
+}
+
+/* ── the hero card's own steps ──
+   The card is a product screen sitting inside a page, and a screen has a
+   denser hierarchy than a page does: it needs a secondary ink, a tertiary, a
+   hairline and a wireframe grey where the page needs three inks and a rule.
+
+   THESE ARE NOT NEW HUES. Every ink is an alpha step of --paper, and the
+   three surfaces are dark neutrals in --void's own family, used only as the
+   card's material. They live here rather than in the hero's own stylesheet
+   because this file and tokens.ts are the only two places a colour literal
+   is allowed to exist, and splitting that rule for one component is how the
+   rule stops being true.
+
+   Scoped to .hero-stage so nothing else can reach them. */
+.v2.rs .hero-stage {
+  --hc-ink-2: rgb(238 241 245 / 0.68);
+  --hc-ink-3: rgb(238 241 245 / 0.42);
+  --hc-ink-4: rgb(238 241 245 / 0.22);
+  --hc-line: rgb(238 241 245 / 0.07);
+  --hc-border: rgb(238 241 245 / 0.12);
+  --hc-surface: linear-gradient(180deg, #121823 0%, #0d121a 100%);
+  --hc-plate: #0a0d13;
+  --hc-edge: linear-gradient(90deg, #1b222d, #0f141c);
+  --hc-code-bg: #090d14;
+  /* the syntax palette, by name. The canvas raster derives the same values
+     from tokens.ts rather than carrying a second hand-typed copy. */
+  --hc-kw: var(--accent-friction);
+  --hc-tg: var(--accent-headroom);
+  --hc-at: var(--accent-bumper);
+  --hc-st: var(--accent-healthy);
+  --hc-nu: var(--accent-signal);
+  --hc-pu: rgb(238 241 245 / 0.42);
+  --hc-cm: rgb(238 241 245 / 0.34);
+  --hc-id: rgb(238 241 245 / 0.82);
+}
+
+/* ONE ANIMATABLE ACCENT FOR THE CARD, registered so it interpolates rather
+   than swapping at the midpoint. It only ever colours small things — the
+   rim, the tag's border, the intro's light line. Anything large crossfades
+   two layers instead, because transitioning a gradient repaints it. */
+@property --hc-acc {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #8ed09c;
+}
+@property --hc-rim-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
 /* ══ the chapters ═══════════════════════════════════════════════════════ */

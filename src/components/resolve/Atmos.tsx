@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { onCardLight, type CardLight } from "./hero/light";
 
 /* --------------------------------------------------------------------------
    CHAPTER LIGHT.
@@ -51,6 +52,27 @@ const STACKED = "(max-width: 1023.98px), (max-aspect-ratio: 5/4)";
 export function Atmos({ active }: { active: AtmosKey }) {
   const root = useRef<HTMLDivElement>(null);
   const was = useRef<AtmosKey | null>(null);
+  /* WHERE THE HERO'S LIGHT IS AND WHAT COLOUR IT IS. In the hero the key is
+     no longer a neutral wash in the middle of the right half: it is the
+     card's own light, centred on the card and carrying the product's accent.
+     The stage publishes it; nothing else in the page needs to know. */
+  const [card, setCard] = useState<CardLight | null>(null);
+  useEffect(() => onCardLight(setCard), []);
+  /* two layers, so a product change crossfades opacity instead of
+     transitioning a gradient, which would repaint it every frame */
+  const flip = useRef(false);
+  const layers = useRef<[HTMLSpanElement | null, HTMLSpanElement | null]>([null, null]);
+  useLayoutEffect(() => {
+    if (!card) return;
+    const [a, b] = layers.current;
+    const next = flip.current ? a : b;
+    const prev = flip.current ? b : a;
+    if (!next || !prev) return;
+    next.dataset.k = card.product;
+    next.style.opacity = "1";
+    prev.style.opacity = "0";
+    flip.current = !flip.current;
+  }, [card?.product]);
 
   useLayoutEffect(() => {
     const el = root.current;
@@ -105,9 +127,25 @@ export function Atmos({ active }: { active: AtmosKey }) {
       {/* the slow drift is on its own element so the keys can be transformed
           for the hand-over without the two transforms fighting over one box */}
       <div className="atm-drift">
-        {KEYS.map((k) => (
-          <div key={k} className={k === "end" ? "atm-k atm-end" : "atm-k"} data-k={k} />
-        ))}
+        {KEYS.map((k) =>
+          k === "hero" ? (
+            <div
+              key={k}
+              className="atm-k atm-hero"
+              data-k={k}
+              data-lit={card ? "card" : undefined}
+              style={card ? { left: `${card.x}px`, top: `${card.y}px` } : undefined}
+            >
+              <span ref={(el) => (layers.current[0] = el)} data-k="headroom" style={{ opacity: 1 }} />
+              <span ref={(el) => (layers.current[1] = el)} style={{ opacity: 0 }} />
+            </div>
+          ) : (
+            <div key={k} className={k === "end" ? "atm-k atm-end" : "atm-k"} data-k={k} />
+          ),
+        )}
+        {/* the grid is the card's floor: it says the card is standing on
+            something rather than floating in a void */}
+        <div className="atm-grid" data-on={card ? "" : undefined} aria-hidden="true" />
       </div>
     </div>
   );

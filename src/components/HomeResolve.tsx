@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { SmoothScroll } from "./resolve/SmoothScroll";
 import { ResolveField } from "./resolve/ResolveField";
 import { Atmos, type AtmosKey } from "./resolve/Atmos";
+import { HeroStage } from "./resolve/hero/HeroStage";
 import { Chapter } from "./resolve/Chapter";
 import { Reach } from "./resolve/Reach";
 import { Reel } from "./resolve/Reel";
@@ -16,6 +17,7 @@ import type { Zone } from "./resolve/ResolveField";
 import "../styles/v2.css";
 import "../styles/v2-ported.css";
 import "../styles/resolve.css";
+import "../styles/hero.css";
 
 /* --------------------------------------------------------------------------
    RESOLVE — the homepage.
@@ -109,6 +111,11 @@ export function HomeResolve() {
         <Rail active={active} />
 
         <main>
+          {/* FIRST CHILD OF MAIN, AND FIXED. The hero copy that follows it
+              paints above it, and the stacked layout's gradient can still
+              darken it, without the stage taking any part in layout. */}
+          <HeroStage />
+
           <section className="rs-hero rs-shell" id="top" ref={hero}>
             <div className="rs-hero-copy">
               <p className="mono rs-eyebrow">Product designer who writes the front end</p>
