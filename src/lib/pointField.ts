@@ -92,6 +92,18 @@ export type FieldHandle = {
   /** where the camera should be, as an orbit around the lattice. Damped, so
    *  it is a move and not a cut. */
   setCamera: (azimuth: number, elevation: number, distance: number) => void;
+  /** the world rectangle the viewport covers at the lattice's own plane,
+   *  with the scale and the offset the lattice is currently drawn with. A
+   *  formation built out of screen pixels needs all five to place a point and
+   *  the field is the only thing that knows any of them. The object is reused
+   *  between calls, so read it, do not keep it. */
+  cardPlane: () => { halfW: number; halfH: number; fit: number; ox: number; oy: number };
+  /** hand the field a colour per point, as rgb triples 0 to 1. Only the card
+   *  formation uses it, and only while `setCode` is above zero. */
+  setCodeColours: (rgb: Float32Array) => void;
+  /** 0 to 1: how much of those colours is showing. Snapped, not eased — the
+   *  caller is a scroll position and owns its own curve. */
+  setCode: (amount: number) => void;
   destroy: () => void;
 };
 
@@ -139,6 +151,11 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   /** how far through the accent crossfade each point is, so colour sweeps
    *  across the object instead of every dot changing on the same frame */
   const blend = new Float32Array(N);
+  /* THE LISTING'S OWN COLOUR, PER POINT. The field shows one accent at a
+     time and a line of code shows eight token colours at once, so this is
+     the one thing the field cannot say with a uniform. Zero until the card
+     publishes a sample. */
+  const code = new Float32Array(N * 3);
   /** each point's place in the queue, fixed once so the wave is the same
    *  wave every time rather than re-shuffling on each morph */
   const delay = new Float32Array(N);
@@ -186,6 +203,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
   geometry.setAttribute("aVel", new THREE.BufferAttribute(vel, 3));
   geometry.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
   geometry.setAttribute("aBlend", new THREE.BufferAttribute(blend, 1));
+  geometry.setAttribute("aCode", new THREE.BufferAttribute(code, 3));
 
   const material = new THREE.ShaderMaterial({
     transparent: true,
@@ -216,6 +234,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       /* the pointer, in CSS pixels, and whether there is one at all */
       uPointer: { value: new THREE.Vector2(-9999, -9999) },
       uPointerOn: { value: 0 },
+      /* how much of the per-point code colour is showing, 0 to 1 */
+      uCode: { value: 0 },
     },
     vertexShader: /* glsl */ `
       attribute float aLit;
@@ -232,6 +252,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       varying float vDepth;
       varying float vSafe;
       attribute vec3 aVel;
+      attribute vec3 aCode;
+      varying vec3 vCode;
       varying float vSeed;
       varying float vBlend;
       varying float vLight;
@@ -254,6 +276,7 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         vLit = aLit;
         vSeed = aSeed;
         vBlend = aBlend;
+        vCode = aCode;
         /* A POINT CANNOT BE SMALLER THAN ONE PIXEL. Shrinking a point to zero
            does not remove it, the rasteriser floors it at 1px, so a rim that
            was supposed to dissolve came back as a uniform faint grid and drew
@@ -333,6 +356,8 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       uniform float uFogDensity;
       uniform vec3 uAccentPrev;
       uniform float uTime;
+      uniform float uCode;
+      varying vec3 vCode;
       varying float vLit;
       varying float vFade;
       varying float vDepth;
@@ -382,12 +407,30 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         vec3 accent = mix(uAccentPrev, uAccent, vBlend);
         vec3 col = mix(uPaper, accent, vLit) * shade + spec * (0.35 + 0.4 * vLit);
 
+        /* AND WHEN THE FIELD IS A PIECE OF CODE, the point wears the colour
+           of the glyph it landed on instead. Still shaded and still specular,
+           because a syntax-highlighted sphere is the whole trick: the type is
+           legible and the dots are plainly objects. */
+        /* AND IT IS A FLATTER SPHERE THAN THE REST. A dot wearing the full
+           terminator and the full highlight is a convincing little object and
+           an illegible letter: across a sprite two pixels wide the specular is
+           most of what you see, and measured, it dragged a coral keyword to
+           within a chroma of 22 of white. Keeping a quarter of the shading and
+           a quarter of the highlight is enough to tell you these are objects,
+           and leaves the syntax colour the thing you actually read. */
+        col = mix(col, vCode * (0.74 + 0.26 * shade) + spec * 0.09, uCode);
+
         /* A SIXTH OF THEM READ AS HIGHLIGHTS and a tenth of them breathe,
            which is the difference between a surface and a flat fill. Both are
            keyed to the point's fixed seed, so it is always the same dots and
-           the field never shimmers as a whole. */
-        col = mix(col, uPaper, step(0.85, vSeed) * 0.5);
-        float twinkle = step(0.9, fract(vSeed * 7.31));
+           the field never shimmers as a whole.
+
+           BOTH STAND DOWN WHILE THE FIELD IS TYPE. They exist to make a
+           sculpture read as a surface; on a line of code they are a sixth of
+           the glyphs washed to paper and a tenth of them blown to white, which
+           is noise sitting exactly where the meaning is. */
+        col = mix(col, uPaper, step(0.85, vSeed) * 0.5 * (1.0 - uCode));
+        float twinkle = step(0.9, fract(vSeed * 7.31)) * (1.0 - uCode);
         col *= 1.0 + twinkle * 0.25 * sin(uTime * (0.6 + vSeed * 0.8) + vSeed * 24.0);
         col *= 1.0 + vLight * 0.3;
 
@@ -397,13 +440,17 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
         float fog = 1.0 - exp(-pow(max(0.0, vDepth - uFogNear) * uFogDensity, 2.0));
         col = mix(col, uVoid, fog * 0.92);
 
-        float a = mix(0.74, 1.0, vLit) * edge * uOpacity * vFade;
+        /* type is solid; only the unlit body of a sculpture is held back */
+        float a = mix(0.74, 1.0, max(vLit, uCode)) * edge * uOpacity * vFade;
         a *= mix(1.0, 0.5, blur) * (1.0 - fog * 0.55);
         a *= mix(1.0, 0.12, vSafe);
         gl_FragColor = vec4(col, a);
         #include <colorspace_fragment>
       }`,
   });
+
+  /* reused, because this is read once a frame and never kept */
+  const plane = { halfW: 1, halfH: 1, fit: 1, ox: 0, oy: 0 };
 
   const points = new THREE.Points(geometry, material);
   scene.add(points);
@@ -664,6 +711,31 @@ export function createField(canvas: HTMLCanvasElement, paper: string, accent: st
       accentTarget.copy(next);
       (material.uniforms.uAccent.value as THREE.Color).copy(next);
       accentT = 0;
+    },
+
+    cardPlane() {
+      const halfH = Math.tan(((camera.fov / 2) * Math.PI) / 180) * cam.dist;
+      plane.halfH = halfH;
+      plane.halfW = halfH * camera.aspect;
+      plane.fit = fit;
+      plane.ox = points.position.x;
+      plane.oy = points.position.y;
+      return plane;
+    },
+
+    setCodeColours(rgb) {
+      const a = geometry.attributes.aCode as THREE.BufferAttribute;
+      const dst = a.array as Float32Array;
+      const n = Math.min(dst.length, rgb.length);
+      dst.set(rgb.subarray(0, n));
+      /* anything the sample did not reach stays black, which `uCode` would
+         otherwise paint onto a point that is out of frame anyway */
+      if (n < dst.length) dst.fill(0, n);
+      a.needsUpdate = true;
+    },
+
+    setCode(amount) {
+      material.uniforms.uCode.value = amount;
     },
 
     setOffset(x, y = 0) {

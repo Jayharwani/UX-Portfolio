@@ -238,7 +238,12 @@ body:has(.v2.rs) {
   pointer-events: none;
   background-image: radial-gradient(color-mix(in oklab, var(--paper) 16%, transparent) 1.6px, transparent 1.6px);
   background-size: 26px 26px;
-  transition: opacity var(--dur-effects-slow, 550ms) var(--spring-effects-slow, ease);
+  /* THE DURATION IS A VARIABLE BECAUSE THE SCROLL TAKES IT OVER. A product
+     change should crossfade the floor over half a second; the hand-off writes
+     this value every frame from the scroll position, and a transition on top
+     of that is a second smoothing curve on the same number, which reads as
+     the floor lagging the card it belongs to. */
+  transition: opacity var(--hc-grid-dur, var(--dur-effects-slow, 550ms)) var(--spring-effects-slow, ease);
   -webkit-mask-image: radial-gradient(circle at var(--hc-light-x, 50%) var(--hc-light-y, 50%), #000 0%, transparent 70%);
   mask-image: radial-gradient(circle at var(--hc-light-x, 50%) var(--hc-light-y, 50%), #000 0%, transparent 70%);
 }

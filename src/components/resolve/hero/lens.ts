@@ -12,6 +12,7 @@
    -------------------------------------------------------------------------- */
 
 import type { Region } from "../../../data/heroCards";
+import type { Pt } from "./projector";
 
 /** the lens radius in card space; the disc is twice this */
 export const LENS_R = 124;
@@ -84,4 +85,35 @@ export function revealAt(a: number): { r: number; x: number; y: number; codeOpac
     y: REST_Y + (312 - REST_Y) * e,
     codeOpacity: seg(a, 0.05, 0.15),
   };
+}
+
+/* --------------------------------------------------------------------------
+   THE SAME REVEAL, DRIVEN BY A CONTROL INSTEAD OF BY THE SCROLL.
+
+   A phone has no pointer and a keyboard cannot aim one, so the listing also
+   opens from a button — from wherever the finger landed, under a lens that
+   fades out of its way. Identical custom properties to the hand-off's, so the
+   two can never disagree about where the circle is.
+   -------------------------------------------------------------------------- */
+
+export type CodeFace = { code: HTMLElement | null; lens: HTMLElement | null; rim: HTMLElement | null };
+
+export function openCode(p: CodeFace, on: boolean, origin: Pt | null, reduced: boolean): void {
+  if (p.code) {
+    const [ox, oy] = origin ?? [230, 312];
+    p.code.style.setProperty("--hc-reveal-x", `${ox}px`);
+    p.code.style.setProperty("--hc-reveal-y", `${oy}px`);
+    p.code.style.transition = reduced
+      ? "opacity 200ms linear"
+      : "clip-path 600ms var(--e-move, ease), opacity 150ms linear";
+    p.code.style.opacity = on ? "1" : "0";
+    /* 150% of the card, so the circle is past every corner and the clip is
+       doing nothing by the time it stops */
+    p.code.style.setProperty("--hc-reveal-r", on ? "150%" : "0px");
+  }
+  for (const el of [p.lens, p.rim]) {
+    if (!el) continue;
+    el.style.transition = "opacity 150ms linear";
+    el.style.opacity = on ? "0" : "1";
+  }
 }

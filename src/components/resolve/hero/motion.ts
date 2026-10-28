@@ -1,7 +1,7 @@
 import type { Region } from "../../../data/heroCards";
 import { follow, stepFixed, stepSpring } from "../../../lib/spring";
 import type { Fit } from "./fit";
-import { CLAMP, driftAt, LENS_R, placeLens, REST_X, REST_Y, regionAt } from "./lens";
+import { CLAMP, driftAt, LENS_R, placeLens, REST_X, REST_Y, regionAt, seg } from "./lens";
 import { applyH, CORNERS, projector, screenToCard, type Pose, type Pt } from "./projector";
 import { SHAPES, shapesFor } from "./Shapes";
 
@@ -41,6 +41,9 @@ type Body = {
   el: HTMLElement;
   hx: number;
   hy: number;
+  /** the unit vector out of the composition, for the hand-off's exit */
+  ux: number;
+  uy: number;
   rot: number;
   size: number;
   front: boolean;
@@ -130,10 +133,16 @@ export function createMotion(opts: {
         const hx = Number(el.dataset.hx ?? 0);
         const hy = Number(el.dataset.hy ?? 0);
         const spec = SHAPES.find((s) => s.key === def.key)!;
+        /* which way is out, for the exit. From the shape's own place in the
+           composition rather than from where the clamps left it: a shape
+           nudged off the headline still belongs to the side it came from. */
+        const ol = Math.hypot(def.ox, def.oy) || 1;
         return {
           el,
           hx,
           hy,
+          ux: def.ox / ol,
+          uy: def.oy / ol,
           rot: spec.rotate,
           size,
           front: spec.layer === "front",
@@ -186,6 +195,12 @@ export function createMotion(opts: {
     if (!fit || fit.layout === "none" || !enabled) return;
     const soft = reduced();
     const stacked = fit.layout === "stacked";
+
+    /* how far out of frame the shapes have been pushed by the hand-off. It
+       accelerates, because the first third of it is still under a card that
+       is very much there and the last third has nothing left to wait for. */
+    const h = handoff;
+    const exit = h <= 0 ? 0 : seg(h, 0.45, 0.7) * 90 + seg(h, 0.7, 0.85) * 110 + seg(h, 0.85, 1) * 120;
 
     /* ── the lens ─────────────────────────────────────────────────────── */
     const idle = soft || stacked || !haveSeen || time - lastMove > IDLE_AFTER;
@@ -260,8 +275,14 @@ export function createMotion(opts: {
         stepFixed(dt, acc, (h) => {
           for (const b of bodies) {
             const bob = Math.sin((time / b.period) * Math.PI * 2 + b.phase) * b.amp;
-            const homeX = b.hx + b.px;
-            const homeY = b.hy + b.py + bob;
+            /* THE EXIT IS A TARGET, NOT A TRANSFORM. Writing the push straight
+               onto the transform would put two writers on one property and the
+               springs would win it back on the very next frame. Moving the home
+               they are chasing instead sends them out on the same springs that
+               hold them in, which is the only reason the drift has any weight
+               to it. */
+            const homeX = b.hx + b.px + b.ux * exit;
+            const homeY = b.hy + b.py + bob + b.uy * exit - exit * 0.18;
             if (!b.drag) {
               stepSpring(b.x, homeX, 120, 0.6, h);
               stepSpring(b.y, homeY, 120, 0.6, h);

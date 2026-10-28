@@ -26,6 +26,7 @@
    -------------------------------------------------------------------------- */
 
 import { ICONS, iconPoints } from "./icons";
+import { cardPhase, getCardPlane, getCardSource } from "../components/resolve/hero/cardPoints";
 
 export type ShapeWriter = (
   pos: Float32Array,
@@ -53,7 +54,10 @@ export type ShapeWriter = (
    being arrived at, because that is when their phase is changing — but the
    state being LEFT is always at phase 1, which for these is a constant, so
    it can be written once and cached. */
-const LIVE = new Set<string>(["drift", "reach", "signal"]);
+/* `card` is rebuilt every frame because the pose it is drawn from moves:
+   the reader's pointer leans the card, and the particles are registered to
+   its glyphs, so they have to lean with it. */
+const LIVE = new Set<string>(["drift", "reach", "signal", "card"]);
 const ACTING = new Set<string>(["healthy", "friction", "headroom", "bumper"]);
 
 /** true if this state changes under its own power, wherever it is used */
@@ -195,6 +199,91 @@ function writeIcon(
     size[i] = sl.size;
   }
 }
+
+/* ── 00 THE CARD ─ the hero, and the first half of the hand-off ───────
+   The resting hero is no longer a sphere. It is the product card the page is
+   actually about, drawn twice: once as DOM, and once here as particles
+   sitting exactly under their own glyphs.
+
+   REGISTERED, NOT APPROXIMATED. Each point is a card-local coordinate pushed
+   through the same projection the CSS uses, then out of screen pixels into
+   the field's world. That is why the code does not jump when the card fades
+   during the hand-off: it was never anywhere else.
+
+   WHAT YOU SEE AT REST IS ONLY THE HALO. The card is opaque and above the
+   field, so the four thousand code points are hidden under it; the nine
+   hundred halo points cling to its edge and are the whole of the effect
+   until the scroll takes the card away.
+
+   It falls back to the sphere if the stage has not published a pose — a
+   landscape phone has no card, and the field still needs a hero state. */
+export const card: ShapeWriter = (pos, lit, size, n, time, phase) => {
+  const src = getCardSource();
+  if (!src) {
+    drift(pos, lit, size, n, time, 1);
+    return;
+  }
+  const plane = getCardPlane();
+  if (!plane) {
+    drift(pos, lit, size, n, time, 1);
+    return;
+  }
+  const { sample, project, vw, vh } = src;
+  const { halfW, halfH, fit, ox, oy } = plane;
+  const { xy, halo, plain } = sample;
+  const ph = cardPhase();
+  const slide = clamp01((ph - 0.15) / 0.4);
+  /* THE CHARACTERS COME APART BEFORE THEY TRAVEL ANYWHERE. A listing that
+     holds perfect registration right up until the morph starts reads as a
+     screenshot being wiped off, not as code turning into dust; the reference
+     has it plainly granular well before any of it has gone. So each glyph
+     loosens in the card's own plane first, on its own fixed direction, and
+     only then does the morph carry it away. */
+  const loosen = clamp01((ph - 0.76) / 0.24);
+  const spread = loosen * loosen * 34;
+  const count = Math.min(n, xy.length / 2);
+
+  for (let i = 0; i < count; i++) {
+    let u = xy[i * 2];
+    let v = xy[i * 2 + 1];
+
+    /* THE HALO GOES HOME UNDER THE CARD. Each one takes its own moment, so
+       the edge dissolves rather than collapsing, and each lands on a plain
+       identifier so a paper particle never ends up wearing a keyword. */
+    if (i < halo && slide > 0 && plain.length) {
+      const own = clamp01((slide - (i / halo) * 0.35) / 0.65);
+      const e = own * own * (3 - 2 * own);
+      const t = plain[i % plain.length];
+      u += (xy[t * 2] - u) * e;
+      v += (xy[t * 2 + 1] - v) * e;
+    }
+
+    /* SCREEN PIXELS TO LATTICE SPACE. The world point is where the glyph is;
+       dividing out the field's own offset and scale is what puts the particle
+       there once three multiplies the lattice's transform back in. Without
+       it the formation only lined up at fit 1, dead centre — which is to say
+       on a wide screen and nowhere else. */
+    if (spread > 0) {
+      u += Math.sin(i * 12.9898) * spread;
+      v += Math.cos(i * 78.233) * spread;
+    }
+
+    const [sx, sy] = project(u, v);
+    pos[i * 3] = ((sx / vw) * 2 * halfW - halfW - ox) / fit;
+    pos[i * 3 + 1] = (halfH - (sy / vh) * 2 * halfH - oy) / fit;
+    pos[i * 3 + 2] = 0;
+    lit[i] = 0;
+    size[i] = i < halo ? 1.6 : 1.15;
+  }
+  /* anything the sample did not fill sits far behind, out of frame */
+  for (let i = count; i < n; i++) {
+    pos[i * 3] = 0;
+    pos[i * 3 + 1] = 0;
+    pos[i * 3 + 2] = -40;
+    lit[i] = 0;
+    size[i] = 0;
+  }
+};
 
 /* ── 01 HEALTHY SWITCH ─ the toggle, and the one thing it changes ────────
    The product is named after a control, and the prototype puts that control
@@ -664,7 +753,7 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, drift, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
+export const SHAPES = { rest, drift, card, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;
 
 /* ── HOW EACH SHAPE ASSEMBLES ─────────────────────────────────────────────
@@ -683,6 +772,7 @@ export type Wave = "down" | "around" | "along" | "across";
 export const WAVES: Record<ShapeName, Wave> = {
   rest: "down",
   drift: "down",
+  card: "down",
   healthy: "across",
   friction: "down",
   headroom: "around",

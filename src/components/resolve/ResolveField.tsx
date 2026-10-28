@@ -6,6 +6,8 @@ import { getLenis } from "./SmoothScroll";
 import { ANIMATED, setLattice, type ShapeName } from "../../lib/shapes";
 import { TOKENS } from "../../styles/tokens";
 import { ISSUES } from "../../data/issues";
+import { getCardSource, setCardPhase, setCardPlane, type CardSample } from "./hero/cardPoints";
+import { releaseHero, scrubHero } from "./hero/handoff";
 
 /* --------------------------------------------------------------------------
    THE FIELD.
@@ -36,9 +38,14 @@ import { ISSUES } from "../../data/issues";
    construction and survives any change to the layout.
    -------------------------------------------------------------------------- */
 
-/** rest, then one state per project, then the contact section. Seven stops,
- *  six morphs, one lattice. */
-const STATES: ShapeName[] = ["drift", "healthy", "friction", "headroom", "signal", "bumper", "reach"];
+/** the card, then one state per project, then the contact section. Seven
+ *  stops, six morphs, one lattice.
+ *
+ *  THE FIRST ENTRY IS SWAPPED PER FRAME, not fixed. A landscape phone gets no
+ *  card — there is no room for one — and the hero falls back to the sphere it
+ *  has always had. Reading it from the stage each frame rather than wiring a
+ *  prop keeps the two from racing on the first paint. */
+const STATES: ShapeName[] = ["card", "healthy", "friction", "headroom", "signal", "bumper", "reach"];
 
 /* WHAT THE LAST STOP'S TARGET IS, when a contact button has the pointer.
    Module level rather than a prop, for the same reason getLenis is: the
@@ -78,6 +85,10 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
      the burger starts to occlude the switch that is supposed to be changing
      the thing next to it. */
   healthy: [-0.22, 0.09, 4.85],
+  /* STRAIGHT ON, AND IT HAS TO BE. The card formation turns screen pixels
+     into world units assuming a camera on the z axis looking at the origin;
+     any orbit at all and the particles stop sitting on their glyphs. */
+  card: [0, 0, 5.4],
   friction: [-0.3, 0.1, 4.5],
   headroom: [0.32, 0.04, 4.4],
   signal: [-0.24, 0.08, 4.5],
@@ -174,6 +185,10 @@ export function ResolveField({
     let safeAt = -1;
     /** two columns or stacked. place() owns it and runs before the loop. */
     let wide = false;
+    /** which sample's colours are already on the GPU */
+    let codeFor: CardSample | null = null;
+    /** where the object rests once the hero has handed over */
+    let baseOff: [number, number] = [SIDE, 0];
 
     /* THE COPY HAS RIGHT OF WAY. Whichever block of text is currently being
        read is handed to the field, which fades and leans out of it. Which
@@ -226,16 +241,47 @@ export function ResolveField({
       if (!animating && Math.abs(y - lastY) < 0.4) return;
       lastY = y;
 
+      /* the hero is the card when there is one, and the sphere when there
+         is not */
+      STATES[0] = getCardSource() ? "card" : "drift";
+
       const last = centres.length - 1;
       let from: number;
       let t: number;
+      /** the card's own dissolve. One past the hero it is over, by
+       *  definition — which is also what stops a reader who lands mid-page
+       *  from being handed a card that should already be gone. */
+      let heroA = 1;
+      let onCard = false;
 
       if (y <= centres[0]) {
-        /* leaving the hero: the lattice is at rest and gathers into the first
-           shape as the first chapter arrives */
-        const start = centres[0] - window.innerHeight;
         from = 0;
-        t = clamp01((y - start) / Math.max(1, centres[0] - start));
+        onCard = STATES[0] === "card";
+        /* WHERE THE LEG STARTS DEPENDS ON WHAT IS IN THE HERO. Without a card
+           the lattice is at rest and only gathers once the first chapter is
+           within a screen of the middle. With one, the hand-off is the hero —
+           its nought per cent is the page as the reader first saw it — so it
+           runs from the very top, and the copy scrolls out from under a card
+           that is dissolving in place rather than being a screen late to
+           start. */
+        const start = onCard ? 0 : centres[0] - window.innerHeight;
+        const raw = clamp01((y - start) / Math.max(1, centres[0] - start));
+        /* ONE WINDOW OF SCROLL, TWO HAND-OVERS. The card has to be gone
+           before the morph can carry its particles away, or they would be
+           flying out from under an interface still drawn on top of them. So
+           the first 40% dissolves the card and the last two thirds are the
+           morph, and the 7% they share is the only moment both are moving —
+           which is what keeps it one sequence instead of two played back to
+           back.
+
+           THE SPLIT IS THE REFERENCE'S OWN, not a guess: the lens has covered
+           the card by a fifth of the way down and the code is already dust by
+           two fifths, so the travel needs almost the whole window. An even
+           split held a perfectly crisp, perfectly registered listing on screen
+           for half the scroll, which looks less like code shipping than like a
+           screenshot that forgot to leave. */
+        heroA = onCard ? clamp01(raw / 0.4) : 0;
+        t = onCard ? clamp01((raw - 0.33) / 0.67) : raw;
       } else if (y >= centres[last]) {
         from = last;
         t = 1;
@@ -262,12 +308,37 @@ export function ResolveField({
       const leg = t;
       t = clamp01(t / 0.74);
 
+      /* THE DOM HAND-OFF RUNS BEFORE THE FORMATION READS ANYTHING. The card
+         is still a real interface for the first half of this leg; the
+         particles underneath it are the same listing, in the same place, so
+         the moment the card's own children are gone there is nothing left to
+         notice. */
+      if (onCard) {
+        scrubHero(heroA);
+        setCardPhase(heroA);
+        setCardPlane(handle.cardPlane());
+        const src = getCardSource();
+        if (src && src.sample !== codeFor) {
+          codeFor = src.sample;
+          handle.setCodeColours(src.sample.rgb);
+        }
+      } else {
+        setCardPlane(null);
+        if (from === 0) releaseHero();
+      }
+
       const to = STATES[Math.min(from + 1, STATES.length - 1)];
       animating = ANIMATED.has(STATES[from]) || ANIMATED.has(to);
       /* the override only applies on the final leg, where "reach" lives */
       const onLast = to === "reach";
       const target = override && onLast ? override : to;
       handle.morph(STATES[from], target, t, clock, leg);
+
+      /* THE SYNTAX COLOUR ARRIVES UNDER THE CARD AND LEAVES WITH THE SHAPE.
+         It comes up while the card is still covering it, so nothing is seen
+         to change colour, and it drains out as the morph resolves, because a
+         funnel wearing eight token colours is a funnel nobody can read. */
+      handle.setCode(onCard ? clamp01((heroA - 0.3) / 0.35) * (1 - clamp01((t - 0.2) / 0.55)) : 0);
 
       /* the camera travels on the same t as the shape, so the angle and the
          form arrive together */
@@ -278,7 +349,14 @@ export function ResolveField({
       /* The object crosses the page between chapters, and comes back to the
          middle for the contact section, which is a single centred column of
          type with two buttons under it. */
-      if (wide) handle.setOffset(mix(sideOf(from), sideOf(from + 1), t), 0);
+      if (onCard) {
+        /* the formation is registered to the viewport, so at t = 0 the
+           lattice sits exactly where the page does; both then travel to
+           wherever chapter 01 keeps its object as the morph runs. The
+           formation divides this back out, so there is no scale or offset at
+           which it comes apart. */
+        handle.setOffset(mix(0, baseOff[0], t), mix(0, baseOff[1], t));
+      } else if (wide) handle.setOffset(mix(sideOf(from), sideOf(from + 1), t), 0);
 
       /* QUIET UNTIL ASKED. Through the contact section the field holds back
          so the two buttons are unmistakably the foreground, and a hover
@@ -329,7 +407,8 @@ export function ResolveField({
          to the right of the copy column. Narrow, there is no second column,
          so the object takes the top of the screen and the copy takes the
          bottom: a phone has height to spare and no width at all. */
-      handle.setOffset(wide ? SIDE : 0, wide ? 0 : 0.6);
+      baseOff = [wide ? SIDE : 0, wide ? 0 : 0.6];
+      handle.setOffset(baseOff[0], baseOff[1]);
       measure();
       safeAt = -1;
     };
