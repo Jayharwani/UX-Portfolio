@@ -12,7 +12,7 @@ import "../../styles/case.css";
    the four pages drifting apart again.
    -------------------------------------------------------------------------- */
 
-export type CaseAccent = "friction" | "headroom" | "signal" | "bumper" | "emerald";
+export type CaseAccent = "friction" | "headroom" | "bumper" | "emerald";
 
 /* THE SAME FOUR KEYS THE HOMEPAGE USES, and named the same way. These were
    mint, cyan, gold and teal: the old homepage palette, under colour names,
@@ -26,7 +26,6 @@ export type CaseAccent = "friction" | "headroom" | "signal" | "bumper" | "emeral
 export const ACCENTS: Record<CaseAccent, string> = {
   friction: "#F7A792",
   headroom: "#8ED09C",
-  signal: "#8CC3FC",
   bumper: "#E0B771",
   /* Headroom's emerald, sampled from the running app. Mint is the same brand
      colour tuned for a dark ground and is what the work index still lights

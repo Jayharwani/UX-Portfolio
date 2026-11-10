@@ -75,14 +75,21 @@ body:has(.v2.rs) {
      runs under it */
   --rail: 0px;
 
-  /* FIVE KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
+  /* FOUR KEYS, NOT ONE COLOUR DRIFTING. Spaced around the hue wheel at one
      perceptual lightness and chroma, so no project's colour is louder than
      another's. Mirrored in src/styles/tokens.ts for the canvas. */
   --accent-healthy: #dda8e4;
   --accent-friction: #f7a792;
   --accent-headroom: #8ed09c;
-  --accent-signal: #8cc3fc;
   --accent-bumper: #e0b771;
+
+  /* AND ONE BLUE THAT BELONGS TO NO PROJECT. It was Signal's key. The two
+     contact cards are the one place on this page that may colour themselves
+     rather than take the chapter's key, because both are on screen at once,
+     and LinkedIn has always been this blue. It is not an accent, no chapter
+     can light itself with it, and it is named for its job so the name cannot
+     go stale the way a project's would. See tokens.ts. */
+  --link: #8cc3fc;
 
   /* THE SPRING CURVES, with the old bezier as the value until the solver
      has run. They are installed on this element at startup, so the fallback
@@ -157,7 +164,6 @@ body:has(.v2.rs) {
 .v2.rs .rs-atmos[data-wash="healthy"]  { --atm-wash: color-mix(in oklab, var(--accent-healthy) 3%, transparent); }
 .v2.rs .rs-atmos[data-wash="friction"] { --atm-wash: color-mix(in oklab, var(--accent-friction) 3%, transparent); }
 .v2.rs .rs-atmos[data-wash="headroom"] { --atm-wash: color-mix(in oklab, var(--accent-headroom) 3%, transparent); }
-.v2.rs .rs-atmos[data-wash="signal"]   { --atm-wash: color-mix(in oklab, var(--accent-signal) 3%, transparent); }
 .v2.rs .rs-atmos[data-wash="bumper"]   { --atm-wash: color-mix(in oklab, var(--accent-bumper) 3%, transparent); }
 
 /* THE DRIFT IS ON ITS OWN BOX. The keys are transformed for the hand-over,
@@ -197,7 +203,6 @@ body:has(.v2.rs) {
 .v2.rs .rs-atmos [data-k="healthy"]  { left: 24vw; top: -7vh;  --k0: color-mix(in oklab, var(--accent-healthy) 20%, transparent);   --k1: color-mix(in oklab, var(--accent-healthy) 8%, transparent); }
 .v2.rs .rs-atmos [data-k="friction"] { left: 0vw;  top: -9vh;  --k0: color-mix(in oklab, var(--accent-friction) 20%, transparent);  --k1: color-mix(in oklab, var(--accent-friction) 8%, transparent); }
 .v2.rs .rs-atmos [data-k="headroom"] { left: 27vw; top: -12vh; --k0: color-mix(in oklab, var(--accent-headroom) 20%, transparent);  --k1: color-mix(in oklab, var(--accent-headroom) 8%, transparent); }
-.v2.rs .rs-atmos [data-k="signal"]   { left: -2vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-signal) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-signal) 8%, transparent); }
 .v2.rs .rs-atmos [data-k="bumper"]   { left: 29vw; top: -9vh;  --k0: color-mix(in oklab, var(--accent-bumper) 20%, transparent);    --k1: color-mix(in oklab, var(--accent-bumper) 8%, transparent); }
 
 /* THE PAGE ENDS WITH ALL FIVE ON. The contact section is the only place the
@@ -209,11 +214,10 @@ body:has(.v2.rs) {
   width: 120vw;
   height: 80vh;
   background:
-    radial-gradient(ellipse 24vw 34vh at 18% 66%, color-mix(in oklab, var(--accent-healthy) 17%, transparent), transparent),
-    radial-gradient(ellipse 24vw 34vh at 34% 66%, color-mix(in oklab, var(--accent-friction) 17%, transparent), transparent),
-    radial-gradient(ellipse 24vw 34vh at 50% 66%, color-mix(in oklab, var(--accent-headroom) 17%, transparent), transparent),
-    radial-gradient(ellipse 24vw 34vh at 66% 66%, color-mix(in oklab, var(--accent-signal) 17%, transparent), transparent),
-    radial-gradient(ellipse 24vw 34vh at 82% 66%, color-mix(in oklab, var(--accent-bumper) 17%, transparent), transparent);
+    radial-gradient(ellipse 24vw 34vh at 20% 66%, color-mix(in oklab, var(--accent-healthy) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 40% 66%, color-mix(in oklab, var(--accent-friction) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 60% 66%, color-mix(in oklab, var(--accent-headroom) 17%, transparent), transparent),
+    radial-gradient(ellipse 24vw 34vh at 80% 66%, color-mix(in oklab, var(--accent-bumper) 17%, transparent), transparent);
 }
 
 /* 2. THE VIGNETTE holds the corners down so the eye stays in the middle. */
@@ -243,7 +247,7 @@ body:has(.v2.rs) {
 .v2.rs .rs-reach-btn[data-accent="healthy"] { --accent: var(--accent-healthy); }
 .v2.rs .rs-reach-btn[data-accent="friction"] { --accent: var(--accent-friction); }
 .v2.rs .rs-reach-btn[data-accent="headroom"] { --accent: var(--accent-headroom); }
-.v2.rs .rs-reach-btn[data-accent="signal"] { --accent: var(--accent-signal); }
+.v2.rs .rs-reach-btn[data-accent="link"] { --accent: var(--link); }
 .v2.rs .rs-reach-btn[data-accent="bumper"] { --accent: var(--accent-bumper); }
 
 .v2.rs :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

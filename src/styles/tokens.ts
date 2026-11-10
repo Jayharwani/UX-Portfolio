@@ -35,8 +35,6 @@ export const TOKENS = {
   friction: "#F7A792",
   /* oklch(80% 0.10 150) — safe money */
   headroom: "#8ED09C",
-  /* oklch(80% 0.10 250) — a live map */
-  signal: "#8CC3FC",
   /* oklch(80% 0.10 80) — caution */
   bumper: "#E0B771",
   /* oklch(80% 0.10 323) — the one gap left on the wheel, 73 degrees clear of
@@ -44,7 +42,25 @@ export const TOKENS = {
   healthy: "#DDA8E4",
 } as const;
 
-export type Accent = "healthy" | "friction" | "headroom" | "signal" | "bumper";
+export type Accent = "healthy" | "friction" | "headroom" | "bumper";
+
+/* --------------------------------------------------------------------------
+   AND ONE BLUE THAT IS NOT A PROJECT'S.
+
+   It was Signal's key. The two contact cards are the one place on this page
+   allowed to colour themselves rather than take the chapter's — both are on
+   screen at once — and LinkedIn has always been this blue.
+
+   It is NOT an accent and must not be one. The accents are named for projects
+   so a name cannot go stale when a hue moves; a project accent whose project
+   has gone is exactly the drift that rule exists to prevent. This is named for
+   what it does, lives outside the Accent union, and no chapter can ever pick
+   it up by accident.
+   -------------------------------------------------------------------------- */
+export const UI = {
+  /* oklch(80% 0.10 250) */
+  link: "#8CC3FC",
+} as const;
 
 export const rgb = (hex: string): [number, number, number] => [
   parseInt(hex.slice(1, 3), 16),

@@ -10,7 +10,6 @@ export type Project = {
 
 export const PROJECTS: Project[] = [
   { key: 'headroom',    index: '01', title: 'Headroom',    tag: 'Local-first finance · React',  href: '/headroom',    accent: [95, 216, 164] },
-  { key: 'signal',      index: '02', title: 'Signal',      tag: 'Live event map · MapLibre',    href: '/signal',      accent: [95, 211, 216] },
   { key: 'bumper',      index: '03', title: 'Bumper',      tag: 'Behavioural · Extension',      href: '/bumper',      accent: [233, 197, 139] },
 ];
 

@@ -9,8 +9,11 @@ page: a letterbox title sequence, a live 3D canvas background, a migration
 route graphic, a work index with animated project previews, and a contact
 section.
 
-There are **five projects**, in this order: Healthy Switch, Friction,
-Headroom, Signal, Bumper. Healthy Switch is the only one whose case study is
+There are **four projects**, in this order: Healthy Switch, Friction,
+Headroom, Bumper. Signal was removed in November 2026 and is not coming back:
+there is no `/signal` route, no chapter, no shape and no hero card. Its blue
+stayed, for the reason under "Locked palette" below. Healthy Switch is the
+only one whose case study is
 not a route on this site — it is published with the prototype it describes,
 so its chapter opens an absolute URL in a new tab. `isOffsite()` in
 `src/data/issues.ts` decides that from the href, not from a flag.
@@ -92,33 +95,44 @@ fails the deploy outright.
 5. **`prefers-reduced-motion` is not optional.** Every animated element needs a
    collapsed state. The title sequence is skipped entirely under reduced motion.
 6. **Locked palette on the homepage.** Seven tokens: `--void`, `--paper` and the
-   five project accents, plus opacity and `color-mix` steps of those. No new
-   hue. Colour literals live in exactly two files, `src/styles/resolve.css`
+   four project accents and one blue, plus opacity and `color-mix`
+   steps of those. No new hue. Colour literals live in exactly two files, `src/styles/resolve.css`
    (the tokens block on `.v2.rs`) and `src/styles/tokens.ts` (the mirror the
    canvas reads); a hex value anywhere else on the homepage is a bug, because
    a second hand-typed copy is a drift waiting to happen. A `#000` inside a
    `mask-image` is a stencil, not a colour, and does not count.
 
-   **The accents are named for projects, not for colours**, and they are five
+   **The accents are named for projects, not for colours**, and they are four
    hues spaced around the wheel at one perceptual lightness and chroma
    (OKLCH 80% / 0.10): `--accent-friction` `#F7A792` (35°),
    `--accent-bumper` `#E0B771` (80°), `--accent-headroom` `#8ED09C` (150°),
-   `--accent-signal` `#8CC3FC` (250°), `--accent-healthy` `#DDA8E4` (323°).
+   `--accent-healthy` `#DDA8E4` (323°).
    This replaced `--teal`/`--mint`/`--cyan`/`--gold`, which were accurate names
    and the problem: three of those four sat within about thirty degrees of each
    other, so four deliberate keys read as one colour drifting. Naming them for
    the projects also stops the name going stale when a hue moves.
 
+   **`--link` `#8CC3FC` (250°) is the one colour that is not an accent, and it
+   must not become one.** It colours the LinkedIn contact card. The two contact
+   cards are the only place on the page allowed to colour themselves rather
+   than take the chapter's key, because both are on screen at once, and that
+   card has always been this blue. It was Signal's key; when Signal went the
+   colour had kept a job and the name had not, so it was renamed for the job
+   and moved out of the `Accent` union, which is what stops a chapter ever
+   lighting itself with it. `scripts/check-tokens.mjs` checks its two copies
+   agree, the same as it does for the accents.
+
    **A new accent goes in the widest gap, and the gap is measured, not
    eyeballed.** Healthy Switch's own story is red to green and both ends were
    already taken — green is Headroom, the warm end is Friction — so the hue
-   could not come from the subject. Sorted, the other four sit at 35, 80, 150
-   and 250, which leaves one gap of 145° and nothing else wider than 100°.
-   323° is its midpoint and is 73° clear of its nearest neighbour. The
+   could not come from the subject. When it was chosen the other four sat at
+   35, 80, 150 and 250, which left one gap of 145° and nothing else wider than
+   100°; 323° is its midpoint and was 73° clear of its nearest neighbour. The
    red-to-green arc is carried by the shape instead: the switch is unlit until
-   it is thrown.
+   it is thrown. With 250° no longer an accent the widest gap is now the 173°
+   between Headroom and Healthy Switch, and a fifth project belongs at 236°.
 
-   All five carry at least 10.3:1 against `--void` (Healthy Switch is the
+   All four carry at least 10.3:1 against `--void` (Healthy Switch is the
    lowest at 10.36:1), which is why the floor in this file used to read 10.4.
 
    Only one of them is ever live. `--chapter-accent` is registered with
