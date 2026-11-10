@@ -33,7 +33,7 @@ import "../styles/hero.css";
    underneath it, and the object could have belonged to anybody. Here the
    object cannot: it is the switch Healthy Switch is named after, the
    twenty-five problems Friction publishes, the gap Headroom subtracts, the
-   map Signal draws, the pause Bumper adds.
+   pause Bumper adds.
 
    THE COPY IS REAL DOM AND IT IS THE PROMISE. The canvas is aria-hidden and
    carries nothing a reader needs. Everything the field says, the panel beside

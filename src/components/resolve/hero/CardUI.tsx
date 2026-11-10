@@ -18,7 +18,7 @@ import { ACCENT_VAR, type HeroCard, type Module, type Row } from "../../../data/
    -------------------------------------------------------------------------- */
 
 function Dot({ row }: { row: Row }) {
-  const colour = row.dot === "paper" ? "var(--paper)" : ACCENT_VAR[row.dot];
+  const colour = row.dot === "paper" ? "var(--paper)" : row.dot === "select" ? "var(--select)" : ACCENT_VAR[row.dot];
   return <span className="hc-dot" style={{ background: colour, opacity: row.dotAlpha ?? 1 }} />;
 }
 
@@ -51,17 +51,7 @@ function ModuleBand({ mod }: { mod: Module }) {
       </div>
     );
   }
-  return (
-    <div className="hc-map">
-      {mod.outOfReach.map(([x, y], i) => (
-        <span key={`f${i}`} className="hc-pin hc-pin--far" style={{ left: `${x * 100}%`, top: `${y * 100}%` }} />
-      ))}
-      {mod.reachable.map(([x, y], i) => (
-        <span key={`n${i}`} className="hc-pin hc-pin--near" style={{ left: `${x * 100}%`, top: `${y * 100}%` }} />
-      ))}
-      <span className="hc-pin hc-pin--you" style={{ left: `${mod.you[0] * 100}%`, top: `${mod.you[1] * 100}%` }} />
-    </div>
-  );
+  return null;
 }
 
 export function CardUI({ card }: { card: HeroCard }) {

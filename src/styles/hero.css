@@ -26,7 +26,6 @@
   transition: --hc-acc var(--dur-effects-slow, 550ms) var(--spring-effects-slow, ease);
 }
 .v2.rs .hero-stage[data-product="friction"] { --hc-acc: var(--accent-friction); }
-.v2.rs .hero-stage[data-product="signal"] { --hc-acc: var(--accent-signal); }
 .v2.rs .hero-stage[data-product="bumper"] { --hc-acc: var(--accent-bumper); }
 
 /* globals.css caps every div at 100% of its parent; the stage and the things
@@ -261,29 +260,6 @@
   white-space: nowrap;
 }
 
-.v2.rs .hc-map {
-  position: relative;
-  height: 56px;
-  border-radius: 12px;
-  background: rgb(238 241 245 / 0.04);
-  background-image: radial-gradient(var(--hc-line) 1px, transparent 1px);
-  background-size: 12px 12px;
-  overflow: hidden;
-}
-.v2.rs .hc-pin { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); }
-.v2.rs .hc-pin--near {
-  width: 7px;
-  height: 7px;
-  background: var(--accent-signal);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent-signal) 25%, transparent);
-}
-.v2.rs .hc-pin--far { width: 6px; height: 6px; background: var(--hc-ink-4); }
-.v2.rs .hc-pin--you {
-  width: 8px;
-  height: 8px;
-  background: var(--paper);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--paper) 40%, transparent);
-}
 
 /* ── list ────────────────────────────────────────────────────────────── */
 
@@ -485,7 +461,7 @@
 .v2.rs .hc-overlay { position: absolute; inset: 0; pointer-events: none; }
 .v2.rs .hc-sel {
   position: absolute;
-  border: 1.6px solid var(--accent-signal);
+  border: 1.6px solid var(--select);
 }
 .v2.rs .hc-handle {
   position: absolute;
@@ -493,14 +469,14 @@
   height: 10px;
   margin: -5px 0 0 -5px;
   background: var(--paper);
-  border: 1.6px solid var(--accent-signal);
+  border: 1.6px solid var(--select);
 }
 .v2.rs .hc-sel-name {
   position: absolute;
   font-family: Geist, ui-sans-serif, sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent-signal);
+  color: var(--select);
   white-space: nowrap;
 }
 /* --void on the fill, never paper: every accent clears 10:1 against void
@@ -509,7 +485,7 @@
   position: absolute;
   padding: 3px 7px;
   border-radius: 5px;
-  background: var(--accent-signal);
+  background: var(--select);
   color: var(--void);
   font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 12px;

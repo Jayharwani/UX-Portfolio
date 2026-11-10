@@ -7,7 +7,7 @@
    had to be told what you were looking at before it meant anything.
 
    So each project now resolves into the one object that says it without a
-   caption. A filter for Friction, money for Headroom, a pin for Signal, a
+   caption. A filter for Friction, money for Headroom, a
    cart for Bumper. The lattice still only ever deforms, and the thing it
    deforms into is now legible in the first half second.
 
@@ -205,21 +205,7 @@ export const ICONS: Record<string, IconDef> = {
      every stem and the middle of the glyph turns to scribble. */
   headroom: { glyph: "$", shell: 40 },
 
-  /* THE MAP, NOT A PIN ON ONE. A pin says "a place"; this says which places.
-     The ring is the Beltway, the diamond inside it is the District, and the
-     line running down through both is the Potomac. Hand simplified on
-     purpose: it has to read as that map at a glance from across a room, which
-     survey accuracy would actively work against. */
-  signal: {
-    width: 1.15,
-    strokes: [
-      "M12 3.7C16.8 3.7 20.6 7.4 20.6 12C20.6 16.6 16.8 20.3 12 20.3C7.2 20.3 3.4 16.6 3.4 12C3.4 7.4 7.2 3.7 12 3.7Z",
-      "M11.3 9.5L13.9 12.1L11.3 14.7L8.7 12.1Z",
-      "M5.6 2.6C8.7 6.1 10.9 8.6 10.5 11.6C10.1 14.7 8.3 17.9 7.5 21.6",
-    ],
-  },
-
-  /* the pin, now a small thing that lands on the map rather than being it */
+  /* the pin */
   pin: {
     fillRule: "evenodd",
     fills: [

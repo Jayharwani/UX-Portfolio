@@ -27,9 +27,9 @@ import { onCardLight, type CardLight } from "./hero/light";
    are not a parity rule and should not be rewritten as one.
    -------------------------------------------------------------------------- */
 
-export type AtmosKey = "hero" | "healthy" | "friction" | "headroom" | "signal" | "bumper" | "end";
+export type AtmosKey = "hero" | "healthy" | "friction" | "headroom" | "bumper" | "end";
 
-const KEYS: AtmosKey[] = ["hero", "healthy", "friction", "headroom", "signal", "bumper", "end"];
+const KEYS: AtmosKey[] = ["hero", "healthy", "friction", "headroom", "bumper", "end"];
 
 /** the horizontal centre of each light, in vw. Only the differences are used:
  *  how far a light has to travel to stand where the next one does. */
@@ -38,14 +38,13 @@ const X: Record<AtmosKey, number> = {
   healthy: 61,
   friction: 37,
   headroom: 64,
-  signal: 35,
   bumper: 66,
   end: 50,
 };
 
 /** the hero and the contact section have no project to be in, so they take no
  *  room wash; everything between them tints the whole viewport 3%. */
-const CHAPTER = new Set<AtmosKey>(["healthy", "friction", "headroom", "signal", "bumper"]);
+const CHAPTER = new Set<AtmosKey>(["healthy", "friction", "headroom", "bumper"]);
 
 const STACKED = "(max-width: 1023.98px), (max-aspect-ratio: 5/4)";
 

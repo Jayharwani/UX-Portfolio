@@ -26,7 +26,7 @@ import type { Accent } from "../styles/tokens";
    Order is the issue order and the tab order: 01 to 05.
    -------------------------------------------------------------------------- */
 
-export type IssueKey = "healthy" | "friction" | "headroom" | "signal" | "bumper";
+export type IssueKey = "healthy" | "friction" | "headroom" | "bumper";
 
 export type Issue = {
   key: IssueKey;
@@ -101,24 +101,8 @@ export const ISSUES: Issue[] = [
     ],
   },
   {
-    key: "signal",
-    no: "04",
-    title: "Signal",
-    tag: "Live event map · MapLibre",
-    year: "2026",
-    href: "/signal",
-    accent: "signal",
-    live: { href: "https://jayharwani.github.io/dmv-map/", label: "OPEN MAP" },
-    hook: "A live map of DMV tech events.",
-    panels: [
-      "Tech, design and AI events across DC, Northern Virginia and Baltimore, scattered across sources.",
-      "A searchable map, with a layer that shows which ones you can actually make.",
-      "A scheduled pipeline republishes every few hours. No backend, no recurring cost.",
-    ],
-  },
-  {
     key: "bumper",
-    no: "05",
+    no: "04",
     title: "Bumper",
     tag: "Behavioural · Extension",
     year: "2026",

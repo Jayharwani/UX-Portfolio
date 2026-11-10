@@ -59,8 +59,22 @@ else if (fromTs.size !== accents + 2) {
   );
 }
 
+/* AND THE ONE COLOUR THAT IS NOT AN ACCENT. The design overlay's selection
+   blue is declared twice for the same reason the accents are — the canvas
+   cannot read a stylesheet — so it drifts the same way, and it is outside the
+   Accent union precisely so that no chapter can light itself with it. */
+const uiBlock = ts.slice(ts.indexOf("export const UI"), ts.indexOf("} as const", ts.indexOf("export const UI")));
+for (const [, k, v] of uiBlock.matchAll(/^\s*([a-z0-9]+):\s*"(#[0-9a-fA-F]{6})"/gm)) {
+  const m = css.match(new RegExp(`--${k}:\\s*(#[0-9a-fA-F]{6})`));
+  if (!m) problems.push(`${k} is in tokens.ts UI (${v}) and nowhere in resolve.css`);
+  else if (m[1].toLowerCase() !== v.toLowerCase()) {
+    problems.push(`${k} is ${v.toLowerCase()} in tokens.ts and ${m[1].toLowerCase()} in CSS`);
+  }
+}
+if (!uiBlock) problems.push("could not find the UI block in tokens.ts");
+
 if (problems.length) {
   console.error(`Token check FAILED:\n  ${problems.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`Token check passed: ${fromTs.size} colours (${accents} accents), both copies agree.`);
+console.log(`Token check passed: ${fromTs.size} colours (${accents} accents) plus the selection blue, all copies agree.`);

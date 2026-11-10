@@ -1,5 +1,5 @@
 import { tokenize, type HeroCard, type ProductKey, type Tok } from "../../../data/heroCards";
-import { TOKENS } from "../../../styles/tokens";
+import { TOKENS, UI } from "../../../styles/tokens";
 import { BASE_H, BASE_W } from "./fit";
 import type { Pt } from "./projector";
 
@@ -46,7 +46,7 @@ const TOKEN_HEX: Record<Exclude<Tok, "sp">, string> = {
   tg: TOKENS.headroom,
   at: TOKENS.bumper,
   st: TOKENS.healthy,
-  nu: TOKENS.signal,
+  nu: UI.select,
   pu: onVoid(TOKENS.paper, 0.42),
   cm: onVoid(TOKENS.paper, 0.34),
   id: onVoid(TOKENS.paper, 0.82),

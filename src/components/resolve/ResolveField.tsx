@@ -45,7 +45,7 @@ import { releaseHero, scrubHero } from "./hero/handoff";
  *  card — there is no room for one — and the hero falls back to the sphere it
  *  has always had. Reading it from the stage each frame rather than wiring a
  *  prop keeps the two from racing on the first paint. */
-const STATES: ShapeName[] = ["card", "healthy", "friction", "headroom", "signal", "bumper", "reach"];
+const STATES: ShapeName[] = ["card", "healthy", "friction", "headroom", "bumper", "reach"];
 
 /* WHAT THE LAST STOP'S TARGET IS, when a contact button has the pointer.
    Module level rather than a prop, for the same reason getLenis is: the
@@ -113,7 +113,6 @@ const POSE: Record<ShapeName, [az: number, el: number, dist: number]> = {
   wire: [0, 0, 5.4],
   friction: [-0.3, 0.1, 4.5],
   headroom: [0.32, 0.04, 4.4],
-  signal: [-0.24, 0.08, 4.5],
   bumper: [0.38, 0.06, 4.5],
   reach: [-0.12, 0.08, 5.6],
   rest: [0, 0.05, 5.4],

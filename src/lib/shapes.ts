@@ -58,7 +58,7 @@ export type ShapeWriter = (
 /* `card` is rebuilt every frame because the pose it is drawn from moves:
    the reader's pointer leans the card, and the particles are registered to
    its glyphs, so they have to lean with it. */
-const LIVE = new Set<string>(["drift", "reach", "signal", "card", "line", "mess", "wire"]);
+const LIVE = new Set<string>(["drift", "reach", "card", "line", "mess", "wire"]);
 const ACTING = new Set<string>(["healthy", "friction", "headroom", "bumper"]);
 
 /** true if this state changes under its own power, wherever it is used */
@@ -118,7 +118,7 @@ function rand(seed: number): number {
 
 const ASPECT = 1.35;
 
-/* ── 01 to 05, THE PROJECTS ───────────────────────────────────────────────
+/* ── 01 to 04, THE PROJECTS ───────────────────────────────────────────────
    Each one resolves into the object somebody would draw if you asked them
    what the product was. A filter, money, a pin on a map, a cart. They were
    abstract diagrams before, which was honest and cost the reader a beat they
@@ -661,64 +661,7 @@ export const headroom: ShapeWriter = (pos, lit, size, n, _time, p) => {
   }
 };
 
-/* ── 04 SIGNAL ─ the map, and what is on tonight ─────────────────────────
-   The Beltway, the District inside it, the Potomac through both. Twelve
-   brighter points are the events, and the pin is a small thing that lands on
-   one of them rather than standing in for the whole idea. */
-const EVENTS = 12;
-const PIN_N = 440;
-/** roughly where things happen, in the same box the map is drawn in */
-const WHERE: Array<[number, number]> = [
-  [-0.08, 0.02],
-  [0.14, -0.06],
-  [-0.26, -0.18],
-  [0.3, 0.18],
-  [-0.34, 0.26],
-  [0.08, 0.34],
-  [0.4, -0.24],
-  [-0.44, -0.06],
-  [0.2, -0.4],
-  [-0.14, -0.44],
-  [0.48, 0.06],
-  [-0.02, 0.5],
-];
-/** which one the pin lands on */
-const LANDS = 5;
-export const signal: ShapeWriter = (pos, lit, size, n, time, p) => {
-  const phase = authored(p);
-  const head = EVENTS + PIN_N;
-  writeIcon("signal", pos, lit, size, n, head, n - head, ICON_SCALE, 0, 0);
-
-  for (let j = 0; j < EVENTS; j++) {
-    const x = WHERE[j][0] * ICON_SCALE;
-    const y = WHERE[j][1] * ICON_SCALE;
-    pos[j * 3] = x;
-    pos[j * 3 + 1] = y;
-    pos[j * 3 + 2] = 0.14;
-    lit[j] = 1;
-    /* out of step with each other, because a dozen things happening in time
-       with each other is one thing happening */
-    size[j] = 4.6 + 1.9 * Math.sin(time * 1.5 + j * 1.9);
-  }
-
-  /* the pin falls in the last third and lands on one of them */
-  const drop = clamp01((phase - 0.62) / 0.3);
-  const land = drop * drop * (3 - 2 * drop);
-  const lx = WHERE[LANDS][0] * ICON_SCALE;
-  const ly = WHERE[LANDS][1] * ICON_SCALE;
-  const pin = iconPoints("pin", ICONS.pin, PIN_N);
-  for (let k = 0; k < PIN_N; k++) {
-    const i = EVENTS + k;
-    pos[i * 3] = pin.xy[k * 2] * 0.26 + lx;
-    /* the pin's own point sits on the event, so the shape hangs above it */
-    pos[i * 3 + 1] = (pin.xy[k * 2 + 1] + 1) * 0.26 + ly + (1 - land) * 1.1;
-    pos[i * 3 + 2] = 0.32;
-    lit[i] = land;
-    size[i] = 1.7 + 1.9 * land;
-  }
-};
-
-/* ── 05 BUMPER ─ the cart, and the thing in its way ──────────────────────
+/* ── 04 BUMPER ─ the cart, and the thing in its way ──────────────────────
    It rolls in from the left along a line of its own points, meets the bump,
    and settles. The spring does the settling: it is already under-damped, so
    the overshoot at the end is physics and not a keyframe. */
@@ -904,7 +847,7 @@ export const network: ShapeWriter = (pos, lit, size, n) => {
   }
 };
 
-export const SHAPES = { rest, drift, line, mess, wire, card, healthy, friction, headroom, signal, bumper, reach, sent, network } as const;
+export const SHAPES = { rest, drift, line, mess, wire, card, healthy, friction, headroom, bumper, reach, sent, network } as const;
 export type ShapeName = keyof typeof SHAPES;
 
 /* ── HOW EACH SHAPE ASSEMBLES ─────────────────────────────────────────────
@@ -932,7 +875,6 @@ export const WAVES: Record<ShapeName, Wave> = {
   healthy: "across",
   friction: "down",
   headroom: "around",
-  signal: "along",
   bumper: "across",
   reach: "around",
   sent: "across",

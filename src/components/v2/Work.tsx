@@ -59,16 +59,6 @@ const ITEMS: Item[] = [
     year: "2026",
   },
   {
-    key: "signal",
-    idx: "03",
-    title: "Signal",
-    tag: "Live event map · MapLibre",
-    href: "/signal",
-    rgb: [95, 211, 216],
-    live: { href: "https://jayharwani.github.io/dmv-map/", label: "OPEN MAP" },
-    year: "2026",
-  },
-  {
     key: "bumper",
     idx: "04",
     title: "Bumper",

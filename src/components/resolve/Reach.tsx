@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { Mail, Linkedin, ArrowUpRight } from "lucide-react";
 import { setFieldTarget } from "./ResolveField";
 import { CONTACT, CREDITS } from "../../data/projects";
-import { TOKENS, type Accent } from "../../styles/tokens";
+import { TOKENS, UI, type Accent } from "../../styles/tokens";
 
 /* --------------------------------------------------------------------------
    REACH — the last section.
@@ -46,7 +46,11 @@ function ReachButton({
   href: string;
   label: string;
   detail: string;
-  accent: Accent;
+  /* THE TWO CARDS ARE ON SCREEN TOGETHER, so each keeps its own colour
+     rather than borrowing the page's. LinkedIn's is the design overlay's
+     blue, which is not a project accent and never was a chapter's — it was
+     Signal's key once and outlived the project. */
+  accent: Accent | "select";
   field: Target;
   external?: boolean;
   icon: React.ReactNode;
@@ -79,7 +83,7 @@ function ReachButton({
     setFieldTarget(null);
   }, []);
 
-  const take = useCallback(() => setFieldTarget(field, TOKENS[accent]), [field, accent]);
+  const take = useCallback(() => setFieldTarget(field, accent === "select" ? UI.select : TOKENS[accent]), [field, accent]);
 
   return (
     <a
@@ -170,7 +174,7 @@ export function Reach() {
           href={CONTACT.linkedin}
           label="LinkedIn"
           detail={CONTACT.linkedinLabel}
-          accent="signal"
+          accent="select"
           field="network"
           external
           onReach={setAsked}

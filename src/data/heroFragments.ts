@@ -21,7 +21,7 @@ export type Fragment = {
   key: string;
   kind: FragmentKind;
   /** the accent that names it, which is the product it belongs to */
-  accent?: "bumper" | "friction" | "signal" | "healthy";
+  accent?: "bumper" | "friction" | "healthy";
   text?: string;
   lines?: string[];
   /** from the card centre, as fractions of its width and height */
@@ -35,7 +35,6 @@ export type Fragment = {
 export const FRAGMENTS: Fragment[] = [
   { key: "money", kind: "note", accent: "bumper", text: "where did my money go??", ox: -0.52, oy: -0.42, angle: -9 },
   { key: "cancel", kind: "review", accent: "friction", text: "can't cancel my subscription", ox: 0.3, oy: -0.52, angle: 4 },
-  { key: "events", kind: "note", accent: "signal", text: "any design events tonight?", ox: 0.58, oy: 0.1, angle: 7, big: true },
   { key: "need", kind: "note", accent: "healthy", text: "did I really need that?", ox: -0.6, oy: 0.3, angle: 5, big: true },
   {
     key: "receipt",

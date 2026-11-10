@@ -12,14 +12,13 @@
  * own copy (the project list in the home page code).
  */
 
-export type ProductKey = 'headroom' | 'friction' | 'signal' | 'bumper';
+export type ProductKey = 'headroom' | 'friction' | 'bumper';
 export type Region = 'number' | 'module' | 'list' | 'cta';
 
 /** Site accent tokens on .v2.rs. Never hard-code the hex in components. */
 export const ACCENT_VAR: Record<ProductKey, string> = {
   headroom: 'var(--accent-headroom)', // #8ED09C
   friction: 'var(--accent-friction)', // #F7A792
-  signal: 'var(--accent-signal)', //     #8CC3FC
   bumper: 'var(--accent-bumper)', //     #E0B771
 };
 
@@ -27,11 +26,14 @@ export const ACCENT_VAR: Record<ProductKey, string> = {
 export const ACCENT_HEX: Record<ProductKey, string> = {
   headroom: '#8ED09C',
   friction: '#F7A792',
-  signal: '#8CC3FC',
   bumper: '#E0B771',
 };
 
-export type Dot = ProductKey | 'paper';
+/* A DOT IS ANY OF THE KEYS OR THE BLUE. Headroom's middle row is blue, and
+   it is the design overlay's blue rather than a project's — the three dots in
+   that list only have to be three different colours, and two of them being
+   the same would make the list look like it had two of something. */
+export type Dot = ProductKey | 'paper' | 'select';
 
 export interface Row {
   dot: Dot;
@@ -46,14 +48,7 @@ export interface Row {
 
 export type Module =
   | { kind: 'progress'; left: string; right: string; strong?: string; value: number }
-  | { kind: 'funnel'; steps: { label: string; width: number; alpha: number }[] }
-  | {
-      kind: 'map';
-      /** pins as fractions of the 392 x 56 strip */
-      reachable: [number, number][];
-      outOfReach: [number, number][];
-      you: [number, number];
-    };
+  | { kind: 'funnel'; steps: { label: string; width: number; alpha: number }[] };
 
 export interface HeroCard {
   key: ProductKey;
@@ -99,7 +94,7 @@ export const HERO_CARDS: HeroCard[] = [
     listTop: 384,
     list: [
       { dot: 'friction', name: 'Rent', meta: 'NOV 1', value: '−$1,250' },
-      { dot: 'signal', name: 'Phone bill', meta: 'NOV 3', value: '−$45' },
+      { dot: 'select', name: 'Phone bill', meta: 'NOV 3', value: '−$45' },
       { dot: 'bumper', name: 'Savings goal', meta: 'FRI', value: '−$40' },
     ],
     cta: { primary: 'Can I spend this?' },
@@ -252,95 +247,6 @@ export const HERO_CARDS: HeroCard[] = [
     sample: ['list', 'listing'],
   },
   {
-    key: 'signal',
-    name: 'Signal',
-    frame: 'Signal / Tonight · 460 × 624',
-    icon: ['M10 18C10 18 4.5 12.2 4.5 8A5.5 5.5 0 0 1 15.5 8C15.5 12.2 10 18 10 18Z', 'M8 8A2 2 0 1 0 12 8A2 2 0 1 0 8 8Z'],
-    pill: 'UPDATED 2H AGO',
-    label: 'YOU CAN MAKE TONIGHT',
-    number: { value: 12 },
-    sub: 'tech, design and AI events across the DMV',
-    module: {
-      kind: 'map',
-      reachable: [
-        [0.18, 0.42],
-        [0.34, 0.66],
-        [0.52, 0.32],
-        [0.63, 0.7],
-        [0.79, 0.46],
-      ],
-      outOfReach: [
-        [0.92, 0.24],
-        [0.07, 0.78],
-      ],
-      you: [0.45, 0.55],
-    },
-    listTop: 384,
-    list: [
-      { dot: 'signal', name: 'Design systems meetup', meta: '6:30 PM', value: '1.2 mi' },
-      { dot: 'signal', dotAlpha: 0.7, name: 'AI builders night', meta: '7:00 PM', value: '3.4 mi' },
-      { dot: 'signal', dotAlpha: 0.45, name: 'Product design crit', meta: '7:30 PM', value: '2.1 mi' },
-    ],
-    cta: { primary: 'Show me what I can make' },
-    select: { box: [34, 316, 392, 56], name: 'Map / Reach layer', size: '392 × 56', sizeAt: 'below' },
-    srLabel: 'Preview of Signal, one of four shipped products. It maps DMV tech events and shows which ones you can actually make.',
-    snippets: {
-      number: [
-        '  // what you can make',
-        'const reach = events',
-        '  .filter(canMake);',
-        'count.render(',
-        '  reach.length  // 12',
-        ');',
-      ].join('\n'),
-      module: [
-        '  // the reach layer',
-        'map.addLayer({',
-        '  id: "reach",',
-        '  type: "circle",',
-        '  filter: ["get",',
-        '    "reachable"],',
-        '});',
-      ].join('\n'),
-      list: [
-        '  // nearest first',
-        'list.render(',
-        '  reach',
-        '    .sort(byDistance)',
-        '    .slice(0, 3)',
-        ');',
-      ].join('\n'),
-      cta: [
-        '  // everything else',
-        'cta.onclick = () =>',
-        '  showAll(reach);',
-      ].join('\n'),
-    },
-    listing: [
-      'const events = await load("dmv", "tonight");',
-      'const here = await locate();',
-      'const reach = events.filter(e =>',
-      '  canMake(e, here));             // 12',
-      '',
-      'count.render(reach.length);',
-      '',
-      'map.addSource("tonight", {',
-      '  type: "geojson",',
-      '  data: toGeoJSON(events),',
-      '});',
-      'map.addLayer({',
-      '  id: "reach",',
-      '  type: "circle",',
-      '  source: "tonight",',
-      '  filter: ["get", "reachable"],',
-      '  paint: { "circle-color": "#8CC3FC" },',
-      '});',
-      '',
-      'list.render(reach.slice(0, 3));',
-    ].join('\n'),
-    sample: ['pill', 'number', 'list', 'listing'],
-  },
-  {
     key: 'bumper',
     name: 'Bumper',
     frame: 'Bumper / Checkout · 460 × 624',
@@ -423,7 +329,7 @@ export const TOKEN_COLOR: Record<Exclude<Tok, 'sp'>, string> = {
   tg: 'var(--accent-headroom)', //  component or element tag
   at: 'var(--accent-bumper)', //    attribute or object key
   st: 'var(--accent-healthy)', //   string
-  nu: 'var(--accent-signal)', //    number
+  nu: 'var(--select)', //           number
   pu: 'rgb(238 241 245 / .42)', //  punctuation
   cm: 'rgb(238 241 245 / .34)', //  comment
   id: 'rgb(238 241 245 / .82)', //  plain identifier
